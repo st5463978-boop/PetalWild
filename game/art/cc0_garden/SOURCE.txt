@@ -1,0 +1,2 @@
+CC0-1.0 Asset Quest Stylized Garden demo. See third_party/incoming/assetquest-stylized-garden-demo/PROVENANCE.md
+Plants_Atlas.png is the basecolor PNG with the opacity map copied into the alpha channel so the garden can alpha-cut the plant cards. The original basecolor and opacity files are unchanged.

@@ -7,7 +7,7 @@ PetalWild's own code and original art are unpublished work by Scott Thompson. Al
 | PetalWild scripts, JSON, shaders, procedural meshes | All rights reserved | Yes | Original |
 | Godot Engine 4.8-dev6 | MIT | No, the binary is not committed | Fetched by `tools/fetch_godot.sh` |
 | Nunito variable font | SIL Open Font License 1.1 | Yes, `third_party/fonts/Nunito.ttf` | Vernon Adams and contributors. See `third_party/fonts/OFL.txt` |
-| Asset Quest Stylized Garden demo | CC0-1.0 | Staged only, not instanced in the garden yet | `third_party/incoming/assetquest-stylized-garden-demo/` |
+| Asset Quest Stylized Garden demo | CC0-1.0 | Instanced in the garden from `game/art/cc0_garden/`. Download record stays in `third_party/incoming/` | `game/art/cc0_garden/` |
 | Jelly Baby (`scottstts/Jelly-Baby`) | GPL-3.0-only | No | Behaviour reference. No source copied |
 | openage | GPL-3.0-or-later | No | Architecture notes only |
 | redplanet town | See `docs/research/ARCHITECTURE_REFERENCES.md` | No | Ideas only |

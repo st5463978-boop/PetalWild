@@ -1,6 +1,6 @@
 # PetalWild master state
 
-Updated 22 September 2026 after integration wave 1.
+Updated 22 September 2026 after the CC0 garden dressing pass.
 
 ## Build
 
@@ -20,11 +20,12 @@ Updated 22 September 2026 after integration wave 1.
 - Quin Hearth, Lumen Barrow, and Neeve Allium with schedules and needs. Quin opens Petal Stall after Sunburst visits. Blob can knock corn back and Quin complains.
 - Havenbrook aggregate stats. Trust ledger with a Media Foundry proposal that cannot spend or publish.
 - Original procedural ambience. Dummy audio device in this VM; the streams still build.
+- Asset Quest CC0 plants and props are in the live garden: flower rows, grass cards, pond-bank plants, sunflowers, benches, a table, planters, and the stall umbrella. Gameplay plots are still the sim's own meshes.
 
 ## Broken or thin
 
 - No Vulkan device here, so lighting is GL Compatibility on llvmpipe. Shadows exist; glow and depth of field do not.
-- CC0 stylized props are staged and not instanced. The garden is still procedural.
+- Hedges are solid blocks and trees are still trunk-plus-sphere clusters. They are not leaf meshes.
 - No navigation mesh. People walk in straight lines.
 - Breeding, variants, and photo depth of field are named in the design and not simulated yet.
 - External tools are intentionally unwired.
@@ -34,7 +35,7 @@ Updated 22 September 2026 after integration wave 1.
 | Agent | State |
 | --- | --- |
 | PETAL-00 | This integration |
-| PETAL-13 | Asset hunt written, one CC0 demo staged |
+| PETAL-13 | Asset hunt written. The CC0 demo is now instanced in the garden |
 | Research scribe | `docs/research/ARCHITECTURE_REFERENCES.md` |
 
 Ownership: `docs/AGENT_CONTRACTS.md`.
@@ -46,19 +47,18 @@ Ownership: `docs/AGENT_CONTRACTS.md`.
 
 ## Performance
 
-Software GL, 1440×900, populated garden (hedges, trees, flowers, grass, one jelly in the close-up shot). The debug overlay reports FPS, process time, draw calls, and primitives. No separate GPU profile yet. The smoke test does not render.
+Software GL, 1440×900, populated garden. The eight-frame capture finished in about 36 seconds on llvmpipe after the CC0 meshes were added. The debug overlay still reports FPS, process time, draw calls, and primitives during play. No separate GPU profile yet. The smoke test does not render.
 
 ## Visual comparison
 
 Against `docs/reference/petalwild_target_garden_01.png` and `02`:
 
-1. Foliage is instanced blobs, not leaf-level plants. The CC0 demo meshes should replace flowers, grass, and the bench.
-2. The stall is boxes and a label, not a timber shop with a striped awning that sits in a stone court.
-3. Light is a warm directional sun and fog, not sun shafts through a mature canopy.
+1. Hedges and trees are still primitive volumes. The flower rows are atlas cards, but the enclosing hedge is a run of green boxes and the canopies are spheres. Next: a CC0 tree and hedge kit, scaled and recolored to this palette.
+2. Ground, paths, and the stall court are vertex colors and flat pavers. The concept's irregular flagstones, rich soil, and timber stall are not in the meshes yet.
+3. Light is a warm directional sun on the compatibility renderer. There are no sun shafts, translucent canopy, or depth of field until a Vulkan device is available.
 
 ## Next integration
 
-1. Art-direct the Asset Quest demo into the garden: one material, one scale, flowers only where beds are.
-2. Keep the plot tools and the ecology chain. Do not replace `GardenSim`.
-3. Frame the close-up jelly and Quin in gameplay, not only in the shot script. That already works if the player presses F.
-4. Add a second wave of CC0 audio only with a licence file in the download.
+1. Bring in a permissive tree and hedge kit and replace the box hedge and sphere canopies without touching `GardenSim`.
+2. Keep the plot tools, the ecology chain, and the CC0 flower rows.
+3. Add a second wave of CC0 audio only with a licence file in the download.

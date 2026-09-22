@@ -349,6 +349,8 @@ func _shots(delta: float) -> void:
 		shot_busy = false
 	elif shot_step == 1 and shot_time > 5.0:
 		shot_busy = true
+		_snap_camera(Vector3(1.8, 0.5, 2.4), 21.0, 0.98)
+		camera_rig.yaw = 0.5
 		await _shoot("02_garden_overview.png")
 		var rec: Dictionary = Session.ecology.records["sunburst"]
 		rec.state = "VISITOR"
@@ -386,7 +388,7 @@ func _shots(delta: float) -> void:
 		shot_busy = false
 	elif shot_step == 4 and shot_time > 7.2:
 		shot_busy = true
-		_snap_camera(Vector3(13.2, 1.2, 1.6), 9.0)
+		_snap_camera(Vector3(13.15, 1.15, 1.35), 8.4, 0.62)
 		hud._fill_shop()
 		await _shoot("05_shop.png")
 		hud.shop.visible = false
@@ -404,6 +406,8 @@ func _shots(delta: float) -> void:
 		shot_busy = false
 	elif shot_step == 6 and shot_time > 8.6:
 		shot_busy = true
+		_snap_camera(Vector3(1.8, 0.5, 2.4), 21.0, 0.98)
+		camera_rig.yaw = 0.5
 		await _shoot("07_rain.png")
 		Session.force_weather("clear")
 		Session.force_hour(22.2)
@@ -411,20 +415,22 @@ func _shots(delta: float) -> void:
 		shot_busy = false
 	elif shot_step == 7 and shot_time > 9.4:
 		shot_busy = true
+		_snap_camera(Vector3(1.8, 0.5, 2.4), 21.0, 0.98)
+		camera_rig.yaw = 0.5
 		await _shoot("08_night.png")
 		shot_step = 8
 		shot_busy = false
 		get_tree().quit()
 
 
-func _snap_camera(point: Vector3, dist: float) -> void:
+func _snap_camera(point: Vector3, dist: float, cam_pitch: float = 0.38) -> void:
 	camera_rig.intro = 1.0
 	camera_rig.pivot = point
 	camera_rig.target_pivot = point
 	camera_rig.distance = dist
 	camera_rig.target_distance = dist
-	camera_rig.pitch = 0.38
-	camera_rig.target_pitch = 0.38
+	camera_rig.pitch = cam_pitch
+	camera_rig.target_pitch = cam_pitch
 
 
 func _shoot(file_name: String) -> void:

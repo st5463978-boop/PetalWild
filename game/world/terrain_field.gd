@@ -58,7 +58,7 @@ func tint(x: float, z: float, h: float) -> Color:
 		return Color(0.52, 0.44, 0.31).lerp(Color(0.7, 0.6, 0.44), n)
 	if in_plots(x, z):
 		return Color(0.29, 0.18, 0.1).lerp(Color(0.36, 0.24, 0.13), n)
-	var grass := Color(0.16, 0.4, 0.15).lerp(Color(0.34, 0.55, 0.2), n)
+	var grass := Color(0.24, 0.5, 0.16).lerp(Color(0.58, 0.74, 0.22), n)
 	if h > 1.15:
 		grass = grass.lerp(Color(0.28, 0.4, 0.2), 0.45)
 	return grass
