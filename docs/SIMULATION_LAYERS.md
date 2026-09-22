@@ -5,7 +5,7 @@ PetalWild keeps one persistent record per plant, creature, and resident. The pic
 | Level | Who | What runs | What this build does |
 | --- | --- | --- | --- |
 | L0 | Held, inspected, or hero creature | Full deform, face, collision, high-rate audio | The grabbed jelly gets squash, stretch, and a face. One body at a time. |
-| L1 | Nearby visitors and residents | Path, needs, animation | Jellies path near their flower. By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home: the stall, the potting shed, and a placed home kit or the gate. |
+| L1 | Nearby visitors and residents | Path, needs, animation | Jellies path near their flower. By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. When someone arrives she walks to them and writes the name in the parish book. After dusk they walk home: the stall, the potting shed, and a placed home kit or the gate. |
 | L2 | Rest of the garden | Schedule and economy, coarse movement | Resident needs tick in data. Bodies farther than the software cap are not spawned. |
 | L3 | Off-screen district | Home, job, relationship summary | A jelly outside the camera hides. A resident walks to the nearest placed home kit; a visitor keeps the flower. Back in frame, the body shows again. The directory still lists each resident's home and job. |
 | L4 | Aggregate population | Demand, employment, venue use | The parish page lists every venue. Petal Stall demand is the people present plus creature residents. The potting shed is open because it stands in the garden. Its demand is 1 while Bram is here. Asked, he walks the driest tilled bed and waters it. Demand for every room that is not built is not simulated. |

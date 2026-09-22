@@ -31,7 +31,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Large text resizes the garden HUD without leaving the scene.
 - Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 - Off-screen jellies hide. A resident walks to the nearest placed home kit. A visitor keeps the flower. Back in frame, the body shows again.
-- By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home. The directory says which. Ask Bram and he walks the driest tilled bed and waters it. The potting shed is open. Its demand is 1 while he is here.
+- By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home. The directory says which. Ask Bram and he walks the driest tilled bed and waters it. The potting shed is open. Its demand is 1 while he is here. When a creature arrives and Nessa is here, she walks to them and writes the name in the parish book.
 
 ## Broken or not built
 
@@ -74,4 +74,4 @@ Three largest gaps still open, against `docs/reference/petalwild_target_garden_0
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow). Bram waters the driest bed when asked, and the potting shed counts as open. About 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Bees sit on the flowers while it rains. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow). Nessa writes an arrival into the parish book after she walks to them. About 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Bees sit on the flowers while it rains. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

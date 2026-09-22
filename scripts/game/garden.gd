@@ -16,6 +16,7 @@ var structures := {"home_kit": 0}
 var home_points: Array = []
 var shift := ""
 var bram_bed := Vector2i(-1, -1)
+var nessa_watch: Jelly = null
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -591,6 +592,20 @@ func _run_smoke() -> void:
 		push_error("smoke: potting shed was not open")
 		get_tree().quit(1)
 		return
+	var nessa := _person("nessa")
+	nessa.present = true
+	var bell_note := ecology.first("bellhelp")
+	_on_ecology("%s has come to look." % bell_note.display_name)
+	if not nessa.has_chore or nessa.chore.distance_to(bell_note.global_position) > 0.2:
+		push_error("smoke: nessa did not watch the arrival")
+		get_tree().quit(1)
+		return
+	nessa.global_position = nessa.chore
+	_drift_people(0.1, world_snapshot())
+	if events.is_empty() or str(events[0]).find("parish book") == -1:
+		push_error("smoke: nessa did not write the book")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1130,8 +1145,24 @@ func _on_ecology(text: String) -> void:
 	toast(text)
 	if "slips" in text:
 		audio.play_kind("ui", -16)
-	else:
-		audio.play_kind("discovery", -12)
+		return
+	audio.play_kind("discovery", -12)
+	var nessa := _person("nessa")
+	if not nessa.present:
+		return
+	# ponytail: one name in the book; a page per species if the journal grows sections.
+	var watched: Jelly = null
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if is_instance_valid(jelly) and text.find(jelly.display_name) != -1:
+			watched = jelly
+			break
+	if watched == null:
+		return
+	nessa_watch = watched
+	nessa.chore = watched.global_position
+	nessa.has_chore = true
+	nessa.say("I will write down who came through the gate.")
 
 func _apply_soil_effect(effect: Dictionary) -> int:
 	var count := soil.apply_chem(str(effect.get("chem", "nightloam")), int(effect.get("count", 4)))
@@ -1204,6 +1235,17 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 	lumen.energy = move_toward(lumen.energy, 0.7, delta * 0.01)
 	bram.purpose = move_toward(bram.purpose, clampf(float(world.get("garden_quality", 0.3)) + 0.2, 0.2, 0.9), delta * 0.03)
 	var nessa := _person("nessa")
+	if nessa.present and nessa.has_chore:
+		if nessa_watch != null and is_instance_valid(nessa_watch):
+			nessa.chore = nessa_watch.global_position
+		if nessa.global_position.distance_to(nessa.chore) < 0.55:
+			var noted := "someone"
+			if nessa_watch != null and is_instance_valid(nessa_watch):
+				noted = nessa_watch.display_name
+			nessa.has_chore = false
+			nessa_watch = null
+			nessa.say("Noted. %s is in the parish book." % noted)
+			toast("Nessa wrote %s into the parish book." % noted)
 	if nessa.present:
 		nessa.belonging = move_toward(nessa.belonging, 0.75 if ecology.resident_total() > 0 else 0.4, delta * 0.03)
 		nessa.purpose = move_toward(nessa.purpose, 0.8, delta * 0.02)
