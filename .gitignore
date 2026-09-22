@@ -6,3 +6,4 @@ export/
 android/
 # Source captures uploaded with the brief. Canonical copies live in docs/reference.
 /assets/*.png
+/assets/*.png.import
