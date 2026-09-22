@@ -27,7 +27,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Lumen Peel, Bram Cobble, and Nessa Pod (Nessa waits for a resident Bellhelp and a home kit).
 - Petal coins. Fertiliser purchase spends coins. Peach-tray proposal spends 8 only after approval, once a day.
 - Save and reload round-trip coins and garden state.
-- Slobad's CC0 forest loop is the garden bed. Tool sounds stay procedural. Eight bees drift over the beds. Four birds cross the garden by day and perch at dusk and in the rain. The parish page counts both.
+- Slobad's CC0 forest loop is the garden bed. Tool sounds stay procedural. Eight bees drift over the beds and sit on the flowers in the rain. Four birds cross the garden by day and perch at dusk and in the rain. The parish page counts both.
 - Large text resizes the garden HUD without leaving the scene.
 - Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 
@@ -72,4 +72,4 @@ Three largest gaps still open, against `docs/reference/petalwild_target_garden_0
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): about 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): about 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Bees sit on the flowers while it rains. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

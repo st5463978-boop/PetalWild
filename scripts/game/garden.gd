@@ -113,7 +113,7 @@ func _process(delta: float) -> void:
 	_drift_people(delta, world)
 	camera.nudge(delta)
 	if bees:
-		bees.tick(delta, Settings.reduce_motion)
+		bees.tick(delta, Settings.reduce_motion, Clock.weather)
 	if birds:
 		birds.tick(delta, Settings.reduce_motion, Clock.hour(), Clock.weather)
 	visual_timer += delta
@@ -487,6 +487,16 @@ func _run_smoke() -> void:
 			saw_closed = true
 	if not saw_open or not saw_closed:
 		push_error("smoke: parish venues missing")
+		get_tree().quit(1)
+		return
+	bees.tick(1.0, false, "clear")
+	if bees.bodies[0].position.distance_to(bees.homes[0]) < 0.05:
+		push_error("smoke: bees did not leave the flower")
+		get_tree().quit(1)
+		return
+	bees.tick(0.0, true, "rain")
+	if bees.bodies[0].position.distance_to(bees.homes[0]) > 0.02:
+		push_error("smoke: bees did not shelter from the rain")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")

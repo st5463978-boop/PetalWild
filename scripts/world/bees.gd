@@ -24,7 +24,13 @@ func build() -> void:
 		bodies.append(bee)
 		homes.append(spot)
 
-func tick(delta: float, frozen: bool) -> void:
+func tick(delta: float, frozen: bool, weather: String) -> void:
+	# ponytail: rain pins them to the flower; a hive mesh if the garden grows one.
+	if weather == "rain":
+		for i in bodies.size():
+			bodies[i].position = homes[i]
+			bodies[i].rotation.y = float(i) * 0.4
+		return
 	if frozen:
 		return
 	phase += delta
