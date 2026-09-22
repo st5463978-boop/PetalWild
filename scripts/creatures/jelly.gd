@@ -112,6 +112,9 @@ func _bell(root: Node3D) -> void:
 	# ponytail: third rim hangs between those tips; raise drop if it merges with the whorl above.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.2, 1.28, 0.28, null, radius * 0.55)
+	# ponytail: short gap petals; the mesh droops, so they read in the skirt. Shorten the mesh if the tips stay bare.
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.15, 0.55, 0.34)
 	for i in 3:
 		var angle := TAU * float(i) / 3.0 + 0.4
 		var stamen := MeshInstance3D.new()

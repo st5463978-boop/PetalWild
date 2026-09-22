@@ -33,9 +33,9 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s five sphere lobes are gone. Five narrow petals run from the tips down to a small pad, with a dark five-petal well, a gold seed, a flared whorl, and a third rim under that whorl. The wide skirt is gone.
+- Bellhelp’s five sphere lobes are gone. Five narrow petals run from the tips down to a small pad, with a dark five-petal well, a gold seed, a flared whorl, a lower rim, and a shorter rank in the gaps. That rank reads in the skirt. The wide skirt of spheres is gone.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
-- Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green in the upper opening band fell from 53% to 24%, and in the lower band from 36% to 13%. The hill did not move. The stall still shows through the middle. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. About 0.074% of overview pixels are pure white. There is still no insect or bird life.
+- Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green in the upper opening band fell from 53% to 24%, and in the lower band from 36% to 13%. The hill did not move. The stall still shows through the middle. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. About 0.087% of overview pixels are pure white. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green pixels fell from 53% to 24% in the upper opening band (screen y 265–320) and from 36% to 13% in the lower band (y 290–360). East-lip luminance (y 252–272) fell from 200 to 162. The hill (y 200–245) did not change. Bellhelp’s close-up is on open lawn: five narrow lobes, a dark five-petal well, a gold seed, a flared whorl, and a third rim between that whorl’s tips. Pure white on this overview is 0.074% (955 pixels). Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green pixels fell from 53% to 24% in the upper opening band (screen y 265–320) and from 36% to 13% in the lower band (y 290–360). East-lip luminance (y 252–272) fell from 200 to 162. The hill (y 200–245) did not change. Bellhelp’s close-up is on open lawn: five narrow lobes, a dark five-petal well, a gold seed, a flared whorl, a lower rim, and a shorter rank that reads in the lower half. Pure white on this overview is 0.087% (1123 pixels). Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
 1. **Hedge skyline.** The shrub row covers the lower holes and the east lip is darker. About 24% of the upper band is still light-green, and the stall still reads through the middle. The hill above the hedge is unchanged. PETAL-05.
-2. **Bellhelp.** Five lobes, a flared whorl, and a lower rim between those tips. It is three tiers, still short of a full stack. PETAL-03.
-3. **Highlights.** 0.074% of overview pixels are pure white. The largest speck is a yellow tip around screen x 288, y 706. PETAL-06.
+2. **Bellhelp.** Five lobes, a flared whorl, a lower rim, and a shorter rank that still reads in the skirt. The upright tips are still bare between them. PETAL-03.
+3. **Highlights.** 0.087% of overview pixels are pure white. The largest cluster is pale blooms around screen x 657, y 386. A yellow tip around x 288, y 706 remains. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): Bellhelp is three tiers and still short of a full stack. Do not raise the east shrubs into the hill; the light left in the upper hedge band is the hill and the shrub faces. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): the shorter Bellhelp rank still reads in the skirt, so the gaps between the upright tips are still bare. Do not raise the east shrubs into the hill. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
