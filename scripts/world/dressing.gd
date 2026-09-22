@@ -1416,11 +1416,12 @@ func _cc0_props(parent: Node3D) -> void:
 		load(_PACK + "Textures/Plants_Atlas_1_Opacity.png")
 	)
 	var prop_tex: Texture2D = load(_PACK + "Textures/Props_Basecolor.png")
-	var props := _flat_material(Color.WHITE, 0.66)
-	props.albedo_texture = prop_tex
 	# ponytail: dark multiply so the white atlas canopy stops clipping; raise if the cloth goes muddy.
 	var cloth := _flat_material(Color("#4e453c"), 0.92)
 	cloth.albedo_texture = prop_tex
+	# ponytail: same for the bench and planter; raise if the wood goes muddy.
+	var wood := _flat_material(Color("#5a4638"), 0.9)
+	wood.albedo_texture = prop_tex
 	var layout := [
 		["FBX/Poppy_Single_Red.fbx", Vector3(-10.4, 0, -2.4), 1.15, 0.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.5, 0, -1.2), 0.95, 2.1],
@@ -1471,7 +1472,7 @@ func _cc0_props(parent: Node3D) -> void:
 		if file.find("Umbrella") != -1 or file.find("Table") != -1:
 			_paint_imported(node, cloth)
 		elif file.find("Bench") != -1 or file.find("Planter") != -1:
-			_paint_imported(node, props)
+			_paint_imported(node, wood)
 		else:
 			_paint_imported(node, plants)
 		parent.add_child(node)

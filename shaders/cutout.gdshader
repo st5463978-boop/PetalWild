@@ -9,6 +9,9 @@ void fragment() {
 	float cut = texture(opacity_tex, UV).r;
 	ALPHA = cut;
 	ALPHA_SCISSOR_THRESHOLD = 0.45;
-	ALBEDO = alb;
+	float peak = max(alb.r, max(alb.g, alb.b));
+	// ponytail: cap atlas highlights under this sun; raise if the blooms go dull.
+	float cap = peak > 0.38 ? 0.38 / peak : 1.0;
+	ALBEDO = alb * cap;
 	ROUGHNESS = 0.74;
 }
