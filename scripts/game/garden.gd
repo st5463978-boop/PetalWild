@@ -499,6 +499,22 @@ func _run_smoke() -> void:
 		push_error("smoke: bees did not shelter from the rain")
 		get_tree().quit(1)
 		return
+	var bell := ecology.first("bellhelp")
+	var bell_home := bell.global_position
+	bell.global_position = camera.global_position + camera.global_transform.basis.z * 4.0
+	_update_creatures(0.016)
+	bell._process(0.016)
+	if bell.tier < 3 or bell.visible:
+		push_error("smoke: offscreen jelly stayed visible")
+		get_tree().quit(1)
+		return
+	bell.global_position = bell_home
+	_update_creatures(0.016)
+	bell._process(0.016)
+	if bell.tier >= 3 or not bell.visible:
+		push_error("smoke: onscreen jelly was hidden")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -969,10 +985,16 @@ func _update_creatures(delta: float) -> void:
 		jelly.wants_sleep = night and resident and not jelly.held
 		if jelly.wants_sleep and jelly.mood != "dizzy" and jelly.mood != "panic":
 			jelly.mood = "sleepy"
-		var distance := camera.global_position.distance_to(jelly.global_position)
-		jelly.tier = 0 if jelly.held or jelly == focus else SimLod.classify(distance, false, false)
-		if jelly.tier >= 3:
-			jelly.tier = 2
+		var tier := 0
+		if not jelly.held and jelly != focus:
+			if camera.is_position_in_frustum(jelly.global_position):
+				var distance := camera.global_position.distance_to(jelly.global_position)
+				tier = SimLod.classify(distance, false, false)
+				if tier >= 3:
+					tier = 2
+			else:
+				tier = 3
+		jelly.tier = tier
 
 func _on_jelly(kind: String, jelly: Jelly) -> void:
 	if kind == "land":

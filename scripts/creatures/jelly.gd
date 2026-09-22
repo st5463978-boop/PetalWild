@@ -318,6 +318,7 @@ func release() -> void:
 func _process(delta: float) -> void:
 	if tier >= 3:
 		visible = false
+		_coast(delta)
 		return
 	visible = true
 	if tier == 2:
