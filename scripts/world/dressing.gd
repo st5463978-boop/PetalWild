@@ -298,7 +298,10 @@ func _north_notch(x: float, wide: bool) -> bool:
 
 func _hedge_gap(at: Vector3) -> bool:
 	if at.z > 6.2:
-		return _north_notch(at.x, false)
+		if _north_notch(at.x, false):
+			return true
+		# ponytail: alternate 2.5m crest gaps so leaves cannot bridge them shut.
+		return posmod(int(floor(at.x * 0.4)), 2) == 0 and _hedge_crown(at) > 0.35
 	return _hedge_knot(at) < 0.72
 
 func _notch_lip(x: float) -> float:
@@ -835,7 +838,7 @@ func _flowers(parent: Node3D) -> void:
 			var scale := _rng.randf_range(1.4, 2.6)
 			var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3.ONE * scale)
 			points.append(Transform3D(basis, Vector3(x, y + 0.02, z)))
-			colors.append(palette.lerp(Color("#fff8ea"), _rng.randf() * 0.35))
+			colors.append(palette.lerp(palette.darkened(0.12), _rng.randf() * 0.35))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "Flowers", false)
 
 func _flower_rows(parent: Node3D) -> void:
@@ -872,7 +875,7 @@ func _flower_rows(parent: Node3D) -> void:
 				var scale := _rng.randf_range(1.7, 2.5)
 				var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, _rng.randf_range(-0.08, 0.08))).scaled(Vector3(scale, scale, scale))
 				points.append(Transform3D(basis, Vector3(x, y, z)))
-				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.18))
+				colors.append(palette.lerp(palette.darkened(0.1), _rng.randf() * 0.18))
 	_multimesh(parent, mesh, points, colors, _bloom_material(), "FlowerRows", false)
 
 func _row_bloom() -> ArrayMesh:
@@ -905,7 +908,7 @@ func _row_bloom() -> ArrayMesh:
 
 func _bloom_material() -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.roughness = 0.62
+	material.roughness = 0.92
 	material.vertex_color_use_as_albedo = true
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return material
@@ -1199,7 +1202,7 @@ func _room_beds(parent: Node3D) -> void:
 				var scale := _rng.randf_range(1.6, 2.3)
 				var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, _rng.randf_range(-0.06, 0.06))).scaled(Vector3(scale, scale, scale))
 				points.append(Transform3D(basis, Vector3(x, y, z)))
-				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.2))
+				colors.append(palette.lerp(palette.darkened(0.1), _rng.randf() * 0.2))
 	_multimesh(parent, mesh, points, colors, _bloom_material(), "RoomBeds", false)
 
 func _room_floor(parent: Node3D) -> void:

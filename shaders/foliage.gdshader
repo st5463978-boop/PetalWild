@@ -16,7 +16,7 @@ void vertex() {
 void fragment() {
 	vec3 col = COLOR.rgb;
 	float shade = clamp(dot(NORMAL, vec3(0.25, 0.9, 0.2)), 0.0, 1.0);
-	ALBEDO = col * (0.5 + 0.62 * shade);
-	ROUGHNESS = 0.78;
-	EMISSION = col * tip * 0.04;
+	ALBEDO = col * (0.48 + 0.36 * shade);
+	ROUGHNESS = 0.9;
+	EMISSION = vec3(0.0);
 }
