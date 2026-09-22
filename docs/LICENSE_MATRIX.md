@@ -4,8 +4,8 @@ PetalWild’s own code and original assets are unpublished. All rights reserved 
 
 | Class | Meaning | In the tree now |
 | --- | --- | --- |
-| GREEN | CC0, MIT, BSD, Apache, or similar | Godot engine (MIT) is a tool, not vendored. No MIT/CC0 art yet |
-| YELLOW | Attribution required | Inter 4.1, SIL OFL 1.1 |
+| GREEN | CC0, MIT, BSD, Apache, or similar | Godot engine (MIT) is a tool, not vendored. Asset Quest Stylized Garden demo is CC0 and staged, not yet the garden's materials |
+| YELLOW | Attribution required | Inter 4.1 and Nunito, both SIL OFL 1.1 |
 | REVIEW | GPL, AGPL, LGPL, share-alike, custom | Jelly Baby (GPL-3.0) and openage (GPL) were read as references. No code incorporated |
 | RED | Unclear, ripped, or another game’s assets | None imported. TiP-Recomp was not fetched |
 

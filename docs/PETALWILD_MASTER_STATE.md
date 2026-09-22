@@ -45,7 +45,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 
 ## Agents
 
-No parallel workers are running. Wave 1 was written in-process because the repository was empty. Ownership for the next wave is in `docs/AGENT_CONTRACTS.md`.
+No parallel workers are running. A second wave committed to `main` during this integration (`c140089`). Its scripts stay in `game/` behind `.gdignore`. The running scene is still `res://scenes/main.tscn`. Ownership for the next wave is in `docs/AGENT_CONTRACTS.md`.
 
 ## Branches and merges
 
@@ -53,7 +53,7 @@ No parallel workers are running. Wave 1 was written in-process because the repos
 
 ## Assets and licences
 
-Inter 4.1 (OFL) is the only third-party file. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md`.
+Inter 4.1 (OFL) is the UI font. Nunito (OFL) and the Asset Quest Stylized Garden demo (CC0) arrived with the parallel commit and are staged, not yet the garden's look. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
 
 ## Higgsfield
 
@@ -69,7 +69,7 @@ Three largest gaps, and who has them next:
 
 1. **Creatures.** The close-up is still a glossy ball. PETAL-03 and PETAL-06: authored blossom mesh, seed eyes on the surface, internal structure in the jelly shader.
 2. **Cast.** Lumen is a capsule, an apron, and spectacles. PETAL-04: leek, beet, and pea silhouettes with faces, clothes, and a stance.
-3. **Interior density.** One green plane, a few flowers, no hedge rooms, no wet planting, no air. PETAL-05 and PETAL-06, with CC0 volume only after PETAL-13’s files are art-directed.
+3. **Interior density.** CC0 poppies, cornflowers, and a sunflower now sit in the beds, on the Asset Quest atlas. The lawn between them is still one green plane, the bench and planter are flat-coloured, and there are no hedge rooms or sun shafts. PETAL-05 and PETAL-06 continue this, using more of the same CC0 pack only where the scale and palette already match.
 
 ## Next integration
 

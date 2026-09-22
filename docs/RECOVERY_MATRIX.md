@@ -32,7 +32,9 @@ Decision: reconstruct the observed playable loop and the recovered names. Do not
 
 ### MERGE
 
-Nothing. No second implementation was available to merge.
+A second reconstruction landed on `main` while this one was being written (`c140089`, species names Sunpetal / Sunburst / Quin Hearth). It is kept in `game/` with a `.gdignore`, so Godot does not compile it beside this project.
+
+Take from it: the CC0 Asset Quest demo, the Nunito OFL file, `docs/research/`, and the idea of a trust level that can hold a proposal without executing. Do not take its species names. Those replace the names visible in the Garden Grove screenshot.
 
 ### REFACTOR
 

@@ -17,6 +17,7 @@ func build(parent: Node3D) -> void:
 	_willow(parent)
 	_groundcover(parent)
 	_stones(parent)
+	_cc0_props(parent)
 
 func _terrain(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
@@ -488,6 +489,67 @@ func _standard(color: Color, rough: float) -> StandardMaterial3D:
 	material.roughness = rough
 	material.vertex_color_use_as_albedo = true
 	return material
+
+const _PACK := "res://third_party/incoming/assetquest-stylized-garden-demo/"
+
+func _cc0_props(parent: Node3D) -> void:
+	var plants := _cutout_material(
+		load(_PACK + "Textures/Plants_Atlas_1_Basecolor.png"),
+		load(_PACK + "Textures/Plants_Atlas_1_Opacity.png")
+	)
+	var layout := [
+		["FBX/Poppy_Single_Red.fbx", Vector3(-10.4, 0, -2.4), 1.15, 0.4],
+		["FBX/Poppy_Single_Red.fbx", Vector3(-9.5, 0, -1.2), 0.95, 2.1],
+		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(-10.8, 0, 2.8), 1.05, 1.2],
+		["FBX/Larkspur_1_Purple.fbx", Vector3(3.6, 0, -7.6), 1.1, 0.6],
+		["FBX/Gerbera_1_Red.fbx", Vector3(6.6, 0, 1.8), 1.0, 2.4],
+		["FBX/Giant_Sunflower_big_1.fbx", Vector3(6.8, 0, -5.6), 1.05, 0.8],
+		["FBX/Flowering_Garlic_1.fbx", Vector3(-3.6, 0, -8.4), 1.0, 1.7],
+		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(1.6, 0, -8.0), 1.15, 0.3],
+		["FBX/Grass_Simple_small.fbx", Vector3(-2.2, 0, -8.8), 1.3, 0.5],
+		["FBX/Wild_Grass_Red_small.fbx", Vector3(2.4, 0, 2.2), 1.2, 1.4],
+		["FBX/Bench_1.fbx", Vector3(-1.4, 0, 3.6), 1.0, 0.2],
+		["FBX/Planter_1_Terracotta.fbx", Vector3(-5.4, 0, 4.4), 1.0, 1.1],
+	]
+	for item in layout:
+		var file := str(item[0])
+		var at: Vector3 = item[1]
+		var packed := load(_PACK + file) as PackedScene
+		if packed == null:
+			continue
+		var node := packed.instantiate()
+		var y := GardenLayout.height_at(at.x, at.z)
+		node.position = Vector3(at.x, y, at.z)
+		node.rotation.y = float(item[3])
+		node.scale = Vector3.ONE * float(item[2])
+		if file.find("Bench") != -1:
+			_paint_imported(node, _flat_material(Color("#8a6248"), 0.84))
+		elif file.find("Planter") != -1:
+			_paint_imported(node, _flat_material(Color("#c47858"), 0.72))
+		elif file.find("Table") == -1 and file.find("Umbrella") == -1:
+			_paint_imported(node, plants)
+		parent.add_child(node)
+
+func _flat_material(color: Color, rough: float) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = rough
+	return material
+
+func _cutout_material(albedo: Texture2D, opacity: Texture2D) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/cutout.gdshader")
+	material.set_shader_parameter("albedo_tex", albedo)
+	material.set_shader_parameter("opacity_tex", opacity)
+	return material
+
+func _paint_imported(node: Node, material: Material) -> void:
+	if node is MeshInstance3D:
+		var mesh_node := node as MeshInstance3D
+		mesh_node.material_override = material
+		mesh_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_paint_imported(child, material)
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := BoxMesh.new()
