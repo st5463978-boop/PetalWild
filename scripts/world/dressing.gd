@@ -29,6 +29,7 @@ func build(parent: Node3D) -> void:
 	_room_clumps(parent)
 	_room_carpet(parent)
 	_room_beds(parent)
+	_room_floor(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -128,14 +129,15 @@ func _paths(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for strip in strips:
-		_ribbon(tool, strip[0], strip[1], 0.92)
+		_ribbon(tool, strip[0], strip[1], 0.96)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
-	node.material_override = _standard(Color("#cbb89a"), 0.9)
+	node.material_override = _standard(Color("#3c3228"), 0.98)
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.name = "Paths"
 	parent.add_child(node)
+	_path_stones(parent, strips)
 
 func _ribbon(tool: SurfaceTool, a: Vector3, b: Vector3, width: float) -> void:
 	var dir := b - a
@@ -151,8 +153,52 @@ func _ribbon(tool: SurfaceTool, a: Vector3, b: Vector3, width: float) -> void:
 	var b_left := Vector3(b.x, y, b.z) + side
 	var b_right := Vector3(b.x, y, b.z) - side
 	for point in [a_left, b_left, b_right, a_left, b_right, a_right]:
-		tool.set_color(Color("#cbb89a"))
+		tool.set_color(Color("#3c3228"))
 		tool.add_vertex(point)
+
+func _path_stones(parent: Node3D, strips: Array) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14155
+	var slab := BoxMesh.new()
+	slab.size = Vector3(0.72, 0.07, 0.48)
+	var chip := SphereMesh.new()
+	chip.radius = 0.07
+	chip.height = 0.09
+	chip.radial_segments = 6
+	chip.rings = 3
+	var slabs: Array[Transform3D] = []
+	var slab_colors: Array[Color] = []
+	var chips: Array[Transform3D] = []
+	var chip_colors: Array[Color] = []
+	var palette: Array[Color] = [Color("#efe4d0"), Color("#b7a48c"), Color("#7d6e5c"), Color("#d8cbb6"), Color("#5c5146")]
+	for strip in strips:
+		var a: Vector3 = strip[0]
+		var b: Vector3 = strip[1]
+		var span := a.distance_to(b)
+		if span < 0.2:
+			continue
+		var dir := (b - a) / span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var steps := maxi(int(span / 0.62), 1)
+		for i in steps:
+			var center := a.lerp(b, (float(i) + 0.5) / float(steps))
+			var lateral := rng.randf_range(-0.12, 0.12)
+			var at := center + side * lateral + dir * rng.randf_range(-0.04, 0.04)
+			at.y = 0.07
+			var yaw := atan2(dir.x, dir.z) + rng.randf_range(-0.22, 0.22)
+			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
+			basis = basis.scaled(Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.85, 1.2), rng.randf_range(0.75, 1.2)))
+			slabs.append(Transform3D(basis, at))
+			slab_colors.append(palette[rng.randi_range(0, palette.size() - 1)])
+			if rng.randf() > 0.35:
+				var grit := center + side * rng.randf_range(-0.34, 0.34)
+				grit.y = 0.05
+				var grit_basis := Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0))
+				grit_basis = grit_basis.scaled(Vector3(rng.randf_range(0.5, 1.2), rng.randf_range(0.35, 0.7), rng.randf_range(0.5, 1.1)))
+				chips.append(Transform3D(grit_basis, grit))
+				chip_colors.append(Color("#9a8c78").lerp(Color("#5e554c"), rng.randf()))
+	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true)
+	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false)
 
 func _hedge(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
@@ -1104,6 +1150,38 @@ func _room_beds(parent: Node3D) -> void:
 				points.append(Transform3D(basis, Vector3(x, y, z)))
 				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.2))
 	_multimesh(parent, mesh, points, colors, _bloom_material(), "RoomBeds", false)
+
+func _room_floor(parent: Node3D) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14180
+	var blades: Array[Transform3D] = []
+	var blade_colors: Array[Color] = []
+	var blade_custom: Array[Color] = []
+	var blooms: Array[Transform3D] = []
+	var bloom_colors: Array[Color] = []
+	var palette: Array[Color] = [Color("#e56b8a"), Color("#f2d36b"), Color("#f7f0d8"), Color("#c9a0e8"), Color("#ef7f72"), Color("#f4e2a8")]
+	var tries := 0
+	while blades.size() < 2600 and tries < 9000:
+		tries += 1
+		var x := rng.randf_range(-8.2, 3.5)
+		var z := rng.randf_range(-6.15, 2.85)
+		if GardenLayout.in_plots(x, z, 0.12) or GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.2:
+			continue
+		var y := GardenLayout.height_at(x, z)
+		var basis := Basis.from_euler(Vector3(0.0, rng.randf() * TAU, rng.randf_range(-0.15, 0.15)))
+		var scale := rng.randf_range(0.55, 1.15)
+		blades.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.7, 1.35), scale)), Vector3(x, y, z)))
+		blade_colors.append(Color("#2f6a2c").lerp(Color("#d7e48a"), rng.randf() * 0.7))
+		blade_custom.append(Color(rng.randf(), 0.1, 0.0, 1.0))
+		if blooms.size() < 1100 and rng.randf() > 0.55:
+			var tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+			var bscale := rng.randf_range(1.05, 1.75)
+			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
+			bloom_colors.append(tint)
+	_multimesh(parent, _blade(), blades, blade_colors, _foliage_material(), "RoomFloor", false, blade_custom)
+	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "RoomFloorBlooms", false)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()
