@@ -15,6 +15,8 @@ var hold_target := Vector3.ZERO
 var vel := Vector3.ZERO
 var goal := Vector3.ZERO
 var attract := Vector3.ZERO
+var berth := Vector3.ZERO
+var use_berth := false
 var site_time := 0.0
 var leaving := false
 var squash := 1.0
@@ -388,13 +390,15 @@ func _full(delta: float) -> void:
 		site_time += delta
 
 func _coast(delta: float) -> void:
-	var flat := goal - global_position
+	# ponytail: one home point; a room schedule if the district grows past the kit.
+	var target := berth if use_berth else goal
+	var flat := target - global_position
 	flat.y = 0.0
 	if flat.length() > 0.4:
 		global_position += flat.normalized() * delta * 0.7
 	global_position.y = 0.0
 	site_time += delta
-	if global_position.distance_to(goal) < 0.5:
+	if not use_berth and global_position.distance_to(goal) < 0.5:
 		_pick_goal()
 
 func _pick_goal() -> void:

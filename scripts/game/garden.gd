@@ -520,6 +520,24 @@ func _run_smoke() -> void:
 		push_error("smoke: stall demand mismatch")
 		get_tree().quit(1)
 		return
+	var life_was := bell.life
+	var kit := Vector3(9.0, 0.0, 5.0)
+	home_points.append(kit)
+	bell.life = "resident"
+	bell.global_position = camera.global_position + camera.global_transform.basis.z * 6.0
+	bell.global_position.y = 0.0
+	var far := bell.global_position.distance_to(kit)
+	_update_creatures(1.0)
+	bell._process(2.0)
+	var nearer := bell.global_position.distance_to(kit)
+	if not bell.use_berth or nearer > far - 0.8:
+		push_error("smoke: resident did not walk home")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	bell.life = life_was
+	bell.use_berth = false
+	bell.global_position = bell_home
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -999,6 +1017,17 @@ func _update_creatures(delta: float) -> void:
 					tier = 2
 			else:
 				tier = 3
+		jelly.use_berth = false
+		if tier >= 3 and resident and not jelly.leaving and not home_points.is_empty():
+			var berth: Vector3 = home_points[0]
+			var best := jelly.global_position.distance_squared_to(berth)
+			for point in home_points:
+				var dist := jelly.global_position.distance_squared_to(point)
+				if dist < best:
+					best = dist
+					berth = point
+			jelly.berth = berth
+			jelly.use_berth = true
 		jelly.tier = tier
 
 func _on_jelly(kind: String, jelly: Jelly) -> void:
