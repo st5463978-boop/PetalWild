@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. Hedge-colored pixels fell from 27% to 20% in the far band and from 55% to 45% in the lower band. A hole in that hill shows the green ground sky, not a pale opening. Bellhelp’s close-up is on open lawn: five narrow lobes with gaps between the tips, a dark five-petal well, a gold seed, and a small pad. The wide skirt is gone. Pure white on this overview is 0.087% (1122 pixels), down from 0.313% (4055). The south pale bed and the shed roof dropped out of the white count. The largest remaining speck is 195 pixels. Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. Hedge-colored pixels fell from 27% to 20% in the far band and from 55% to 45% in the lower band. A hole in that hill shows the green ground sky, not a pale opening. Bellhelp’s close-up is on open lawn: five narrow lobes, a dark five-petal well, a gold seed, and a lower whorl that flares past the cup. Pure white on this overview is 0.083% (1072 pixels). Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
 1. **Hedge skyline.** The tufts are thinner. Below the horizon the openings show green ground sky, hill, and the stall. PETAL-05.
-2. **Bellhelp.** Five lobes stay apart down to a small pad. The body is still one blossom. PETAL-03.
-3. **Highlights.** 0.087% of overview pixels are pure white. The largest speck is a yellow tip around screen x 270, y 690. PETAL-06.
+2. **Bellhelp.** Five lobes stay apart, and a lower whorl flares past the cup. It is two tiers. PETAL-03.
+3. **Highlights.** 0.083% of overview pixels are pure white. The largest speck is a yellow tip around screen x 270, y 690. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): the hedge openings still show the green ground sky, and Bellhelp is still one blossom. Do not cut the backdrop hill to chase pale sky; below the horizon that sky is green. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): the hedge openings still show the green ground sky. Do not cut the backdrop hill to chase pale sky; below the horizon that sky is green. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

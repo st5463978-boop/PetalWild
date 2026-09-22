@@ -106,6 +106,9 @@ func _bell(root: Node3D) -> void:
 		var angle := TAU * float(i) / 5.0 + 0.2
 		_petal(root, angle, -0.05, 0.85, 0.42)
 		_petal(root, angle, 0.25, 0.62, 0.32)
+	# ponytail: lower whorl flares past the cup; raise drop if the two rims merge.
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.2, 0.42, 1.18, 0.3, null, radius * 0.35)
 	for i in 3:
 		var angle := TAU * float(i) / 3.0 + 0.4
 		var stamen := MeshInstance3D.new()
@@ -137,7 +140,7 @@ func _bell(root: Node3D) -> void:
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.9, 2.6, 0.34, 0.42, throat_material)
 
-func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, material: Material = null) -> void:
+func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, material: Material = null, drop: float = 0.0) -> void:
 	var petal := MeshInstance3D.new()
 	petal.mesh = _petal_mesh()
 	petal.material_override = mat if material == null else material
@@ -145,7 +148,7 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, 
 	var x_axis := Vector3.UP.cross(out).normalized()
 	var y_axis := out.cross(x_axis).normalized()
 	var rim := radius * 0.78 * reach
-	petal.transform = Transform3D(Basis(x_axis, y_axis, out).scaled(Vector3(size, size, reach)), Vector3(cos(angle) * rim, radius * 0.1, sin(angle) * rim))
+	petal.transform = Transform3D(Basis(x_axis, y_axis, out).scaled(Vector3(size, size, reach)), Vector3(cos(angle) * rim, radius * 0.1 - drop, sin(angle) * rim))
 	root.add_child(petal)
 
 func _petal_mesh() -> ArrayMesh:
