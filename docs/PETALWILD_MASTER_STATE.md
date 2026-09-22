@@ -35,7 +35,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp’s core is a pad plus five lobes, with a five-point cupped petal and a dark throat. The lobes still weld into one body. It is not an authored sculpt.
 - Lumen holds a seed tray on a raised arm. Each hand is a palm with three fingers and a thumb. The body is still capsules.
-- Hedge walls are chopped shoulders with puffs, tufts, and leaf cards. The beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn, and leaf clumps sit in the rooms. A smooth hedge core can still show. Daylight shafts are thin. There is still no insect or bird life.
+- Hedge walls are chopped shoulders with puffs, tufts, leaf cards, and irregular bulge clusters. The beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn, and leaf clumps sit in the rooms. A smooth hedge core can still show. Daylight shafts are thin. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,7 +62,7 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge crown is chopped across three offset shoulders, with puffs, tufts, and leaf cards. The four beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn, and leaf clumps sit in the rooms. The stall furniture uses the CC0 prop atlas. Bellhelp’s core is a pad plus five lobes, with a five-point cup and a face on the blossom. In the close-up the lobes can still weld into one body. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` still passes.
+The hedge crown is chopped across three offset shoulders, with puffs, tufts, leaf cards, and irregular bulge clusters. The four beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn, and leaf clumps sit in the rooms. The stall furniture uses the CC0 prop atlas. Bellhelp’s core is a pad plus five lobes, with a five-point cup and a face on the blossom. In the close-up the lobes can still weld into one body. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 

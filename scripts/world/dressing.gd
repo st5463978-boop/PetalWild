@@ -14,6 +14,7 @@ func build(parent: Node3D) -> void:
 	_hedge_leaves(parent)
 	_hedge_fringe(parent)
 	_hedge_coat(parent)
+	_hedge_bulges(parent)
 	_scatter_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
@@ -518,6 +519,53 @@ func _hedge_coat(parent: Node3D) -> void:
 	ball_mesh.radial_segments = 7
 	ball_mesh.rings = 4
 	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false)
+
+func _hedge_bulges(parent: Node3D) -> void:
+	var mesh := _hedge_tuft()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14036
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.15, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.15},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.15},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.15},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.72, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.72, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.72, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.72},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var span := a.distance_to(b)
+		if span < 0.2:
+			continue
+		var dir := (b - a) / span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var count := maxi(int(span / 1.7), 1)
+		for i in count:
+			if rng.randf() > 0.62:
+				continue
+			var center := a.lerp(b, (float(i) + 0.5) / float(count))
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]) + 0.4:
+					continue
+			var sign := -1.0 if rng.randf() > 0.5 else 1.0
+			var reach := rng.randf_range(0.55, 1.05)
+			for n in 5:
+				var at := center + side * sign * reach + dir * rng.randf_range(-0.28, 0.28)
+				at.y = height * rng.randf_range(0.28, 1.35)
+				var basis := Basis.from_euler(Vector3(rng.randf_range(-0.7, 0.45), rng.randf() * TAU, rng.randf_range(-0.4, 0.4)))
+				var scale := rng.randf_range(1.4, 2.6)
+				points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.8, 1.5), scale)), at))
+				colors.append(Color("#174d28").lerp(Color("#e2ee86"), rng.randf()))
+				customs.append(Color(rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs)
 
 func _hedge_leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
