@@ -1,15 +1,13 @@
 # Visual gap
 
-Compared on 2026-09-22. Game shots are in `docs/screenshots/`. Targets are `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
+Compared on 2026-09-22 after the hedge-room pass. Running scene shots: `docs/screenshots/petalwild_overview.png`, `petalwild_creature.png`, `petalwild_person.png`. Targets: `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The playable grove has a hedge ring, Kenney trees, a west pond and bridge, flower clumps, a blue-striped stall, a white shed with a red roof, soil and grass plots, and a paper HUD. Golden-hour, night, and rain shots change the sky. Cara stands at the stall as a carrot cone. Sunburst reads as a glossy green body with a face.
+The running grove now has an outer bush ring, a cross of taller bushes that splits the terrace into four beds, flowers inside those beds, a pitched blue-and-cream stall roof, a west pond, and a carrot-shaped Cara with a wider leaf crown. Sunburst is a stacked pear with a side leaf rather than one sphere. The CC0 forest loop is the music bed when the file loads.
 
 ## Three largest gaps
 
-1. **Composition and density.** The target is a sunken garden of mature hedge rooms, flower rows, vegetable beds, and a deep tree mass. The build is a gridded terrace with a hedge perimeter and a ring of stylised trees. Ground cover is thin, and the plots still read as game tiles. Owner: PETAL_05, with PETAL_13 for CC0 path and hedge meshes.
+1. **Hedge surface.** The rooms are rows of the same Kenney bush. The concepts are thick, leafy, uneven walls that enclose a sunken garden. Owner: PETAL_05, with PETAL_13 if a CC0 hedge mesh beats another copy of `plant_bushLarge`.
 
-2. **Cast and stall.** The concept veg people are small authored figures among the plants. Cara is a cone with leaves. Sunburst does not yet have a strong non-spherical silhouette. The stall is a box with a stripe texture, not the built blue-and-white hut. Owners: PETAL_04 for veg people, PETAL_03 for jelly forms, PETAL_05 for the stall mesh.
+2. **Cast.** Cara is still a cone with a leaf crown and a flat apron. Sunburst is still built from scaled spheres. The concept people are small authored figures, and the jellies need silhouettes that read at a distance. Owners: PETAL_04 and PETAL_03.
 
-3. **Light.** The concept is warm, shadowed, and hazy, with sun on the leaves. This machine renders with llvmpipe and the GL Compatibility renderer, so shadows are off. Golden hour is a sky gradient and an orange directional light, without contact shadows or sun shafts. Owner: PETAL_06, limited to what the compatibility renderer can do. Do not turn on Forward+ features that this pin cannot run.
-
-These gaps are assigned by the executive because the local Hailo router had no device to score. See `tools/orchestration/MODEL_SELECTION.md`.
+3. **Light and ground.** Golden hour is a sky gradient. This VM is llvmpipe, so shadows stay off and there are no sun shafts. The plots are still flat tiles. Owner: PETAL_06 for the light that GL Compatibility can do, PETAL_05 for breaking the tile read without a second renderer.

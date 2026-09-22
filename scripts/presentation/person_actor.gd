@@ -144,10 +144,10 @@ func _leaves(color: Color) -> void:
 	for i in 5:
 		var leaf := MeshInstance3D.new()
 		var quad := QuadMesh.new()
-		quad.size = Vector2(0.08, 0.2)
+		quad.size = Vector2(0.16, 0.34)
 		leaf.mesh = quad
 		var a := float(i) / 5.0 * TAU
-		leaf.position = Vector3(cos(a) * 0.05, 0.58, sin(a) * 0.05)
+		leaf.position = Vector3(cos(a) * 0.08, 0.62, sin(a) * 0.08)
 		leaf.rotation = Vector3(-0.8, a, 0.2)
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = color.lightened(0.05 * float(i))

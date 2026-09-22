@@ -32,16 +32,17 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 
 ## Broken or not built
 
-- The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s blossom still reads as one glossy sphere in the close shot.
+## Broken or not built
+
+- The garden does not yet look like the concept plates. See the visual compare below.
+- Bellhelp’s blossom still reads as one glossy body in the close shot.
 - Veg People are readable primitives, not an authored cast.
-- No hedge rooms, no sun shafts, no insect or bird life.
+- No sun shafts, insects, or birds.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
-- No CC0 environment pack imported yet.
 - Large-text setting applies on the title screen, not live in the garden HUD.
-- Smoke quits during `_ready` and leaks a handful of canvas items. The check itself passes.
+- The sidelined Kenney grove (`scripts/presentation/`) now plays the CC0 forest loop. The running scene still uses procedural tones. This VM has no sound card.
 
 ## Agents
 
@@ -73,4 +74,6 @@ Three largest gaps still open:
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside the running garden scene, then recaptures the six shots. Do not open a side demo.
+## Next integration
+
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): a leafy hedge surface, Bellhelp’s face on the bell, and Lumen’s hands. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
