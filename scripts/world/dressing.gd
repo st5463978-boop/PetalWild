@@ -22,6 +22,7 @@ func build(parent: Node3D) -> void:
 	_flower_rows(parent)
 	_shrubs(parent)
 	_trees(parent)
+	_gap_fill(parent)
 	_willow(parent)
 	_groundcover(parent)
 	_lawn_tufts(parent)
@@ -1043,6 +1044,30 @@ func _trees(parent: Node3D) -> void:
 			cone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			parent.add_child(cone)
 		index += 1
+
+func _gap_fill(parent: Node3D) -> void:
+	# ponytail: one row just behind the north wall, tops under the hedge line. The hill stays.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 19021
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.55
+	cone.bottom_radius = 0.86
+	cone.height = 2.15
+	cone.radial_segments = 7
+	var x := -13.1
+	while x < 12.5:
+		var z := 8.18 + rng.randf_range(-0.06, 0.1)
+		var y := GardenLayout.height_at(x, z)
+		var node := MeshInstance3D.new()
+		node.mesh = cone
+		var leaf := Color("#16381c").lerp(Color("#2a5c24"), rng.randf())
+		node.material_override = _standard(leaf, 0.88)
+		var h := rng.randf_range(0.96, 1.0)
+		node.position = Vector3(x, y + 1.075 * h, z)
+		node.scale = Vector3(rng.randf_range(0.95, 1.12), h, rng.randf_range(0.92, 1.08))
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		parent.add_child(node)
+		x += rng.randf_range(1.02, 1.18)
 
 func _willow(parent: Node3D) -> void:
 	var root := Vector3(5.55, 0.0, -4.35)
