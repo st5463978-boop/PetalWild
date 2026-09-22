@@ -1,0 +1,10 @@
+[
+  {
+    "id": "havenbrook",
+    "name": "Havenbrook",
+    "blurb": "The town beyond the hedge. It feels the garden, then answers with crowds, work, and gossip.",
+    "base_population": 840,
+    "base_employment": 0.62,
+    "base_land_value": 0.4
+  }
+]

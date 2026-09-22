@@ -53,6 +53,10 @@ Other executives were visible on the same remote earlier in the session. They ar
 
 Probe result: `no_hailo_device`. Selected router model: none. 174 gold tasks are ready. Invalid model output escalates to Grok. See `tools/orchestration/MODEL_SELECTION.md`.
 
+## Parallel Hedge Hollow tree
+
+`origin/main` also contained a second playable scene, `scenes/garden.tscn`, with its own scripts under `scripts/game`, `scripts/world`, and `scripts/creatures`. That scene targets Forward Plus and uses different resident names. The running scene stays `scenes/main.tscn` (GL Compatibility, Cara, the salvaged species list) because this machine has no Vulkan device. The Hedge Hollow scripts and the CC0 Asset Quest demo in `third_party/incoming/` are kept for salvage. They are not the integrated loop.
+
 ## Higgsfield
 
 Spent this wave: 0

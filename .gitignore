@@ -3,13 +3,17 @@
 export/
 .DS_Store
 /tools/godot/
+tools/godot/
 *.tmp
 *.log
 /assets/third_party/**/*.zip
+third_party/incoming/**/*.zip
 /agent-tools/
+agent-tools/
 /assets/*.png
 /assets/*.png.import
 Thumbs.db
 /tools/orchestration/runtime/
 __pycache__/
 *.pyc
+android/

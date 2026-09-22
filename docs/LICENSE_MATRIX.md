@@ -9,6 +9,8 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 | Kenney Nature Kit, Foliage Pack, Mini Forest, Interface Sounds | GREEN | CC0 1.0 | `assets/third_party/kenney/` |
 | Poly Haven leafy grass, flower scattered dirt, forest leaves 02, forest leaves 03 | GREEN | CC0 | 1K JPG albedo, normal, ARM |
 | OpenGameArt Forest Ambience, Slobad | GREEN | CC0 1.0 | `assets/third_party/opengameart/Forest_Ambience.mp3` |
+| Asset Quest Stylized Garden demo | GREEN | CC0 1.0 | Incoming only, not in the running scene. `third_party/incoming/assetquest-stylized-garden-demo/` |
+| Inter font | GREEN | SIL OFL 1.1 | `assets/fonts/`. Reserved for the Hedge Hollow UI |
 | Jelly-Baby | REVIEW | GPL-3.0-only | Not imported. Behaviour reference only |
 | openage | REVIEW | GPL-3.0-or-later | Not imported. Architecture notes only |
 | redplanethq/town | REVIEW | AGPL-3.0-or-later plus Commons Clause | Not imported |

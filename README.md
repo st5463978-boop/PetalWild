@@ -40,3 +40,5 @@ The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plot
 ## State
 
 `docs/PETALWILD_MASTER_STATE.md`
+
+A second scene, `scenes/garden.tscn`, came in from a parallel build called Hedge Hollow. It is not the scene `tools/run.sh` launches.

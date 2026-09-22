@@ -1,0 +1,59 @@
+[
+  {
+    "id": "quin_hearth",
+    "name": "Quin Hearth",
+    "family": "strawberry",
+    "job": "Seed merchant",
+    "voice": "warm and brisk",
+    "home": {"x": 11.2, "z": 3.4},
+    "work": {"x": 13.2, "z": 1.6},
+    "social": {"x": 6.2, "z": -4.2},
+    "personality": "Keeps the stall honest and remembers every seed that fails.",
+    "unlock": {"type": "species_at_least", "id": "sunburst", "state": "VISITOR"},
+    "lines": {
+      "arrive": "Quin Hearth. The stall opens when a Sunburst bothers to visit.",
+      "theft": "That Blob rolled off with a cob again. I am noting it.",
+      "happy": "The beds look fed. Don't get proud.",
+      "rain": "Good for the vines. The path will slick.",
+      "rival": "Lumen thinks my Dewberry price is a scandal. It is a price."
+    }
+  },
+  {
+    "id": "lumen_barrow",
+    "name": "Lumen Barrow",
+    "family": "carrot",
+    "job": "Courier",
+    "voice": "quick, a little indignant",
+    "home": {"x": -6.5, "z": 11.0},
+    "work": {"x": 4.0, "z": 6.5},
+    "social": {"x": 12.0, "z": 1.0},
+    "personality": "Runs parcels between the beds and the stall. Hates a fuzzy price.",
+    "unlock": {"type": "sales_at_least", "count": 3},
+    "lines": {
+      "arrive": "Lumen Barrow. If it grows, I can carry it.",
+      "theft": "Told you the Blob would tax the corn.",
+      "happy": "Path's clear. I'm taking the long way anyway.",
+      "rain": "Parcel wrap is not waterproof. I'm saying that now.",
+      "rival": "Twelve petals for Dewberry. Quin calls it craft. I call it steep."
+    }
+  },
+  {
+    "id": "neeve_allium",
+    "name": "Neeve Allium",
+    "family": "leek",
+    "job": "Archivist",
+    "voice": "quiet, precise",
+    "home": {"x": -10.0, "z": 2.0},
+    "work": {"x": -2.0, "z": -2.5},
+    "social": {"x": 5.0, "z": -5.5},
+    "personality": "Writes the grove journal in the margins of everyone else's day.",
+    "unlock": {"type": "sightings_at_least", "count": 3},
+    "lines": {
+      "arrive": "Neeve Allium. I only move in once the journal has three names.",
+      "theft": "Theft is a relationship. I have written it down.",
+      "happy": "The chain is holding. Don't rush the rare one.",
+      "rain": "Night plants listen harder in rain.",
+      "rival": "They argue about price. The soil does not."
+    }
+  }
+]
