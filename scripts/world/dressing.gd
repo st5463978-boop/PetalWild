@@ -13,6 +13,7 @@ func build(parent: Node3D) -> void:
 	_hedge_clumps(parent)
 	_hedge_leaves(parent)
 	_hedge_fringe(parent)
+	_hedge_coat(parent)
 	_scatter_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
@@ -21,6 +22,7 @@ func build(parent: Node3D) -> void:
 	_willow(parent)
 	_groundcover(parent)
 	_lawn_tufts(parent)
+	_room_clumps(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -410,18 +412,81 @@ func _hedge_fringe(parent: Node3D) -> void:
 			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
 
+func _hedge_coat(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var balls: Array[Transform3D] = []
+	var ball_colors: Array[Color] = []
+	var runs: Array = [
+		[Vector3(-13.6, 0, -9.9), Vector3(26.4, 0, 0), 1.22, [Vector3(0.0, -9.9, 3.2)]],
+		[Vector3(12.8, 0, -9.9), Vector3(0, 0, 17.8), 1.22, []],
+		[Vector3(12.8, 0, 7.9), Vector3(-26.4, 0, 0), 1.22, []],
+		[Vector3(-13.6, 0, 7.9), Vector3(0, 0, -17.8), 1.22, []],
+		[Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), 0.78, [Vector3(-2.35, -6.55, 1.45)]],
+		[Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), 0.78, [Vector3(3.85, -2.5, 1.45)]],
+		[Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), 0.78, [Vector3(-4.55, 3.2, 1.4), Vector3(-2.35, 3.2, 1.2)]],
+		[Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), 0.78, []],
+	]
+	for run in runs:
+		var origin: Vector3 = run[0]
+		var along: Vector3 = run[1]
+		var scale: float = run[2]
+		var holes: Array = run[3]
+		var length := along.length()
+		var dir := along / length
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var steps := int(length / 0.42)
+		for i in steps:
+			var center := origin + dir * ((float(i) + 0.5) / float(steps) * length)
+			var blocked := false
+			for hole in holes:
+				var gate := hole as Vector3
+				if Vector2(center.x - gate.x, center.z - gate.y).length() < gate.z:
+					blocked = true
+					break
+			if blocked:
+				continue
+			for n in 2:
+				var side_sign := -1.0 if n == 0 else 1.0
+				for layer in 3:
+					var outward := side * side_sign
+					var at := center + outward * _rng.randf_range(0.28, 0.85)
+					at.y = (0.22 + float(layer) * 0.42) * scale + _rng.randf_range(-0.04, 0.1)
+					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
+					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
+					points.append(Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.9, 1.45), size)), at))
+					var lift := float(layer) / 2.0
+					colors.append(Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35))
+					customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+					if layer < 2:
+						var ball_at := center + outward * _rng.randf_range(0.15, 0.55)
+						ball_at.y = at.y * 0.92
+						var ball_scale := _rng.randf_range(0.7, 1.25)
+						balls.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(ball_scale, ball_scale * _rng.randf_range(0.75, 1.15), ball_scale)), ball_at))
+						ball_colors.append(Color("#102616").lerp(Color("#3f7a32"), _rng.randf() * 0.7))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs)
+	var ball_mesh := SphereMesh.new()
+	ball_mesh.radius = 0.28
+	ball_mesh.height = 0.4
+	ball_mesh.radial_segments = 7
+	ball_mesh.rings = 4
+	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false)
+
 func _leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_leaf_plane(tool, 0.0)
-	_leaf_plane(tool, 0.9)
+	_leaf_plane(tool, 1.05)
+	_leaf_plane(tool, 2.1)
 	tool.generate_normals()
 	return tool.commit()
 
 func _leaf_plane(tool: SurfaceTool, yaw: float) -> void:
 	var basis := Basis(Vector3.UP, yaw)
-	var width := 0.07
-	var height := 0.22
+	var width := 0.18
+	var height := 0.2
 	var a := basis * Vector3(-width, 0.0, 0.0)
 	var b := basis * Vector3(width, 0.0, 0.0)
 	var c := basis * Vector3(width * 0.28, height, 0.0)
@@ -483,6 +548,10 @@ func _flowers(parent: Node3D) -> void:
 		{"at": Vector2(5.4, -5.4), "radius": 1.4, "color": Color("#f2d36b")},
 		{"at": Vector2(-4.0, -7.8), "radius": 1.8, "color": Color("#ef7f72")},
 		{"at": Vector2(10.2, 3.4), "radius": 1.6, "color": Color("#f7f0d8")},
+		{"at": Vector2(-8.05, -2.2), "radius": 0.75, "color": Color("#f4b4c4")},
+		{"at": Vector2(-4.6, -6.15), "radius": 0.7, "color": Color("#f7e7a8")},
+		{"at": Vector2(3.15, -3.4), "radius": 0.75, "color": Color("#f0a06a")},
+		{"at": Vector2(-5.2, 2.7), "radius": 0.7, "color": Color("#efe6ff")},
 	]
 	for region in regions:
 		var center: Vector2 = region["at"]
@@ -646,11 +715,40 @@ func _lawn_tufts(parent: Node3D) -> void:
 		if y < -0.05:
 			continue
 		var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.15, 0.2), _rng.randf() * TAU, 0.0))
-		var scale := _rng.randf_range(0.55, 1.25)
-		points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.7, 1.4), scale)), Vector3(x, y, z)))
+		var scale := _rng.randf_range(1.7, 3.2)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.85, 1.5), scale)), Vector3(x, y, z)))
 		colors.append(Color("#2a6b34").lerp(Color("#d7e48a"), _rng.randf() * 0.7))
 		customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "LawnTufts", false, customs)
+
+func _room_clumps(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var patches: Array[Vector2] = [
+		Vector2(-6.4, -3.6),
+		Vector2(-6.8, 1.5),
+		Vector2(1.6, 1.2),
+		Vector2(2.1, -4.4),
+		Vector2(-1.0, 2.2),
+		Vector2(0.6, -5.6),
+	]
+	for patch in patches:
+		for i in 34:
+			var x := patch.x + _rng.randf_range(-1.05, 1.05)
+			var z := patch.y + _rng.randf_range(-0.85, 0.85)
+			if GardenLayout.in_plots(x, z, 0.15) or GardenLayout.on_path(x, z):
+				continue
+			if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
+				continue
+			var y := GardenLayout.height_at(x, z)
+			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.2, 0.35), _rng.randf() * TAU, _rng.randf_range(-0.2, 0.2)))
+			var size := _rng.randf_range(2.2, 3.8)
+			points.append(Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.7, 1.35), size)), Vector3(x, y, z)))
+			colors.append(Color("#1a4c28").lerp(Color("#8fb85a"), _rng.randf() * 0.65))
+			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "RoomClumps", false, customs)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()

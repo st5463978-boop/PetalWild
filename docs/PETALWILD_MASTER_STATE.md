@@ -35,7 +35,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp has a face on the blossom and curled petals. The body is still a lathe.
 - Veg People are readable primitives. Lumen holds a seed tray.
-- Hedge walls are three overlapping shoulders with clumps, Kenney leaf cards, and a fringe. Daylight adds a few shafts. There is still no insect or bird life.
+- Hedge walls are three shoulders under a coat of puffs and wider leaf tufts. The smooth core still shows. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-This capture is the merged garden. The hedge is three overlapping shoulders, with clumps and a Kenney leaf fringe on the crown. Bellhelp’s eyes and mouth are on the front of the blossom, and the petals cup and curl. Lumen’s right arm holds a seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
+The hedge crown is now an uneven line of puffs and wider leaf tufts, and the open lawn carries taller grass plus flower drifts inside the rooms. The wall under that crown is still a shaded geometric mass. Bellhelp’s face stays on the blossom. Lumen still holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
-1. **Hedge mass.** Shoulders, clumps, and a leaf fringe break the silhouette. The faces are still a shaded surface, not the dense clipped hedge in the concept plates. PETAL-05 and PETAL-06: cover those faces with leaves.
-2. **Bellhelp’s body.** The face sits on the blossom and the petals cup. The core is still a lathe. PETAL-03: a body that is not a turned solid.
-3. **Cast and ground.** Lumen holds a tray and is still stacked capsules. The rooms are still mostly one lawn plane. PETAL-04 for hands and a face. PETAL-06 for ground cover and light through the hedge.
+1. **Hedge body.** The top is leafy. The face underneath is still a smooth green wall, not the dense clipped hedge in the concept plates. PETAL-05 and PETAL-06: hide that core.
+2. **Bellhelp’s body.** The face sits on the blossom. The core is still a lathe and the petals are still thin. PETAL-03.
+3. **Cast and floor.** Lumen is still stacked capsules with a tray. The room floors have tufts and a few flowers, and they are not the plates’ ground cover, insects, or sun shafts. PETAL-04 for hands and a face. PETAL-06 for the floor and the light.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): leafy hedge clumps, a cupped petal, and Lumen’s hands. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): cover the hedge core, then Lumen’s hands. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
