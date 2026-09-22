@@ -467,6 +467,7 @@ func _run_capture() -> void:
 	ecology.tick(0.2, world_snapshot())
 	var jelly := ecology.first("bellhelp")
 	if jelly:
+		jelly.reduce_motion = true
 		jelly.global_position = GardenLayout.cell_center(1, 1) + Vector3(0.55, 0.15, 0.2)
 		jelly.rotation.y = PI
 		jelly.vel = Vector3.ZERO
@@ -474,6 +475,7 @@ func _run_capture() -> void:
 	await get_tree().create_timer(1.1).timeout
 	await _shot("/workspace/docs/screenshots/wave1_overview.png")
 	if jelly:
+		jelly.reduce_motion = true
 		jelly.global_position = Vector3(-10.6, 0.2, -1.4)
 		jelly.rotation.y = PI
 		jelly.vel = Vector3.ZERO

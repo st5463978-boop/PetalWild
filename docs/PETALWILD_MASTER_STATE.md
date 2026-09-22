@@ -33,7 +33,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s five sphere lobes are gone. Five narrow standing petals read as separate tips around a dark five-petal well and a gold seed. The skirt under them is still one bell.
+- Bellhelp’s five sphere lobes are gone. Five narrow petals run from the tips down to a small pad, with a dark five-petal well and a gold seed. The wide skirt is gone.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
 - Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. Hedge-colored pixels in the far band fell from 27% to 20%, and in the lower band from 55% to 45%. Openings below the horizon show the green ground sky, so cutting the hill does not turn those columns pale. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. About 0.44% of overview pixels are pure white. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. Hedge-colored pixels fell from 27% to 20% in the far band and from 55% to 45% in the lower band. A hole in that hill shows the green ground sky, not a pale opening. Bellhelp’s close-up is on open lawn: five narrow standing petals read as separate lobes around a dark five-petal well and the gold seed. The skirt under them is still one bell. Pure white on this overview is 0.440% (5697 pixels). Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. Hedge-colored pixels fell from 27% to 20% in the far band and from 55% to 45% in the lower band. A hole in that hill shows the green ground sky, not a pale opening. Bellhelp’s close-up is on open lawn: five narrow lobes with gaps between the tips, a dark five-petal well, a gold seed, and a small pad. The wide skirt is gone. Pure white on this overview is 0.442% (5731 pixels). Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
 1. **Hedge skyline.** The tufts are thinner. Below the horizon the openings show green ground sky, hill, and the stall. PETAL-05.
-2. **Bellhelp.** Five lobes show at the tips. The skirt underneath is still one bell. PETAL-03.
-3. **Highlights.** 0.440% of overview pixels are pure white, mostly in the stall band and on the foreground path. PETAL-06.
+2. **Bellhelp.** Five lobes stay apart down to a small pad. The body is still one blossom. PETAL-03.
+3. **Highlights.** 0.442% of overview pixels are pure white, mostly in the stall band and on the foreground path. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): narrow the skirt under Bellhelp so the five lobes stay separate down to the pad. Do not cut the backdrop hill to chase pale sky; below the horizon that sky is green. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): darken the stall surfaces in the white cluster around screen x 680, y 320. Do not cut the backdrop hill to chase pale sky; below the horizon that sky is green. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

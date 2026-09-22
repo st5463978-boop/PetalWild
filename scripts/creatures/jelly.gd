@@ -96,15 +96,16 @@ func _shape(root: Node3D, shape: String) -> float:
 			return 0.46
 
 func _bell(root: Node3D) -> void:
-	_blob(root, Vector3(0, radius * 0.08, 0), Vector3(0.62, 0.18, 0.58))
+	_blob(root, Vector3(0, radius * 0.05, 0), Vector3(0.26, 0.1, 0.24))
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2, 1.35, 1.05, 0.46)
 	# ponytail: the gap ring stays inside the cup so it does not glue the five lobes together.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.9, 0.48, 0.28)
-	for i in 6:
-		_petal(root, TAU * float(i) / 6.0, -0.12, 1.0, 1.0)
-		_petal(root, TAU * float(i) / 6.0 + 0.52, 0.35, 0.72, 0.62)
+	for i in 5:
+		var angle := TAU * float(i) / 5.0 + 0.2
+		_petal(root, angle, -0.05, 0.85, 0.42)
+		_petal(root, angle, 0.25, 0.62, 0.32)
 	for i in 3:
 		var angle := TAU * float(i) / 3.0 + 0.4
 		var stamen := MeshInstance3D.new()
@@ -306,6 +307,16 @@ func _process(delta: float) -> void:
 	_full(delta)
 
 func _full(delta: float) -> void:
+	if reduce_motion:
+		vel = Vector3.ZERO
+		ripple = 0.0
+		squash = 1.0
+		scale = Vector3.ONE
+		if mat:
+			mat.set_shader_parameter("ripple", 0.0)
+			mat.set_shader_parameter("wobble", 0.0)
+		_update_face()
+		return
 	ripple = move_toward(ripple, 0.0, delta * 1.8)
 	squash = move_toward(squash, 1.0, delta * 3.2)
 	if held:
