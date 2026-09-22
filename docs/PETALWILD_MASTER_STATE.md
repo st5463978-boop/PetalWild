@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-This capture is the merged garden. The hedge is three overlapping shoulders, with clumps and a Kenney leaf fringe on the crown. Bellhelp’s eyes and mouth are on the front of the blossom, and the petals cup and curl. Lumen’s right arm holds a seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
+This capture is the merged garden. The hedge is three overlapping shoulders, with clumps and a Kenney leaf fringe on the crown. Bellhelp’s eyes and mouth are on the front of the blossom. The petals curl, and the section is a five-point cup with a center rib. Lumen’s right arm holds a seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
 1. **Hedge mass.** Shoulders, clumps, and a leaf fringe break the silhouette. The faces are still a shaded surface, not the dense clipped hedge in the concept plates. PETAL-05 and PETAL-06: cover those faces with leaves.
-2. **Bellhelp’s body.** The face sits on the blossom and the petals cup. The core is still a lathe. PETAL-03: a body that is not a turned solid.
+2. **Bellhelp’s body.** The face sits on the blossom and the petal has a rib. The core is still a lathe. PETAL-03: a body that is not a turned solid.
 3. **Cast and ground.** Lumen holds a tray and is still stacked capsules. The rooms are still mostly one lawn plane. PETAL-04 for hands and a face. PETAL-06 for ground cover and light through the hedge.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): leafy hedge clumps, a cupped petal, and Lumen’s hands. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): leaves on the hedge faces, a body that is not a lathe, and hands that read as hands. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
