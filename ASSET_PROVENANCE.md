@@ -14,7 +14,7 @@ Downloaded bytes kept: 26,864,773 (25.62 MiB) before Godot import sidecars.
 | Flower Scattered Dirt 1K | Dimitrios Savva | https://polyhaven.com/a/flower_scattered_dirt | CC0 | 2026-09-22 | JPG 1K only | Soil albedo | None |
 | Forest Leaves 02 1K | Rob Tuytel | https://polyhaven.com/a/forest_leaves_02 | CC0 | 2026-09-22 | JPG 1K only | Reserved | None |
 | Forest Leaves 03 1K | Rob Tuytel, Dimitrios Savva | https://polyhaven.com/a/forest_leaves_03 | CC0 | 2026-09-22 | JPG 1K only | Reserved | None |
-| Forest Ambience | Slobad | https://opengameart.org/content/forest-ambience | CC0 1.0 | 2026-09-22 | None | Music bed in `petal_audio.gd` when the mp3 loads | None |
+| Forest Ambience | Slobad | https://opengameart.org/content/forest-ambience | CC0 1.0 | 2026-09-22 | None | Music bed in the running garden (`scripts/audio/garden_audio.gd`) and in `petal_audio.gd` when the mp3 loads | None |
 | Stylized Garden demo | Asset Quest (Melissa) | https://assetquest.itch.io/stylized-garden-asset-pack | CC0 1.0 | 2026-09-22 | Plant cards use the basecolor and opacity atlases. Bench, planter, table, and umbrella use `Props_Basecolor.png` | `third_party/incoming/assetquest-stylized-garden-demo/`, instanced by `scripts/world/dressing.gd`. Credit is optional | None. Credit kept in CREDITS.md |
 | Inter | The Inter Project Authors | https://github.com/rsms/inter | SIL OFL 1.1 | 2026-09-22 | None | `assets/fonts/`. Brought in with the Hedge Hollow scene | Keep `assets/fonts/OFL-Inter.txt` with the fonts |
 

@@ -4,6 +4,7 @@ extends Node
 var bank := {}
 var wind: AudioStreamPlayer
 var pad: AudioStreamPlayer
+var bed_file := false
 
 func _ready() -> void:
 	bank["till"] = _tone(180.0, 0.12, 0.35, 18.0, true)
@@ -21,8 +22,7 @@ func _ready() -> void:
 	add_child(wind)
 	wind.play()
 	pad = AudioStreamPlayer.new()
-	pad.stream = _pad()
-	pad.volume_db = -26.0
+	_use_bed()
 	add_child(pad)
 	pad.play()
 
@@ -39,9 +39,25 @@ func play_kind(kind: String, db := -8.0) -> void:
 
 func set_weather(weather: String) -> void:
 	if wind:
-		wind.volume_db = -16.0 if weather == "rain" else -22.0
+		wind.volume_db = -18.0 if weather == "rain" else (-30.0 if bed_file else -22.0)
 	if pad:
-		pad.volume_db = -30.0 if weather == "rain" else -26.0
+		if bed_file:
+			pad.volume_db = -26.0 if weather == "rain" else -18.0
+		else:
+			pad.volume_db = -30.0 if weather == "rain" else -26.0
+
+func _use_bed() -> void:
+	var path := "res://assets/third_party/opengameart/Forest_Ambience.mp3"
+	if ResourceLoader.exists(path):
+		var bed: Resource = load(path)
+		if bed is AudioStreamMP3:
+			(bed as AudioStreamMP3).loop = true
+			pad.stream = bed
+			pad.volume_db = -18.0
+			bed_file = true
+			return
+	pad.stream = _pad()
+	pad.volume_db = -26.0
 
 func _tone(freq: float, duration: float, volume: float, decay: float, drop: bool) -> AudioStreamWAV:
 	var rate := 22050
