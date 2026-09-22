@@ -125,27 +125,21 @@ func _bell(root: Node3D) -> void:
 	var seed_material := StandardMaterial3D.new()
 	seed_material.albedo_color = Color("#8c6e28")
 	seed_material.roughness = 0.92
+	seed_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	seed.material_override = seed_material
-	seed.position = Vector3(0.0, radius * 0.38, -radius * 0.34)
+	seed.position = Vector3(0.0, radius * 0.42, -radius * 0.02)
 	root.add_child(seed)
-	var throat := MeshInstance3D.new()
-	var throat_mesh := SphereMesh.new()
-	throat_mesh.radius = radius * 0.2
-	throat_mesh.height = radius * 0.32
-	throat_mesh.radial_segments = 10
-	throat_mesh.rings = 6
-	throat.mesh = throat_mesh
 	var throat_material := StandardMaterial3D.new()
 	throat_material.albedo_color = Color("#163f24")
 	throat_material.roughness = 0.86
-	throat.material_override = throat_material
-	throat.position = Vector3(0.0, radius * 0.3, -radius * 0.08)
-	root.add_child(throat)
+	throat_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.9, 2.6, 0.34, 0.42, throat_material)
 
-func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) -> void:
+func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, material: Material = null) -> void:
 	var petal := MeshInstance3D.new()
 	petal.mesh = _petal_mesh()
-	petal.material_override = mat
+	petal.material_override = mat if material == null else material
 	var out := Vector3(cos(angle), lift, sin(angle)).normalized()
 	var x_axis := Vector3.UP.cross(out).normalized()
 	var y_axis := out.cross(x_axis).normalized()
