@@ -63,14 +63,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The shot now looks over a trimmed hedge into four beds, a pond, a stall, and cone trees. Night lanterns read. That is as far as this wave goes.
+The shot looks over a trimmed hedge, with low hedge rooms in front of the beds, CC0 flower drifts, a pond, a stall, and cone trees. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps, and who has them next:
 
-1. **Creatures.** The close-up is still a glossy ball. PETAL-03 and PETAL-06: authored blossom mesh, seed eyes on the surface, internal structure in the jelly shader.
-2. **Cast.** Lumen is a capsule, an apron, and spectacles. PETAL-04: leek, beet, and pea silhouettes with faces, clothes, and a stance.
-3. **Interior density.** CC0 poppies, cornflowers, and a sunflower now sit in the beds, on the Asset Quest atlas. The lawn between them is still one green plane, the bench and planter are flat-coloured, and there are no hedge rooms or sun shafts. PETAL-05 and PETAL-06 continue this, using more of the same CC0 pack only where the scale and palette already match.
+1. **Bellhelp’s face and body.** The petals read, and the core is still a glossy lathe. The seed eyes sit off the surface. PETAL-03 and PETAL-06: seat the face on the bell and give the petals a curl so they stop looking like flat cards.
+2. **Lumen’s face and hands.** The leaf crown is the silhouette. The body is still capsules, and there is no seed tray. PETAL-04: a modeled face, hands, and the tray she sells from.
+3. **The lawn inside the rooms.** Hedges and drifts sit on a flat green plane. The bench and planter are still flat-coloured. PETAL-05 and PETAL-06: ground cover in the rooms, the prop atlas on the bench, and sun shafts.
 
 ## Next integration
 
-Keep this build playable. Next wave should land one of the three gaps into `scripts/game/garden.gd`’s existing scene, then recapture the six shots and name the new three gaps. Do not open a side demo.
+Keep this build playable. The next pass stays inside the running garden scene, then recaptures the six shots. Do not open a side demo.

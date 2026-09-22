@@ -26,6 +26,7 @@ var mat: ShaderMaterial
 var eye_l: Node3D
 var eye_r: Node3D
 var mouth: Node3D
+var face_z := 0.0
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -47,20 +48,20 @@ func _build(definition: Dictionary) -> void:
 	root.name = "Body"
 	add_child(root)
 	var shape := str(definition.get("shape", "droplet"))
+	face_z = radius * 1.05
 	var eye_y := _shape(root, shape)
-	_organ(root, definition, eye_y * 0.55)
+	var organ_y := eye_y * 0.5
+	if shape == "bell":
+		organ_y = radius * 0.95
+	_organ(root, definition, organ_y)
 	_face(root, definition, eye_y)
 
 func _shape(root: Node3D, shape: String) -> float:
 	match shape:
 		"bell":
-			_blob(root, Vector3(0, 0.16, 0), Vector3(1.35, 0.42, 1.35))
-			_blob(root, Vector3(0, 0.38, 0), Vector3(0.78, 0.72, 0.78))
-			_blob(root, Vector3(0, 0.68, 0), Vector3(0.28, 0.46, 0.28))
-			for i in 6:
-				var angle := TAU * float(i) / 6.0
-				_blob(root, Vector3(cos(angle) * 0.34, 0.22, sin(angle) * 0.34), Vector3(0.34, 0.22, 0.22))
-			return 0.42
+			_bell(root)
+			face_z = radius * 0.78
+			return radius * 0.62
 		"pear":
 			_blob(root, Vector3(0, 0.32, 0), Vector3(0.95, 1.2, 0.95))
 			_blob(root, Vector3(0, 0.72, 0), Vector3(0.36, 0.3, 0.36))
@@ -91,6 +92,100 @@ func _shape(root: Node3D, shape: String) -> float:
 		_:
 			_blob(root, Vector3(0, 0.32, 0), Vector3(0.82, 1.08, 0.82))
 			return 0.46
+
+func _bell(root: Node3D) -> void:
+	var body := MeshInstance3D.new()
+	body.mesh = _bell_lathe()
+	body.material_override = mat
+	root.add_child(body)
+	for i in 6:
+		_petal(root, TAU * float(i) / 6.0, -0.12, 1.0, 1.0)
+		_petal(root, TAU * float(i) / 6.0 + 0.52, 0.35, 0.72, 0.62)
+	for i in 3:
+		var angle := TAU * float(i) / 3.0 + 0.4
+		var stamen := MeshInstance3D.new()
+		var bud := SphereMesh.new()
+		bud.radius = radius * 0.07
+		bud.height = radius * 0.18
+		stamen.mesh = bud
+		stamen.material_override = mat
+		stamen.position = Vector3(cos(angle) * radius * 0.12, radius * 1.28, sin(angle) * radius * 0.12)
+		root.add_child(stamen)
+
+func _bell_lathe() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var profile: Array[Vector2] = [
+		Vector2(0.18, 0.02),
+		Vector2(0.72, 0.08),
+		Vector2(0.5, 0.28),
+		Vector2(0.32, 0.5),
+		Vector2(0.16, 0.74),
+	]
+	var segments := 16
+	var rings: Array = []
+	for row in profile:
+		var ring: Array[Vector3] = []
+		for seg in segments:
+			var angle := TAU * float(seg) / float(segments)
+			var flute := 1.0
+			if row.y < 0.16:
+				flute = 1.0 + 0.14 * cos(angle * 6.0)
+			ring.append(Vector3(cos(angle) * row.x * flute, row.y, sin(angle) * row.x * flute) * radius)
+		rings.append(ring)
+	for row in rings.size() - 1:
+		var a: Array = rings[row]
+		var b: Array = rings[row + 1]
+		for seg in segments:
+			var n := (seg + 1) % segments
+			_tri(tool, a[seg], b[seg], b[n])
+			_tri(tool, a[seg], b[n], a[n])
+	var tip: Vector3 = Vector3(0, profile[profile.size() - 1].y * radius, 0)
+	var top: Array = rings[rings.size() - 1]
+	for seg in segments:
+		_tri(tool, top[seg], tip, top[(seg + 1) % segments])
+	tool.generate_normals()
+	return tool.commit()
+
+func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) -> void:
+	var petal := MeshInstance3D.new()
+	petal.mesh = _petal_mesh()
+	petal.material_override = mat
+	var out := Vector3(cos(angle), lift, sin(angle)).normalized()
+	var x_axis := Vector3.UP.cross(out).normalized()
+	var y_axis := out.cross(x_axis).normalized()
+	var rim := radius * 0.78 * reach
+	petal.transform = Transform3D(Basis(x_axis, y_axis, out).scaled(Vector3(size, size, reach)), Vector3(cos(angle) * rim, radius * 0.1, sin(angle) * rim))
+	root.add_child(petal)
+
+func _petal_mesh() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var length := radius * 2.15
+	var steps := 4
+	var prev_l := Vector3.ZERO
+	var prev_r := Vector3.ZERO
+	for i in steps + 1:
+		var t := float(i) / float(steps)
+		var z := t * length
+		var y := sin(t * PI) * radius * 0.12
+		var w := radius * 0.82 * (1.0 - t * 0.45)
+		var left := Vector3(-w, y, z)
+		var right := Vector3(w, y, z)
+		if i > 0:
+			_tri(tool, prev_l, prev_r, right)
+			_tri(tool, prev_l, right, left)
+			_tri(tool, prev_r, prev_l, left)
+			_tri(tool, prev_r, left, right)
+		prev_l = left
+		prev_r = right
+	tool.generate_normals()
+	return tool.commit()
+
+func _tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	tool.add_vertex(a)
+	tool.add_vertex(b)
+	tool.add_vertex(c)
 
 func _blob(root: Node3D, at: Vector3, squash_scale: Vector3) -> MeshInstance3D:
 	var mesh := SphereMesh.new()
@@ -126,7 +221,7 @@ func _organ(root: Node3D, definition: Dictionary, height: float) -> void:
 
 func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
 	var eye_color := Color(str(definition.get("eye", "#fff4c8")))
-	var z := radius * 1.12
+	var z := face_z if face_z > 0.0 else radius * 1.05
 	eye_l = _eye(root, Vector3(-radius * 0.28, eye_y, z), eye_color)
 	eye_r = _eye(root, Vector3(radius * 0.28, eye_y, z), eye_color)
 	mouth = _eye(root, Vector3(0, eye_y - radius * 0.34, z * 0.92), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))

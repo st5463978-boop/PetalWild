@@ -95,13 +95,20 @@ func _build_body() -> void:
 			_leek()
 
 func _leek() -> void:
-	_capsule(body, Vector3(0, 0.48, 0), 0.16, 0.62, Color("#f3efe2"))
-	_capsule(body, Vector3(0, 0.86, 0), 0.11, 0.28, Color("#dfe8c8"))
-	_leaf_fan(Color("#3e8f45"), 0.98)
-	_arm(Vector3(-0.2, 0.62, 0), Color("#efe6c9"))
-	_arm(Vector3(0.2, 0.62, 0), Color("#efe6c9"))
+	_capsule(body, Vector3(0, 0.22, 0), 0.145, 0.34, Color("#f6f1e6"))
+	_capsule(body, Vector3(0, 0.46, 0), 0.12, 0.26, Color("#e4efd2"))
+	_capsule(body, Vector3(0, 0.66, 0), 0.095, 0.22, Color("#b6d488"))
+	_capsule(body, Vector3(0, 0.84, 0), 0.072, 0.18, Color("#5f9a42"))
+	for i in 7:
+		var droop := 0.62 if i % 2 == 0 else 0.32
+		var length := 0.7 if i % 2 == 0 else 0.46
+		_ribbon(Color("#2c6e32").lightened(0.06 * float(i % 3)), 0.8, i * (360.0 / 7.0), droop, length)
+	_arm(Vector3(-0.18, 0.5, 0), Color("#efe6c9"))
+	_arm(Vector3(0.18, 0.5, 0), Color("#efe6c9"))
 	_apron(Color("#d9815a"))
-	_spectacles()
+	_satchel()
+	_spectacles_at(0.68)
+	_mouth_at(0.62)
 	_feet(Color("#c4b49a"))
 
 func _beet() -> void:
@@ -174,24 +181,78 @@ func _apron(color: Color) -> void:
 	node.position = Vector3(0, 0.42, 0.12)
 	body.add_child(node)
 
-func _spectacles() -> void:
+func _spectacles_at(y: float) -> void:
 	for side in [-1, 1]:
-		_sphere(body, Vector3(side * 0.055, 0.9, 0.1), 0.026, Color("#f4f0e2"))
-		_sphere(body, Vector3(side * 0.058, 0.898, 0.122), 0.01, Color("#3d5c34"))
+		_sphere(body, Vector3(side * 0.05, y, 0.09), 0.022, Color("#f7f3e6"))
+		_sphere(body, Vector3(side * 0.052, y, 0.108), 0.008, Color("#35502e"))
 		var mesh := TorusMesh.new()
-		mesh.inner_radius = 0.02
-		mesh.outer_radius = 0.032
+		mesh.inner_radius = 0.016
+		mesh.outer_radius = 0.026
 		mesh.rings = 8
 		mesh.ring_segments = 12
 		var node := _paint(mesh, Color("#c4a15a"), 0.32)
-		node.position = Vector3(side * 0.055, 0.9, 0.118)
+		node.position = Vector3(side * 0.05, y, 0.1)
 		node.rotation_degrees = Vector3(90, 0, 0)
 		body.add_child(node)
 	var bridge := BoxMesh.new()
-	bridge.size = Vector3(0.04, 0.008, 0.008)
+	bridge.size = Vector3(0.036, 0.006, 0.006)
 	var bar := _paint(bridge, Color("#c4a15a"), 0.32)
-	bar.position = Vector3(0, 0.9, 0.118)
+	bar.position = Vector3(0, y, 0.1)
 	body.add_child(bar)
+
+func _mouth_at(y: float) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.028, 0.006, 0.006)
+	var node := _paint(mesh, Color("#c46a58"), 0.55)
+	node.position = Vector3(0, y, 0.105)
+	body.add_child(node)
+
+func _satchel() -> void:
+	var bag := BoxMesh.new()
+	bag.size = Vector3(0.11, 0.09, 0.05)
+	var node := _paint(bag, Color("#c4a15a"), 0.72)
+	node.position = Vector3(0.15, 0.36, 0.02)
+	body.add_child(node)
+	var strap := BoxMesh.new()
+	strap.size = Vector3(0.012, 0.22, 0.012)
+	var band := _paint(strap, Color("#8d6238"), 0.6)
+	band.position = Vector3(0.1, 0.5, 0.02)
+	band.rotation_degrees = Vector3(0, 0, 18)
+	body.add_child(band)
+
+func _ribbon(color: Color, origin_y: float, yaw_deg: float, droop: float, length: float) -> void:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var steps := 5
+	var prev_l := Vector3.ZERO
+	var prev_r := Vector3.ZERO
+	for i in steps + 1:
+		var t := float(i) / float(steps)
+		var y := t * length * 0.78
+		var z := t * t * length * droop
+		var w := lerpf(0.05, 0.012, t)
+		var left := Vector3(-w, y, z)
+		var right := Vector3(w, y, z)
+		if i > 0:
+			tool.add_vertex(prev_l)
+			tool.add_vertex(prev_r)
+			tool.add_vertex(right)
+			tool.add_vertex(prev_l)
+			tool.add_vertex(right)
+			tool.add_vertex(left)
+		prev_l = left
+		prev_r = right
+	tool.generate_normals()
+	var node := MeshInstance3D.new()
+	node.mesh = tool.commit()
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.64
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	node.material_override = material
+	node.position = Vector3(0, origin_y, 0)
+	node.rotation_degrees = Vector3(-18, yaw_deg, 0)
+	body.add_child(node)
 
 func _hat() -> void:
 	var brim := CylinderMesh.new()

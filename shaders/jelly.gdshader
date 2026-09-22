@@ -16,11 +16,12 @@ void vertex() {
 }
 
 void fragment() {
-	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.65);
-	vec3 col = mix(deep_color.rgb, lit_color.rgb, fres);
-	float bubble = smoothstep(0.86, 1.0, sin(VERTEX.x * 28.0 + TIME * 1.2) * sin(VERTEX.y * 24.0));
+	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.1);
+	float height = clamp(VERTEX.y * 2.2 + 0.15, 0.0, 1.0);
+	vec3 col = mix(deep_color.rgb, lit_color.rgb, fres * 0.55 + height * 0.35);
+	float bubble = smoothstep(0.9, 1.0, sin(VERTEX.x * 34.0 + TIME) * sin(VERTEX.y * 28.0));
 	ALBEDO = col;
-	ROUGHNESS = mix(0.32, 0.06, fres);
-	SPECULAR = 0.5;
-	EMISSION = glow_color.rgb * (fres * 0.22 + bubble * 0.18);
+	ROUGHNESS = mix(0.55, 0.22, fres);
+	SPECULAR = 0.28;
+	EMISSION = glow_color.rgb * (fres * 0.12 + bubble * 0.16 + height * 0.05);
 }
