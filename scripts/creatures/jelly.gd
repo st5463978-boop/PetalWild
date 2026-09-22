@@ -112,9 +112,9 @@ func _bell(root: Node3D) -> void:
 	# ponytail: third rim hangs between those tips; raise drop if it merges with the whorl above.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.2, 1.28, 0.28, null, radius * 0.55)
-	# ponytail: short gap petals; the mesh droops, so they read in the skirt. Shorten the mesh if the tips stay bare.
+	# ponytail: gap tips reach past the five lobes; lower reach if they fuse into one rim.
 	for i in 5:
-		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.15, 0.55, 0.34)
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.6, 1.35, 0.28, null, -radius * 0.22, 0.1)
 	for i in 3:
 		var angle := TAU * float(i) / 3.0 + 0.4
 		var stamen := MeshInstance3D.new()
@@ -146,9 +146,9 @@ func _bell(root: Node3D) -> void:
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.9, 2.6, 0.34, 0.42, throat_material)
 
-func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, material: Material = null, drop: float = 0.0) -> void:
+func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, material: Material = null, drop: float = 0.0, droop: float = 1.0) -> void:
 	var petal := MeshInstance3D.new()
-	petal.mesh = _petal_mesh()
+	petal.mesh = _petal_mesh(droop)
 	petal.material_override = mat if material == null else material
 	var out := Vector3(cos(angle), lift, sin(angle)).normalized()
 	var x_axis := Vector3.UP.cross(out).normalized()
@@ -157,7 +157,7 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float, 
 	petal.transform = Transform3D(Basis(x_axis, y_axis, out).scaled(Vector3(size, size, reach)), Vector3(cos(angle) * rim, radius * 0.1 - drop, sin(angle) * rim))
 	root.add_child(petal)
 
-func _petal_mesh() -> ArrayMesh:
+func _petal_mesh(droop: float = 1.0) -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var length := radius * 2.2
@@ -166,7 +166,7 @@ func _petal_mesh() -> ArrayMesh:
 	for i in steps + 1:
 		var t := float(i) / float(steps)
 		var z := t * length * (1.0 - 0.32 * t * t)
-		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1
+		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1 * droop
 		var w := radius * (0.14 + 0.72 * sin(t * PI))
 		var cup := sin(t * PI) * radius * 0.55
 		var rib := sin(t * PI) * radius * 0.28
