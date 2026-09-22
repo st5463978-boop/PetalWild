@@ -7,8 +7,8 @@ PetalWild keeps one persistent record per plant, creature, and resident. The pic
 | L0 | Held, inspected, or hero creature | Full deform, face, collision, high-rate audio | The grabbed jelly gets squash, stretch, and a face. One body at a time. |
 | L1 | Nearby visitors and residents | Path, needs, animation | Jellies and veg people inside the grove pathfind and play a simple loop. |
 | L2 | Rest of the garden | Schedule and economy, coarse movement | Resident needs tick in data. Bodies farther than the software cap are not spawned. |
-| L3 | Off-screen district | Home, job, relationship summary | Stored on the resident record. No off-screen mesh. |
-| L4 | Aggregate population | Demand, employment, venue use | Not simulated. The town panel says which venues are unbuilt. |
+| L3 | Off-screen district | Home, job, relationship summary | The directory shows each resident's home and job. Nessa's home line changes when a kit is placed. No off-screen mesh. |
+| L4 | Aggregate population | Demand, employment, venue use | The parish page lists every venue. Only Petal Stall is open. Demand beyond the stall is not simulated. |
 
 The software renderer caps non-resident jellies at 4 (8 otherwise). Residents are exempt so Cara stays present. That cap is a stand-in for L2, not a finished LOD system.
 

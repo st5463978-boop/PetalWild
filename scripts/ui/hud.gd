@@ -129,6 +129,9 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))
+	journal_box.add_child(ThemeKit.title("Venues", 16))
+	for line in stats.get("venues", []):
+		journal_box.add_child(ThemeKit.label(str(line), 14))
 	var tiers = stats.get("tiers", {})
 	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0)], 14))
 
@@ -470,6 +473,7 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	card.add_child(box)
 	box.add_child(ThemeKit.title(str(row.get("name", "")), 16))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("role", ""), row.get("state", "")], 13, ThemeKit.MOSS_DEEP))
+	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("home", ""), row.get("job", "")], 13))
 	box.add_child(ThemeKit.label(str(row.get("blurb", "")), 13))
 	if bool(row.get("present", false)):
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))

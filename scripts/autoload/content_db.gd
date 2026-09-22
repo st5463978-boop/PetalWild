@@ -10,6 +10,7 @@ var people: Dictionary = {}
 var people_order: Array[String] = []
 var shop: Dictionary = {}
 var district: Dictionary = {}
+var venues: Dictionary = {}
 
 func _ready() -> void:
 	_load_plants()
@@ -18,6 +19,7 @@ func _ready() -> void:
 	_load_people()
 	shop = _load_object("res://data/shop.json")
 	district = _load_object("res://data/district.json")
+	venues = _load_object("res://data/venues.json")
 
 func plant(id: String) -> Dictionary:
 	return plants.get(id, {})

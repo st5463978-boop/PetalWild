@@ -477,6 +477,18 @@ func _run_smoke() -> void:
 		push_error("smoke: large text did not grow the hud")
 		get_tree().quit(1)
 		return
+	var venue_lines: Array = _place_stats(world_snapshot()).get("venues", [])
+	var saw_open := false
+	var saw_closed := false
+	for line in venue_lines:
+		if str(line).find("open") != -1:
+			saw_open = true
+		if str(line).find("not built") != -1:
+			saw_closed = true
+	if not saw_open or not saw_closed:
+		push_error("smoke: parish venues missing")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1054,9 +1066,14 @@ func _people_rows(world: Dictionary) -> Array:
 		for req in definition.get("arrive", []):
 			if not ecology.rules.requirement_met(req, world):
 				unmet.append(req.get("label", "Condition"))
+		var home := str(definition.get("home", ""))
+		if id == "nessa" and person.present and int(structures.get("home_kit", 0)) >= 1:
+			home = "A placed home kit"
 		rows.append({
 			"name": person.display_name,
 			"role": person.role,
+			"home": home,
+			"job": definition.get("job", ""),
 			"state": "in the garden" if person.present else "not arrived",
 			"blurb": definition.get("blurb", ""),
 			"present": person.present,
@@ -1086,6 +1103,12 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
+	var venue_lines: Array[String] = []
+	for id in ContentDB.venues.keys():
+		var venue: Dictionary = ContentDB.venues[id]
+		var built := "open" if bool(venue.get("active", false)) else "not built"
+		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
+	stats["venues"] = venue_lines
 	return stats
 
 func _stock(world: Dictionary) -> Array:

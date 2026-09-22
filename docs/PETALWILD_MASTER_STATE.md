@@ -38,7 +38,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
 - Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green in the upper opening band fell from 53% to 24%, and in the lower band from 36% to 13%. The hill did not move. The stall still shows through the middle. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. The bench and planter are darkened, bright plant-atlas texels are capped, and the lantern glass is amber. The pink disk by the south-west rail, the untilled grass-plot tops, the meadowbell petals, the mauve bed, the resident hands, and the light flagstones are darkened. Overview pixels at pure white are 0. Eight bees drift over the beds. Four birds cross the garden by day and perch at dusk and in the rain.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
-- Tiers 3 and 4 of the simulation are specified, not simulated.
+- Off-screen jellies stay at district fidelity. The directory shows each resident's home and job. The parish page lists venues and marks every room but Petal Stall as not built. Demand beyond the stall is not simulated.
 - Trust cannot research, draft, or act outside the process.
 - The running garden and the sidelined Kenney grove both play the CC0 forest loop when the mp3 loads. Tool sounds stay procedural. This VM has no sound card.
 
