@@ -45,7 +45,9 @@ Asset hunt: [CC0 asset hunt](bc-92f7cabe-42c3-5c56-98d9-6433f0c29b4c) wrote `doc
 
 Licence notes: [Reference licence notes](bc-e253eec1-0242-5c0e-93d7-c6a3a1fc95dc) wrote `docs/research/REFERENCES.md`
 
-Other executives were visible on the same remote earlier in the session. They are not this tree. Do not assume their commits are merged.
+`cursor/opening-grove-parallel-a334` is a second grove branch from before this tree was on `main`. It is not the scene this build runs.
+
+Other executives were visible on the same remote earlier in the session. Do not assume a push is merged until it is on `main`.
 
 ## Hailo foreman
 
@@ -55,7 +57,7 @@ Probe result: `no_hailo_device`. Selected router model: none. 174 gold tasks are
 
 ## Parallel Hedge Hollow tree
 
-`origin/main` also contained a second playable scene, `scenes/garden.tscn`, with its own scripts under `scripts/game`, `scripts/world`, and `scripts/creatures`. That scene targets Forward Plus and uses different resident names. The running scene stays `scenes/main.tscn` (GL Compatibility, Cara, the salvaged species list) because this machine has no Vulkan device. The Hedge Hollow scripts and the CC0 Asset Quest demo in `third_party/incoming/` are kept for salvage. They are not the integrated loop.
+`scenes/garden.tscn` and `scripts/world/dressing.gd` are the other playable grove. A follow-up on that scene raised the outer hedge and boxed the beds. It was aimed at Forward Plus and uses different resident names. The running scene stays `scenes/main.tscn` (GL Compatibility, Cara, the salvaged species list) because this machine has no Vulkan device. The CC0 Asset Quest demo in `third_party/incoming/` and the Inter font stay in the tree. They are not required by the running loop.
 
 ## Higgsfield
 
@@ -65,7 +67,9 @@ Balance read 2026-09-22: 367.46 credits, plan pro
 
 ## Performance
 
-No populated FPS counter was captured beyond the llvmpipe shots. Overview capture completed in a few seconds at 1440×900. Treat that as a load time, not a frame budget. Shadows stay off on this adapter.
+No populated FPS counter was captured beyond the llvmpipe shots of `scenes/main.tscn`. Overview capture completed in a few seconds at 1440×900. Treat that as a load time, not a frame budget. Shadows stay off on this adapter.
+
+The Hedge Hollow shots in `docs/screenshots/wave1_*.png` are a separate scene. Their latest pass still reads as a smooth hedge tube, a glossy jelly, and a capsule resident. Those gaps belong to that scene. The running grove's gaps are in `docs/VISUAL_GAP.md`.
 
 ## Next integration
 

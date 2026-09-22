@@ -35,9 +35,13 @@ Not applicable yet. The new simulation and presentation are the first integrated
 
 ## ARCHIVE
 
+## ARCHIVE
+
 - `docs/reference/current_grok_grove_01.png`, the old agent transcript image
 - `docs/reference/jelly_baby_reference_01.png` and `havenbrook_reference_01.png`, as design reference only
 - `docs/research/REFERENCES.md` and `docs/research/ASSET_HUNT.md`
+- Branch `cursor/opening-grove-parallel-a334`, a second grove written before this tree was on `main`. It is not the scene Godot runs.
+- Hedge Hollow's smooth hedge tube, sphere jelly, and capsule resident. The taller hedge pass is in `scripts/world/dressing.gd` and `scenes/garden.tscn`, not in the running grove.
 
 ## Licence boundary
 
