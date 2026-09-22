@@ -98,10 +98,10 @@ func _shape(root: Node3D, shape: String) -> float:
 func _bell(root: Node3D) -> void:
 	_blob(root, Vector3(0, radius * 0.08, 0), Vector3(0.62, 0.18, 0.58))
 	for i in 5:
-		_petal(root, TAU * float(i) / 5.0 + 0.2, 1.55, 0.92, 0.82)
-	# ponytail: thin petals in the gaps, longer than the cup so the outline is not one lobe.
+		_petal(root, TAU * float(i) / 5.0 + 0.2, 1.35, 1.05, 0.46)
+	# ponytail: the gap ring stays inside the cup so it does not glue the five lobes together.
 	for i in 5:
-		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.85, 1.35, 0.36)
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.9, 0.48, 0.28)
 	for i in 6:
 		_petal(root, TAU * float(i) / 6.0, -0.12, 1.0, 1.0)
 		_petal(root, TAU * float(i) / 6.0 + 0.52, 0.35, 0.72, 0.62)

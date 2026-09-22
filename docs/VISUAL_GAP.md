@@ -2,12 +2,12 @@
 
 Compared on 2026-09-22. The scene `tools/run.sh` launches is Hedge Hollow. Shots: `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`. Targets: `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 of their old size, and the far wall keeps one 2.5 m tuft in four. In the far band (screen y 290–340, x 80–1200) hedge-colored pixels fell from 27% to 20%. In the lower band (y 340–390) they fell from 55% to 45%. Those openings still show hill and the stall. The ground sky below the horizon is green, so a hole in the hill reads as olive rather than pale sky. Bellhelp’s close-up has a pointed outer ring, and the dark center is five throat petals around the gold seed rather than a sphere. Pure white on this overview is 0.439% (5692 pixels). The stall band is still the largest cluster.
+The north backdrop trees are shorter than the hedge. Crest leaf cards are 0.4 of their old size, and the far wall keeps one 2.5 m tuft in four. In the far band (screen y 290–340, x 80–1200) hedge-colored pixels fell from 27% to 20%. In the lower band (y 340–390) they fell from 55% to 45%. Those openings still show hill and the stall. The ground sky below the horizon is green, so a hole in the hill reads as olive rather than pale sky. Bellhelp’s close-up now shows five separate pointed lobes around the dark petal well. The skirt under them still reads as one bell. Pure white on this overview is 0.440% (5697 pixels). The stall band is still the largest cluster.
 
 ## Three largest gaps
 
 1. **Hedge skyline.** The tufts are thinner. Openings below the horizon show the green ground sky, the hill, and the stall. PETAL-05.
 
-2. **Bellhelp.** The center is a dark petal well. The outer five still merge into one cup, so the body is not stacked layers. PETAL-03.
+2. **Bellhelp.** Five lobes show at the tips. The skirt underneath is still one bell, not stacked layers. PETAL-03.
 
-3. **Highlights.** 0.439% of overview pixels are pure white. The largest cluster is still the stall band (around x 680, y 320), then the foreground path. PETAL-06.
+3. **Highlights.** 0.440% of overview pixels are pure white. The largest cluster is still the stall band (around x 680, y 320), then the foreground path. PETAL-06.
