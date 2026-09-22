@@ -173,7 +173,7 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 	var slab_colors: Array[Color] = []
 	var chips: Array[Transform3D] = []
 	var chip_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#efe4d0"), Color("#b7a48c"), Color("#7d6e5c"), Color("#d8cbb6"), Color("#5c5146")]
+	var palette: Array[Color] = [Color("#d4c4a8"), Color("#b7a48c"), Color("#7d6e5c"), Color("#c4b49a"), Color("#5c5146")]
 	for strip in strips:
 		var a: Vector3 = strip[0]
 		var b: Vector3 = strip[1]
@@ -229,6 +229,10 @@ func _hedge(parent: Node3D) -> void:
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
+	var north := origin.z > 6.0 and absf(along.z) < 0.01 and along.x < 0.0
+	if north:
+		_hedge_run(tool, origin, along, openings, scale * 0.62, 0.0, 0.2)
+		return
 	_hedge_run(tool, origin, along, openings, scale, 0.0, 0.2)
 	_hedge_run(tool, origin, along, openings, scale * 0.74, -0.78, 2.1)
 	_hedge_run(tool, origin, along, openings, scale * 0.66, 0.7, 4.0)
@@ -401,11 +405,12 @@ func _hedge_leaves(parent: Node3D) -> void:
 				var scale_leaf := _rng.randf_range(0.75, 1.4)
 				basis = basis.scaled(Vector3.ONE * scale_leaf)
 				var tint := Color("#1f5528").lerp(Color("#c6d96a"), _rng.randf() * 0.55)
-				points.append(Transform3D(basis, at))
-				colors.append(tint)
-				var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
-				points.append(Transform3D(crossed, at + outward * 0.04))
-				colors.append(tint.darkened(0.08))
+				if center.z <= 6.2 or point.y >= 0.84:
+					points.append(Transform3D(basis, at))
+					colors.append(tint)
+					var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
+					points.append(Transform3D(crossed, at + outward * 0.04))
+					colors.append(tint.darkened(0.08))
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
@@ -479,9 +484,12 @@ func _hedge_clumps(parent: Node3D) -> void:
 			var at := center + side * _rng.randf_range(-0.72, 0.72)
 			at.y = height * _rng.randf_range(0.82, 1.2) * _crown_scale(center)
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
-			points.append(Transform3D(basis, at))
-			colors.append(Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf()))
-			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+			var tint := Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf())
+			var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
+			if center.z <= 6.2:
+				points.append(Transform3D(basis, at))
+				colors.append(tint)
+				customs.append(custom)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs)
 
 func _hedge_tuft() -> ArrayMesh:
@@ -552,12 +560,17 @@ func _hedge_fringe(parent: Node3D) -> void:
 			for face in 2:
 				var sign := -1.0 if face == 0 else 1.0
 				var at := center + side * sign * _rng.randf_range(0.55, 1.28)
-				at.y = height * _rng.randf_range(0.08, 1.02) * _crown_scale(center)
+				var rise := _rng.randf_range(0.08, 1.02)
+				at.y = height * rise * _crown_scale(center)
 				var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.6, 0.5), _rng.randf() * TAU, _rng.randf_range(-0.45, 0.45)))
 				var scale := _rng.randf_range(1.35, 2.35)
-				points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.9, 1.6), scale)), at))
-				colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
-				customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+				var stretch := _rng.randf_range(0.9, 1.6)
+				var tint := Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85)
+				var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
+				if center.z <= 6.2 or rise > 0.62:
+					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
+					colors.append(tint)
+					customs.append(custom)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
 
 func _hedge_coat(parent: Node3D) -> void:
@@ -607,16 +620,26 @@ func _hedge_coat(parent: Node3D) -> void:
 					at.y = (0.22 + float(layer) * 0.42) * scale * mound + _rng.randf_range(-0.04, 0.08)
 					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
 					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
-					points.append(Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.9, 1.45), size)), at))
+					var card := Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.9, 1.45), size)), at)
 					var lift := float(layer) / 2.0
-					colors.append(Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35))
-					customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+					var tint := Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35)
+					var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
+					var keep := center.z <= 6.2 or layer == 2
+					if keep:
+						points.append(card)
+						colors.append(tint)
+						customs.append(custom)
 					if layer < 2:
 						var ball_at := center + outward * _rng.randf_range(0.42, 1.15)
 						ball_at.y = at.y * 0.92
 						var ball_scale := _rng.randf_range(0.7, 1.25)
-						balls.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(ball_scale, ball_scale * _rng.randf_range(0.75, 1.15), ball_scale)), ball_at))
-						ball_colors.append(Color("#102616").lerp(Color("#3f7a32"), _rng.randf() * 0.7))
+						if keep:
+							balls.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(ball_scale, ball_scale * _rng.randf_range(0.75, 1.15), ball_scale)), ball_at))
+							ball_colors.append(Color("#102616").lerp(Color("#3f7a32"), _rng.randf() * 0.7))
+						else:
+							_rng.randf()
+							_rng.randf_range(0.75, 1.15)
+							_rng.randf()
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs)
 	var ball_mesh := SphereMesh.new()
 	ball_mesh.radius = 0.28
@@ -668,9 +691,13 @@ func _hedge_bulges(parent: Node3D) -> void:
 				at.y = height * rng.randf_range(0.18, 1.15) * _crown_scale(center)
 				var basis := Basis.from_euler(Vector3(rng.randf_range(-0.7, 0.45), rng.randf() * TAU, rng.randf_range(-0.4, 0.4)))
 				var scale := rng.randf_range(1.8, 3.4)
-				points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.75, 1.45), scale)), at))
-				colors.append(Color("#174d28").lerp(Color("#e2ee86"), rng.randf()))
-				customs.append(Color(rng.randf(), 0.0, 0.0, 1.0))
+				var card := Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.75, 1.45), scale)), at)
+				var tint := Color("#174d28").lerp(Color("#e2ee86"), rng.randf())
+				var custom := Color(rng.randf(), 0.0, 0.0, 1.0)
+				if center.z <= 6.2:
+					points.append(card)
+					colors.append(tint)
+					customs.append(custom)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs)
 
 func _hedge_volume(parent: Node3D) -> void:
@@ -722,8 +749,11 @@ func _hedge_volume(parent: Node3D) -> void:
 					var basis := Basis(x_axis, y_axis, normal)
 					basis = basis.rotated(normal, rng.randf_range(-0.8, 0.8))
 					var size := rng.randf_range(0.8, 1.45)
-					points.append(Transform3D(basis.scaled(Vector3(size, size * rng.randf_range(0.8, 1.3), 1.0)), at))
-					colors.append(Color("#1d5228").lerp(Color("#c5dc62"), knot * 0.45 + rng.randf() * 0.35))
+					var card := Transform3D(basis.scaled(Vector3(size, size * rng.randf_range(0.8, 1.3), 1.0)), at)
+					var tint := Color("#1d5228").lerp(Color("#c5dc62"), knot * 0.45 + rng.randf() * 0.35)
+					if center.z <= 6.2 or layer == 2:
+						points.append(card)
+						colors.append(tint)
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
