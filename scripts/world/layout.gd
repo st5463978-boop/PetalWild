@@ -92,7 +92,8 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 	if pond < POND_RADIUS + 1.15:
 		return Color("#6e8b49")
 	if on_path(x, z):
-		return Color("#c6b59a")
+		# ponytail: pale path dirt clips to white under this sun; raise if the path goes muddy.
+		return Color("#6a5e4c")
 	if in_plots(x, z, 0.0):
 		var furrow := sin(x * 7.5) * 0.5 + 0.5
 		return Color("#8d5a3a").lerp(Color("#c4895c"), furrow)
