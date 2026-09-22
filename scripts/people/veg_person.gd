@@ -63,7 +63,8 @@ func _process(delta: float) -> void:
 		speech_time -= delta
 		if speech_time <= 0.0 and speech:
 			speech.visible = false
-	if waypoints.size() < 2:
+	# ponytail: one point is a home; two or more is a loop.
+	if waypoints.is_empty():
 		return
 	if pause > 0.0:
 		pause -= delta
