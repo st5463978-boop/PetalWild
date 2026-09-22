@@ -1391,6 +1391,9 @@ func _cc0_props(parent: Node3D) -> void:
 	var prop_tex: Texture2D = load(_PACK + "Textures/Props_Basecolor.png")
 	var props := _flat_material(Color.WHITE, 0.66)
 	props.albedo_texture = prop_tex
+	# ponytail: dark multiply so the white atlas canopy stops clipping; raise if the cloth goes muddy.
+	var cloth := _flat_material(Color("#4e453c"), 0.92)
+	cloth.albedo_texture = prop_tex
 	var layout := [
 		["FBX/Poppy_Single_Red.fbx", Vector3(-10.4, 0, -2.4), 1.15, 0.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.5, 0, -1.2), 0.95, 2.1],
@@ -1438,7 +1441,9 @@ func _cc0_props(parent: Node3D) -> void:
 		node.position = Vector3(at.x, y, at.z)
 		node.rotation.y = float(item[3])
 		node.scale = Vector3.ONE * float(item[2])
-		if file.find("Bench") != -1 or file.find("Planter") != -1 or file.find("Table") != -1 or file.find("Umbrella") != -1:
+		if file.find("Umbrella") != -1 or file.find("Table") != -1:
+			_paint_imported(node, cloth)
+		elif file.find("Bench") != -1 or file.find("Planter") != -1:
 			_paint_imported(node, props)
 		else:
 			_paint_imported(node, plants)
@@ -1448,6 +1453,7 @@ func _flat_material(color: Color, rough: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = rough
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return material
 
 func _cutout_material(albedo: Texture2D, opacity: Texture2D) -> ShaderMaterial:

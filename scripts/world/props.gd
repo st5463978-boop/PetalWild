@@ -17,11 +17,11 @@ func _stall(parent: Node3D) -> void:
 	root.position = GardenLayout.STALL
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.42, 0), Vector3(2.3, 0.78, 0.85), Color("#8d6244"))
-	_box(root, Vector3(0, 0.84, 0), Vector3(2.4, 0.08, 0.95), Color("#c9a078"))
+	_box(root, Vector3(0, 0.84, 0), Vector3(2.4, 0.08, 0.95), Color("#4e3828"))
 	for side in [-1.0, 1.0]:
 		_cylinder(root, Vector3(side * 1.05, 1.15, 0.35), 0.05, 0.05, 1.5, Color("#6b4a32"))
 	for i in 7:
-		var stripe := Color("#c4b49a") if i % 2 == 0 else Color("#3d6f9a")
+		var stripe := Color("#4a3f34") if i % 2 == 0 else Color("#3d6f9a")
 		_box(root, Vector3(-1.05 + float(i) * 0.35, 1.72, 0.15), Vector3(0.34, 0.06, 1.15), stripe)
 	_crate(root, Vector3(-1.35, 0.16, 0.7))
 	_crate(root, Vector3(1.25, 0.16, 0.62))
@@ -32,7 +32,8 @@ func _stall(parent: Node3D) -> void:
 	sign.font_size = 56
 	sign.pixel_size = 0.004
 	sign.position = Vector3(0, 1.35, 0.5)
-	sign.modulate = Color("#e7d7c0")
+	sign.shaded = false
+	sign.modulate = Color("#8d6a45")
 	sign.outline_modulate = Color("2a2118")
 	sign.outline_size = 12
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
@@ -41,7 +42,7 @@ func _stall(parent: Node3D) -> void:
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.5, 0.4)
 	light.light_color = Color("ffd2a4")
-	light.light_energy = 0.45
+	light.light_energy = 0.16
 	light.omni_range = 4.5
 	light.shadow_enabled = false
 	root.add_child(light)
