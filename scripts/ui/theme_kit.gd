@@ -77,10 +77,20 @@ static func label(text: String, px: int, color: Color = INK) -> Label:
 	boot()
 	var node := Label.new()
 	node.text = text
+	node.set_meta("base_px", px)
 	node.add_theme_font_override("font", font_regular)
 	node.add_theme_font_size_override("font_size", size(px))
 	node.add_theme_color_override("font_color", color)
 	return node
+
+static func restyle(node: Node) -> void:
+	if node is Control and (node as Control).theme != null:
+		(node as Control).theme = make_theme()
+	if node is Label and node.has_meta("base_px"):
+		var px := int(node.get_meta("base_px"))
+		(node as Label).add_theme_font_size_override("font_size", size(px))
+	for child in node.get_children():
+		restyle(child)
 
 static func title(text: String, px: int) -> Label:
 	var node := label(text, px, INK)

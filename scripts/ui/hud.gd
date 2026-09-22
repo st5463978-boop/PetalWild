@@ -63,6 +63,9 @@ func _process(delta: float) -> void:
 		if _toast_time <= 0.0:
 			toast_label.text = ""
 
+func apply_text_scale() -> void:
+	ThemeKit.restyle(self)
+
 func set_status(clock_text: String, weather: String, coins: int, hover: String, seed_name: String) -> void:
 	if clock_label:
 		clock_label.text = clock_text
@@ -124,6 +127,8 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Employed at the stall  %s" % str(stats.get("employed", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Garden care  %d%%" % int(float(stats.get("garden_quality", 0.0)) * 100.0), 16))
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))
 	var tiers = stats.get("tiers", {})
 	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0)], 14))
 

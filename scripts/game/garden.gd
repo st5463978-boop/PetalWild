@@ -294,7 +294,10 @@ func set_master(value: float) -> void:
 func set_large_text(on: bool) -> void:
 	Settings.large_text = on
 	Settings.save_settings()
-	toast("Large text is saved. Leave to the title and return to apply it.")
+	hud.apply_text_scale()
+	if hud.journal.visible or hud.shop.visible:
+		refresh_panels()
+	toast("Large text is on." if on else "Large text is off.")
 
 func set_reduce_motion(on: bool) -> void:
 	Settings.reduce_motion = on
@@ -464,6 +467,14 @@ func _run_smoke() -> void:
 	var loaded := SaveGame.read_slot(1)
 	if loaded.is_empty() or int(loaded.get("economy", {}).get("coins", -1)) != Economy.coins:
 		push_error("smoke: reload mismatch")
+		get_tree().quit(1)
+		return
+	var small := hud.clock_label.get_theme_font_size("font_size")
+	set_large_text(true)
+	var big := hud.clock_label.get_theme_font_size("font_size")
+	set_large_text(false)
+	if big <= small:
+		push_error("smoke: large text did not grow the hud")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -1072,6 +1083,9 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	var stats := SimLod.district_stats.duplicate()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	stats["phase"] = ContentDB.district.get("phase", "A")
+	stats["bees"] = bees.bodies.size() if bees else 0
+	stats["birds"] = birds.bodies.size() if birds else 0
+	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
 	return stats
 
 func _stock(world: Dictionary) -> Array:

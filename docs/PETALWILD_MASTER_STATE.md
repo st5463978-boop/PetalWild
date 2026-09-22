@@ -27,7 +27,8 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Lumen Peel, Bram Cobble, and Nessa Pod (Nessa waits for a resident Bellhelp and a home kit).
 - Petal coins. Fertiliser purchase spends coins. Peach-tray proposal spends 8 only after approval, once a day.
 - Save and reload round-trip coins and garden state.
-- Slobad's CC0 forest loop is the garden bed. Tool sounds stay procedural. Eight bees drift over the beds. Four birds cross the garden by day and perch at dusk and in the rain.
+- Slobad's CC0 forest loop is the garden bed. Tool sounds stay procedural. Eight bees drift over the beds. Four birds cross the garden by day and perch at dusk and in the rain. The parish page counts both.
+- Large text resizes the garden HUD without leaving the scene.
 - Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 
 ## Broken or not built
@@ -39,7 +40,6 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
-- Large-text setting applies on the title screen, not live in the garden HUD.
 - The running garden and the sidelined Kenney grove both play the CC0 forest loop when the mp3 loads. Tool sounds stay procedural. This VM has no sound card.
 
 ## Agents
