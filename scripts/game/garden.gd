@@ -15,6 +15,7 @@ var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
 var shift := ""
+var bram_bed := Vector2i(-1, -1)
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -559,6 +560,37 @@ func _run_smoke() -> void:
 		push_error("smoke: bram did not walk home")
 		get_tree().quit(1)
 		return
+	var dry := soil.get_cell(2, 2)
+	dry.tilled = true
+	dry.moisture = 0.08
+	var wet := soil.get_cell(3, 2)
+	wet.tilled = true
+	wet.moisture = 0.9
+	_ask_bram()
+	if not bram.has_chore or bram.chore.distance_to(GardenLayout.cell_center(2, 2)) > 0.2:
+		push_error("smoke: bram ignored the dry bed")
+		get_tree().quit(1)
+		return
+	var damp := dry.moisture
+	bram.global_position = bram.chore
+	_drift_people(0.1, world_snapshot())
+	if dry.moisture < damp + 0.2:
+		push_error("smoke: bram did not water the bed")
+		get_tree().quit(1)
+		return
+	var place := _place_stats(world_snapshot())
+	if int(place.get("shed_demand", -1)) != 1:
+		push_error("smoke: shed demand mismatch")
+		get_tree().quit(1)
+		return
+	var saw_shed := false
+	for line in place.get("venues", []):
+		if str(line).find("Potting Shed") != -1 and str(line).find("open") != -1:
+			saw_shed = true
+	if not saw_shed:
+		push_error("smoke: potting shed was not open")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -717,6 +749,9 @@ func _primary_down() -> void:
 			return
 		var person := _pick_person()
 		if person:
+			if person.person_id == "bram":
+				_ask_bram()
+				return
 			person.relation = minf(1.0, person.relation + 0.04)
 			person.belonging = minf(1.0, person.belonging + 0.03)
 			person.say(_greet(person.person_id))
@@ -1136,9 +1171,35 @@ func _check_nessa(world: Dictionary) -> void:
 		nessa.say("A Bellhelp lives here. I brought a notebook and nothing else.")
 		toast("Nessa Pod walked in from the lane.")
 
+func _ask_bram() -> void:
+	var bram := _person("bram")
+	bram.relation = minf(1.0, bram.relation + 0.04)
+	bram.belonging = minf(1.0, bram.belonging + 0.03)
+	var driest: SoilCell = null
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if not plot.tilled:
+			continue
+		if driest == null or plot.moisture < driest.moisture:
+			driest = plot
+	if driest == null:
+		bram.has_chore = false
+		bram.say("The frames are empty. Till one and I will walk it.")
+		return
+	bram.chore = GardenLayout.cell_center(driest.ix, driest.iz)
+	bram.has_chore = true
+	bram_bed = Vector2i(driest.ix, driest.iz)
+	bram.say("That bed is thirsty. I will walk it.")
+
 func _drift_people(delta: float, world: Dictionary) -> void:
 	var lumen := _person("lumen")
 	var bram := _person("bram")
+	if bram.has_chore and bram_bed.x >= 0 and bram.global_position.distance_to(bram.chore) < 0.35:
+		var plot := soil.get_cell(bram_bed.x, bram_bed.y)
+		plot.moisture = minf(1.0, plot.moisture + 0.22)
+		bram.has_chore = false
+		bram.say("That one will hold till the next rain.")
+		_refresh_soil_colors()
 	lumen.purpose = move_toward(lumen.purpose, 0.82, delta * 0.02)
 	lumen.energy = move_toward(lumen.energy, 0.7, delta * 0.01)
 	bram.purpose = move_toward(bram.purpose, clampf(float(world.get("garden_quality", 0.3)) + 0.2, 0.2, 0.9), delta * 0.03)
@@ -1210,11 +1271,13 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
 	stats["stall_demand"] = _present_people() + ecology.resident_total()
+	stats["shed_demand"] = 1 if _person("bram").present else 0
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
 		var built := "open" if bool(venue.get("active", false)) else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
+	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
 	return stats
 

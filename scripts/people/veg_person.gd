@@ -14,6 +14,8 @@ var belonging := 0.45
 var purpose := 0.55
 var relation := 0.1
 var waypoints: Array[Vector3] = []
+var chore := Vector3.ZERO
+var has_chore := false
 var index := 0
 var pause := 0.0
 var phase := 0.0
@@ -63,16 +65,18 @@ func _process(delta: float) -> void:
 		speech_time -= delta
 		if speech_time <= 0.0 and speech:
 			speech.visible = false
-	# ponytail: one point is a home; two or more is a loop.
-	if waypoints.is_empty():
+	# ponytail: one point is a home; two or more is a loop. A chore is one bed, then the route resumes.
+	if not has_chore and waypoints.is_empty():
 		return
-	if pause > 0.0:
+	if pause > 0.0 and not has_chore:
 		pause -= delta
 		return
-	var target := waypoints[index]
+	var target := chore if has_chore else waypoints[index]
 	var flat := Vector3(target.x, global_position.y, target.z) - global_position
 	flat.y = 0.0
 	if flat.length() < 0.18:
+		if has_chore:
+			return
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)
 		return
