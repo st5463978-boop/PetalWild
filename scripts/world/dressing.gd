@@ -278,7 +278,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		# ponytail: 0.45 stem on canopy walls; raise if the crest reads as sticks.
 		if _crest_wall(origin.z) and absf(along.z) < 0.01:
 			width *= 0.45
-		if _hedge_gap(spine):
+		if _hedge_gap(spine) or _far_open(spine):
 			open = true
 		for point in profile:
 			var height := point.y
@@ -313,6 +313,10 @@ func _hedge_gap(at: Vector3) -> bool:
 	if _crest_wall(at.z):
 		return posmod(int(floor(at.x * 0.4)), 2) == 0
 	return _hedge_knot(at) < 0.72
+
+# Cells that were solid under the 50/50 rhythm. Opening them here keeps the shared rng count.
+func _far_open(at: Vector3) -> bool:
+	return at.z > 6.2 and posmod(int(floor(at.x * 0.4)), 4) == 3
 
 func _notch_lip(x: float) -> float:
 	var lip := 1.0
@@ -411,7 +415,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 				var scale_leaf := _rng.randf_range(0.75, 1.4)
 				basis = basis.scaled(Vector3.ONE * scale_leaf)
 				var tint := Color("#1f5528").lerp(Color("#c6d96a"), _rng.randf() * 0.55)
-				if not _crest_wall(center.z) or point.y >= 0.84:
+				if (not _crest_wall(center.z) or point.y >= 0.84) and not _far_open(center):
 					points.append(Transform3D(basis, at))
 					colors.append(tint)
 					var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
@@ -571,9 +575,12 @@ func _hedge_fringe(parent: Node3D) -> void:
 				var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.6, 0.5), _rng.randf() * TAU, _rng.randf_range(-0.45, 0.45)))
 				var scale := _rng.randf_range(1.35, 2.35)
 				var stretch := _rng.randf_range(0.9, 1.6)
+				# ponytail: 0.4 so a 2.5m crest gap stays open; raise if the crest goes bald.
+				if _crest_wall(center.z):
+					scale *= 0.4
 				var tint := Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85)
 				var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-				if not _crest_wall(center.z) or rise > 0.62:
+				if (not _crest_wall(center.z) or rise > 0.62) and not _far_open(center):
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
 					colors.append(tint)
 					customs.append(custom)
@@ -626,11 +633,13 @@ func _hedge_coat(parent: Node3D) -> void:
 					at.y = (0.22 + float(layer) * 0.42) * scale * mound + _rng.randf_range(-0.04, 0.08)
 					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
 					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
+					if _crest_wall(center.z):
+						size *= 0.4
 					var card := Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.9, 1.45), size)), at)
 					var lift := float(layer) / 2.0
 					var tint := Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35)
 					var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-					var keep := not _crest_wall(center.z) or layer == 2
+					var keep := (not _crest_wall(center.z) or layer == 2) and not _far_open(center)
 					if keep:
 						points.append(card)
 						colors.append(tint)
@@ -757,7 +766,7 @@ func _hedge_volume(parent: Node3D) -> void:
 					var size := rng.randf_range(0.8, 1.45)
 					var card := Transform3D(basis.scaled(Vector3(size, size * rng.randf_range(0.8, 1.3), 1.0)), at)
 					var tint := Color("#1d5228").lerp(Color("#c5dc62"), knot * 0.45 + rng.randf() * 0.35)
-					if not _crest_wall(center.z) or layer == 2:
+					if (not _crest_wall(center.z) or layer == 2) and not _far_open(center):
 						points.append(card)
 						colors.append(tint)
 	var material := ShaderMaterial.new()
