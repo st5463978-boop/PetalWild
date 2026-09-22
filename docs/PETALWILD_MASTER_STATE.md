@@ -34,8 +34,8 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp has a face on the blossom, a five-point cupped petal, a dark throat, and a pinched lathe body. It is not an authored sculpt.
-- Lumen holds a seed tray on a raised arm. The hand is a palm with three finger dots. The body is still capsules.
-- Hedge walls are three shoulders, Kenney leaf cards, crown tufts, and a face fringe. The mass is leafier than the bare tube. It is still not the dense clipped hedge in the concept plates. Daylight shafts are thin. There is still no insect or bird life.
+- Lumen holds a seed tray on a raised arm. Each hand is a palm with three fingers and a thumb. The body is still capsules.
+- Hedge walls are three shoulders with an uneven crown, Kenney leaf cards, tufts, and a face fringe. Flower rows sit on the south approach, the west edge, and the north lawn. The beds read as soil. The hedge is still not the dense clipped mass in the concept plates. Daylight shafts are thin. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-Kenney leaf cards cover the hedge shell down to the base. Crown tufts sit above that shell, and a procedural fringe covers both faces. Room floors have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom. The petal is a five-point cup with a center rib, and it still curls back. Lumen’s raised arm holds a seed tray. Each hand is a palm with three fingers and a thumb. A few warm additive shafts show in daylight. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass.
+The hedge crown rises and falls, and Kenney leaf cards follow that line. The four beds are brown soil with furrows. Pink, gold, and coral bloom rows stand on the south approach, the west edge, and the north lawn. Room floors still have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom. The petal is a five-point cup. Lumen’s raised arm holds a seed tray, and each hand is a palm with three fingers and a thumb. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 
-1. **Hedge depth.** The wall is leafy now, and it is still a box with cards on it. The concept hedges are thick, irregular, and clipped. PETAL-05 and PETAL-06: more depth and a broken silhouette, not another flat layer.
+1. **Hedge depth.** The crown is uneven and leafy. The wall under the cards is still a shaded volume. PETAL-05 and PETAL-06: depth, not another card layer.
 2. **Bellhelp’s body.** The face and the cupped petal read. The core is still a lathe. PETAL-03: a body that is not a turned solid.
-3. **Ground and cast.** The rooms are still mostly one lawn plane. Lumen’s stalk is still stacked capsules. Shafts are thin beams. PETAL-04 and PETAL-06.
+3. **Open lawn and cast.** The new rows sit on the edges. The middle of each room is still a lawn plane. Lumen’s stalk is still stacked capsules. Shafts are thin beams. PETAL-04 and PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): thicken the hedge so the box disappears, break the lathed bell, and put more ground cover in the rooms. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hide the hedge volume, break the lathed bell, and fill the open lawn between the new rows. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

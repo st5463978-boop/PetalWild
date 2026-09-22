@@ -16,6 +16,7 @@ func build(parent: Node3D) -> void:
 	_scatter_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
+	_flower_rows(parent)
 	_shrubs(parent)
 	_trees(parent)
 	_willow(parent)
@@ -206,7 +207,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.7 + center.z * 1.2) * 0.18 * scale
+		var lift := sin(center.x * 0.85 + center.z * 0.7) * 0.42 * scale
 		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9) * 0.22
 		var width := (0.62 + scale * 0.22) * bulge
 		for point in profile:
@@ -277,7 +278,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 					break
 			if blocked:
 				continue
-			var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
+			var lift := sin(center.x * 0.85 + center.z * 0.7) * 0.42 * scale
 			for point in shell:
 				var flank := point.x
 				if absf(flank) < 0.04:
@@ -550,6 +551,78 @@ func _flowers(parent: Node3D) -> void:
 			points.append(Transform3D(basis, Vector3(x, y + 0.02, z)))
 			colors.append(palette.lerp(Color("#fff8ea"), _rng.randf() * 0.35))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "Flowers", false)
+
+func _flower_rows(parent: Node3D) -> void:
+	var mesh := _row_bloom()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var bands: Array[Dictionary] = [
+		{"rect": Rect2(-11.6, -7.7, 23.2, 0.85), "color": Color("#e56b8a")},
+		{"rect": Rect2(-11.6, -6.95, 23.2, 0.42), "color": Color("#f2d36b")},
+		{"rect": Rect2(-12.5, -6.2, 1.15, 10.6), "color": Color("#f08aa4")},
+		{"rect": Rect2(4.15, -7.4, 0.7, 4.6), "color": Color("#e39a52")},
+		{"rect": Rect2(4.15, -1.6, 0.7, 4.2), "color": Color("#c9a0e8")},
+		{"rect": Rect2(-12.2, 5.9, 5.6, 1.15), "color": Color("#f7f0d8")},
+		{"rect": Rect2(-2.6, 5.9, 13.6, 1.15), "color": Color("#ef7f72")},
+	]
+	for band in bands:
+		var rect: Rect2 = band["rect"]
+		var palette: Color = band["color"]
+		var cols := maxi(int(rect.size.x / 0.42), 1)
+		var rows := maxi(int(rect.size.y / 0.42), 1)
+		for iz in rows:
+			for ix in cols:
+				var x := rect.position.x + (float(ix) + 0.5) * rect.size.x / float(cols)
+				var z := rect.position.y + (float(iz) + 0.5) * rect.size.y / float(rows)
+				x += _rng.randf_range(-0.06, 0.06)
+				z += _rng.randf_range(-0.06, 0.06)
+				if GardenLayout.in_plots(x, z, 0.2):
+					continue
+				if GardenLayout.on_path(x, z):
+					continue
+				if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.4:
+					continue
+				var y := GardenLayout.height_at(x, z)
+				var scale := _rng.randf_range(1.7, 2.5)
+				var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, _rng.randf_range(-0.08, 0.08))).scaled(Vector3(scale, scale, scale))
+				points.append(Transform3D(basis, Vector3(x, y, z)))
+				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.18))
+	_multimesh(parent, mesh, points, colors, _bloom_material(), "FlowerRows", false)
+
+func _row_bloom() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stem_h := 0.62
+	var stem_w := 0.025
+	var stem := [
+		Vector3(-stem_w, 0.0, 0.0),
+		Vector3(stem_w, 0.0, 0.0),
+		Vector3(stem_w, stem_h, 0.0),
+		Vector3(-stem_w, 0.0, 0.0),
+		Vector3(stem_w, stem_h, 0.0),
+		Vector3(-stem_w, stem_h, 0.0),
+	]
+	for point in stem:
+		tool.set_color(Color("#d7e7b0"))
+		tool.add_vertex(point)
+	for i in 5:
+		var angle := TAU * float(i) / 5.0
+		var tip := Vector3(cos(angle) * 0.2, stem_h + 0.05, sin(angle) * 0.2)
+		var left := Vector3(cos(angle - 0.45) * 0.08, stem_h, sin(angle - 0.45) * 0.08)
+		var right := Vector3(cos(angle + 0.45) * 0.08, stem_h, sin(angle + 0.45) * 0.08)
+		var heart := Vector3(0.0, stem_h + 0.02, 0.0)
+		for point in [heart, left, tip, heart, tip, right]:
+			tool.set_color(Color.WHITE)
+			tool.add_vertex(point)
+	tool.generate_normals()
+	return tool.commit()
+
+func _bloom_material() -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.roughness = 0.62
+	material.vertex_color_use_as_albedo = true
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return material
 
 func _shrubs(parent: Node3D) -> void:
 	var spots: Array[Vector2] = [
