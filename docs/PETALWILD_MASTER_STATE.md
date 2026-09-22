@@ -33,7 +33,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp has a face on the blossom, a ribbed cupped petal, a dark throat, and a pinched lathe body. It is not an authored sculpt.
+- Bellhelp has a face on the blossom, a five-point cupped petal, a dark throat, and a pinched lathe body. It is not an authored sculpt.
 - Lumen holds a seed tray on a raised arm. The hand is a palm with three finger dots. The body is still capsules.
 - Hedge walls are three shoulders, Kenney leaf cards, crown tufts, and a face fringe. The mass is leafier than the bare tube. It is still not the dense clipped hedge in the concept plates. Daylight shafts are thin. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
@@ -62,12 +62,12 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-Kenney leaf cards cover the hedge shell. Crown tufts and a procedural fringe sit on that. Room floors have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom, and the petals have a raised rib. Lumen’s raised arm holds a seed tray. A few warm additive shafts show in daylight. `PETAL_SMOKE_OK` still passes.
+Kenney leaf cards cover the hedge shell. Crown tufts sit above that shell, and a procedural fringe covers both faces. Room floors have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom. The petal is a five-point cup with a center rib, and it still curls back. Lumen’s raised arm holds a seed tray. A few warm additive shafts show in daylight. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 
 1. **Hedge depth.** The wall is leafy now, and it is still a box with cards on it. The concept hedges are thick, irregular, and clipped. PETAL-05 and PETAL-06: more depth and a broken silhouette, not another flat layer.
-2. **Bellhelp’s body.** The face and the ribbed petals read. The core is still a lathe. PETAL-03: a body that is not a turned solid.
+2. **Bellhelp’s body.** The face and the cupped petal read. The core is still a lathe. PETAL-03: a body that is not a turned solid.
 3. **Ground and cast.** The rooms are still mostly one lawn plane. Lumen is stacked capsules, and the fingers do not read at garden distance. Shafts are thin beams. PETAL-04 and PETAL-06.
 
 ## Next integration

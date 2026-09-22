@@ -197,32 +197,28 @@ func _petal_mesh() -> ArrayMesh:
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var length := radius * 2.2
 	var steps := 8
-	var prev_l := Vector3.ZERO
-	var prev_m := Vector3.ZERO
-	var prev_r := Vector3.ZERO
+	var prev: Array[Vector3] = []
 	for i in steps + 1:
 		var t := float(i) / float(steps)
 		var z := t * length * (1.0 - 0.32 * t * t)
 		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1
 		var w := radius * (0.14 + 0.72 * sin(t * PI))
-		var cup := w * 0.34
-		var rib := w * 0.22
-		var twist := t * t * radius * 0.1
-		var left := Vector3(-w, y - cup + twist, z)
-		var mid := Vector3(twist * 0.2, y + rib, z)
-		var right := Vector3(w, y - cup - twist * 0.3, z)
+		var cup := sin(t * PI) * radius * 0.55
+		var rib := sin(t * PI) * radius * 0.28
+		var row: Array[Vector3] = [
+			Vector3(-w, y + cup, z),
+			Vector3(-w * 0.42, y + cup * 0.08, z),
+			Vector3(0.0, y + rib, z),
+			Vector3(w * 0.42, y + cup * 0.08, z),
+			Vector3(w, y + cup, z),
+		]
 		if i > 0:
-			_tri(tool, prev_l, prev_m, mid)
-			_tri(tool, prev_l, mid, left)
-			_tri(tool, prev_m, prev_r, right)
-			_tri(tool, prev_m, right, mid)
-			_tri(tool, prev_m, prev_l, left)
-			_tri(tool, prev_m, left, mid)
-			_tri(tool, prev_r, prev_m, mid)
-			_tri(tool, prev_r, mid, right)
-		prev_l = left
-		prev_m = mid
-		prev_r = right
+			for k in row.size() - 1:
+				_tri(tool, prev[k], prev[k + 1], row[k + 1])
+				_tri(tool, prev[k], row[k + 1], row[k])
+				_tri(tool, prev[k + 1], prev[k], row[k])
+				_tri(tool, prev[k + 1], row[k], row[k + 1])
+		prev = row
 	tool.generate_normals()
 	return tool.commit()
 

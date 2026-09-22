@@ -364,7 +364,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 					continue
 			var scale := _rng.randf_range(1.15, 1.9)
 			var at := center + side * _rng.randf_range(-0.32, 0.32)
-			at.y = height * _rng.randf_range(0.82, 1.28)
+			at.y = height * _rng.randf_range(1.05, 1.45)
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			points.append(Transform3D(basis, at))
 			colors.append(Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf()))
