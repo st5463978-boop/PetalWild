@@ -109,6 +109,9 @@ func _bell(root: Node3D) -> void:
 	# ponytail: lower whorl flares past the cup; raise drop if the two rims merge.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2, 0.42, 1.18, 0.3, null, radius * 0.35)
+	# ponytail: third rim hangs between those tips; raise drop if it merges with the whorl above.
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.2, 1.28, 0.28, null, radius * 0.55)
 	for i in 3:
 		var angle := TAU * float(i) / 3.0 + 0.4
 		var stamen := MeshInstance3D.new()
