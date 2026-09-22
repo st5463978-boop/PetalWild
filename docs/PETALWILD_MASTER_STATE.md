@@ -33,9 +33,9 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp is a lathed bell with two petal rings, a seed in the throat, and a softer surface. It still is not an authored sculpt.
-- Lumen has a leek crown, apron, spectacles, and satchel facing that camera. The body is still capsules.
-- Hedge walls have a leaf-card fringe. There are no sun shafts and no insect or bird life.
+- Bellhelp is a lathed bell with curled petal rings and a seed in the throat. It still is not an authored sculpt.
+- Lumen has a leek crown, apron, spectacles, satchel, and a seed tray. The body is still capsules.
+- Hedge walls are three overlapping shoulders with a leaf-card fringe. There are no sun shafts and no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge top rises and falls, leaf cards fringe the walls, and lawn tufts sit on the open grass. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s close-up is a softer lathed bell with a seed in the throat. Lumen’s crown and apron still face the camera. `PETAL_SMOKE_OK` still passes.
+The hedge is three overlapping shoulders with a rising top and a leaf-card fringe. Lawn tufts sit on the open grass. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s petals curl back from the bell, with a seed in the throat. Lumen carries a seed tray. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 
-1. **Hedge mass.** The top is uneven and the cards help, and the wall is still one shader volume rather than a thick leafy hedge. PETAL-05: overlap and a broken crown, same green.
-2. **Creature sculpt.** The seed and the softer surface read. The body is still a lathe plus flat petals. PETAL-03: curl the petals and give the throat depth.
-3. **Light.** The lawn has tufts. There are still no sun shafts, and Lumen is still capsules. PETAL-06 for light. PETAL-04 for hands and a seed tray.
+1. **Hedge surface.** The wall has thickness now. It is still shaded volumes and cards, not a clipped leafy hedge. PETAL-05 and PETAL-06: keep this green and break the surface further.
+2. **Creature sculpt.** The petals curl. The body is still a lathe. PETAL-03: give the throat depth and stop the body reading as a turned solid.
+3. **Light.** There are still no sun shafts on this machine, and Lumen’s body is still capsules. PETAL-06 for light. PETAL-04 for hands that read as hands.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hedge clumps, curled petals, and sun shafts. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): a leafier hedge surface, a less lathed jelly, and sun shafts. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

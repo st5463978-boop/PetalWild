@@ -148,18 +148,18 @@ func _hedge(parent: Node3D) -> void:
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var edge := Rect2(-13.6, -9.9, 26.4, 17.8)
 	var south_gate: Array[Vector3] = [Vector3(0.0, -9.9, 2.9)]
-	_hedge_run(tool, Vector3(edge.position.x, 0, edge.position.y), Vector3(edge.size.x, 0, 0), south_gate, 1.22)
-	_hedge_run(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
-	_hedge_run(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
-	_hedge_run(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
+	_hedge_wall(tool, Vector3(edge.position.x, 0, edge.position.y), Vector3(edge.size.x, 0, 0), south_gate, 1.22)
+	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
+	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
+	_hedge_wall(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
 	# Lower walls around the four beds, with gaps where the paths already run.
 	var room_south: Array[Vector3] = [Vector3(-2.35, -6.55, 1.2)]
 	var room_north: Array[Vector3] = [Vector3(-4.55, 3.2, 1.25), Vector3(-2.35, 3.2, 1.05)]
 	var room_east: Array[Vector3] = [Vector3(3.85, -2.5, 1.2)]
-	_hedge_run(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), room_south, 0.78)
-	_hedge_run(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), room_east, 0.78)
-	_hedge_run(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), room_north, 0.78)
-	_hedge_run(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.78)
+	_hedge_wall(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), room_south, 0.78)
+	_hedge_wall(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), room_east, 0.78)
+	_hedge_wall(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), room_north, 0.78)
+	_hedge_wall(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.78)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
@@ -168,7 +168,13 @@ func _hedge(parent: Node3D) -> void:
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	parent.add_child(node)
 
-func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
+func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
+	_hedge_run(tool, origin, along, openings, scale, 0.0)
+	_hedge_run(tool, origin, along, openings, scale * 0.78, -0.46)
+	_hedge_run(tool, origin, along, openings, scale * 0.58, 0.34)
+
+
+func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float, offset_side: float) -> void:
 	var length := along.length()
 	if length < 0.2:
 		return
@@ -189,7 +195,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 	var previous: Array[Vector3] = []
 	var previous_open := false
 	for i in count + 1:
-		var center := origin + dir * (float(i) / float(count) * length)
+		var center := origin + dir * (float(i) / float(count) * length) + side * offset_side
 		var open := false
 		for hole in openings:
 			var gate := hole as Vector3

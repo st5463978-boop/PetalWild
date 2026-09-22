@@ -177,17 +177,18 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) 
 func _petal_mesh() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var length := radius * 2.15
-	var steps := 4
+	var length := radius * 2.05
+	var steps := 6
 	var prev_l := Vector3.ZERO
 	var prev_r := Vector3.ZERO
 	for i in steps + 1:
 		var t := float(i) / float(steps)
-		var z := t * length
-		var y := sin(t * PI) * radius * 0.12
-		var w := radius * 0.82 * (1.0 - t * 0.45)
-		var left := Vector3(-w, y, z)
-		var right := Vector3(w, y, z)
+		var z := t * length * (1.0 - 0.42 * t * t)
+		var y := sin(t * PI) * radius * 0.34 - pow(maxf(t - 0.58, 0.0), 2.0) * radius * 2.6
+		var w := radius * (0.16 + 0.78 * sin(t * PI))
+		var cup := w * 0.28
+		var left := Vector3(-w, y - cup, z)
+		var right := Vector3(w, y - cup, z)
 		if i > 0:
 			_tri(tool, prev_l, prev_r, right)
 			_tri(tool, prev_l, right, left)

@@ -106,6 +106,7 @@ func _leek() -> void:
 	_arm(Vector3(-0.18, 0.5, 0), Color("#efe6c9"))
 	_arm(Vector3(0.18, 0.5, 0), Color("#efe6c9"))
 	_apron(Color("#d9815a"))
+	_seed_tray()
 	_satchel()
 	_spectacles_at(0.68)
 	_mouth_at(0.62)
@@ -173,6 +174,18 @@ func _leaf_fan(color: Color, y: float) -> void:
 		node.position = Vector3(0, y, 0)
 		node.rotation_degrees = Vector3(-28, i * 36, -18 + i * 8)
 		body.add_child(node)
+
+func _seed_tray() -> void:
+	var board := BoxMesh.new()
+	board.size = Vector3(0.24, 0.028, 0.15)
+	var tray := _paint(board, Color("#8a5a32"), 0.72)
+	tray.position = Vector3(0.02, 0.34, -0.2)
+	tray.rotation_degrees = Vector3(-22, 8, 0)
+	body.add_child(tray)
+	var seeds := [Color("#e6c15a"), Color("#c46a45"), Color("#6a8f3a"), Color("#f4efe4"), Color("#d98a3a")]
+	for i in seeds.size():
+		_sphere(body, tray.position + Vector3(-0.07 + float(i) * 0.035, 0.028, -0.02 + float(i % 2) * 0.04), 0.016, seeds[i])
+
 
 func _apron(color: Color) -> void:
 	var mesh := BoxMesh.new()
