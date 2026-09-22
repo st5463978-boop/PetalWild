@@ -10,7 +10,7 @@ void vertex() {
 	vec3 p = VERTEX;
 	float lump = sin(world_pos.x * 4.2) * cos(world_pos.z * 3.6);
 	if (up > 0.25) {
-		p += NORMAL * lump * 0.045;
+		p += NORMAL * lump * 0.09;
 	}
 	VERTEX = p;
 }

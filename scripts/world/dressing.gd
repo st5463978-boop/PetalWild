@@ -145,15 +145,19 @@ func _hedge(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var edge := Rect2(-13.6, -9.9, 26.4, 17.8)
-	_hedge_run(tool, Vector3(edge.position.x, 0, edge.position.y), Vector3(edge.size.x, 0, 0), true)
-	_hedge_run(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), false)
-	_hedge_run(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), false)
-	_hedge_run(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), false)
-	# Low rooms in front of the beds and between the south and north plots. The centre path stays open.
-	_hedge_run(tool, Vector3(-8.3, 0, -6.2), Vector3(5.5, 0, 0), false, 0.38, 0.62)
-	_hedge_run(tool, Vector3(-1.55, 0, -6.2), Vector3(4.7, 0, 0), false, 0.38, 0.62)
-	_hedge_run(tool, Vector3(-8.1, 0, -1.72), Vector3(5.3, 0, 0), false, 0.48, 0.58)
-	_hedge_run(tool, Vector3(-1.45, 0, -1.72), Vector3(4.3, 0, 0), false, 0.48, 0.58)
+	var south_gate: Array[Vector3] = [Vector3(0.0, -9.9, 2.9)]
+	_hedge_run(tool, Vector3(edge.position.x, 0, edge.position.y), Vector3(edge.size.x, 0, 0), south_gate, 1.22)
+	_hedge_run(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
+	_hedge_run(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
+	_hedge_run(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
+	# Lower walls around the four beds, with gaps where the paths already run.
+	var room_south: Array[Vector3] = [Vector3(-2.35, -6.55, 1.2)]
+	var room_north: Array[Vector3] = [Vector3(-4.55, 3.2, 1.25), Vector3(-2.35, 3.2, 1.05)]
+	var room_east: Array[Vector3] = [Vector3(3.85, -2.5, 1.2)]
+	_hedge_run(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), room_south, 0.78)
+	_hedge_run(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), room_east, 0.78)
+	_hedge_run(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), room_north, 0.78)
+	_hedge_run(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.78)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
@@ -162,7 +166,7 @@ func _hedge(parent: Node3D) -> void:
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	parent.add_child(node)
 
-func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, gate: bool, height_scale: float = 1.0, thick_scale: float = 1.0) -> void:
+func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
 	var length := along.length()
 	if length < 0.2:
 		return
@@ -184,11 +188,17 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, gate: bool, 
 	var previous_open := false
 	for i in count + 1:
 		var center := origin + dir * (float(i) / float(count) * length)
-		var open := gate and center.z < -9.2 and absf(center.x) < 2.8
+		var open := false
+		for hole in openings:
+			var gate := hole as Vector3
+			if Vector2(center.x - gate.x, center.z - gate.y).length() < gate.z:
+				open = true
+				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.045
+		var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
+		var width := 0.62 + scale * 0.22
 		for point in profile:
-			ring.append(center + side * (point.x * 0.74 * thick_scale) + Vector3(0, point.y * height_scale + lift * height_scale, 0))
+			ring.append(center + side * (point.x * width) + Vector3(0, point.y * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
 		previous = ring
@@ -529,6 +539,12 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Grass_Simple_small.fbx", Vector3(4.2, 0, 4.6), 1.1, 1.8],
 		["FBX/Wild_Grass_Red_small.fbx", Vector3(11.0, 0, 1.4), 1.15, 0.3],
 		["FBX/Wild_Grass_Red_small.fbx", Vector3(-12.2, 0, -6.4), 1.2, 2.4],
+		["FBX/Poppy_Single_Red.fbx", Vector3(-6.4, 0, -7.25), 1.0, 0.3],
+		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(-0.4, 0, -7.35), 1.05, 1.1],
+		["FBX/Larkspur_1_Purple.fbx", Vector3(2.15, 0, -7.15), 1.0, 0.7],
+		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(4.7, 0, -0.6), 1.0, 0.9],
+		["FBX/Grass_Simple_small.fbx", Vector3(-9.15, 0, -0.8), 1.25, 0.4],
+		["FBX/Wild_Grass_Red_small.fbx", Vector3(-9.05, 0, 1.7), 1.15, 1.4],
 	]
 	for item in layout:
 		var file := str(item[0])

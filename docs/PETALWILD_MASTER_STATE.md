@@ -49,11 +49,11 @@ No parallel workers are running. A second wave committed to `main` during this i
 
 ## Branches and merges
 
-`main` only. Nothing is waiting to merge. The lost Garden Grove tree was not recoverable. See `docs/RECOVERY_MATRIX.md`.
+`main` is the playable Hedge Hollow scene. `cursor/opening-grove-parallel-a334` keeps a second grove that was written before this tree landed. It is not compiled. See `docs/RECOVERY_MATRIX.md`.
 
 ## Assets and licences
 
-Inter 4.1 (OFL) is the UI font. Nunito (OFL) and the Asset Quest Stylized Garden demo (CC0) arrived with the parallel commit and are staged, not yet the garden's look. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
+Inter 4.1 (OFL) is the UI font. The Asset Quest Stylized Garden demo (CC0) is placed as flowers, grass, a bench, and a planter. Nunito (OFL) is in `third_party/fonts/` and is not the live UI font. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
 
 ## Higgsfield
 
@@ -61,15 +61,15 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 ## Visual compare
 
-Compared `docs/screenshots/wave1_overview.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
+Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The shot looks over a trimmed hedge, with low hedge rooms in front of the beds, CC0 flower drifts, a pond, a stall, and cone trees. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes.
+The outer hedge is taller. A lower hedge boxes the four beds, with gaps on the paths. CC0 flowers and grass sit along that wall. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes.
 
-Three largest gaps, and who has them next:
+Three largest gaps still open:
 
-1. **Bellhelp’s face and body.** The petals read, and the core is still a glossy lathe. The seed eyes sit off the surface. PETAL-03 and PETAL-06: seat the face on the bell and give the petals a curl so they stop looking like flat cards.
-2. **Lumen’s face and hands.** The leaf crown is the silhouette. The body is still capsules, and there is no seed tray. PETAL-04: a modeled face, hands, and the tray she sells from.
-3. **The lawn inside the rooms.** Hedges and drifts sit on a flat green plane. The bench and planter are still flat-coloured. PETAL-05 and PETAL-06: ground cover in the rooms, the prop atlas on the bench, and sun shafts.
+1. **Hedge surface.** The walls are one smooth shader tube. The concepts are leafy and uneven. PETAL-05 and PETAL-06: break that silhouette and keep this palette.
+2. **Bellhelp’s face.** The petals read, and the core is still a glossy lathe with the eyes off the surface. PETAL-03: seat the face on the bell and curl the petals.
+3. **Lumen’s hands and the lawn.** The leaf crown is there. The body is still capsules, there is no seed tray, and the ground inside the rooms is one plane. PETAL-04 for the face, hands, and tray. PETAL-06 for ground cover and sun shafts.
 
 ## Next integration
 
