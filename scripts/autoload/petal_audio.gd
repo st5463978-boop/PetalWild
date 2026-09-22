@@ -25,8 +25,19 @@ func _ready() -> void:
 	_use_file("harvest", "res://assets/third_party/kenney/interface-sounds/Audio/open_002.ogg")
 	_use_file("chime", "res://assets/third_party/kenney/interface-sounds/Audio/glass_006.ogg")
 	_music = AudioStreamPlayer.new()
-	_music.stream = _pad()
-	_music.volume_db = -22.0
+	var bed_path := "res://assets/third_party/opengameart/Forest_Ambience.mp3"
+	if ResourceLoader.exists(bed_path):
+		var bed: Resource = load(bed_path)
+		if bed is AudioStreamMP3:
+			(bed as AudioStreamMP3).loop = true
+			_music.stream = bed
+			_music.volume_db = -14.0
+		else:
+			_music.stream = _pad()
+			_music.volume_db = -22.0
+	else:
+		_music.stream = _pad()
+		_music.volume_db = -22.0
 	_music.autoplay = false
 	add_child(_music)
 	var gen := AudioStreamGenerator.new()

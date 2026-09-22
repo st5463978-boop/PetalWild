@@ -12,6 +12,6 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = mix(leaf_a.rgb, leaf_b.rgb, clamp(NORMAL.y * 0.5 + 0.5, 0.0, 1.0));
+	ALBEDO = mix(leaf_a.rgb, leaf_b.rgb, clamp(NORMAL.y * 0.5 + 0.5, 0.0, 1.0)) * COLOR.rgb;
 	ROUGHNESS = 0.82;
 }

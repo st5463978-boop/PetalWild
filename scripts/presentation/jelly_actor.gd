@@ -224,8 +224,12 @@ func _build_form(form: String, colors: Dictionary) -> void:
 			var fin := _blob(Vector3(0.05, 0.28, 0.16), Vector3(0, 0.42, 0.12))
 			parts.append(fin)
 		_:
-			parts.append(_blob(Vector3(0.28, 0.36, 0.28), Vector3(0, 0.2, 0)))
-			parts.append(_blob(Vector3(0.1, 0.1, 0.1), Vector3(0, 0.42, -0.02)))
+			parts.append(_blob(Vector3(0.36, 0.2, 0.32), Vector3(0, 0.1, 0)))
+			parts.append(_blob(Vector3(0.22, 0.26, 0.2), Vector3(0, 0.3, 0)))
+			parts.append(_blob(Vector3(0.07, 0.14, 0.06), Vector3(0, 0.5, 0)))
+			var leaf := _blob(Vector3(0.16, 0.04, 0.08), Vector3(0.1, 0.48, 0))
+			leaf.rotation.z = -0.6
+			parts.append(leaf)
 	for part in parts:
 		part.material_override = material
 		body.add_child(part)

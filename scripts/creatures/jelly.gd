@@ -49,7 +49,7 @@ func _build(definition: Dictionary) -> void:
 	root.name = "Body"
 	add_child(root)
 	var shape := str(definition.get("shape", "droplet"))
-	face_z = radius * 1.05
+	face_z = -radius * 1.05
 	var eye_y := _shape(root, shape)
 	var organ_y := eye_y * 0.5
 	if shape == "bell":
@@ -113,6 +113,35 @@ func _bell(root: Node3D) -> void:
 		stamen.material_override = mat
 		stamen.position = Vector3(cos(angle) * radius * 0.12, radius * 1.28, sin(angle) * radius * 0.12)
 		root.add_child(stamen)
+	var seed := MeshInstance3D.new()
+	var seed_mesh := SphereMesh.new()
+	seed_mesh.radius = radius * 0.13
+	seed_mesh.height = radius * 0.22
+	seed_mesh.radial_segments = 10
+	seed_mesh.rings = 6
+	seed.mesh = seed_mesh
+	var seed_material := StandardMaterial3D.new()
+	seed_material.albedo_color = Color("#e7f27a")
+	seed_material.emission_enabled = true
+	seed_material.emission = Color("#d6e85a")
+	seed_material.emission_energy_multiplier = 0.7
+	seed_material.roughness = 0.55
+	seed.material_override = seed_material
+	seed.position = Vector3(0.0, radius * 0.38, -radius * 0.34)
+	root.add_child(seed)
+	var throat := MeshInstance3D.new()
+	var throat_mesh := SphereMesh.new()
+	throat_mesh.radius = radius * 0.2
+	throat_mesh.height = radius * 0.32
+	throat_mesh.radial_segments = 10
+	throat_mesh.rings = 6
+	throat.mesh = throat_mesh
+	var throat_material := StandardMaterial3D.new()
+	throat_material.albedo_color = Color("#163f24")
+	throat_material.roughness = 0.86
+	throat.material_override = throat_material
+	throat.position = Vector3(0.0, radius * 0.3, -radius * 0.08)
+	root.add_child(throat)
 
 func _bell_lathe() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -163,28 +192,27 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) 
 func _petal_mesh() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var length := radius * 2.15
-	var steps := 4
+	var length := radius * 2.45
+	var steps := 8
 	var prev_l := Vector3.ZERO
 	var prev_r := Vector3.ZERO
 	for i in steps + 1:
 		var t := float(i) / float(steps)
 		var z := t * length
-		var y := sin(t * PI) * radius * 0.22
-		var w := radius * 0.82 * (1.0 - t * 0.45)
-		var left := Vector3(-w, y, z)
-		var right := Vector3(w, y, z)
-		var ridge := Vector3(0, y + radius * 0.07, z)
+		var arch := sin(t * PI) * radius * 0.28
+		var droop := pow(t, 1.7) * radius * 0.72
+		var y := arch - droop
+		var w := radius * (0.12 + sin(t * PI) * 0.62)
+		var twist := t * t * radius * 0.22
+		var left := Vector3(-w, y + twist, z)
+		var right := Vector3(w, y - twist * 0.4, z)
+		var ridge := Vector3(0, y + radius * 0.09, z)
 		if i > 0:
-			var prev_ridge := Vector3(0, prev_l.y + radius * 0.07, prev_l.z)
+			var prev_ridge := Vector3(0, prev_l.y + radius * 0.09, prev_l.z)
 			_tri(tool, prev_l, prev_ridge, ridge)
 			_tri(tool, prev_l, ridge, left)
 			_tri(tool, prev_ridge, prev_r, right)
 			_tri(tool, prev_ridge, right, ridge)
-			_tri(tool, prev_ridge, prev_l, left)
-			_tri(tool, prev_ridge, left, ridge)
-			_tri(tool, prev_r, prev_ridge, ridge)
-			_tri(tool, prev_r, ridge, right)
 		prev_l = left
 		prev_r = right
 	tool.generate_normals()
@@ -229,9 +257,9 @@ func _organ(root: Node3D, definition: Dictionary, height: float) -> void:
 
 func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
 	var eye_color := Color(str(definition.get("eye", "#fff4c8")))
-	var z := face_z if face_z > 0.0 else radius * 1.05
+	var z := face_z if face_z != 0.0 else radius * 1.05
 	var bell := str(definition.get("shape", "")) == "bell"
-	var spread := radius * 0.2 if bell else minf(radius * 0.26, maxf(z * 0.38, radius * 0.12))
+	var spread := radius * 0.2 if bell else minf(radius * 0.26, maxf(absf(z) * 0.38, radius * 0.12))
 	eye_l = _eye(root, Vector3(-spread, eye_y, z), eye_color)
 	eye_r = _eye(root, Vector3(spread, eye_y, z), eye_color)
 	var mouth_y := radius * 0.05 if bell else eye_y - radius * 0.22

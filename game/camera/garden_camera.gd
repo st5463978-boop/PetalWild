@@ -1,12 +1,12 @@
 extends Node3D
 
-var yaw := 0.55
-var pitch := 0.58
-var distance := 16.0
-var pivot := Vector3(1.5, 0.4, 4.5)
-var target_pivot := Vector3(1.5, 0.4, 4.5)
-var target_distance := 16.0
-var target_pitch := 0.58
+var yaw := 0.62
+var pitch := 0.9
+var distance := 19.0
+var pivot := Vector3(2.2, 0.5, 2.8)
+var target_pivot := Vector3(2.2, 0.5, 2.8)
+var target_distance := 19.0
+var target_pitch := 0.9
 var camera: Camera3D
 var dragging := false
 var intro := 1.0
@@ -19,8 +19,8 @@ func build() -> void:
 	camera.current = true
 	add_child(camera)
 	if not _reduce_motion():
-		distance = 30.0
-		pitch = 0.92
+		distance = 28.0
+		pitch = 1.08
 		intro = 0.0
 
 
@@ -30,8 +30,8 @@ func _process(delta: float) -> void:
 	if intro < 1.0:
 		intro = minf(1.0, intro + delta * 0.28)
 		var t := smoothstep(0.0, 1.0, intro)
-		target_distance = lerpf(30.0, 16.0, t)
-		target_pitch = lerpf(0.92, 0.58, t)
+		target_distance = lerpf(28.0, 19.0, t)
+		target_pitch = lerpf(1.08, 0.9, t)
 	distance = lerpf(distance, target_distance, clampf(delta * 4.0, 0.0, 1.0))
 	pitch = lerpf(pitch, target_pitch, clampf(delta * 4.0, 0.0, 1.0))
 	pivot = pivot.lerp(target_pivot, clampf(delta * 4.0, 0.0, 1.0))

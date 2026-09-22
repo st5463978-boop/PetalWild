@@ -181,33 +181,33 @@ func _apron(color: Color) -> void:
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.22, 0.26, 0.05)
 	var node := _paint(mesh, color, 0.78)
-	node.position = Vector3(0, 0.42, 0.12)
+	node.position = Vector3(0, 0.42, -0.12)
 	body.add_child(node)
 
 func _spectacles_at(y: float) -> void:
 	for side in [-1, 1]:
-		_sphere(body, Vector3(side * 0.05, y, 0.09), 0.022, Color("#f7f3e6"))
-		_sphere(body, Vector3(side * 0.052, y, 0.108), 0.008, Color("#35502e"))
+		_sphere(body, Vector3(side * 0.05, y, -0.09), 0.022, Color("#f7f3e6"))
+		_sphere(body, Vector3(side * 0.052, y, -0.108), 0.008, Color("#35502e"))
 		var mesh := TorusMesh.new()
 		mesh.inner_radius = 0.016
 		mesh.outer_radius = 0.026
 		mesh.rings = 8
 		mesh.ring_segments = 12
 		var node := _paint(mesh, Color("#c4a15a"), 0.32)
-		node.position = Vector3(side * 0.05, y, 0.1)
+		node.position = Vector3(side * 0.05, y, -0.1)
 		node.rotation_degrees = Vector3(90, 0, 0)
 		body.add_child(node)
 	var bridge := BoxMesh.new()
 	bridge.size = Vector3(0.036, 0.006, 0.006)
 	var bar := _paint(bridge, Color("#c4a15a"), 0.32)
-	bar.position = Vector3(0, y, 0.1)
+	bar.position = Vector3(0, y, -0.1)
 	body.add_child(bar)
 
 func _mouth_at(y: float) -> void:
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.028, 0.006, 0.006)
 	var node := _paint(mesh, Color("#c46a58"), 0.55)
-	node.position = Vector3(0, y, 0.105)
+	node.position = Vector3(0, y, -0.105)
 	body.add_child(node)
 
 func _seed_tray(arm: Node3D) -> void:
@@ -228,12 +228,12 @@ func _satchel() -> void:
 	var bag := BoxMesh.new()
 	bag.size = Vector3(0.11, 0.09, 0.05)
 	var node := _paint(bag, Color("#c4a15a"), 0.72)
-	node.position = Vector3(0.15, 0.36, 0.02)
+	node.position = Vector3(0.15, 0.36, -0.08)
 	body.add_child(node)
 	var strap := BoxMesh.new()
 	strap.size = Vector3(0.012, 0.22, 0.012)
 	var band := _paint(strap, Color("#8d6238"), 0.6)
-	band.position = Vector3(0.1, 0.5, 0.02)
+	band.position = Vector3(0.1, 0.5, -0.04)
 	band.rotation_degrees = Vector3(0, 0, 18)
 	body.add_child(band)
 

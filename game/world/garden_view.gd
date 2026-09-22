@@ -2,6 +2,7 @@ extends Node3D
 
 const MeshKit = preload("res://game/world/mesh_kit.gd")
 const TerrainField = preload("res://game/world/terrain_field.gd")
+const Cc0Dressing = preload("res://game/world/cc0_dressing.gd")
 const FoliageShader = preload("res://game/shaders/foliage.gdshader")
 const WaterShader = preload("res://game/shaders/water.gdshader")
 
@@ -18,11 +19,14 @@ var water_mesh: MultiMeshInstance3D
 var plant_meshes: Dictionary = {}
 var foliage_mat: ShaderMaterial
 var lantern: OmniLight3D
+var dressing
 
 
 func build() -> void:
 	foliage_mat = ShaderMaterial.new()
 	foliage_mat.shader = FoliageShader
+	dressing = Cc0Dressing.new()
+	dressing.prepare(field)
 	_environment()
 	_terrain()
 	_water()
@@ -81,27 +85,27 @@ func apply_atmosphere(hour: float, weather: String, season: String) -> void:
 		night = smoothstep(6.0, 4.2, hour)
 	var dusk := smoothstep(16.0, 18.6, hour) * (1.0 - night)
 	var dawn := smoothstep(5.0, 7.2, hour) * (1.0 - smoothstep(8.5, 10.0, hour)) if hour < 12.0 else 0.0
-	var warm := clampf(dusk + dawn * 0.7, 0.0, 1.0)
-	var sun_color := Color(1.0, 0.95, 0.86).lerp(Color(1.0, 0.58, 0.32), warm)
+	var warm := clampf(dusk * 0.4 + dawn * 0.32, 0.0, 0.48)
+	var sun_color := Color(1.0, 0.97, 0.9).lerp(Color(1.0, 0.78, 0.52), warm)
 	if season == "autumn":
 		sun_color = sun_color.lerp(Color(1.0, 0.62, 0.28), 0.35)
 	elif season == "winter":
 		sun_color = sun_color.lerp(Color(0.78, 0.84, 0.92), 0.35)
 	sun.light_color = sun_color
-	sun.light_energy = lerpf(1.25, 0.05, night)
+	sun.light_energy = lerpf(1.02, 0.16, night)
 	if weather == "rain":
 		sun.light_energy *= 0.5
 	elif weather == "mist":
 		sun.light_energy *= 0.72
 	sun.rotation_degrees = Vector3(lerpf(-52.0, -16.0, warm * 0.7 + night), -36.0, 0.0)
-	fill.light_energy = lerpf(0.22, 0.04, night)
+	fill.light_energy = lerpf(0.42, 0.08, night)
 	var horizon := Color(0.78, 0.86, 0.78).lerp(Color(0.98, 0.62, 0.38), warm)
 	horizon = horizon.lerp(Color(0.1, 0.12, 0.22), night)
 	sky_mat.sky_top_color = Color(0.32, 0.56, 0.82).lerp(Color(0.08, 0.1, 0.2), night)
 	sky_mat.sky_horizon_color = horizon
 	sky_mat.ground_horizon_color = horizon.lerp(Color(0.3, 0.36, 0.22), 0.4)
-	environment.ambient_light_energy = lerpf(0.62, 0.18, night)
-	environment.fog_density = 0.006
+	environment.ambient_light_energy = lerpf(0.82, 0.2, night)
+	environment.fog_density = 0.0026
 	environment.fog_light_color = horizon
 	if weather == "mist":
 		environment.fog_density = 0.02
@@ -129,7 +133,7 @@ func _environment() -> void:
 	add_child(sun)
 	fill = DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-20, 140, 0)
-	fill.light_color = Color(0.65, 0.75, 0.95)
+	fill.light_color = Color(0.68, 0.82, 0.62)
 	add_child(fill)
 	var world := WorldEnvironment.new()
 	environment = Environment.new()
@@ -143,12 +147,12 @@ func _environment() -> void:
 	sky.sky_material = sky_mat
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.6
+	environment.ambient_light_energy = 0.82
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.tonemap_exposure = 1.05
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	environment.fog_density = 0.006
+	environment.fog_density = 0.0026
 	environment.fog_aerial_perspective = 0.35
 	var method := RenderingServer.get_current_rendering_method()
 	if method != "gl_compatibility":
@@ -225,22 +229,27 @@ func _water() -> void:
 
 
 func _hedges_and_trees() -> void:
-	var shrub := MeshKit.shrub()
-	var hedges := _multi(shrub, foliage_mat)
+	var block := BoxMesh.new()
+	block.size = Vector3(1.85, 2.25, 1.15)
+	var hedges := _multi(block, foliage_mat)
 	var center := Vector3(1.0, 0, 2.0)
-	var a := 20.5
-	var b := 16.2
+	var a := 20.2
+	var b := 16.0
 	var transforms: Array[Transform3D] = []
 	var colors: Array[Color] = []
-	for i in 84:
-		var t := float(i) / 84.0 * TAU
-		if absf(angle_difference(t, 0.15)) < 0.28:
+	for i in 78:
+		var t := float(i) / 78.0 * TAU
+		if absf(angle_difference(t, 0.15)) < 0.2:
 			continue
 		var pos := Vector3(cos(t) * a, 0, sin(t) * b) + center
-		pos.y = field.height(pos.x, pos.z) + 0.7
-		var basis := Basis(Vector3.UP, t).scaled(Vector3(1.3, 1.5 + 0.35 * sin(t * 5.0), 1.15))
+		pos.y = field.height(pos.x, pos.z) + 1.12
+		var tangent := atan2(cos(t) * b, -sin(t) * a)
+		var h_scale := 0.9 + 0.18 * absf(sin(t * 4.0))
+		var basis := Basis(Vector3.UP, tangent).scaled(Vector3(1.05, h_scale, 0.95))
 		transforms.append(Transform3D(basis, pos))
-		colors.append(Color(0.12, 0.34, 0.12).lerp(Color(0.28, 0.5, 0.16), absf(sin(t * 4.0))))
+		colors.append(Color(0.78, 0.98, 0.72).lerp(Color(0.95, 1.0, 0.78), absf(sin(t * 3.0))))
+	_hedge_run(transforms, colors, Vector3(-12.2, 0, -0.55), Vector3(2.6, 0, -0.55), 9)
+	_hedge_run(transforms, colors, Vector3(9.6, 0, -1.4), Vector3(9.6, 0, 5.2), 6)
 	_write_transforms(hedges, transforms, colors)
 	var canopy_mesh := MeshKit.canopy()
 	var trunks := _multi(MeshKit.trunk(), _std(Color(0.34, 0.22, 0.13), 0.9))
@@ -254,56 +263,47 @@ func _hedges_and_trees() -> void:
 		pos.y = field.height(pos.x, pos.z)
 		var scale := 0.85 + 0.4 * absf(sin(t * 3.0))
 		trunk_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3(scale, scale, scale)), pos))
-		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * scale * 1.35), pos + Vector3(0, 2.15 * scale, 0)))
-		canopy_colors.append(Color(0.16, 0.4, 0.16).lerp(Color(0.55, 0.62, 0.22), absf(cos(t * 2.0))))
+		var crown := pos + Vector3(0, 2.35 * scale, 0)
+		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * scale * 1.45), crown))
+		canopy_colors.append(Color(0.8, 1.0, 0.72).lerp(Color(0.95, 1.0, 0.8), absf(cos(t * 2.0))))
+		var side := Vector3(cos(t * 2.0), 0.15, sin(t * 2.0)) * 0.7 * scale
+		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * scale * 1.05), crown + side))
+		canopy_colors.append(Color(0.7, 0.92, 0.62))
+		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * scale * 0.85), crown - side + Vector3(0, 0.35, 0)))
+		canopy_colors.append(Color(0.88, 0.98, 0.7))
 	var inner := [
 		Vector3(-13.5, 0, -3.5), Vector3(-15.0, 0, 7.0), Vector3(9.5, 0, -1.5),
 		Vector3(-6.0, 0, -6.5), Vector3(8.0, 0, 9.5), Vector3(-11.0, 0, 12.5),
+		Vector3(-12.4, 0, 3.2), Vector3(11.2, 0, 7.4),
 	]
 	for pos in inner:
 		var placed: Vector3 = pos
 		placed.y = field.height(placed.x, placed.z)
 		trunk_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3(1.1, 1.25, 1.1)), placed))
-		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3(1.6, 1.3, 1.6)), placed + Vector3(0, 2.5, 0)))
-		canopy_colors.append(Color(0.2, 0.46, 0.18))
+		var inner_crown := placed + Vector3(0, 2.7, 0)
+		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3(1.7, 1.35, 1.7)), inner_crown))
+		canopy_colors.append(Color(0.78, 0.98, 0.7))
+		canopy_xf.append(Transform3D(Basis.IDENTITY.scaled(Vector3(1.15, 1.05, 1.15)), inner_crown + Vector3(0.7, 0.2, 0.2)))
+		canopy_colors.append(Color(0.9, 1.0, 0.78))
 	_write_transforms(trunks, trunk_xf, [])
 	_write_transforms(canopies, canopy_xf, canopy_colors)
 
 
 func _flowers_and_grass() -> void:
-	var flowers := _multi(MeshKit.flower(), _std(Color(1, 1, 1), 0.7, true))
-	var tufts := _multi(MeshKit.grass_tuft(), _std(Color(1, 1, 1), 0.9, true))
-	var flower_xf: Array[Transform3D] = []
-	var flower_colors: Array[Color] = []
+	dressing.scatter(self)
+	var tufts := _multi(MeshKit.grass_tuft(), _std(Color(0.22, 0.48, 0.16), 0.9))
 	var grass_xf: Array[Transform3D] = []
-	var palette := [
-		Color(0.93, 0.45, 0.58), Color(0.95, 0.78, 0.28), Color(0.62, 0.45, 0.86),
-		Color(0.95, 0.55, 0.3), Color(0.98, 0.9, 0.82), Color(0.86, 0.32, 0.42),
-	]
-	for i in 520:
-		var pos := _scatter(i, 19.0)
+	for i in 180:
+		var pos := _scatter(i + 90, 18.5)
 		if pos == Vector3.INF:
 			continue
-		if field.in_plots(pos.x, pos.z) or field.path_distance(pos.x, pos.z) < 1.15:
+		if field.path_distance(pos.x, pos.z) < 0.75:
 			continue
-		if Vector2(pos.x - 5.4, pos.z + 7.2).length() < 4.5:
-			continue
-		pos.y = field.height(pos.x, pos.z)
-		var yaw := _unit(i * 3) * TAU
-		var scale := 0.7 + _unit(i * 5) * 0.7
-		flower_xf.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale), pos))
-		flower_colors.append(palette[i % palette.size()])
-	for i in 700:
-		var pos := _scatter(i + 90, 20.0)
-		if pos == Vector3.INF:
-			continue
-		if field.path_distance(pos.x, pos.z) < 0.8:
-			continue
-		if Vector2(pos.x - 5.4, pos.z + 7.2).length() < 5.0:
+		if Vector2(pos.x - 5.4, pos.z + 7.2).length() < 4.6:
 			continue
 		pos.y = field.height(pos.x, pos.z)
-		grass_xf.append(Transform3D(Basis(Vector3.UP, _unit(i) * TAU), pos))
-	_write_transforms(flowers, flower_xf, flower_colors)
+		var scale := 0.42 + _unit(i * 5) * 0.35
+		grass_xf.append(Transform3D(Basis(Vector3.UP, _unit(i) * TAU).scaled(Vector3(scale, scale * 0.7, scale)), pos))
 	_write_transforms(tufts, grass_xf, [])
 
 
@@ -344,36 +344,55 @@ func _beds_and_fence() -> void:
 
 func _shop() -> void:
 	var origin := Vector3(13.4, 0.08, 1.5)
-	_box(origin + Vector3(0, -0.02, 0), Vector3(4.6, 0.08, 3.6), Color(0.62, 0.58, 0.52), 0.75)
-	_box(origin + Vector3(0, 0.7, -1.3), Vector3(3.4, 1.4, 0.18), Color(0.86, 0.78, 0.62), 0.7)
-	_box(origin + Vector3(0, 0.55, 0.2), Vector3(2.8, 0.12, 0.9), Color(0.42, 0.26, 0.14), 0.65)
-	for i in 6:
-		var stripe := Color(0.18, 0.38, 0.72) if i % 2 == 0 else Color(0.95, 0.93, 0.86)
-		_box(origin + Vector3(-1.25 + float(i) * 0.5, 1.55, 0.15), Vector3(0.5, 0.08, 1.8), stripe, 0.55)
-	_box(origin + Vector3(-1.7, 0.9, 0.15), Vector3(0.08, 1.5, 0.08), Color(0.25, 0.16, 0.1), 0.6)
-	_box(origin + Vector3(1.7, 0.9, 0.15), Vector3(0.08, 1.5, 0.08), Color(0.25, 0.16, 0.1), 0.6)
-	_box(origin + Vector3(-1.5, 0.28, 1.15), Vector3(0.45, 0.4, 0.45), Color(0.5, 0.32, 0.18), 0.8)
-	_box(origin + Vector3(1.45, 0.22, 1.2), Vector3(0.38, 0.32, 0.38), Color(0.62, 0.4, 0.2), 0.75)
+	var stones := [
+		Color(0.58, 0.52, 0.45), Color(0.7, 0.64, 0.55), Color(0.48, 0.44, 0.39), Color(0.76, 0.69, 0.58),
+	]
+	for ix in 6:
+		for iz in 5:
+			var px := -2.15 + float(ix) * 0.86
+			var pz := -1.55 + float(iz) * 0.78
+			var stone: Color = stones[(ix * 3 + iz) % stones.size()]
+			_box(origin + Vector3(px, -0.015, pz), Vector3(0.76, 0.055, 0.68), stone, 0.86)
+	_box(origin + Vector3(0, 0.78, -1.42), Vector3(3.5, 1.5, 0.16), Color(0.9, 0.82, 0.66), 0.72)
+	_box(origin + Vector3(0, 1.52, -1.42), Vector3(3.7, 0.12, 0.22), Color(0.34, 0.2, 0.11), 0.62)
+	_box(origin + Vector3(-1.72, 0.78, -1.42), Vector3(0.12, 1.55, 0.2), Color(0.34, 0.2, 0.11), 0.62)
+	_box(origin + Vector3(1.72, 0.78, -1.42), Vector3(0.12, 1.55, 0.2), Color(0.34, 0.2, 0.11), 0.62)
+	_box(origin + Vector3(0, 0.58, 0.15), Vector3(2.7, 0.1, 0.95), Color(0.46, 0.28, 0.15), 0.58)
+	_box(origin + Vector3(0, 0.32, -0.22), Vector3(2.7, 0.5, 0.12), Color(0.4, 0.24, 0.13), 0.66)
+	for i in 7:
+		var stripe := Color(0.16, 0.36, 0.7) if i % 2 == 0 else Color(0.96, 0.93, 0.84)
+		var along := -1.5 + float(i) * 0.5
+		var xf := Transform3D(Basis(Vector3.RIGHT, -0.2), origin + Vector3(along, 1.78, 0.22))
+		_box_xf(xf, Vector3(0.48, 0.045, 1.85), stripe, 0.48)
+		_box(origin + Vector3(along, 1.48, 1.05), Vector3(0.46, 0.22, 0.035), stripe, 0.5)
+	_box(origin + Vector3(-1.75, 0.95, 0.15), Vector3(0.1, 1.7, 0.1), Color(0.24, 0.15, 0.09), 0.58)
+	_box(origin + Vector3(1.75, 0.95, 0.15), Vector3(0.1, 1.7, 0.1), Color(0.24, 0.15, 0.09), 0.58)
+	_box(origin + Vector3(0, 1.95, -1.28), Vector3(1.7, 0.42, 0.08), Color(0.4, 0.24, 0.12), 0.6)
 	var barrel := CylinderMesh.new()
-	barrel.top_radius = 0.28
+	barrel.top_radius = 0.26
 	barrel.bottom_radius = 0.28
-	barrel.height = 0.48
-	_solid(barrel, origin + Vector3(1.9, 0.28, -0.4), Vector3.ONE, Color(0.45, 0.28, 0.16), 0.7)
+	barrel.height = 0.46
+	_solid(barrel, origin + Vector3(-1.95, 0.28, -0.35), Vector3.ONE, Color(0.45, 0.28, 0.16), 0.7)
 	var sign := Label3D.new()
 	sign.text = "Petal Stall"
-	sign.font_size = 56
+	sign.font_size = 48
 	sign.modulate = Color(0.98, 0.94, 0.84)
-	sign.outline_size = 10
+	sign.outline_size = 8
 	sign.outline_modulate = Color(0.22, 0.12, 0.08)
-	sign.position = origin + Vector3(0, 2.15, 0.2)
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign.position = origin + Vector3(0, 1.96, -1.18)
 	add_child(sign)
 	lantern = OmniLight3D.new()
-	lantern.position = origin + Vector3(0, 2.0, 0.8)
+	lantern.position = origin + Vector3(0, 1.7, 0.55)
 	lantern.light_color = Color(1.0, 0.72, 0.4)
-	lantern.omni_range = 7.0
-	lantern.light_energy = 0.6
+	lantern.omni_range = 7.5
+	lantern.light_energy = 0.7
 	add_child(lantern)
+	var ground_y := field.height(origin.x, origin.z)
+	dressing.place_prop(self, "Sun_Umbrella_1.fbx", Vector3(origin.x + 1.85, ground_y, origin.z + 1.15), 0.6, 0.7)
+	dressing.place_prop(self, "Table_1.fbx", Vector3(origin.x + 0.85, ground_y, origin.z + 0.72), 0.15, 0.82)
+	dressing.place_prop(self, "Bench_1.fbx", Vector3(origin.x - 0.15, ground_y, origin.z + 1.35), PI, 0.78)
+	dressing.place_prop(self, "Planter_1_Terracotta.fbx", Vector3(origin.x - 1.45, ground_y, origin.z - 0.15), 0.2, 1.15)
+	dressing.place_prop(self, "Planter_1_Terracotta.fbx", Vector3(origin.x + 1.35, ground_y, origin.z - 0.55), -0.4, 1.05)
 
 
 func _bridge_and_benches() -> void:
@@ -381,9 +400,9 @@ func _bridge_and_benches() -> void:
 		var t := float(i) / 4.0
 		var pos := Vector3(lerpf(2.4, 6.8, t), 0.18, lerpf(-4.2, -6.4, t))
 		_box(pos, Vector3(0.7, 0.06, 0.42), Color(0.48, 0.32, 0.18), 0.7)
-	_bench(Vector3(3.2, 0.1, 3.4))
-	_bench(Vector3(-2.5, 0.1, -1.2))
-	_bench(Vector3(8.5, 0.1, -3.2))
+	_garden_bench(Vector3(3.2, 0, 3.6), 0.6)
+	_garden_bench(Vector3(-2.6, 0, -1.0), 1.4)
+	_garden_bench(Vector3(7.6, 0, -3.4), -0.4)
 
 
 func _gate() -> void:
@@ -487,11 +506,31 @@ func _board(pos: Vector3, size: Vector3) -> void:
 	_box(pos, size, Color(0.4, 0.26, 0.14), 0.78)
 
 
-func _bench(pos: Vector3) -> void:
-	pos.y = field.height(pos.x, pos.z) + 0.28
-	_box(pos, Vector3(1.1, 0.08, 0.36), Color(0.45, 0.3, 0.16), 0.7)
-	_box(pos + Vector3(-0.45, -0.16, 0), Vector3(0.08, 0.28, 0.28), Color(0.32, 0.2, 0.12), 0.75)
-	_box(pos + Vector3(0.45, -0.16, 0), Vector3(0.08, 0.28, 0.28), Color(0.32, 0.2, 0.12), 0.75)
+func _garden_bench(pos: Vector3, yaw: float) -> void:
+	pos.y = field.height(pos.x, pos.z)
+	dressing.place_prop(self, "Bench_1.fbx", pos, yaw, 0.9)
+
+
+func _hedge_run(transforms: Array[Transform3D], colors: Array[Color], start: Vector3, end: Vector3, count: int) -> void:
+	for i in count:
+		var t := float(i) / float(count - 1)
+		var pos := start.lerp(end, t)
+		if field.path_distance(pos.x, pos.z) < 1.35:
+			continue
+		pos.y = field.height(pos.x, pos.z) + 0.84
+		var basis := Basis(Vector3.UP, 0.15).scaled(Vector3(1.0, 0.72, 0.85))
+		transforms.append(Transform3D(basis, pos))
+		colors.append(Color(0.74, 0.95, 0.68))
+
+
+func _box_xf(xf: Transform3D, size: Vector3, color: Color, roughness: float) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	var node := MeshInstance3D.new()
+	node.mesh = mesh
+	node.transform = xf
+	node.material_override = _std(color, roughness)
+	add_child(node)
 
 
 func _box(pos: Vector3, size: Vector3, color: Color, roughness: float) -> void:

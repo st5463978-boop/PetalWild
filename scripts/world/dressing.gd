@@ -10,7 +10,9 @@ func build(parent: Node3D) -> void:
 	_plots(parent)
 	_paths(parent)
 	_hedge(parent)
+	_hedge_clumps(parent)
 	_hedge_leaves(parent)
+	_hedge_fringe(parent)
 	_scatter_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
@@ -18,6 +20,7 @@ func build(parent: Node3D) -> void:
 	_trees(parent)
 	_willow(parent)
 	_groundcover(parent)
+	_lawn_tufts(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -197,8 +200,9 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
-		var width := 0.62 + scale * 0.22
+		var lift := sin(center.x * 1.7 + center.z * 1.2) * 0.18 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9) * 0.22
+		var width := (0.62 + scale * 0.22) * bulge
 		for point in profile:
 			ring.append(center + side * (point.x * width) + Vector3(0, point.y * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
@@ -322,6 +326,114 @@ func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
 	return material
+
+func _hedge_clumps(parent: Node3D) -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.46
+	mesh.height = 0.62
+	mesh.radial_segments = 8
+	mesh.rings = 5
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.15, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.15},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.15},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.15},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.72, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.72, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.72, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.72},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var count := maxi(int(a.distance_to(b) / 0.85), 1)
+		for i in count:
+			var center := a.lerp(b, float(i) / float(count))
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
+					continue
+			var away := Vector3(center.x, 0.0, center.z).normalized()
+			var scale := _rng.randf_range(0.72, 1.35)
+			var at := center + away * _rng.randf_range(-0.15, 0.35)
+			at.y = height * _rng.randf_range(0.72, 1.15)
+			var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * _rng.randf_range(0.75, 1.25), scale * 0.85))
+			points.append(Transform3D(basis, at))
+			colors.append(Color("#1f6a32").lerp(Color("#8fbf55"), _rng.randf() * 0.55))
+	_multimesh(parent, mesh, points, colors, _hedge_material(), "HedgeClumps", true)
+
+func _hedge_fringe(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.45, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.45},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.45},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.45},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.95, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.95, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.95, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.95},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var count := maxi(int(a.distance_to(b) / 0.22), 1)
+		for i in count:
+			var center := a.lerp(b, float(i) / float(count))
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
+					continue
+			var away := Vector3(center.x, 0.0, center.z)
+			if away.length() < 0.2:
+				away = Vector3(0, 0, -1)
+			away = away.normalized()
+			var at := center + away * _rng.randf_range(0.28, 0.78)
+			at.y = height * _rng.randf_range(0.15, 1.05)
+			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.5, 0.4), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
+			var scale := _rng.randf_range(0.75, 1.55)
+			points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.85, 1.7), scale)), at))
+			colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
+			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
+
+func _leaf_card() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_leaf_plane(tool, 0.0)
+	_leaf_plane(tool, 0.9)
+	tool.generate_normals()
+	return tool.commit()
+
+func _leaf_plane(tool: SurfaceTool, yaw: float) -> void:
+	var basis := Basis(Vector3.UP, yaw)
+	var width := 0.07
+	var height := 0.22
+	var a := basis * Vector3(-width, 0.0, 0.0)
+	var b := basis * Vector3(width, 0.0, 0.0)
+	var c := basis * Vector3(width * 0.28, height, 0.0)
+	var d := basis * Vector3(-width * 0.28, height, 0.0)
+	var normal := basis * Vector3(0, 0, 1)
+	_leaf_tri(tool, a, b, c, normal, Vector2(0, 1), Vector2(1, 1), Vector2(0.65, 0))
+	_leaf_tri(tool, a, c, d, normal, Vector2(0, 1), Vector2(0.65, 0), Vector2(0.35, 0))
+
+func _leaf_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, normal: Vector3, ua: Vector2, ub: Vector2, uc: Vector2) -> void:
+	tool.set_normal(normal)
+	tool.set_uv(ua)
+	tool.add_vertex(a)
+	tool.set_normal(normal)
+	tool.set_uv(ub)
+	tool.add_vertex(b)
+	tool.set_normal(normal)
+	tool.set_uv(uc)
+	tool.add_vertex(c)
 
 func _scatter_grass(parent: Node3D) -> void:
 	var mesh := _blade()
@@ -508,6 +620,32 @@ func _groundcover(parent: Node3D) -> void:
 		colors.append(Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf()))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false)
 
+func _lawn_tufts(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var tries := 0
+	while points.size() < 640 and tries < 4000:
+		tries += 1
+		var x := _rng.randf_range(-12.2, 12.2)
+		var z := _rng.randf_range(-9.2, 7.2)
+		if GardenLayout.in_plots(x, z, 0.35):
+			continue
+		if GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+			continue
+		var y := GardenLayout.height_at(x, z)
+		if y < -0.05:
+			continue
+		var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.15, 0.2), _rng.randf() * TAU, 0.0))
+		var scale := _rng.randf_range(0.55, 1.25)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.7, 1.4), scale)), Vector3(x, y, z)))
+		colors.append(Color("#2a6b34").lerp(Color("#d7e48a"), _rng.randf() * 0.7))
+		customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "LawnTufts", false, customs)
+
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.16
@@ -613,6 +751,9 @@ func _cc0_props(parent: Node3D) -> void:
 		load(_PACK + "Textures/Plants_Atlas_1_Basecolor.png"),
 		load(_PACK + "Textures/Plants_Atlas_1_Opacity.png")
 	)
+	var prop_tex: Texture2D = load(_PACK + "Textures/Props_Basecolor.png")
+	var props := _flat_material(Color.WHITE, 0.66)
+	props.albedo_texture = prop_tex
 	var layout := [
 		["FBX/Poppy_Single_Red.fbx", Vector3(-10.4, 0, -2.4), 1.15, 0.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.5, 0, -1.2), 0.95, 2.1],
@@ -626,6 +767,8 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Wild_Grass_Red_small.fbx", Vector3(2.4, 0, 2.2), 1.2, 1.4],
 		["FBX/Bench_1.fbx", Vector3(-1.4, 0, 3.6), 1.0, 0.2],
 		["FBX/Planter_1_Terracotta.fbx", Vector3(-5.4, 0, 4.4), 1.0, 1.1],
+		["FBX/Table_1.fbx", Vector3(-2.55, 0, 6.15), 0.78, 0.35],
+		["FBX/Sun_Umbrella_1.fbx", Vector3(-2.7, 0, 6.35), 0.46, 0.5],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-11.2, 0, -3.1), 0.85, 1.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.2, 0, -3.3), 1.05, 2.6],
 		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(-11.6, 0, 1.6), 0.9, 0.7],
@@ -658,11 +801,9 @@ func _cc0_props(parent: Node3D) -> void:
 		node.position = Vector3(at.x, y, at.z)
 		node.rotation.y = float(item[3])
 		node.scale = Vector3.ONE * float(item[2])
-		if file.find("Bench") != -1:
-			_paint_imported(node, _flat_material(Color("#8a6248"), 0.84))
-		elif file.find("Planter") != -1:
-			_paint_imported(node, _flat_material(Color("#c47858"), 0.72))
-		elif file.find("Table") == -1 and file.find("Umbrella") == -1:
+		if file.find("Bench") != -1 or file.find("Planter") != -1 or file.find("Table") != -1 or file.find("Umbrella") != -1:
+			_paint_imported(node, props)
+		else:
 			_paint_imported(node, plants)
 		parent.add_child(node)
 
