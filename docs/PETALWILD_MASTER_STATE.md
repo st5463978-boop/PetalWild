@@ -62,13 +62,13 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-Kenney leaf cards cover the hedge shell. Crown tufts sit above that shell, and a procedural fringe covers both faces. Room floors have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom. The petal is a five-point cup with a center rib, and it still curls back. Lumen’s raised arm holds a seed tray. A few warm additive shafts show in daylight. `PETAL_SMOKE_OK` still passes.
+Kenney leaf cards cover the hedge shell down to the base. Crown tufts sit above that shell, and a procedural fringe covers both faces. Room floors have a scatter of Kenney leaves. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp’s eyes and mouth sit on the blossom. The petal is a five-point cup with a center rib, and it still curls back. Lumen’s raised arm holds a seed tray. Each hand is a palm with three fingers and a thumb. A few warm additive shafts show in daylight. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass.
 
 Three largest gaps still open:
 
 1. **Hedge depth.** The wall is leafy now, and it is still a box with cards on it. The concept hedges are thick, irregular, and clipped. PETAL-05 and PETAL-06: more depth and a broken silhouette, not another flat layer.
 2. **Bellhelp’s body.** The face and the cupped petal read. The core is still a lathe. PETAL-03: a body that is not a turned solid.
-3. **Ground and cast.** The rooms are still mostly one lawn plane. Lumen is stacked capsules, and the fingers do not read at garden distance. Shafts are thin beams. PETAL-04 and PETAL-06.
+3. **Ground and cast.** The rooms are still mostly one lawn plane. Lumen’s stalk is still stacked capsules. Shafts are thin beams. PETAL-04 and PETAL-06.
 
 ## Next integration
 

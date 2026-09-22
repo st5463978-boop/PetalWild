@@ -161,11 +161,30 @@ func _arm(at: Vector3, color: Color, pitch: float = 0.0, roll: float = 0.0) -> N
 	var z_roll := roll if roll != 0.0 else (18.0 if at.x > 0.0 else -18.0)
 	node.rotation_degrees = Vector3(pitch, 0, z_roll)
 	body.add_child(node)
-	var wrist := Vector3(0.0, -0.15, 0.02)
-	_sphere(node, wrist, 0.04, Color("#f4efe2"), Vector3(1.35, 0.7, 0.95))
-	for i in 3:
-		_sphere(node, wrist + Vector3(0.016 * float(i - 1), -0.022, 0.028), 0.013, Color("#f7f3e8"), Vector3(0.65, 1.2, 0.7))
+	_hand(node, Color("#f6f1e4"))
 	return node
+
+func _hand(arm: Node3D, color: Color) -> void:
+	var palm := BoxMesh.new()
+	palm.size = Vector3(0.1, 0.05, 0.12)
+	var node := _paint(palm, color, 0.5)
+	node.position = Vector3(0, -0.17, 0.02)
+	arm.add_child(node)
+	for i in 3:
+		var finger := CapsuleMesh.new()
+		finger.radius = 0.014
+		finger.height = 0.09
+		var tip := _paint(finger, color.lightened(0.06), 0.46)
+		tip.position = Vector3(-0.028 + float(i) * 0.028, -0.02, -0.07)
+		tip.rotation_degrees = Vector3(78, 0, 0)
+		node.add_child(tip)
+	var thumb := CapsuleMesh.new()
+	thumb.radius = 0.015
+	thumb.height = 0.07
+	var side := _paint(thumb, color.darkened(0.04), 0.46)
+	side.position = Vector3(0.055, 0.0, -0.02)
+	side.rotation_degrees = Vector3(40, 0, -55)
+	node.add_child(side)
 
 func _feet(color: Color) -> void:
 	_sphere(body, Vector3(-0.07, 0.06, 0.02), 0.05, color, Vector3(1.2, 0.6, 1.5))

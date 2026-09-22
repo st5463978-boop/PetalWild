@@ -231,7 +231,7 @@ func _hedge_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 
 func _hedge_leaves(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.5, 0.34)
+	quad.size = Vector2(0.64, 0.48)
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var runs: Array = [
@@ -245,13 +245,17 @@ func _hedge_leaves(parent: Node3D) -> void:
 		[Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), 0.78, []],
 	]
 	var shell: Array[Vector2] = [
-		Vector2(-0.5, 0.4),
-		Vector2(-0.36, 0.76),
-		Vector2(-0.18, 1.06),
-		Vector2(0.0, 1.24),
-		Vector2(0.18, 1.06),
-		Vector2(0.36, 0.76),
-		Vector2(0.5, 0.4),
+		Vector2(-0.55, 0.14),
+		Vector2(-0.5, 0.36),
+		Vector2(-0.4, 0.62),
+		Vector2(-0.26, 0.88),
+		Vector2(-0.12, 1.1),
+		Vector2(0.0, 1.26),
+		Vector2(0.12, 1.1),
+		Vector2(0.26, 0.88),
+		Vector2(0.4, 0.62),
+		Vector2(0.5, 0.36),
+		Vector2(0.55, 0.14),
 	]
 	for run in runs:
 		var origin: Vector3 = run[0]
