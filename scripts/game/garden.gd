@@ -553,9 +553,9 @@ func _run_smoke() -> void:
 		push_error("smoke: night route missed the shed")
 		get_tree().quit(1)
 		return
-	var before := bram.global_position.distance_to(bram.waypoints[0])
+	var walk := bram.global_position.distance_to(bram.waypoints[0])
 	bram._process(3.0)
-	if bram.global_position.distance_to(bram.waypoints[0]) > before - 0.8:
+	if bram.global_position.distance_to(bram.waypoints[0]) > walk - 0.8:
 		push_error("smoke: bram did not walk home")
 		get_tree().quit(1)
 		return
