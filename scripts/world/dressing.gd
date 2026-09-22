@@ -1328,7 +1328,8 @@ func _stones(parent: Node3D) -> void:
 		var y := maxf(GardenLayout.height_at(x, z), 0.02)
 		var scale := Vector3(_rng.randf_range(0.4, 1.1), _rng.randf_range(0.25, 0.55), _rng.randf_range(0.4, 0.9))
 		points.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(scale), Vector3(x, y, z)))
-		colors.append(Color("#b7aa98").lerp(Color("#8d8274"), _rng.randf()))
+		# ponytail: pale stones clip under this sun; raise if the path goes muddy.
+		colors.append(Color("#6e6458").lerp(Color("#5c5146"), _rng.randf()))
 	_multimesh(parent, mesh, points, colors, _standard(Color.WHITE, 0.9), "Stones", false)
 
 func _blade() -> ArrayMesh:
