@@ -33,9 +33,9 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp has a face on the blossom, a cupped petal, and a lathe body.
+- Bellhelp has a face on the blossom, a cupped petal, and a body of five lobes. In close-up the lobes still weld into one glossy mass.
 - Lumen holds a seed tray. The hand is a palm with three fingers and a thumb. The body is still capsules.
-- Hedge walls have shoulders, puffs, crown tufts, and leaf cards on the faces. The smooth core can still show. There is still no insect or bird life.
+- Hedge walls have a chopped crown, puffs, leaf cards, and irregular bulge clusters. A smooth core can still show. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,7 +62,7 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge crown is chopped across three offset shoulders, with puffs, tufts, and leaf cards on the faces. Flower drifts sit in the rooms. Bellhelp’s core is a pad plus five lobes, and in the close-up those lobes still weld into one glossy body. The face stays on the blossom. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
+The hedge crown is chopped across three offset shoulders, with puffs, leaf cards, and irregular bulge clusters. Flower drifts sit in the rooms. Bellhelp’s core is a pad plus five lobes, and in the close-up those lobes still weld into one glossy body. The face stays on the blossom. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
