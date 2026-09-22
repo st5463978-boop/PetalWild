@@ -95,10 +95,7 @@ func _build_body() -> void:
 			_leek()
 
 func _leek() -> void:
-	_capsule(body, Vector3(0, 0.22, 0), 0.145, 0.34, Color("#f6f1e6"))
-	_capsule(body, Vector3(0, 0.46, 0), 0.12, 0.26, Color("#e4efd2"))
-	_capsule(body, Vector3(0, 0.66, 0), 0.095, 0.22, Color("#b6d488"))
-	_capsule(body, Vector3(0, 0.84, 0), 0.072, 0.18, Color("#5f9a42"))
+	_stalk()
 	for i in 7:
 		var droop := 0.62 if i % 2 == 0 else 0.32
 		var length := 0.7 if i % 2 == 0 else 0.46
@@ -131,6 +128,52 @@ func _pea() -> void:
 	_arm(Vector3(0.16, 0.48, 0), Color("#8ed062"))
 	_feet(Color("#5c8a3c"))
 	_pack()
+
+func _stalk() -> void:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var radii: Array[float] = [0.16, 0.15, 0.11, 0.08, 0.05, 0.018]
+	var heights: Array[float] = [0.02, 0.2, 0.4, 0.6, 0.8, 0.98]
+	var tints: Array[Color] = [
+		Color("#f4efe4"), Color("#efe6cc"), Color("#d5e4a4"),
+		Color("#8fbf5c"), Color("#4d8a38"), Color("#2c6a30"),
+	]
+	var segments := 10
+	var rings: Array = []
+	for row in radii.size():
+		var ring: Array[Vector3] = []
+		for seg in segments:
+			var angle := TAU * float(seg) / float(segments)
+			var flute := 1.0 + 0.1 * cos(angle * 3.0 + heights[row] * 4.0)
+			ring.append(Vector3(cos(angle) * radii[row] * flute, heights[row], sin(angle) * radii[row] * flute))
+		rings.append(ring)
+	for row in rings.size() - 1:
+		var a: Array = rings[row]
+		var b: Array = rings[row + 1]
+		for seg in segments:
+			var n := (seg + 1) % segments
+			_stalk_tri(tool, a[seg], b[seg], b[n], tints[row])
+			_stalk_tri(tool, a[seg], b[n], a[n], tints[row])
+	var tip: Vector3 = Vector3(0, heights[heights.size() - 1], 0)
+	var top: Array = rings[rings.size() - 1]
+	for seg in segments:
+		_stalk_tri(tool, top[seg], tip, top[(seg + 1) % segments], tints[tints.size() - 1])
+	tool.generate_normals()
+	var node := MeshInstance3D.new()
+	node.mesh = tool.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.62
+	node.material_override = material
+	body.add_child(node)
+
+func _stalk_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
+	tool.set_color(color)
+	tool.add_vertex(a)
+	tool.set_color(color)
+	tool.add_vertex(b)
+	tool.set_color(color)
+	tool.add_vertex(c)
 
 func _capsule(parent: Node3D, at: Vector3, radius: float, height: float, color: Color) -> void:
 	var mesh := CapsuleMesh.new()
