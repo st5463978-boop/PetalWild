@@ -25,6 +25,7 @@ func build(parent: Node3D) -> void:
 	_groundcover(parent)
 	_lawn_tufts(parent)
 	_room_clumps(parent)
+	_room_carpet(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -214,16 +215,23 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
 		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
-		var width := (0.36 + scale * 0.1) * bulge
+		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
+		var waist := 0.22 + 0.78 * knot
+		var width := (0.36 + scale * 0.1) * bulge * waist
+		if _hedge_gap(center):
+			open = true
 		for point in profile:
 			var height := point.y
-			if height > 0.2:
-				height *= chop
+			if height > 0.12:
+				height *= chop * lerpf(0.38, 1.0, knot)
 			ring.append(center + side * (point.x * width + lean * height) + Vector3(0, height * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
 		previous = ring
 		previous_open = open
+
+func _hedge_gap(at: Vector3) -> bool:
+	return absf(sin(at.x * 0.48 + at.z * 0.36)) < 0.28
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
@@ -285,6 +293,8 @@ func _hedge_leaves(parent: Node3D) -> void:
 					blocked = true
 					break
 			if blocked:
+				continue
+			if _hedge_gap(center):
 				continue
 			var lift := sin(center.x * 0.85 + center.z * 0.7) * 0.42 * scale
 			for point in shell:
@@ -375,6 +385,8 @@ func _hedge_clumps(parent: Node3D) -> void:
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
 					continue
+			if _hedge_gap(center):
+				continue
 			var scale := _rng.randf_range(1.15, 1.9)
 			var at := center + side * _rng.randf_range(-0.32, 0.32)
 			at.y = height * _rng.randf_range(1.05, 1.45)
@@ -447,6 +459,8 @@ func _hedge_fringe(parent: Node3D) -> void:
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
 					continue
+			if _hedge_gap(center):
+				continue
 			for face in 2:
 				var sign := -1.0 if face == 0 else 1.0
 				var at := center + side * sign * _rng.randf_range(0.02, 0.38)
@@ -493,6 +507,8 @@ func _hedge_coat(parent: Node3D) -> void:
 					blocked = true
 					break
 			if blocked:
+				continue
+			if _hedge_gap(center):
 				continue
 			for n in 2:
 				var side_sign := -1.0 if n == 0 else 1.0
@@ -555,6 +571,8 @@ func _hedge_bulges(parent: Node3D) -> void:
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]) + 0.4:
 					continue
+			if _hedge_gap(center):
+				continue
 			var sign := -1.0 if rng.randf() > 0.5 else 1.0
 			var reach := rng.randf_range(0.55, 1.05)
 			for n in 5:
@@ -923,6 +941,35 @@ func _room_clumps(parent: Node3D) -> void:
 			colors.append(Color("#1a4c28").lerp(Color("#8fb85a"), _rng.randf() * 0.65))
 			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "RoomClumps", false, customs)
+
+func _room_carpet(parent: Node3D) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 90210
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.55, 0.36)
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var tries := 0
+	while points.size() < 2400 and tries < 9000:
+		tries += 1
+		var x := rng.randf_range(-8.3, 3.6)
+		var z := rng.randf_range(-6.3, 3.0)
+		if GardenLayout.in_plots(x, z, 0.08) or GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
+			continue
+		var y := GardenLayout.height_at(x, z) + 0.015
+		var basis := Basis(Vector3.RIGHT, Vector3.FORWARD, Vector3.UP)
+		basis = basis.rotated(Vector3.UP, rng.randf() * TAU)
+		basis = basis.rotated(basis.x, rng.randf_range(1.2, 1.5))
+		basis = basis.scaled(Vector3.ONE * rng.randf_range(0.75, 1.55))
+		points.append(Transform3D(basis, Vector3(x, y, z)))
+		colors.append(Color("#3f6b2e").lerp(Color("#d2df78"), rng.randf() * 0.75))
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/leaf_card.gdshader")
+	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_007.png"))
+	material.set_shader_parameter("tint", Color("#6d8f3a"))
+	_multimesh(parent, quad, points, colors, material, "RoomCarpet", false)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()

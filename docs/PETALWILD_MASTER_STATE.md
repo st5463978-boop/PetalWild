@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge crown is chopped, with irregular bulges, and the solid core is narrower than the leaf cards and puffs around it. The four beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn. Bellhelp’s five lobes are pulled apart, with a dark crease in each gap, and a five-point cup. Lumen’s stalk is one fluted taper, cream at the base and green at the crown, and the raised hand holds the seed tray. `PETAL_SMOKE_OK` still passes.
+The hedge mesh, cards, and puffs share waists, so the wall breaks into clumps. The solid core is narrower than that coat. The four beds are furrowed soil. Bloom rows stand on the south approach, the west edge, and the north lawn, and a flat leaf carpet fills the room floors between the paths and the plots. Bellhelp’s lobes stay split by dark creases. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
-1. **Hedge mass.** The core is recessed. The silhouette is still one hedge, not separate clipped clumps. PETAL-05 and PETAL-06: break the volume, not just shrink it.
-2. **Bellhelp’s read.** The lobes and creases separate in the close-up. The body is still glossy blobs under a petal skirt. PETAL-03: a blossom that is not a cluster of spheres.
-3. **Light and floor.** Lumen’s stalk is one taper. The open lawn between the rows is still short of the plates’ ground cover, and the shafts are thin beams. PETAL-06.
+1. **Hedge clumps.** The silhouette is notched. Each clump is still a thin green mass, not a thick clipped hedge. PETAL-05 and PETAL-06.
+2. **Open lawn.** Bloom rows and a leaf carpet are in. The lawn between them is still short of the plates. PETAL-06.
+3. **Light.** The shafts are still thin beams. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): break the hedge into separate clumps, and give the rooms the ground cover from the concept plates. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): thicken each hedge clump, and turn the room carpet into flower beds. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
