@@ -158,9 +158,14 @@ func _arm(at: Vector3, color: Color) -> void:
 	mesh.height = 0.28
 	var node := _paint(mesh, color, 0.5)
 	node.position = at
-	node.rotation_degrees = Vector3(0, 0, 18 if at.x > 0 else -18)
+	var side := 1.0 if at.x > 0.0 else -1.0
+	node.rotation_degrees = Vector3(0, 0, 18 if side > 0.0 else -18)
 	body.add_child(node)
-	_sphere(body, at + Vector3(0.04 if at.x > 0 else -0.04, -0.16, 0.04), 0.045, Color("#f6f1e4"))
+	var wrist := at + Vector3(0.045 * side, -0.16, 0.05)
+	_sphere(body, wrist, 0.04, Color("#f4efe2"), Vector3(1.35, 0.7, 0.95))
+	for i in 3:
+		var finger := wrist + Vector3(0.016 * side * float(i - 1), -0.018, 0.03)
+		_sphere(body, finger, 0.013, Color("#f7f3e8"), Vector3(0.65, 1.2, 0.7))
 
 func _feet(color: Color) -> void:
 	_sphere(body, Vector3(-0.07, 0.06, 0.02), 0.05, color, Vector3(1.2, 0.6, 1.5))

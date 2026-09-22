@@ -233,13 +233,10 @@ func _hedge_material() -> ShaderMaterial:
 	return material
 
 func _hedge_clumps(parent: Node3D) -> void:
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.46
-	mesh.height = 0.62
-	mesh.radial_segments = 8
-	mesh.rings = 5
+	var mesh := _hedge_tuft()
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
+	var customs: Array[Color] = []
 	var segments: Array[Dictionary] = [
 		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.15, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
 		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.15},
@@ -254,24 +251,61 @@ func _hedge_clumps(parent: Node3D) -> void:
 		var a: Vector3 = seg["a"]
 		var b: Vector3 = seg["b"]
 		var height: float = seg["h"]
-		var count := maxi(int(a.distance_to(b) / 0.85), 1)
+		var span := a.distance_to(b)
+		var count := maxi(int(span / 0.46), 1)
+		var dir := (b - a) / span if span > 0.2 else Vector3.FORWARD
+		var side := Vector3(-dir.z, 0.0, dir.x)
 		for i in count:
 			var center := a.lerp(b, float(i) / float(count))
 			if seg.has("gate"):
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
 					continue
-			var away := Vector3(center.x, 0.0, center.z).normalized()
-			var scale := _rng.randf_range(0.72, 1.35)
-			var at := center + away * _rng.randf_range(-0.15, 0.35)
-			at.y = height * _rng.randf_range(0.72, 1.15)
-			var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * _rng.randf_range(0.75, 1.25), scale * 0.85))
+			var scale := _rng.randf_range(1.15, 1.9)
+			var at := center + side * _rng.randf_range(-0.32, 0.32)
+			at.y = height * _rng.randf_range(0.82, 1.28)
+			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			points.append(Transform3D(basis, at))
-			colors.append(Color("#1f6a32").lerp(Color("#8fbf55"), _rng.randf() * 0.55))
-	_multimesh(parent, mesh, points, colors, _hedge_material(), "HedgeClumps", true)
+			colors.append(Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf()))
+			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs)
+
+func _hedge_tuft() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var fans: Array[Vector4] = [
+		Vector4(0.2, -0.55, 0.18, 0.5),
+		Vector4(1.15, 0.2, 0.14, 0.36),
+		Vector4(2.05, -0.3, 0.2, 0.54),
+		Vector4(2.9, 0.4, 0.13, 0.34),
+		Vector4(4.1, -0.12, 0.17, 0.46),
+		Vector4(5.2, 0.48, 0.12, 0.3),
+	]
+	for fan in fans:
+		_tuft_leaf(tool, fan.x, fan.y, fan.z, fan.w)
+	tool.generate_normals()
+	return tool.commit()
+
+func _tuft_leaf(tool: SurfaceTool, yaw: float, pitch: float, width: float, height: float) -> void:
+	var basis := Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, pitch)
+	var a := basis * Vector3(-width, 0.02, 0.0)
+	var b := basis * Vector3(width, 0.02, 0.0)
+	var rib := basis * Vector3(0.0, height * 0.48, width * 0.25)
+	var tip := basis * Vector3(0.0, height, 0.0)
+	var n := (b - a).cross(tip - a)
+	if n.length() < 0.0001:
+		n = Vector3.UP
+	n = n.normalized()
+	_leaf_tri(tool, a, b, rib, n, Vector2(0, 1), Vector2(1, 1), Vector2(0.5, 0.45))
+	_leaf_tri(tool, a, rib, tip, n, Vector2(0, 1), Vector2(0.5, 0.45), Vector2(0.5, 0))
+	_leaf_tri(tool, b, tip, rib, n, Vector2(1, 1), Vector2(0.5, 0), Vector2(0.5, 0.45))
+	var back := -n
+	_leaf_tri(tool, b, a, rib, back, Vector2(1, 1), Vector2(0, 1), Vector2(0.5, 0.45))
+	_leaf_tri(tool, rib, a, tip, back, Vector2(0.5, 0.45), Vector2(0, 1), Vector2(0.5, 0))
+	_leaf_tri(tool, rib, tip, b, back, Vector2(0.5, 0.45), Vector2(0.5, 0), Vector2(1, 1))
 
 func _hedge_leaves(parent: Node3D) -> void:
-	var mesh := _leaf_card()
+	var mesh := _hedge_leaf_card()
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var customs: Array[Color] = []
@@ -289,25 +323,34 @@ func _hedge_leaves(parent: Node3D) -> void:
 		var a: Vector3 = seg["a"]
 		var b: Vector3 = seg["b"]
 		var height: float = seg["h"]
-		var count := maxi(int(a.distance_to(b) / 0.22), 1)
+		var span := a.distance_to(b)
+		var count := maxi(int(span / 0.26), 1)
+		var dir := (b - a) / span if span > 0.2 else Vector3.FORWARD
+		var side := Vector3(-dir.z, 0.0, dir.x)
 		for i in count:
 			var center := a.lerp(b, float(i) / float(count))
 			if seg.has("gate"):
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
 					continue
-			var away := Vector3(center.x, 0.0, center.z)
-			if away.length() < 0.2:
-				away = Vector3(0, 0, -1)
-			away = away.normalized()
-			var at := center + away * _rng.randf_range(0.28, 0.78)
-			at.y = height * _rng.randf_range(0.15, 1.05)
-			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.5, 0.4), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
-			var scale := _rng.randf_range(0.75, 1.55)
-			points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.85, 1.7), scale)), at))
-			colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
-			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+			for face in 2:
+				var sign := -1.0 if face == 0 else 1.0
+				var at := center + side * sign * _rng.randf_range(0.02, 0.38)
+				at.y = height * _rng.randf_range(0.08, 1.18)
+				var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.6, 0.5), _rng.randf() * TAU, _rng.randf_range(-0.45, 0.45)))
+				var scale := _rng.randf_range(1.35, 2.35)
+				points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.9, 1.6), scale)), at))
+				colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
+				customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeLeaves", true, customs)
+
+func _hedge_leaf_card() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_leaf_plane_sized(tool, 0.0, 0.16, 0.5)
+	_leaf_plane_sized(tool, 0.85, 0.12, 0.38)
+	tool.generate_normals()
+	return tool.commit()
 
 func _leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -318,9 +361,10 @@ func _leaf_card() -> ArrayMesh:
 	return tool.commit()
 
 func _leaf_plane(tool: SurfaceTool, yaw: float) -> void:
+	_leaf_plane_sized(tool, yaw, 0.07, 0.22)
+
+func _leaf_plane_sized(tool: SurfaceTool, yaw: float, width: float, height: float) -> void:
 	var basis := Basis(Vector3.UP, yaw)
-	var width := 0.07
-	var height := 0.22
 	var a := basis * Vector3(-width, 0.0, 0.0)
 	var b := basis * Vector3(width, 0.0, 0.0)
 	var c := basis * Vector3(width * 0.28, height, 0.0)

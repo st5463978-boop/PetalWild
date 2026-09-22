@@ -25,6 +25,8 @@ void fragment() {
 	vec3 sun = vec3(0.66, 0.78, 0.32);
 	vec3 col = mix(deep, mid, broad * 0.5 + 0.5);
 	col = mix(col, sun, clamp(up, 0.0, 1.0) * (0.28 + fine * 0.12));
+	float crevice = smoothstep(0.15, 0.85, abs(fine));
+	col = mix(col * 0.62, col, crevice);
 	ALBEDO = col;
 	ROUGHNESS = 0.84;
 	SPECULAR = 0.15;
