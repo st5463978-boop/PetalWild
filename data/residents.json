@@ -1,0 +1,68 @@
+{
+  "cara": {
+    "name": "Cara",
+    "body": "carrot",
+    "role": "Seed merchant",
+    "job": "petal_stall",
+    "voice": 520,
+    "starts_present": true,
+    "relationship": 0.2,
+    "home_pad": 0,
+    "personality": "Warm, exact, and protective of anything small enough to bounce.",
+    "schedule": {"dawn": "home", "day": "stall", "dusk": "path", "night": "home"},
+    "relations": {"mia": 0.4, "pod": 0.15, "bran": 0.05, "oshi": 0.1},
+    "arrives": []
+  },
+  "mia": {
+    "name": "Mia",
+    "body": "berry",
+    "role": "Flower gardener",
+    "job": "gardener",
+    "voice": 640,
+    "personality": "Easily delighted, keeps count of blooms, forgives slowly.",
+    "schedule": {"dawn": "path", "day": "path", "dusk": "home", "night": "home"},
+    "relations": {"cara": 0.45, "oshi": 0.2},
+    "arrives": [
+      {"op": "harvested", "item": "sunpetal_bloom", "count": 4}
+    ]
+  },
+  "pod": {
+    "name": "Pod",
+    "body": "pea",
+    "role": "Lane courier",
+    "job": "courier",
+    "voice": 480,
+    "personality": "Restless, polite, treats every path as a route.",
+    "schedule": {"dawn": "path", "day": "path", "dusk": "stall", "night": "home"},
+    "relations": {"cara": 0.25, "bran": 0.1},
+    "arrives": [
+      {"op": "sales", "count": 3}
+    ]
+  },
+  "bran": {
+    "name": "Bran",
+    "body": "beet",
+    "role": "Soilkeeper",
+    "job": "soil",
+    "voice": 340,
+    "personality": "Gruff about theft, tender about dirt.",
+    "schedule": {"dawn": "path", "day": "path", "dusk": "home", "night": "home"},
+    "relations": {"cara": 0.05, "rendle": -0.4},
+    "arrives": [
+      {"op": "species", "id": "rendle", "min": "resident"}
+    ]
+  },
+  "oshi": {
+    "name": "Oshi",
+    "body": "onion",
+    "role": "Night scholar",
+    "job": "scholar",
+    "voice": 420,
+    "personality": "Quiet, keeps proposals written down, does not touch the till.",
+    "schedule": {"dawn": "home", "day": "home", "dusk": "path", "night": "path"},
+    "relations": {"cara": 0.15, "mia": 0.2},
+    "arrives": [
+      {"op": "harvested", "item": "nightbloom_cup", "count": 1}
+    ]
+  }
+}

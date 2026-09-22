@@ -1,37 +1,41 @@
 ; Engine configuration file.
-; Godot 4.8-dev6 (4.8.dev6.official.8898c2b3d). Do not float this forward.
+; Godot 4.8-dev6 (4.8.dev6.official.8898c2b3d)
 
 config_version=5
 
 [application]
 
 config/name="PetalWild"
-config/description="A living garden in Hedge Hollow."
+config/description="A living garden that can grow into a town."
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.8", "Forward Plus")
-config/icon="res://icon.svg"
+config/features=PackedStringArray("4.8", "GL Compatibility")
+config/icon=""
 
 [autoload]
 
-Settings="*res://scripts/autoload/settings.gd"
-ContentDB="*res://scripts/autoload/content_db.gd"
-Clock="*res://scripts/autoload/clock.gd"
-Economy="*res://scripts/autoload/economy.gd"
-Trust="*res://scripts/autoload/trust.gd"
-SaveGame="*res://scripts/autoload/save_game.gd"
-SimLod="*res://scripts/autoload/sim_lod.gd"
+PetalContent="*res://scripts/autoload/petal_content.gd"
+PetalWorld="*res://scripts/autoload/petal_world.gd"
+PetalClock="*res://scripts/autoload/petal_clock.gd"
+PetalSave="*res://scripts/autoload/petal_save.gd"
+PetalAudio="*res://scripts/autoload/petal_audio.gd"
 
 [display]
 
-window/size/viewport_width=1440
-window/size/viewport_height=900
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1440
+window/size/window_height_override=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=4
+window/handheld/orientation=1
+
+[debug]
+
+gdscript/warnings/inference_on_variant=0
+gdscript/warnings/untyped_declaration=0
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
+renderer/rendering_method="gl_compatibility"
 anti_aliasing/quality/msaa_3d=2
-environment/defaults/default_clear_color=Color(0.62, 0.76, 0.58, 1)
-textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.62, 0.74, 0.58, 1)

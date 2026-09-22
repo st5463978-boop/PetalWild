@@ -1,18 +1,24 @@
 # Licence matrix
 
-PetalWild’s own code and original assets are unpublished. All rights reserved until Scott chooses a project licence. Third-party pieces keep their own licences. Mixing them is not automatic permission to relicense the whole game.
+PetalWild code is MIT. Third-party assets keep their own licences. Presence in this repo does not relicense them.
 
-| Class | Meaning | In the tree now |
-| --- | --- | --- |
-| GREEN | CC0, MIT, BSD, Apache, or similar | Godot engine (MIT) is a tool, not vendored. Asset Quest Stylized Garden demo is CC0 and staged, not yet the garden's materials |
-| YELLOW | Attribution required | Inter 4.1 and Nunito, both SIL OFL 1.1 |
-| REVIEW | GPL, AGPL, LGPL, share-alike, custom | Jelly Baby (GPL-3.0) and openage (GPL) were read as references. No code incorporated |
-| RED | Unclear, ripped, or another game’s assets | None imported. TiP-Recomp was not fetched |
+| Component | Class | Licence | Notes |
+| --- | --- | --- | --- |
+| `scripts/`, `scenes/`, `data/`, `shaders/`, `tests/` | GREEN | MIT | Original. Copyright 2026 Scott Thompson |
+| Godot 4.8-dev6 engine | GREEN | MIT | Not vendored. Pinned binary only |
+| Kenney Nature Kit, Foliage Pack, Mini Forest, Interface Sounds | GREEN | CC0 1.0 | `assets/third_party/kenney/` |
+| Poly Haven leafy grass, flower scattered dirt, forest leaves 02, forest leaves 03 | GREEN | CC0 | 1K JPG albedo, normal, ARM |
+| OpenGameArt Forest Ambience, Slobad | GREEN | CC0 1.0 | `assets/third_party/opengameart/Forest_Ambience.mp3` |
+| Asset Quest Stylized Garden demo | GREEN | CC0 1.0 | Incoming only, not in the running scene. `third_party/incoming/assetquest-stylized-garden-demo/` |
+| Inter font | GREEN | SIL OFL 1.1 | `assets/fonts/`. Reserved for the Hedge Hollow UI |
+| Jelly-Baby | REVIEW | GPL-3.0-only | Not imported. Behaviour reference only |
+| openage | REVIEW | GPL-3.0-or-later | Not imported. Architecture notes only |
+| redplanethq/town | REVIEW | AGPL-3.0-or-later plus Commons Clause | Not imported |
+| VivaPinataPlus | GREEN as a repo, unused | MIT | Systems research only. No content copied |
+| TiP-Recomp | RED for this project | no-AI policy | Not fetched, not analysed |
+| Cities: Skylines topic | RED if assets | proprietary | Genre research only |
+| Supplied concept paintings | project art | supplied by the creative director | `docs/reference/petalwild_target_*.png` |
 
-## Review rules
+YELLOW (CC-BY) : none accepted this wave.
 
-- Do not paste GPL source into this tree. Recreate behaviour.
-- Do not analyse TiP-Recomp source, disassembly, or assets.
-- A CC0 model still has to be recoloured and scaled before it ships. Record it in `ASSET_PROVENANCE.md` first.
-- OFL fonts stay under OFL. Do not relicense Inter.
-- No external action (mail, spend, publish, deploy) is licensed by a character’s trust level.
+No GPL program code is linked into the game. A future decision to do that has to be explicit. The Hailo wrapper escalates tasks that ask to paste GPL source.

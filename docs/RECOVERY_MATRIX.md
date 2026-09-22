@@ -1,54 +1,48 @@
 # Recovery matrix
 
-Forensic pass, 2026-09-22. This repository started empty apart from an init commit. The previous Garden Grove cloud run (`bc-de2329c2-3768-409c-ac9b-20a87a58fc6a`) is not readable from this environment, and that work was never pushed to a GitHub remote (the agent UI still showed “Create repo”). Public search did not find a Garden Grove / PetalWild / Hedge Hollow source tree. Unique names from the playable screenshot (Petal Stall, Bulrush, Bellhelp, Gushorn) do not appear in a public repository.
+Date: 2026-09-22
 
-Decision: reconstruct the observed playable loop and the recovered names. Do not claim the old source was merged. Do not copy GPL implementations from the research references.
+This repository started from an empty root commit. There is no other local branch, no worktree, and no Garden Grove Godot tree to merge.
 
-## Sources inspected
+The prior Cursor run named in the brief, `bc-de2329c2-3768-409c-ac9b-20a87a58fc6a`, is not readable from this session. Public GitHub for the same account does not contain a Garden Grove or PetalWild project. Jelly-Baby is a separate GPL-3.0-only repository and was not cloned.
 
-| Source | What was found | Decision |
-| --- | --- | --- |
-| This git repo | Empty init commit, then the uploaded reference images | Foundation is the reconstruction in this branch |
-| Cloud agent `bc-de2329c2` | Not accessible. Screenshot shows a Godot project with `CREDITS.md`, `day.ogg`, `dialog.ogg` | ARCHIVE the screenshot. Do not invent the missing files |
-| GitHub `scottstts/Jelly-Baby` | GPL-3.0. Interaction vocabulary: drag, stretch, throw, wobble, hop | KEEP as behaviour reference only. No source copied |
-| GitHub `SFTtech/openage` | GPL. Large-scale simulation architecture | KEEP as textbook. No source copied |
-| GitHub `redplanethq/town` | Agent-town reference | KEEP ideas (roles, walkable town). No code imported |
-| GitHub `VivaPinataPlus` | Modding / systems research lead | KEEP as systems research. No assets, names, or code |
-| GitHub `SolarCookies/TiP-Recomp` | Exists. Explicit no-AI policy | ARCHIVE as a name only. Not fetched, not analysed |
-| Concept images | Lush hedge garden, stall, veg-scale people | KEEP as the art north star in `docs/reference/` |
-| Garden Grove screenshot | Journal, tools, Petal Stall, Day/Dusk HUD, grid plots | KEEP the loop and the names. REPLACE the grid look |
-| Havenbrook screenshot | Jelly-bot campus photos | KEEP the agent-society idea. No code existed to merge |
+The playable loop in this tree was rebuilt from the screenshot vocabulary and the concept images, then smoke-tested. It is not a claim that the old project was recovered byte for byte.
 
-## Matrix
+## KEEP
 
-### KEEP
+- Place name Garden Grove, title PetalWild
+- Tool order: tiller, seed pouch, raincan, fertiliser, tend, pond scoop, home kit
+- Petal Stall, and the opening counts implied by the old HUD
+- Species seen in the old journal: Sunburst, Ribbon, Berrybunch, Rendle, Coriark, Ruffles, Cradling, Pegacorn, Cushion
+- Residents Cara, Bran, Mia, Pod, Oshi
+- Life states from unknown through legendary, with the name hidden until sighted
+- Trust 0–5, and the rule that an approved proposal does not spend coins or leave the simulation
+- Concept paintings in `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`
+- Screenshot evidence in `docs/reference/current_garden_grove_01.png`
 
-- Species names already on screen: Bulrush, Bellhelp, Berrypatch, Reedic, Cirlark, Grapling, Pegapear, Gushorn. Dusknip was added as the night-loam link in that chain.
-- Tool row: Tiller, Seed, Raincan, Fertilize, Tend, Pond Scoop, Home Kit, plus Hands.
-- Petal Stall, petal coins, garden journal, day/weather HUD.
-- Lumen Peel at the stall.
-- The first playable loop: till, plant, water, fertilise, visitor requirements, shop purchase, save, reload.
-- Concept plates in `docs/reference/`.
+## MERGE
 
-### MERGE
+Nothing. No accessible branch contained the old scenes.
 
-A second reconstruction landed on `main` while this one was being written (`c140089`, species names Sunpetal / Sunburst / Quin Hearth). It is kept in `game/` with a `.gdignore`, so Godot does not compile it beside this project.
+## REFACTOR
 
-Take from it: the CC0 Asset Quest demo, the Nunito OFL file, `docs/research/`, and the idea of a trust level that can hold a proposal without executing. Do not take its species names. Those replace the names visible in the Garden Grove screenshot.
+Not applicable yet. The new simulation and presentation are the first integrated tree.
 
-### REFACTOR
+## REPLACE
 
-- Simulation fidelity is a real counter (`SimLod`) with tiers 0–2 in this small garden. Tiers 3–4 are named and persisted as data, not a city sim.
-- Trust levels 0–5 are named. Only 0 and 1 are reachable, and both stay inside the game.
+- Coloured-primitive creatures, as the art target. The current meshes are still placeholders.
+- Any plan to paste Jelly-Baby, openage, or town source. Those stay research notes in `docs/research/REFERENCES.md`.
 
-### REPLACE
+## ARCHIVE
 
-- Flat debug grid and sphere-canopy dressing. The running garden has a taller outer hedge, a lower hedge around the four beds, cone trees, and CC0 flowers. The interior is still far from the concept plates.
-- Sphere-stacked Bellhelp. The blossom layout is in, and it still reads as one glossy body at gameplay distance.
-- Capsule Veg People. Spectacles and an apron read at close range. They are not an authored cast yet.
+## ARCHIVE
 
-### ARCHIVE
+- `docs/reference/current_grok_grove_01.png`, the old agent transcript image
+- `docs/reference/jelly_baby_reference_01.png` and `havenbrook_reference_01.png`, as design reference only
+- `docs/research/REFERENCES.md` and `docs/research/ASSET_HUNT.md`
+- Branch `cursor/opening-grove-parallel-a334`, a second grove written before this tree was on `main`. It is not the scene Godot runs.
+- Hedge Hollow's smooth hedge tube, sphere jelly, and capsule resident. The taller hedge pass is in `scripts/world/dressing.gd` and `scenes/garden.tscn`, not in the running grove.
 
-- `docs/reference/current_garden_grove_01.png` and `current_grok_grove_01.png` as evidence of the lost build.
-- `docs/reference/jelly_baby_reference_01.png` and `havenbrook_reference_01.png` as design references, not assets to trace.
-- Branch `cursor/opening-grove-parallel-a334`: a second playable grove written before this tree was on `main`. It is not the scene Godot runs. Salvage from it only if a later wave needs something Hedge Hollow does not already have.
+## Licence boundary
+
+Jelly-Baby is GPL-3.0-only. openage is GPL-3.0-or-later. town is AGPL-3.0-or-later plus a Commons Clause. TiP-Recomp has a no-AI policy and was not fetched. None of that source is in this repository.

@@ -1,59 +1,44 @@
 # PetalWild
 
-A living garden in Hedge Hollow. You till, plant, and water. Creatures visit when the beds meet their needs. Lumen Peel sells from Petal Stall, but she will not spend the parish tin unless you agree.
+PetalWild is a garden-scale living world. You till, plant, water, and fertilise a small grove. Plants change who visits. Grokbot jellies can be picked up, squeezed, and thrown. Veg people keep a stall. The town beyond the hedge is named and not built yet.
 
-This is the first integrated build. It is playable. It is not the lush garden in `docs/reference/` yet.
+The art target is the dense sunlit garden in `docs/reference/`. The current scene is a playable step toward that, and `docs/VISUAL_GAP.md` says what is still wrong.
 
 ## Run
 
-Install the pinned engine. The exact build is in `docs/ENGINE_VERSION.md`: Godot **4.8-dev6**, version string `4.8.dev6.official.8898c2b3d`. Do not substitute 4.7 or a newer 4.8 snapshot.
+Install the pinned editor binary and no other Godot snapshot. Details are in `docs/ENGINE_VERSION.md`.
 
-```sh
-export GODOT="$HOME/opt/godot/Godot_v4.8-dev6_linux.x86_64"
+```bash
+chmod +x tools/run.sh
 ./tools/run.sh
 ```
 
-Headless checks:
+Headless smoke:
 
-```sh
-PETAL_SMOKE=1 "$GODOT" --headless --path . res://scenes/garden.tscn --quit-after 800
-"$GODOT" --headless --path . --script res://tools/smoke.gd
+```bash
+"$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tests/smoke.gd
 ```
 
-Both print `PETAL_SMOKE_OK` or `PETAL_RULES_OK`.
+Screenshot and quit (needs a display):
 
-Screenshots of the current garden:
-
-```sh
-DISPLAY=:1 PETAL_CAPTURE=1 "$GODOT" --path . res://scenes/garden.tscn
+```bash
+PETALWILD_SHOT=overview ./tools/run.sh
 ```
 
-That writes `docs/screenshots/wave1_*.png`.
+Modes: `overview`, `golden`, `creature`, `person`, `shop`, `night`, `rain`.
 
 ## Play
 
-Title screen, three save slots, then the garden.
+1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug.
 
-| Input | Action |
-| --- | --- |
-| Right mouse | Orbit |
-| Middle mouse | Pan |
-| Wheel | Zoom |
-| WASD | Move the view |
-| Q E | Turn |
-| Left click | Use the selected tool |
-| H | Hands, for grabbing a jelly |
-| 1–8 | Tools |
-| J | Journal |
-| F3 | Debug overlay |
-| Esc | Pause |
+The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plots you scoop yourself.
 
-Tools: Tiller, Seed, Raincan, Fertilize, Tend, Pond Scoop, Home Kit, Hands.
+## Studio tools
 
-Plant three mature Meadowbells and a Bellhelp comes to look. Buy fertiliser from the stall. Save, quit, and continue. The beds and the coin tin come back.
+`tools/orchestration/` is a local Hailo router for development. It is not in the game. On this machine the NPU was absent, so the service escalates instead of guessing. See `tools/orchestration/README.md`.
 
-## Project shape
+## State
 
-Data lives in `data/`. The garden scene is built by `scripts/game/garden.gd`. Species, plants, people, and the stall are JSON. Saves are version 1 under `user://saves/`.
+`docs/PETALWILD_MASTER_STATE.md`
 
-State of the build, licences, and who owns which folder: `docs/PETALWILD_MASTER_STATE.md`.
+A second scene, `scenes/garden.tscn`, came in from a parallel build called Hedge Hollow. It is not the scene `tools/run.sh` launches.

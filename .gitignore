@@ -1,14 +1,19 @@
 .godot/
 *.translation
 export/
+.DS_Store
+/tools/godot/
+tools/godot/
 *.tmp
 *.log
-.import/
-.DS_Store
-android/
-tools/godot/
+/assets/third_party/**/*.zip
 third_party/incoming/**/*.zip
+/agent-tools/
 agent-tools/
-# Source captures uploaded with the brief. Canonical copies live in docs/reference.
 /assets/*.png
 /assets/*.png.import
+Thumbs.db
+/tools/orchestration/runtime/
+__pycache__/
+*.pyc
+android/

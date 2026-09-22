@@ -1,18 +1,17 @@
 shader_type spatial;
-render_mode diffuse_burley, cull_disabled;
+render_mode diffuse_burley, specular_schlick_ggx, cull_disabled;
 
-uniform vec4 deep_color : source_color = vec4(0.2, 0.7, 0.4, 1.0);
-uniform vec4 lit_color : source_color = vec4(0.9, 1.0, 0.8, 1.0);
-uniform vec4 glow_color : source_color = vec4(0.8, 1.0, 0.4, 1.0);
-uniform float wobble = 0.5;
-uniform float ripple = 0.0;
+uniform vec4 deep_color : source_color = vec4(0.08, 0.35, 0.22, 1.0);
+uniform vec4 lit_color : source_color = vec4(0.55, 0.9, 0.45, 1.0);
+uniform vec4 rim_color : source_color = vec4(0.9, 1.0, 0.75, 1.0);
+uniform float wobble = 0.06;
+uniform float impact = 0.0;
+uniform vec3 push = vec3(0.0, 0.0, 0.0);
 
 void vertex() {
-	vec3 p = VERTEX;
-	float n = sin(p.y * 9.0 + TIME * 2.3) * sin(p.x * 8.0 + TIME * 1.6);
-	p += NORMAL * n * 0.04 * wobble;
-	p += NORMAL * sin(TIME * 7.0) * ripple * 0.05;
-	VERTEX = p;
+	float n = sin(TIME * 3.2 + VERTEX.y * 9.0 + VERTEX.x * 5.0) * wobble;
+	VERTEX += NORMAL * n;
+	VERTEX += push * impact * (VERTEX.y + 0.15);
 }
 
 void fragment() {

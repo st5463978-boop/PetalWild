@@ -1,31 +1,15 @@
 # Third-party notices
 
-PetalWild’s original code, shaders, procedural audio, and game data are unpublished. All rights reserved until a project licence is chosen.
+PetalWild code is under the MIT licence in `LICENSE`.
 
-## Inter
+The following assets are CC0 1.0 and are not covered by that MIT grant:
 
-Inter Regular and Inter SemiBold, version 4.1.
+- Kenney Nature Kit, Foliage Pack, Mini Forest, and Interface Sounds, by Kenney (Kenney Vleugels / Kenney.nl). https://kenney.nl
+- Poly Haven textures: Leafy Grass by Charlotte Baglioni; Flower Scattered Dirt by Dimitrios Savva; Forest Leaves 02 by Rob Tuytel; Forest Leaves 03 by Rob Tuytel and Dimitrios Savva. https://polyhaven.com/license
+- Forest Ambience by Slobad. https://opengameart.org/content/forest-ambience
+- Stylized Garden demo by Asset Quest (Melissa), CC0. https://assetquest.itch.io/stylized-garden-asset-pack
+- Inter font by The Inter Project Authors, SIL Open Font License 1.1. The licence text is `assets/fonts/OFL-Inter.txt`.
 
-Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)
+Godot Engine is MIT, copyright its contributors, and is not bundled in this repository. This project pins the 4.8-dev6 official binary `8898c2b3d`.
 
-Licensed under the SIL Open Font License, Version 1.1. The full text is in `assets/fonts/OFL-Inter.txt`.
-
-## Nunito
-
-Nunito, staged at `third_party/fonts/Nunito.ttf`.
-
-Copyright Vernon Adams and contributors. SIL Open Font License 1.1. See `third_party/fonts/OFL.txt`. The running interface uses Inter.
-
-## Asset Quest Stylized Garden demo
-
-CC0-1.0. Creator: Asset Quest (Melissa). https://assetquest.itch.io/stylized-garden-asset-pack
-
-The licence file shipped with the demo is `third_party/incoming/assetquest-stylized-garden-demo/Readme/Licence_DEMO.txt`. Credit is optional. A first cluster of those meshes is placed in the garden.
-
-## Godot Engine
-
-The game is run with Godot 4.8-dev6 (`4.8.dev6.official.8898c2b3d`), which is MIT licensed. The engine binary is not included in this repository. See https://godotengine.org
-
-## Not included
-
-No code from Jelly Baby, openage, TiP-Recomp, VivaPinataPlus, or redplanethq/town is included. Those projects were used, where their terms allow, as design references only.
+No GPL, AGPL, or CC-BY work is included in the program or the asset tree.

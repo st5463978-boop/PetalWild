@@ -1,0 +1,80 @@
+{
+  "cara": {
+    "greeting": [
+      "The soil is honest today. Try to be.",
+      "Sunpetals first, if you want company. They gossip in yellow.",
+      "I kept the stall shuttered until you were standing in front of it."
+    ],
+    "shop": [
+      "Seeds on the left. Patience is not for sale.",
+      "If you are selling blooms, I will not haggle. They did the work."
+    ],
+    "complaint": [
+      "Gently. They remember hands.",
+      "Toss one more and I will start remembering too."
+    ],
+    "theft": [
+      "Rendle took a stalk. I am fond of the soil it leaves and not of the gap."
+    ],
+    "happy": [
+      "Look at that. The garden is answering."
+    ]
+  },
+  "mia": {
+    "greeting": [
+      "I counted the open faces from the hedge. You are doing it properly.",
+      "Flowers are not decoration. They are invitations."
+    ],
+    "complaint": [
+      "That was a rough hand. The blooms lean away from rough hands."
+    ],
+    "happy": [
+      "Oh. A new colour. I will remember the day."
+    ]
+  },
+  "pod": {
+    "greeting": [
+      "Lane's clear. I can take a sack as far as the gate.",
+      "Three sales and a path. That is enough of a town for me to walk."
+    ],
+    "complaint": [
+      "If you are going to throw the residents, throw them away from the path."
+    ],
+    "happy": [
+      "Good step. I like a garden with a route."
+    ]
+  },
+  "bran": {
+    "greeting": [
+      "Dirt's sweeter since the flat one moved in. I still want my corn where I left it.",
+      "Don't smile at me. Smile at the soil. It did the chemistry."
+    ],
+    "complaint": [
+      "Hands off. They bruise, and then the whole terrace is in a mood."
+    ],
+    "theft": [
+      "Told you. Appetite with feet. The waste is a gift. The theft is a bill."
+    ],
+    "happy": [
+      "Hmph. That's a decent crumb structure."
+    ]
+  },
+  "oshi": {
+    "greeting": [
+      "I only write down what the garden has already done.",
+      "Nightbloom keeps a different clock. So do I."
+    ],
+    "proposal": [
+      "Our town has no recurring income. The Media Foundry is still a room we have not built. I drafted a small comedy serial anyway: three episode sketches, a brand sheet, a projected cost of £40. No money has been spent. Nothing has been sent. May I file the plan for your approval?"
+    ],
+    "approved": [
+      "Filed. I did not spend, post, or send. The plan sits in the audit book until you take it further yourself."
+    ],
+    "refused": [
+      "Then it stays a note. I prefer a no to a silent purchase."
+    ],
+    "happy": [
+      "The lantern is doing what I hoped. Something ruffled is thinking about it."
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "coins": 36,
+  "inventory": {
+    "sunpetal_seed": 5,
+    "petal_corn_seed": 4,
+    "fertiliser": 4
+  },
+  "width": 16,
+  "height": 12,
+  "day": 1,
+  "minute": 480,
+  "rows": [
+    "pppppppppppppppp",
+    "pggggggggggggggp",
+    "pggggggggggggggp",
+    "pgggsssggsssgggp",
+    "pgggsssggsssgggp",
+    "pgggsssggsssgggp",
+    "pgggsssggsssgggp",
+    "pggggggggggggggp",
+    "pggggggggggggggp",
+    "pggggggggggggggp",
+    "pggggggggggggggp",
+    "pppppppppppppppp"
+  ],
+  "starters": [
+    {"x": 4, "y": 4, "plant": "sunpetal", "growth": 0.32},
+    {"x": 10, "y": 5, "plant": "petal_corn", "growth": 0.22}
+  ],
+  "props": [
+    {"id": "bench", "x": 2, "y": 10},
+    {"id": "lamp", "x": 13, "y": 1},
+    {"id": "lamp", "x": 2, "y": 1}
+  ]
+}

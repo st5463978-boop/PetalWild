@@ -1,18 +1,12 @@
-[
-  {"id": "meadowbell_seed", "name": "Meadowbell seed", "price": 4, "plant": "meadowbell", "kind": "seed"},
-  {"id": "peach_seed", "name": "Peach seed", "price": 8, "plant": "peach", "kind": "seed"},
-  {"id": "reed_seed", "name": "Reed seed", "price": 5, "plant": "reed", "kind": "seed"},
-  {"id": "bramble_seed", "name": "Bramble seed", "price": 9, "plant": "bramble", "kind": "seed"},
-  {"id": "mosspear_seed", "name": "Mosspear seed", "price": 10, "plant": "mosspear", "kind": "seed"},
-  {
-    "id": "nightlantern_seed",
-    "name": "Nightlantern seed",
-    "price": 16,
-    "plant": "nightlantern",
-    "kind": "seed",
-    "lock": "nightloam",
-    "lock_reason": "Nightlantern seed stays wrapped until night-loam appears in the beds."
-  },
-  {"id": "fertilizer", "name": "Fertiliser", "price": 6, "kind": "feed"},
-  {"id": "home_kit", "name": "Home kit", "price": 20, "kind": "kit"}
-]
+{
+  "sunpetal_seed": {"name": "Sunpetal seed", "buy": 6, "sell": 2, "tag": "seed", "plant": "sunpetal"},
+  "petal_corn_seed": {"name": "Petal Corn seed", "buy": 10, "sell": 3, "tag": "seed", "plant": "petal_corn"},
+  "mossbell_seed": {"name": "Mossbell seed", "buy": 8, "sell": 2, "tag": "seed", "plant": "mossbell"},
+  "nightbloom_seed": {"name": "Nightbloom seed", "buy": 28, "sell": 6, "tag": "seed", "plant": "nightbloom", "requires_flag": "nightbloom_unlocked"},
+  "fertiliser": {"name": "Fertiliser pack", "buy": 5, "sell": 1, "tag": "supply"},
+  "sunpetal_bloom": {"name": "Sunpetal bloom", "buy": 0, "sell": 9, "tag": "harvest"},
+  "petal_corn_ear": {"name": "Petal Corn ear", "buy": 0, "sell": 14, "tag": "harvest"},
+  "mossbell_clump": {"name": "Mossbell clump", "buy": 0, "sell": 7, "tag": "harvest"},
+  "nightbloom_cup": {"name": "Nightbloom cup", "buy": 0, "sell": 22, "tag": "harvest"},
+  "habitat_lantern": {"name": "Habitat lantern", "buy": 36, "sell": 0, "tag": "prop", "place": "lantern", "requires_person": "oshi", "requires_item": "nightbloom_cup"}
+}
