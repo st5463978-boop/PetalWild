@@ -33,15 +33,14 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s blossom still reads as one glossy sphere in the close shot.
-- Veg People are readable primitives, not an authored cast.
-- No hedge rooms, no sun shafts, no insect or bird life.
+- Bellhelp is a lathed bell with two petal rings, facing the garden camera. The surface is still glossy.
+- Lumen has a leek crown, apron, spectacles, and satchel facing that camera. The body is still capsules.
+- Hedge walls have a leaf-card fringe. There are no sun shafts and no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
-- The CC0 demo is in the garden. A full tree and hedge kit is not.
 - Large-text setting applies on the title screen, not live in the garden HUD.
-- Smoke quits during `_ready` and leaks a handful of canvas items. The check itself passes.
+- The sidelined Kenney grove (`scripts/presentation/`) now plays the CC0 forest loop. The running scene still uses procedural tones. This VM has no sound card.
 
 ## Agents
 
@@ -53,7 +52,7 @@ No parallel workers are running. A second wave committed to `main` during this i
 
 ## Assets and licences
 
-Inter 4.1 (OFL) is the UI font. The Asset Quest Stylized Garden demo (CC0) is placed as flowers, grass, a bench, and a planter. Nunito (OFL) is in `third_party/fonts/` and is not the live UI font. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
+Inter 4.1 (OFL) is the UI font. The Asset Quest Stylized Garden demo (CC0) is placed as flowers, grass, a bench, a planter, a table, and an umbrella. Nunito (OFL) is in `third_party/fonts/` and is not the live UI font. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
 
 ## Higgsfield
 
@@ -63,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The outer hedge is taller, and the hedge shader now pushes tufts through the top so the wall is less of a smooth tube. A lower hedge boxes the four beds, with gaps on the paths. CC0 flowers and grass sit along that wall. The stall has the CC0 bench, planter, table, and umbrella on the prop atlas, not flat stand-in colours. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes. Shots recaptured 22 September 2026.
+The outer hedge rises and falls, and leaf cards fringe the walls. A lower hedge boxes the four beds. The stall bench, planter, table, and umbrella use the CC0 prop atlas. Bellhelp is a lathed bell with two petal rings. Lumen’s crown, apron, spectacles, and satchel face the camera. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 
-1. **Hedge surface.** The walls break silhouette more, and they are still one shaded volume. The concepts are leafy. PETAL-05 and PETAL-06: leaf cards on this palette, not a new scene.
-2. **Bellhelp’s face.** The petals read, and the core is still a glossy lathe with the eyes off the surface. PETAL-03: seat the face on the bell and curl the petals.
-3. **Lumen’s hands and the lawn.** The leaf crown is there. The body is still capsules, there is no seed tray, and the ground inside the rooms is one plane. PETAL-04 for the face, hands, and tray. PETAL-06 for ground cover and sun shafts.
+1. **Hedge mass.** Leaf cards and a rising top break the outline. The wall under them is still one shader mesh. PETAL-05 and PETAL-06: clumps in this same green.
+2. **Jelly material.** The blossom silhouette holds. The bell is still a glossy lathe with no inner seed. PETAL-03 and PETAL-06.
+3. **Ground and light.** Lumen is still capsules. The lawn inside the rooms is one plane, and there are no sun shafts. PETAL-04 for hands and a seed tray. PETAL-06 for light.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside the running garden scene, then recaptures the six shots. Do not open a side demo.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hedge clumps, a softer jelly surface, and ground cover. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

@@ -10,6 +10,7 @@ func build(parent: Node3D) -> void:
 	_plots(parent)
 	_paths(parent)
 	_hedge(parent)
+	_hedge_leaves(parent)
 	_scatter_grass(parent)
 	_flowers(parent)
 	_shrubs(parent)
@@ -195,8 +196,9 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
-		var width := 0.62 + scale * 0.22
+		var lift := sin(center.x * 1.7 + center.z * 1.2) * 0.18 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9) * 0.22
+		var width := (0.62 + scale * 0.22) * bulge
 		for point in profile:
 			ring.append(center + side * (point.x * width) + Vector3(0, point.y * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
@@ -221,6 +223,76 @@ func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
 	return material
+
+func _hedge_leaves(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.45, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.45},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.45},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.45},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.95, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.95, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.95, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.95},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var count := maxi(int(a.distance_to(b) / 0.22), 1)
+		for i in count:
+			var center := a.lerp(b, float(i) / float(count))
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
+					continue
+			var away := Vector3(center.x, 0.0, center.z)
+			if away.length() < 0.2:
+				away = Vector3(0, 0, -1)
+			away = away.normalized()
+			var at := center + away * _rng.randf_range(0.28, 0.78)
+			at.y = height * _rng.randf_range(0.15, 1.05)
+			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.5, 0.4), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
+			var scale := _rng.randf_range(0.75, 1.55)
+			points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.85, 1.7), scale)), at))
+			colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
+			customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeLeaves", true, customs)
+
+func _leaf_card() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_leaf_plane(tool, 0.0)
+	_leaf_plane(tool, 0.9)
+	tool.generate_normals()
+	return tool.commit()
+
+func _leaf_plane(tool: SurfaceTool, yaw: float) -> void:
+	var basis := Basis(Vector3.UP, yaw)
+	var width := 0.07
+	var height := 0.22
+	var a := basis * Vector3(-width, 0.0, 0.0)
+	var b := basis * Vector3(width, 0.0, 0.0)
+	var c := basis * Vector3(width * 0.28, height, 0.0)
+	var d := basis * Vector3(-width * 0.28, height, 0.0)
+	var normal := basis * Vector3(0, 0, 1)
+	_leaf_tri(tool, a, b, c, normal, Vector2(0, 1), Vector2(1, 1), Vector2(0.65, 0))
+	_leaf_tri(tool, a, c, d, normal, Vector2(0, 1), Vector2(0.65, 0), Vector2(0.35, 0))
+
+func _leaf_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, normal: Vector3, ua: Vector2, ub: Vector2, uc: Vector2) -> void:
+	tool.set_normal(normal)
+	tool.set_uv(ua)
+	tool.add_vertex(a)
+	tool.set_normal(normal)
+	tool.set_uv(ub)
+	tool.add_vertex(b)
+	tool.set_normal(normal)
+	tool.set_uv(uc)
+	tool.add_vertex(c)
 
 func _scatter_grass(parent: Node3D) -> void:
 	var mesh := _blade()

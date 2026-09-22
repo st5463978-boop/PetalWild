@@ -21,7 +21,7 @@ var sky_mat: ProceduralSkyMaterial
 var rain: CPUParticles3D
 var motes: CPUParticles3D
 var stall: Node3D
-var awning: MeshInstance3D
+var awning: Node3D
 var bounds := {}
 var prop_sig := ""
 var people_sig := ""
@@ -230,6 +230,8 @@ func _dress(state: Dictionary) -> void:
 	_bounds(state)
 	var hedge_n := 46 if software else 64
 	_hedge(hedge_n)
+	_rooms()
+	_bed_flowers()
 	var tree_files := ["tree_oak.fbx", "tree_default.fbx", "tree_detailed.fbx", "tree_tall.fbx", "tree_fat.fbx"]
 	var tree_n := 16 if software else 22
 	for i in tree_n:
@@ -292,6 +294,61 @@ func _hedge(count: int) -> void:
 		bush.position = point
 		bush.rotation.y = randf() * TAU
 		add_child(bush)
+
+
+func _rooms() -> void:
+	var min_x: float = bounds.min_x + 0.6
+	var max_x: float = bounds.max_x - 0.6
+	var min_z: float = bounds.min_z + 0.6
+	var max_z: float = bounds.max_z - 0.6
+	var mid_x: float = (min_x + max_x) * 0.5
+	var mid_z: float = (min_z + max_z) * 0.5
+	var crossing := Vector3(mid_x, 0, mid_z)
+	_hedge_line(Vector3(mid_x, 0, min_z), Vector3(mid_x, 0, max_z), crossing, 1.8)
+	_hedge_line(Vector3(min_x, 0, mid_z), Vector3(max_x, 0, mid_z), crossing, 1.8)
+
+
+func _hedge_line(from: Vector3, to: Vector3, gap_at: Vector3, gap: float) -> void:
+	var span: float = from.distance_to(to)
+	var steps: int = maxi(int(span / 0.85), 2)
+	for i in steps + 1:
+		var point: Vector3 = from.lerp(to, float(i) / float(steps))
+		if point.distance_to(gap_at) < gap:
+			continue
+		var bush = Kit.spawn("plant_bushLarge.fbx", randf_range(1.45, 1.85))
+		if bush == null:
+			continue
+		bush.position = point
+		bush.rotation.y = randf() * TAU
+		add_child(bush)
+
+
+func _bed_flowers() -> void:
+	var min_x: float = bounds.min_x + 1.1
+	var max_x: float = bounds.max_x - 1.1
+	var min_z: float = bounds.min_z + 1.1
+	var max_z: float = bounds.max_z - 1.1
+	var mid_x: float = (min_x + max_x) * 0.5
+	var mid_z: float = (min_z + max_z) * 0.5
+	var beds: Array[Vector4] = [
+		Vector4(min_x, mid_x - 0.8, min_z, mid_z - 0.8),
+		Vector4(mid_x + 0.8, max_x, min_z, mid_z - 0.8),
+		Vector4(min_x, mid_x - 0.8, mid_z + 0.8, max_z),
+		Vector4(mid_x + 0.8, max_x, mid_z + 0.8, max_z),
+	]
+	var files := ["flower_redA.fbx", "flower_yellowA.fbx", "flower_purpleA.fbx", "flower_redC.fbx", "flower_yellowC.fbx"]
+	var each := 5 if software else 9
+	var n := 0
+	for bed in beds:
+		for i in each:
+			var point := Vector3(randf_range(bed.x, bed.y), 0, randf_range(bed.z, bed.w))
+			var flower = Kit.spawn(files[n % files.size()], randf_range(0.32, 0.55))
+			n += 1
+			if flower == null:
+				continue
+			flower.position = point
+			flower.rotation.y = randf() * TAU
+			add_child(flower)
 
 
 func _perimeter_point(dist: float, min_x: float, max_x: float, min_z: float, max_z: float) -> Vector3:
@@ -585,12 +642,15 @@ func _stall() -> void:
 		stall.add_child(_box(Vector3(0.08, 1.5, 0.08), Color("6B4A32"), Vector3(x, 0.75, 0.45)))
 		stall.add_child(_box(Vector3(0.08, 1.5, 0.08), Color("6B4A32"), Vector3(x, 0.75, -0.45)))
 	stall.add_child(_box(Vector3(1.9, 0.12, 0.7), Color("A67C52"), Vector3(0, 0.78, 0.15)))
-	awning = _box(Vector3(2.15, 0.06, 1.15), Color("F4EFE4"), Vector3(0, 1.55, 0))
-	var stripes := _stripes()
-	var amat := awning.material_override as StandardMaterial3D
-	amat.albedo_texture = stripes
-	amat.uv1_scale = Vector3(1, 1, 1)
+	stall.add_child(_box(Vector3(0.28, 0.22, 0.28), Color("8A5A32"), Vector3(-0.45, 0.92, 0.12)))
+	stall.add_child(_box(Vector3(0.22, 0.16, 0.22), Color("C4A46A"), Vector3(0.35, 0.88, 0.18)))
+	awning = Node3D.new()
+	awning.position = Vector3(0, 1.55, 0)
 	stall.add_child(awning)
+	var left := _striped_roof(Vector3(-0.58, 0.16, 0), 0.28)
+	var right := _striped_roof(Vector3(0.58, 0.16, 0), -0.28)
+	awning.add_child(left)
+	awning.add_child(right)
 	var sign := Label3D.new()
 	sign.text = "Petal Stall"
 	sign.font_size = 72
@@ -611,6 +671,14 @@ func _stall() -> void:
 	gate.position = Vector3(0, 1.8, bounds.max_z + 0.2)
 	gate.rotation.y = PI
 	add_child(gate)
+
+
+func _striped_roof(at: Vector3, roll: float) -> MeshInstance3D:
+	var panel := _box(Vector3(1.2, 0.05, 1.25), Color("F4EFE4"), at)
+	panel.rotation.z = roll
+	var mat := panel.material_override as StandardMaterial3D
+	mat.albedo_texture = _stripes()
+	return panel
 
 
 func _stall_point() -> Vector3:
