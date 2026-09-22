@@ -1,0 +1,15 @@
+{
+  "id": "petal_stall",
+  "name": "Petal Stall",
+  "keeper": "lumen",
+  "buy": [
+    "meadowbell_seed",
+    "peach_seed",
+    "reed_seed",
+    "bramble_seed",
+    "mosspear_seed",
+    "nightlantern_seed",
+    "fertilizer",
+    "home_kit"
+  ]
+}

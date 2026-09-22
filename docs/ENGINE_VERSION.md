@@ -1,16 +1,23 @@
 # Engine pin
 
-PetalWild is built and tested on this exact binary. Do not move the project to another Godot snapshot during parallel work.
+Exact binary used for this build:
 
-| Field | Value |
-| --- | --- |
-| Version string | `4.8.dev6.official.8898c2b3d` |
-| Release tag | `4.8-dev6` |
-| Published | 2026-09-15 |
-| Binary | `Godot_v4.8-dev6_linux.x86_64` |
-| Download | https://github.com/godotengine/godot-builds/releases/download/4.8-dev6/Godot_v4.8-dev6_linux.x86_64.zip |
-| SHA-256 | `d3678019d0a6501d754db36807110a02a1cfa24d49886be8d3a72d91faa80ca3` |
+`Godot Engine v4.8.dev6.official.8898c2b3d`
 
-Godot 4.8 stable was not published on 22 September 2026. The newest official 4.8 build is this dev snapshot. `tools/fetch_godot.sh` downloads that zip and checks the hash.
+Release: Godot 4.8-dev6, official, commit `8898c2b3d`.
 
-The project file requests the GL Compatibility renderer so the garden runs on machines without Vulkan. Forward+ remains the quality target when a Vulkan device is present; do not flip the pin just to chase a newer dev build.
+Download: https://github.com/godotengine/godot-builds/releases/download/4.8-dev6/Godot_v4.8-dev6_linux.x86_64.zip
+
+Local path on the build machine: `~/.local/godot/Godot_v4.8-dev6_linux.x86_64`. The binary is not committed.
+
+Stable 4.8 was not available when this pin was made. Later snapshots, including any newer 4.8-dev, are not this build. Do not move the project to another Godot version during parallel work.
+
+## Renderer
+
+`project.godot` sets `renderer/rendering_method` to `gl_compatibility`.
+
+This VM has no `/dev/dri` and no Vulkan device. The process runs on Mesa llvmpipe (LLVM 20.1.2) through X11 and OpenGL 4.5. Forward+, volumetric fog, SDFGI, and real-time shadows are off. Shadows are disabled in the garden when the adapter name contains `llvmpipe`.
+
+Godot 4.8-dev6 treats `:=` inference from an untyped Variant as a parse error. Annotate those variables. The project warning key `debug/gdscript/warnings/inference_on_variant` does not suppress it.
+
+Autoloads preload their scripts. `class_name` is available to scene scripts after `godot --headless --path . --import --quit` has written `.godot/global_script_class_cache.cfg`.

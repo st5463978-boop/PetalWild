@@ -1,41 +1,30 @@
 # Agent contracts
 
-PETAL-00 owns integration. Specialists may edit only their directories. Shared files (`project.godot`, `game/core/session.gd`, `game/data/*.json`, `game/world/garden.gd`) change only through PETAL-00.
+Directory ownership for parallel work. Stay inside the owned paths. Integration (`PETAL_00`) is the only lane that edits `project.godot`, `scenes/main.tscn`, and `scripts/main.gd`.
 
-| Agent | Owns | Must not touch |
+The Hailo foreman in `tools/orchestration/` is studio tooling. It must not be imported by the game. That directory is owned by the executive lane, not by a creature or town agent.
+
+| Lane | Owns | Does not touch |
 | --- | --- | --- |
-| PETAL-00 Executive | `game/core/`, `game/world/garden.gd`, `project.godot`, `docs/PETALWILD_MASTER_STATE.md` | Specialist folders except to merge |
-| PETAL-01 Garden sim | `game/sim/garden_sim.gd` | Rendering |
-| PETAL-02 Ecology | `game/sim/ecology_sim.gd`, `game/data/species.json`, `game/data/plants.json` | Jelly meshes |
-| PETAL-03 Jelly | `game/jelly/`, `game/shaders/jelly.gdshader` | Economy |
-| PETAL-04 Veg People | `game/residents/`, `game/data/residents.json` | Terrain |
-| PETAL-05 World art | `game/world/garden_view.gd`, `game/world/mesh_kit.gd`, `game/world/terrain_field.gd` | Save format |
-| PETAL-06 Shaders | `game/shaders/foliage.gdshader`, `game/shaders/water.gdshader` | Game rules |
-| PETAL-07 UI | `game/ui/` | Simulation math |
-| PETAL-08 Economy | shop fields in `game/data/items.json` and the buy/sell methods, via PETAL-00 review | Trust execution |
-| PETAL-09 Havenbrook | `game/sim/town_sim.gd`, `game/data/venues.json`, `game/data/districts.json` | Creature physics |
-| PETAL-10 Camera | `game/camera/` | UI theme |
-| PETAL-11 Audio | `game/audio/` | Licensed audio dumps without provenance |
-| PETAL-12 QA | `game/debug/` | Feature code except fixes |
-| PETAL-13 Assets | `third_party/incoming/`, `docs/research/ASSET_HUNT.md` | Dropping raw packs into the garden scene |
-| PETAL-14 City | aggregate fields inside `game/sim/town_sim.gd` | Per-citizen physics |
-| PETAL-15 LOD | `game/sim/sim_lod.gd` | Raising every entity to hero fidelity |
-| PETAL-16 Trust | `game/sim/trust_sim.gd`, `game/data/agents.json` | Any real external action |
+| PETAL_00 | `scripts/main.gd`, `scenes/main.tscn`, `project.godot`, `scripts/sim/`, `docs/PETALWILD_MASTER_STATE.md` | third-party zips |
+| PETAL_01 | soil, water, and growth inside `scripts/sim/petal_sim.gd`, `data/plants.json` | presentation |
+| PETAL_02 | `data/species.json`, ecology checks in `scripts/sim/` | jelly meshes |
+| PETAL_03 | `scripts/presentation/jelly_actor.gd` | `grove_ui.gd` |
+| PETAL_04 | `scripts/presentation/person_actor.gd`, `data/residents.json`, `data/dialogue.json` | economy prices |
+| PETAL_05 | dressing in `scripts/presentation/grove_view.gd`, `scripts/presentation/prop_kit.gd` | sim rules |
+| PETAL_06 | `shaders/` | JSON catalogs |
+| PETAL_07 | `scripts/presentation/grove_ui.gd` | world meshes |
+| PETAL_08 | prices and shop flow in `scripts/sim/petal_sim.gd`, `data/items.json` | shaders |
+| PETAL_09 | `data/venues.json` town venues | city population math |
+| PETAL_10 | `scripts/presentation/camera_rig.gd` | UI theme |
+| PETAL_11 | `scripts/autoload/petal_audio.gd` | models |
+| PETAL_12 | `tests/` | content JSON except fixtures |
+| PETAL_13 | `assets/third_party/`, `docs/research/ASSET_HUNT.md`, licence notes | gameplay scripts |
+| PETAL_14 | `data/districts.json` | hero jelly physics |
+| PETAL_15 | performance notes and caps in `grove_view.gd` software limits, by review only | new content |
 
-## Simulation fidelity
+`grove_view.gd` is shared. PETAL_05 owns dressing. Actor spawn changes need PETAL_03 or PETAL_04 review before they land.
 
-| Level | Who | What runs |
-| --- | --- | --- |
-| 0 Hero | Held or inspected jelly | Spring grab, squash, face, shader wobble |
-| 1 Nearby | Close creatures and Veg People | Wander, needs, schedules, animation |
-| 2 District | Far side of the garden | Slower movement, same persistent record |
-| 3 Off-screen | Not used while the garden is the whole loaded place | Reserved |
-| 4 Aggregate | Havenbrook | Population, jobs, happiness, tourism, land value |
+New work branches use the prefix `cursor/` and the suffix `-5bfd`. This integration stays on `main` until a lane has something to merge.
 
-Records in `EcologySim` and `Session.people` are the persistent state. Bodies are rebuilt views. A resident who leaves the frame keeps their state dictionary.
-
-## Active this wave
-
-- PETAL-00 built the integrated garden in this branch.
-- PETAL-13 wrote `docs/research/ASSET_HUNT.md` and staged the Asset Quest CC0 demo under `third_party/incoming/`.
-- Research notes are in `docs/research/ARCHITECTURE_REFERENCES.md`.
+Do not copy GPL or AGPL implementation into any of these directories. TiP-Recomp is not a source.

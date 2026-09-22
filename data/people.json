@@ -1,0 +1,39 @@
+[
+  {
+    "id": "lumen",
+    "name": "Lumen Peel",
+    "family": "leek",
+    "role": "Seed merchant",
+    "voice": "Precise, warm, proud of the trays.",
+    "home": "The room behind Petal Stall",
+    "job": "Keeps Petal Stall",
+    "starts_present": true,
+    "blurb": "A tall leek in a terracotta apron and seed-frame spectacles. She will not spend the stall tin unless you say so."
+  },
+  {
+    "id": "bram",
+    "name": "Bram Cobble",
+    "family": "beet",
+    "role": "Groundskeeper",
+    "voice": "Low, dry, fond of the beds and suspicious of juggling.",
+    "home": "The potting shed",
+    "job": "Walks the plots",
+    "starts_present": true,
+    "blurb": "A stout beet with a leaf hat and muddy boots. He thinks the stall is loud. He is usually right about the soil."
+  },
+  {
+    "id": "nessa",
+    "name": "Nessa Pod",
+    "family": "pea",
+    "role": "Parish naturalist",
+    "voice": "Quick, curious, writes everything down.",
+    "home": "Not settled yet",
+    "job": "Watches who arrives",
+    "starts_present": false,
+    "blurb": "A small pea with a vine pack and a parish notebook. She arrives when a Bellhelp resides and a home kit is set.",
+    "arrive": [
+      {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
+      {"type": "structure", "id": "home_kit", "min": 1, "label": "A placed home kit"}
+    ]
+  }
+]

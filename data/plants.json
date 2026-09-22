@@ -1,0 +1,63 @@
+[
+  {
+    "id": "meadowbell",
+    "name": "Meadowbell",
+    "seed": "meadowbell_seed",
+    "grow_hours": 1.6,
+    "water_need": 0.38,
+    "fertility_need": 0.18,
+    "sell_price": 5,
+    "blurb": "A low cream bell. Pollinators treat a stand of them as an invitation."
+  },
+  {
+    "id": "peach",
+    "name": "Peach",
+    "seed": "peach_seed",
+    "grow_hours": 2.4,
+    "water_need": 0.42,
+    "fertility_need": 0.22,
+    "sell_price": 12,
+    "blurb": "A dwarf peach with one heavy fruit. The stall keeps a tray for these."
+  },
+  {
+    "id": "reed",
+    "name": "Reed",
+    "seed": "reed_seed",
+    "grow_hours": 1.8,
+    "water_need": 0.5,
+    "fertility_need": 0.16,
+    "sell_price": 6,
+    "blurb": "Tall water grass. Bulrush will not wade in without a stand of it."
+  },
+  {
+    "id": "bramble",
+    "name": "Bramble",
+    "seed": "bramble_seed",
+    "grow_hours": 2.2,
+    "water_need": 0.36,
+    "fertility_need": 0.24,
+    "sell_price": 9,
+    "blurb": "A low cane with dark fruit. It thickens the hedges and feeds Berrypatch."
+  },
+  {
+    "id": "mosspear",
+    "name": "Mosspear",
+    "seed": "mosspear_seed",
+    "grow_hours": 2.0,
+    "water_need": 0.4,
+    "fertility_need": 0.58,
+    "sell_price": 11,
+    "blurb": "A ground pear that only sweetens in rich soil."
+  },
+  {
+    "id": "nightlantern",
+    "name": "Nightlantern",
+    "seed": "nightlantern_seed",
+    "grow_hours": 2.8,
+    "water_need": 0.46,
+    "fertility_need": 0.28,
+    "chem": "nightloam",
+    "sell_price": 18,
+    "blurb": "A dusk bulb. It will only take in soil that Dusknip has changed."
+  }
+]

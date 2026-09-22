@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dadm0ppt3f3us"
+path="res://.godot/imported/tree_thin.obj-0b95edb3d0b1ace99bb281fd3c636e1d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/tree_thin.obj-0b95edb3d0b1ace99bb281fd3c636e1d.mesh"]
+
+source_file="res://assets/third_party/kenney/nature-kit/Models/OBJ format/tree_thin.obj"
+dest_files=["res://.godot/imported/tree_thin.obj-0b95edb3d0b1ace99bb281fd3c636e1d.mesh", "res://.godot/imported/tree_thin.obj-0b95edb3d0b1ace99bb281fd3c636e1d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

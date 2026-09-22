@@ -1,20 +1,15 @@
 # Third-party notices
 
-## Godot Engine
+PetalWild code is under the MIT licence in `LICENSE`.
 
-Copyright (c) 2014-present Godot Engine contributors.
-Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
+The following assets are CC0 1.0 and are not covered by that MIT grant:
 
-Permission is granted under the MIT licence to use the engine. The engine binary is not part of this source tree. Fetch it with `tools/fetch_godot.sh`.
+- Kenney Nature Kit, Foliage Pack, Mini Forest, and Interface Sounds, by Kenney (Kenney Vleugels / Kenney.nl). https://kenney.nl
+- Poly Haven textures: Leafy Grass by Charlotte Baglioni; Flower Scattered Dirt by Dimitrios Savva; Forest Leaves 02 by Rob Tuytel; Forest Leaves 03 by Rob Tuytel and Dimitrios Savva. https://polyhaven.com/license
+- Forest Ambience by Slobad. https://opengameart.org/content/forest-ambience
+- Stylized Garden demo by Asset Quest (Melissa), CC0. https://assetquest.itch.io/stylized-garden-asset-pack
+- Inter font by The Inter Project Authors, SIL Open Font License 1.1. The licence text is `assets/fonts/OFL-Inter.txt`.
 
-## Nunito
+Godot Engine is MIT, copyright its contributors, and is not bundled in this repository. This project pins the 4.8-dev6 official binary `8898c2b3d`.
 
-Nunito is copyright Vernon Adams and contributors and is licensed under the SIL Open Font License 1.1. The full text is `third_party/fonts/OFL.txt`. The font file is `third_party/fonts/Nunito.ttf`.
-
-## Asset Quest Stylized Garden demo
-
-CC0 1.0. Created by Asset Quest. The demo pack is stored under `third_party/incoming/assetquest-stylized-garden-demo/` and is not yet drawn in the playable garden. Credit is not required; it is recorded anyway.
-
-## Not included
-
-Jelly Baby (GPL-3.0-only), openage (GPL-3.0-or-later), and any commercial game assets were not copied into this repository.
+No GPL, AGPL, or CC-BY work is included in the program or the asset tree.

@@ -1,0 +1,158 @@
+[
+  {
+    "id": "bellhelp",
+    "name": "Bellhelp",
+    "shape": "bell",
+    "deep": "#2f8f55",
+    "lit": "#e7ffc4",
+    "glow": "#d6ff6a",
+    "eye": "#f4ffd2",
+    "radius": 0.34,
+    "cap": 3,
+    "wobble": 0.7,
+    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
+    ],
+    "romance": {"type": "resident_count", "species": "bellhelp", "min": 2, "label": "A second Bellhelp resident"}
+  },
+  {
+    "id": "berrypatch",
+    "name": "Berrypatch",
+    "shape": "lobes",
+    "deep": "#7a3168",
+    "lit": "#ffc2df",
+    "glow": "#ff8fb8",
+    "eye": "#ffe0f0",
+    "radius": 0.32,
+    "cap": 2,
+    "wobble": 0.55,
+    "blurb": "A cluster of berry lobes that settles where the canes fruit.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "bramble", "min": 2, "label": "2 mature Brambles"}
+    ]
+  },
+  {
+    "id": "bulrush",
+    "name": "Bulrush",
+    "shape": "long",
+    "deep": "#5d6b2e",
+    "lit": "#e6d48a",
+    "glow": "#f0e2a0",
+    "eye": "#fff6cf",
+    "radius": 0.28,
+    "cap": 2,
+    "wobble": 0.85,
+    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in.",
+    "requirements": [
+      {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
+      {"type": "mature_plant", "plant": "reed", "min": 3, "label": "3 mature Reeds"}
+    ],
+    "romance": {"type": "resident_count", "species": "bulrush", "min": 2, "label": "A second Bulrush resident"}
+  },
+  {
+    "id": "reedic",
+    "name": "Reedic",
+    "shape": "flat",
+    "deep": "#1d6e72",
+    "lit": "#b7fff0",
+    "glow": "#7dffe0",
+    "eye": "#e7fff8",
+    "radius": 0.36,
+    "cap": 2,
+    "wobble": 0.4,
+    "blurb": "A low water-disc that follows Bulrush into wet ground.",
+    "requirements": [
+      {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
+      {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}
+    ]
+  },
+  {
+    "id": "cirlark",
+    "name": "Cirlark",
+    "shape": "stacked",
+    "deep": "#2a6fbf",
+    "lit": "#ffe28a",
+    "glow": "#9fd0ff",
+    "eye": "#fff4cc",
+    "radius": 0.26,
+    "cap": 2,
+    "wobble": 0.65,
+    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp.",
+    "requirements": [
+      {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
+      {"type": "garden_quality", "min": 0.42, "label": "The garden is looked after"}
+    ]
+  },
+  {
+    "id": "grapling",
+    "name": "Grapling",
+    "shape": "long",
+    "deep": "#1e6a3a",
+    "lit": "#b6f0c0",
+    "glow": "#7dff9a",
+    "eye": "#e9ffe8",
+    "radius": 0.24,
+    "cap": 2,
+    "wobble": 0.9,
+    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "bramble", "min": 3, "label": "3 mature Brambles"},
+      {"type": "fertility", "min": 0.55, "label": "Rich soil across the beds"}
+    ]
+  },
+  {
+    "id": "dusknip",
+    "name": "Dusknip",
+    "shape": "crown",
+    "deep": "#4a2c55",
+    "lit": "#e7b0ff",
+    "glow": "#c084fc",
+    "eye": "#f6e4ff",
+    "radius": 0.3,
+    "cap": 2,
+    "wobble": 0.5,
+    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds.",
+    "requirements": [
+      {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
+    ],
+    "soil_effect": {"chem": "nightloam", "count": 5}
+  },
+  {
+    "id": "pegapear",
+    "name": "Pegapear",
+    "shape": "pear",
+    "deep": "#d36b3a",
+    "lit": "#ffe0b0",
+    "glow": "#ffb15a",
+    "eye": "#fff1d8",
+    "radius": 0.36,
+    "cap": 1,
+    "wobble": 0.6,
+    "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "peach", "min": 1, "label": "A ripe Peach"},
+      {"type": "mature_plant", "plant": "nightlantern", "min": 1, "label": "A mature Nightlantern"},
+      {"type": "weather_in", "weather": ["mist", "rain"], "label": "Mist or rain"},
+      {"type": "hour_between", "from": 16.0, "to": 22.0, "label": "Dusk or evening"}
+    ]
+  },
+  {
+    "id": "gushorn",
+    "name": "Gushorn",
+    "shape": "crown",
+    "deep": "#b85a12",
+    "lit": "#ffd27a",
+    "glow": "#ff9a2e",
+    "eye": "#fff0cc",
+    "radius": 0.42,
+    "cap": 1,
+    "wobble": 0.45,
+    "blurb": "A heavy crown. It wants night-loam, mosspears, and soil that has been fed.",
+    "requirements": [
+      {"type": "chem_cells", "chem": "nightloam", "min": 4, "label": "Night-loam in the beds"},
+      {"type": "mature_plant", "plant": "mosspear", "min": 2, "label": "2 mature Mosspears"},
+      {"type": "fertility", "min": 0.6, "label": "Well-fed soil"}
+    ]
+  }
+]
