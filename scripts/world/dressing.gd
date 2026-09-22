@@ -282,13 +282,13 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		previous_open = open
 
 func _hedge_knot(at: Vector3) -> float:
-	return absf(sin(at.x * 0.92 + at.z * 0.7))
+	return absf(sin(at.x * 0.55 + at.z * 0.42))
 
 func _hedge_gap(at: Vector3) -> bool:
-	return _hedge_knot(at) < 0.38
+	return _hedge_knot(at) < 0.72
 
 func _hedge_crown(at: Vector3) -> float:
-	return smoothstep(0.38, 1.0, _hedge_knot(at))
+	return smoothstep(0.72, 0.96, _hedge_knot(at))
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
@@ -573,7 +573,7 @@ func _hedge_coat(parent: Node3D) -> void:
 				for layer in 3:
 					var outward := side * side_sign
 					var mound := _hedge_crown(center)
-					var at := center + outward * _rng.randf_range(0.55, 1.42)
+					var at := center + outward * _rng.randf_range(0.22, 0.72)
 					at.y = (0.22 + float(layer) * 0.42) * scale * lerpf(0.32, 1.0, mound) + _rng.randf_range(-0.04, 0.08)
 					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
 					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
@@ -867,7 +867,7 @@ func _row_bloom() -> ArrayMesh:
 		var right := Vector3(cos(angle + 0.45) * 0.08, stem_h, sin(angle + 0.45) * 0.08)
 		var heart := Vector3(0.0, stem_h + 0.02, 0.0)
 		for point in [heart, left, tip, heart, tip, right]:
-			tool.set_color(Color.WHITE)
+			tool.set_color(Color("#c46b84"))
 			tool.add_vertex(point)
 	tool.generate_normals()
 	return tool.commit()

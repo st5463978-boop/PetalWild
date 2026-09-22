@@ -35,7 +35,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp’s core is a pad plus five lobes, with dark creases in the gaps and a five-point cupped petal. The body is still glossy blobs. It is not an authored sculpt.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
-- Hedge shoulders share one spine, so the far crown rises and falls. The wall is still one leafy mass. Paths are dark dirt with flagstones. Blooms sit on the room floor, and a meadow fills the lawn outside the rooms. The shafts are narrow, and a bright streak still crosses the middle of the overview. There is still no insect or bird life.
+- Hedge gaps are wide enough to split the mesh into bushes, and the far crown rises and falls. Backdrop trees still join the skyline into one leafy band. Paths are dark dirt with flagstones. Blooms are rose instead of clipped white. A few highlights still clip. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge shoulders follow one spine, so the far crown rises and falls. The wall is still one leafy mass. Paths are flagstones on dark dirt. Blooms sit on the room floor, and a meadow fills the lawn outside the rooms. The shafts are narrow beams. A bright streak still crosses the middle of the overview. Bellhelp’s lobes stay split by dark creases. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+Hedge gaps are wider, so the mesh breaks into bushes and the far crown rises and falls. Backdrop trees behind the north hedge still join that skyline into one leafy band. Paths are flagstones on dark dirt. Bloom petals are rose, so the white field in the overview is gone. A few highlights still clip. Bellhelp’s lobes stay split by dark creases. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
-1. **Hedge bushes.** The crown rises and falls. The wall is still one leafy mass, not separate clipped bushes. PETAL-05.
-2. **Light.** The wide wash is gone. A bright streak still crosses the middle of the overview. PETAL-06.
-3. **Bellhelp.** The lobes and creases separate. The body is still glossy blobs. PETAL-03.
+1. **Hedge bushes.** The mesh gaps are open. The overview skyline is still one leafy band, because the backdrop trees sit behind the north hedge. PETAL-05.
+2. **Bellhelp.** The lobes and creases separate. The body is still glossy blobs. PETAL-03.
+3. **Highlights.** The white field is gone. A few petals and stones still clip to white. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): open the hedge gaps so the rises become separate bushes, and clear the remaining bright streak. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): lower the backdrop canopy so the hedge gaps show sky, and turn Bellhelp’s lobes into a blossom. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

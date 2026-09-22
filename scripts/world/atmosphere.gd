@@ -10,10 +10,10 @@ var sky_material: ProceduralSkyMaterial
 var shafts: Array[MeshInstance3D] = []
 var photosensitivity := false
 
-func _build_shafts() -> void:
-	for i in 4:
+func _build_shafts(parent: Node3D) -> void:
+	for i in 3:
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.9, 0.9, 14.0)
+		mesh.size = Vector3(0.55, 0.55, 8.0)
 		var beam := MeshInstance3D.new()
 		beam.mesh = mesh
 		var material := StandardMaterial3D.new()
@@ -21,12 +21,13 @@ func _build_shafts() -> void:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		material.albedo_color = Color(1.0, 0.86, 0.55, 0.018)
+		material.albedo_color = Color(1.0, 0.9, 0.62, 0.04)
 		beam.material_override = material
 		beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		beam.position = Vector3(-5.4 + float(i) * 4.2, 2.6, -1.2)
+		beam.position = Vector3(-8.2 + float(i) * 6.4, 3.4, 2.2)
+		beam.rotation_degrees = Vector3(-62.0, 18.0, 0.0)
 		beam.visible = false
-		sun.add_child(beam)
+		parent.add_child(beam)
 		shafts.append(beam)
 
 func build(parent: Node3D) -> void:
@@ -45,8 +46,8 @@ func build(parent: Node3D) -> void:
 	environment.ssao_radius = 1.15
 	environment.ssao_intensity = 1.25
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.32
-	environment.glow_bloom = 0.08
+	environment.glow_intensity = 0.16
+	environment.glow_bloom = 0.02
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	environment.fog_density = 0.0045
@@ -65,7 +66,7 @@ func build(parent: Node3D) -> void:
 	sun.directional_shadow_max_distance = 48.0
 	sun.shadow_bias = 0.06
 	parent.add_child(sun)
-	_build_shafts()
+	_build_shafts(parent)
 
 	moon = DirectionalLight3D.new()
 	moon.shadow_enabled = false
@@ -104,7 +105,7 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	var night := 1.0 - day
 	var sun_height := sin(deg_to_rad(clampf((hour - 6.0) / 12.0, 0.0, 1.0) * 180.0))
 	sun.rotation_degrees = Vector3(-12.0 - sun_height * 58.0, -40.0 - hour * 2.0, 0)
-	sun.light_energy = lerpf(0.05, 1.15, day) + golden * 0.12
+	sun.light_energy = lerpf(0.05, 0.9, day) + golden * 0.06
 	sun.light_color = Color("ffd2a4").lerp(Color("fff4dd"), 1.0 - golden)
 	moon.rotation_degrees = Vector3(-35, 140, 0)
 	moon.light_energy = 0.28 * night
@@ -138,7 +139,7 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	var shafts_on := day > 0.45 and weather != "rain" and not photosensitivity
 	for beam in shafts:
 		beam.visible = shafts_on
-		var tint := Color(1.0, 0.84, 0.52, 0.016)
+		var tint := Color(1.0, 0.88, 0.58, 0.05)
 		var material := beam.material_override as StandardMaterial3D
 		if material:
 			material.albedo_color = tint
