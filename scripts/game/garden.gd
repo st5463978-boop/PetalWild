@@ -8,6 +8,7 @@ var debug_overlay: DebugOverlay
 var atmosphere: Atmosphere
 var audio: GardenAudio
 var bees: GardenBees
+var birds: GardenBirds
 var people := {}
 var patches := {}
 var plant_views := {}
@@ -84,6 +85,9 @@ func _build() -> void:
 	bees = GardenBees.new()
 	add_child(bees)
 	bees.build()
+	birds = GardenBirds.new()
+	add_child(birds)
+	birds.build()
 	_spawn_people()
 
 	hud = Hud.new()
@@ -110,6 +114,8 @@ func _process(delta: float) -> void:
 	camera.nudge(delta)
 	if bees:
 		bees.tick(delta, Settings.reduce_motion)
+	if birds:
+		birds.tick(delta, Settings.reduce_motion, Clock.hour(), Clock.weather)
 	visual_timer += delta
 	if visual_timer > 0.2:
 		visual_timer = 0.0
