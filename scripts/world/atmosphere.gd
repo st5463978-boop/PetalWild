@@ -7,7 +7,27 @@ var moon: DirectionalLight3D
 var fill: DirectionalLight3D
 var rain: CPUParticles3D
 var sky_material: ProceduralSkyMaterial
+var shafts: Array[MeshInstance3D] = []
 var photosensitivity := false
+
+func _build_shafts() -> void:
+	for i in 7:
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.55, 0.55, 16.0)
+		var beam := MeshInstance3D.new()
+		beam.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material.albedo_color = Color(1.0, 0.84, 0.52, 0.06)
+		beam.material_override = material
+		beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		beam.position = Vector3(-6.0 + float(i) * 2.0, float(i % 2) * 0.8 - 0.4, -9.0)
+		beam.visible = false
+		sun.add_child(beam)
+		shafts.append(beam)
 
 func build(parent: Node3D) -> void:
 	world_environment = WorldEnvironment.new()
@@ -45,6 +65,7 @@ func build(parent: Node3D) -> void:
 	sun.directional_shadow_max_distance = 48.0
 	sun.shadow_bias = 0.06
 	parent.add_child(sun)
+	_build_shafts()
 
 	moon = DirectionalLight3D.new()
 	moon.shadow_enabled = false
@@ -114,3 +135,10 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	if camera:
 		rain.global_position = camera.global_position + Vector3(0, 8.0, 0)
 	rain.emitting = weather == "rain" and not photosensitivity
+	var shafts_on := day > 0.45 and weather != "rain" and not photosensitivity
+	for beam in shafts:
+		beam.visible = shafts_on
+		var tint := Color(1.0, 0.82, 0.48, 0.045 + golden * 0.04)
+		var material := beam.material_override as StandardMaterial3D
+		if material:
+			material.albedo_color = tint

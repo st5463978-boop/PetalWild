@@ -127,6 +127,19 @@ func _bell(root: Node3D) -> void:
 	seed.material_override = seed_material
 	seed.position = Vector3(0.0, radius * 0.38, -radius * 0.34)
 	root.add_child(seed)
+	var throat := MeshInstance3D.new()
+	var throat_mesh := SphereMesh.new()
+	throat_mesh.radius = radius * 0.2
+	throat_mesh.height = radius * 0.32
+	throat_mesh.radial_segments = 10
+	throat_mesh.rings = 6
+	throat.mesh = throat_mesh
+	var throat_material := StandardMaterial3D.new()
+	throat_material.albedo_color = Color("#163f24")
+	throat_material.roughness = 0.86
+	throat.material_override = throat_material
+	throat.position = Vector3(0.0, radius * 0.3, -radius * 0.08)
+	root.add_child(throat)
 
 func _bell_lathe() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -177,18 +190,19 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) 
 func _petal_mesh() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var length := radius * 2.05
-	var steps := 6
+	var length := radius * 2.2
+	var steps := 8
 	var prev_l := Vector3.ZERO
 	var prev_r := Vector3.ZERO
 	for i in steps + 1:
 		var t := float(i) / float(steps)
-		var z := t * length * (1.0 - 0.42 * t * t)
-		var y := sin(t * PI) * radius * 0.34 - pow(maxf(t - 0.58, 0.0), 2.0) * radius * 2.6
-		var w := radius * (0.16 + 0.78 * sin(t * PI))
-		var cup := w * 0.28
-		var left := Vector3(-w, y - cup, z)
-		var right := Vector3(w, y - cup, z)
+		var z := t * length * (1.0 - 0.32 * t * t)
+		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1
+		var w := radius * (0.14 + 0.72 * sin(t * PI))
+		var cup := w * 0.3
+		var twist := t * t * radius * 0.14
+		var left := Vector3(-w, y - cup + twist, z)
+		var right := Vector3(w, y - cup - twist * 0.35, z)
 		if i > 0:
 			_tri(tool, prev_l, prev_r, right)
 			_tri(tool, prev_l, right, left)
