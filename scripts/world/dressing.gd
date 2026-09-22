@@ -427,6 +427,8 @@ func _hedge_leaves(parent: Node3D) -> void:
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
 	material.set_shader_parameter("tint", Color("#3d7a34"))
+	# ponytail: crest leaf cards lift pale under this sun; raise if the hedge goes black.
+	material.set_shader_parameter("gain", 0.58)
 	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false)
 
 func _room_cover(parent: Node3D) -> void:
@@ -580,7 +582,9 @@ func _hedge_fringe(parent: Node3D) -> void:
 				# ponytail: 0.4 so a 2.5m crest gap stays open; raise if the crest goes bald.
 				if _crest_wall(center.z):
 					scale *= 0.4
-				var tint := Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85)
+				# ponytail: crest fringe lifts pale under this sun; raise if the crest goes black.
+				var tip := Color("#5a7a30") if _crest_wall(center.z) else Color("#d5e07a")
+				var tint := Color("#1c5c2c").lerp(tip, _rng.randf() * 0.85)
 				var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
 				if (not _crest_wall(center.z) or rise > 0.62) and not _far_open(center):
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
@@ -775,6 +779,7 @@ func _hedge_volume(parent: Node3D) -> void:
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
 	material.set_shader_parameter("tint", Color("#3a7a32"))
+	material.set_shader_parameter("gain", 0.58)
 	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false)
 
 func _hedge_leaf_card() -> ArrayMesh:
@@ -1036,7 +1041,9 @@ func _trees(parent: Node3D) -> void:
 		for layer in 3:
 			var cone := MeshInstance3D.new()
 			cone.mesh = cone_mesh
-			var leaf := Color("#1f5a2c").lerp(Color("#9bc45a"), 0.18 + float(layer) * 0.22)
+			# ponytail: backdrop cones lift pale under this sun; raise if the far trees go black.
+			var bright := Color("#9bc45a") if not behind else Color("#4e6e2c")
+			var leaf := Color("#1f5a2c").lerp(bright, 0.18 + float(layer) * 0.22)
 			cone.material_override = _standard(leaf, 0.8)
 			var scale := (0.48 if behind else 1.05) - float(layer) * (0.08 if behind else 0.22)
 			var step := 0.2 if behind else 0.62
