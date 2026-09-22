@@ -1,0 +1,166 @@
+[
+  {
+    "id": "sunburst",
+    "name": "Sunburst",
+    "shape": "pear",
+    "deep": "#c45a12",
+    "shallow": "#ffd56a",
+    "eye": "#3a2418",
+    "role": "pollinator",
+    "locomotion": "hop",
+    "chemistry_gift": "pollinated",
+    "gift_plots": 6,
+    "journal": "A warm pear jelly. It follows open Sunpetal faces and dusts the beds.",
+    "requirements": [
+      {"type": "mature_plant", "id": "sunpetal", "count": 4, "label": "4 mature Sunpetal"}
+    ]
+  },
+  {
+    "id": "blob",
+    "name": "Blob",
+    "shape": "stacked",
+    "deep": "#3a7bd4",
+    "shallow": "#b9dcff",
+    "eye": "#1b2a44",
+    "role": "forager",
+    "locomotion": "roll",
+    "journal": "Stacked and clumsy. It adores Petal Corn and sometimes borrows a cob.",
+    "requirements": [
+      {"type": "mature_plant", "id": "petal_corn", "count": 2, "label": "2 mature Petal Corn"},
+      {"type": "fertility_avg", "min": 0.4, "label": "beds fertile"}
+    ]
+  },
+  {
+    "id": "thimble",
+    "name": "Thimble",
+    "shape": "crown",
+    "deep": "#6b3a4a",
+    "shallow": "#f0a0b0",
+    "eye": "#2a1218",
+    "role": "predator",
+    "locomotion": "charge",
+    "chemistry_gift": "compost",
+    "gift_plots": 5,
+    "journal": "A small crowned jelly that hunts where Sunbursts linger. Its scraps sweeten the soil.",
+    "requirements": [
+      {"type": "species_at_least", "id": "sunburst", "state": "REPEAT_VISITOR", "label": "Sunburst keeps returning"}
+    ]
+  },
+  {
+    "id": "bellwisp",
+    "name": "Bellwisp",
+    "shape": "droplet",
+    "deep": "#1f8a78",
+    "shallow": "#d8fff4",
+    "eye": "#12332e",
+    "role": "mist",
+    "locomotion": "hop",
+    "journal": "A droplet with a bell-bright face. It wants pollinators and a little standing water.",
+    "requirements": [
+      {"type": "species_at_least", "id": "sunburst", "state": "VISITOR", "label": "Sunburst visiting"},
+      {"type": "water_cells", "count": 3, "label": "3 scooped pools"}
+    ]
+  },
+  {
+    "id": "noodle",
+    "name": "Noodle",
+    "shape": "long",
+    "deep": "#e07a3d",
+    "shallow": "#ffd0a4",
+    "eye": "#3a2414",
+    "role": "swimmer",
+    "locomotion": "slip",
+    "journal": "A long jelly that pours itself through gaps and pools.",
+    "requirements": [
+      {"type": "water_cells", "count": 5, "label": "5 scooped pools"}
+    ]
+  },
+  {
+    "id": "cushion",
+    "name": "Cushion",
+    "shape": "flat",
+    "deep": "#c46b8a",
+    "shallow": "#ffe0ea",
+    "eye": "#3a2030",
+    "role": "lounger",
+    "locomotion": "bounce",
+    "journal": "A wide soft cushion. It settles where Dewberry has been pollinated.",
+    "requirements": [
+      {"type": "mature_plant", "id": "dewberry", "count": 1, "label": "1 mature Dewberry"},
+      {"type": "chemistry_plots", "id": "pollinated", "count": 3, "label": "pollinated beds"}
+    ]
+  },
+  {
+    "id": "berrypatch",
+    "name": "Berrypatch",
+    "shape": "multi",
+    "deep": "#8e2f55",
+    "shallow": "#ff8fb0",
+    "eye": "#2a1018",
+    "role": "grazer",
+    "locomotion": "hop",
+    "journal": "A many-lobed berry jelly. It wants a proper Dewberry patch, not a single cane.",
+    "requirements": [
+      {"type": "mature_plant", "id": "dewberry", "count": 3, "label": "3 mature Dewberry"}
+    ]
+  },
+  {
+    "id": "puffcap",
+    "name": "Puffcap",
+    "shape": "crown",
+    "deep": "#6a4a98",
+    "shallow": "#e4d4ff",
+    "eye": "#241838",
+    "role": "night",
+    "locomotion": "bounce",
+    "journal": "A fungal crown that wakes when Moonvine opens.",
+    "requirements": [
+      {"type": "mature_plant", "id": "moonvine", "count": 1, "label": "1 mature Moonvine"}
+    ]
+  },
+  {
+    "id": "circlark",
+    "name": "Circlark",
+    "shape": "multi",
+    "deep": "#2f6d4f",
+    "shallow": "#b7f0c8",
+    "eye": "#102418",
+    "role": "chorus",
+    "locomotion": "dance",
+    "journal": "A ring of lobes that only gathers once a Bellwisp has truly moved in.",
+    "requirements": [
+      {"type": "species_at_least", "id": "bellwisp", "state": "RESIDENT", "label": "Bellwisp resident"}
+    ]
+  },
+  {
+    "id": "sapling",
+    "name": "Sapling",
+    "shape": "botanical",
+    "deep": "#3e7a32",
+    "shallow": "#d4f0a8",
+    "eye": "#1a2a12",
+    "role": "warden",
+    "locomotion": "hop",
+    "journal": "A botanical jelly. It judges the whole garden, not one bed.",
+    "requirements": [
+      {"type": "garden_quality", "min": 68, "label": "garden quality 68"}
+    ]
+  },
+  {
+    "id": "pegapouch",
+    "name": "Pegapouch",
+    "shape": "stacked",
+    "deep": "#b8862a",
+    "shallow": "#fff1c2",
+    "eye": "#3a2c10",
+    "role": "rare",
+    "locomotion": "spring",
+    "rare": true,
+    "journal": "A rare pouch jelly. Rain, night, and a visiting Puffcap have to agree.",
+    "requirements": [
+      {"type": "species_at_least", "id": "puffcap", "state": "VISITOR", "label": "Puffcap visiting"},
+      {"type": "weather_any", "values": ["rain"], "label": "rain"},
+      {"type": "night", "value": true, "label": "night"}
+    ]
+  }
+]

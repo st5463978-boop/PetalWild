@@ -1,0 +1,8 @@
+[
+  {"id": "seed_sunpetal", "name": "Sunpetal seed", "price": 8, "qty": 1, "gives": "seed_sunpetal", "plant": "sunpetal", "unlock": {"type": "always"}},
+  {"id": "seed_petal_corn", "name": "Petal Corn seed", "price": 10, "qty": 1, "gives": "seed_petal_corn", "plant": "petal_corn", "unlock": {"type": "always"}},
+  {"id": "seed_dewberry", "name": "Dewberry cane", "price": 12, "qty": 1, "gives": "seed_dewberry", "plant": "dewberry", "unlock": {"type": "species_at_least", "id": "sunburst", "state": "VISITOR"}},
+  {"id": "seed_moonvine", "name": "Moonvine cutting", "price": 16, "qty": 1, "gives": "seed_moonvine", "plant": "moonvine", "unlock": {"type": "species_at_least", "id": "thimble", "state": "RESIDENT"}},
+  {"id": "fert_pack", "name": "Fertility pack", "price": 6, "qty": 1, "gives": "fert_pack", "unlock": {"type": "always"}},
+  {"id": "home_kit", "name": "Home kit", "price": 30, "qty": 1, "gives": "home_kit", "unlock": {"type": "species_at_least", "id": "sunburst", "state": "SETTLER"}}
+]

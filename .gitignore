@@ -1,0 +1,9 @@
+.godot/
+tools/godot/
+export/
+*.tmp
+*.log
+.DS_Store
+third_party/incoming/**/*.zip
+assets/
+agent-tools/

@@ -1,0 +1,6 @@
+[
+  {"id": "media_foundry", "name": "Media Foundry", "role": "draft stories and production plans", "home": "studio"},
+  {"id": "library", "name": "Library", "role": "search public research", "home": "archive"},
+  {"id": "workshop", "name": "Workshop", "role": "prepare build notes", "home": "workshop"},
+  {"id": "town_hall", "name": "Town Hall", "role": "present proposed actions", "home": "hall"}
+]

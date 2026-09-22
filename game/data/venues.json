@@ -1,0 +1,8 @@
+[
+  {"id": "petal_stall", "name": "Petal Stall", "kind": "shop", "district": "havenbrook", "jobs": 1, "happiness": 0.06, "tourism": 0.04, "unlock": {"type": "resident_unlocked", "id": "quin_hearth"}},
+  {"id": "petal_park", "name": "Petal Park", "kind": "park", "district": "havenbrook", "jobs": 1, "happiness": 0.08, "tourism": 0.05, "unlock": {"type": "always"}},
+  {"id": "hearth_market", "name": "Hearth Market", "kind": "market", "district": "havenbrook", "jobs": 4, "happiness": 0.05, "tourism": 0.07, "unlock": {"type": "resident_unlocked", "id": "lumen_barrow"}},
+  {"id": "root_school", "name": "Root School", "kind": "school", "district": "havenbrook", "jobs": 3, "happiness": 0.04, "tourism": 0.01, "unlock": {"type": "resident_unlocked", "id": "neeve_allium"}},
+  {"id": "glass_multiplex", "name": "Glass Multiplex", "kind": "entertainment", "district": "havenbrook", "jobs": 6, "happiness": 0.07, "tourism": 0.1, "unlock": {"type": "residents", "count": 2}},
+  {"id": "media_foundry", "name": "Media Foundry", "kind": "studio", "district": "havenbrook", "jobs": 2, "happiness": 0.01, "tourism": 0.02, "unlock": {"type": "residents", "count": 1}}
+]
