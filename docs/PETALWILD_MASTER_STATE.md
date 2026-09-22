@@ -35,7 +35,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp’s five sphere lobes are gone. The body is a low pad, five standing petals, and the skirt. The close-up is on open lawn, the cup reads, and the shader is matte. The center is a small gold sphere with emission off.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
-- The far hedge is a thinner spine with leaves kept on the crest. Overview row 280 is about 80% sky and 16% hedge, and row 320 is about 61% sky. The lower body is still a leafy wall. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. About 0.73% of overview pixels are still pure white. There is still no insect or bird life.
+- Canopy hedges are one spine at 0.45 of the old width, with leaves on the crest. The far band (screen y 280–345) is still about 64–80% occluder, so the lower body still reads as a leafy wall. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. 0.417% of overview pixels are pure white (was 0.582% on the previous overview). There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. The far wall is a thinner spine with leaves on the crest: overview row 280 is about 80% sky and 16% hedge, and row 320 is about 61% sky. The lower body is still a leafy wall. Bellhelp’s sphere lobes are gone; the close-up is on open lawn and the body reads as a matte green cup with a small gold center and no emission. The white cluster on the paths was the lightest flagstones; those slabs are darker. Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The north backdrop trees are shorter than the hedge. Canopy walls are one spine at 0.45 of the old width, with leaves on the crest. The far band (screen y 280–345) is still about 64–80% occluder against the hill, so the stem cut does not open the skyline. Bellhelp’s sphere lobes are gone; the close-up is on open lawn and the body reads as a matte green cup with a small gold center and no emission. Path stones are darker, and StandardMaterial specular is disabled. Pure white on the overview is 0.417% (5401 pixels), down from 0.582% on the previous shot. Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
-1. **Hedge skyline.** The crest reads as a broken canopy. The lower body is still a solid leafy wall. PETAL-05.
+1. **Hedge skyline.** The lower body is still a leafy wall. Leaf cards bridge the 2.5 m gaps, and the stall covers the central notch. PETAL-05.
 2. **Bellhelp.** The cup reads, the surface is matte, and the center no longer glows. The silhouette is still a simple cup. PETAL-03.
-3. **Highlights.** About 0.73% of overview pixels are still pure white. PETAL-06.
+3. **Highlights.** 0.417% of overview pixels are pure white, mostly on the foreground path and in the stall band. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): thin the lower hedge body the way the crest was thinned, and track the remaining pure-white pixels. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): shrink the crest leaf cards so the 2.5 m gaps read as sky, then re-measure the white clusters on the path and the stall. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

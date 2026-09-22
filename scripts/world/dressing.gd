@@ -173,7 +173,7 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 	var slab_colors: Array[Color] = []
 	var chips: Array[Transform3D] = []
 	var chip_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#d4c4a8"), Color("#b7a48c"), Color("#7d6e5c"), Color("#c4b49a"), Color("#5c5146")]
+	var palette: Array[Color] = [Color("#b9a88c"), Color("#b7a48c"), Color("#7d6e5c"), Color("#a89878"), Color("#5c5146")]
 	for strip in strips:
 		var a: Vector3 = strip[0]
 		var b: Vector3 = strip[1]
@@ -229,7 +229,7 @@ func _hedge(parent: Node3D) -> void:
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
-	var north := origin.z > 6.0 and absf(along.z) < 0.01 and along.x < 0.0
+	var north := _crest_wall(origin.z) and absf(along.z) < 0.01 and along.x < 0.0
 	if north:
 		_hedge_run(tool, origin, along, openings, scale * 0.62, 0.0, 0.2)
 		return
@@ -275,6 +275,9 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var knot := _hedge_knot(spine)
 		var waist := 0.22 + 0.78 * knot
 		var width := (0.95 + scale * 0.42) * bulge * waist
+		# ponytail: 0.45 stem on canopy walls; raise if the crest reads as sticks.
+		if _crest_wall(origin.z) and absf(along.z) < 0.01:
+			width *= 0.45
 		if _hedge_gap(spine):
 			open = true
 		for point in profile:
@@ -300,12 +303,15 @@ func _north_notch(x: float, wide: bool) -> bool:
 		return true
 	return false
 
+func _crest_wall(z: float) -> bool:
+	return z > 6.2 or (z > 2.95 and z < 3.45)
+
 func _hedge_gap(at: Vector3) -> bool:
-	if at.z > 6.2:
-		if _north_notch(at.x, false):
-			return true
-		# ponytail: alternate 2.5m crest gaps so leaves cannot bridge them shut.
-		return posmod(int(floor(at.x * 0.4)), 2) == 0 and _hedge_crown(at) > 0.35
+	if at.z > 6.2 and _north_notch(at.x, false):
+		return true
+	# ponytail: the same 2.5m rhythm cuts the lower body, not only the high crest.
+	if _crest_wall(at.z):
+		return posmod(int(floor(at.x * 0.4)), 2) == 0
 	return _hedge_knot(at) < 0.72
 
 func _notch_lip(x: float) -> float:
@@ -320,7 +326,7 @@ func _hedge_crown(at: Vector3) -> float:
 
 func _crown_scale(at: Vector3) -> float:
 	var mound := _hedge_crown(at)
-	if at.z > 6.2:
+	if _crest_wall(at.z):
 		return _notch_lip(at.x) * lerpf(0.22, 1.5, mound)
 	return lerpf(0.34, 1.0, mound)
 
@@ -405,7 +411,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 				var scale_leaf := _rng.randf_range(0.75, 1.4)
 				basis = basis.scaled(Vector3.ONE * scale_leaf)
 				var tint := Color("#1f5528").lerp(Color("#c6d96a"), _rng.randf() * 0.55)
-				if center.z <= 6.2 or point.y >= 0.84:
+				if not _crest_wall(center.z) or point.y >= 0.84:
 					points.append(Transform3D(basis, at))
 					colors.append(tint)
 					var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
@@ -486,7 +492,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			var tint := Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf())
 			var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-			if center.z <= 6.2:
+			if not _crest_wall(center.z):
 				points.append(Transform3D(basis, at))
 				colors.append(tint)
 				customs.append(custom)
@@ -567,7 +573,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 				var stretch := _rng.randf_range(0.9, 1.6)
 				var tint := Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85)
 				var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-				if center.z <= 6.2 or rise > 0.62:
+				if not _crest_wall(center.z) or rise > 0.62:
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
 					colors.append(tint)
 					customs.append(custom)
@@ -624,7 +630,7 @@ func _hedge_coat(parent: Node3D) -> void:
 					var lift := float(layer) / 2.0
 					var tint := Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35)
 					var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-					var keep := center.z <= 6.2 or layer == 2
+					var keep := not _crest_wall(center.z) or layer == 2
 					if keep:
 						points.append(card)
 						colors.append(tint)
@@ -694,7 +700,7 @@ func _hedge_bulges(parent: Node3D) -> void:
 				var card := Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.75, 1.45), scale)), at)
 				var tint := Color("#174d28").lerp(Color("#e2ee86"), rng.randf())
 				var custom := Color(rng.randf(), 0.0, 0.0, 1.0)
-				if center.z <= 6.2:
+				if not _crest_wall(center.z):
 					points.append(card)
 					colors.append(tint)
 					customs.append(custom)
@@ -751,7 +757,7 @@ func _hedge_volume(parent: Node3D) -> void:
 					var size := rng.randf_range(0.8, 1.45)
 					var card := Transform3D(basis.scaled(Vector3(size, size * rng.randf_range(0.8, 1.3), 1.0)), at)
 					var tint := Color("#1d5228").lerp(Color("#c5dc62"), knot * 0.45 + rng.randf() * 0.35)
-					if center.z <= 6.2 or layer == 2:
+					if not _crest_wall(center.z) or layer == 2:
 						points.append(card)
 						colors.append(tint)
 	var material := ShaderMaterial.new()
@@ -1363,6 +1369,7 @@ func _standard(color: Color, rough: float) -> StandardMaterial3D:
 	material.albedo_color = color
 	material.roughness = rough
 	material.vertex_color_use_as_albedo = true
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return material
 
 const _PACK := "res://third_party/incoming/assetquest-stylized-garden-demo/"
