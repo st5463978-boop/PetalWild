@@ -26,6 +26,7 @@ func build(parent: Node3D) -> void:
 	_lawn_tufts(parent)
 	_room_clumps(parent)
 	_room_carpet(parent)
+	_room_beds(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -217,13 +218,15 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
 		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
 		var waist := 0.22 + 0.78 * knot
-		var width := (0.36 + scale * 0.1) * bulge * waist
+		var width := (0.62 + scale * 0.22) * bulge * lerpf(0.28, 1.0, waist)
 		if _hedge_gap(center):
 			open = true
 		for point in profile:
 			var height := point.y
+			if height > 0.72:
+				height = 0.72 + (height - 0.72) * 0.22
 			if height > 0.12:
-				height *= chop * lerpf(0.38, 1.0, knot)
+				height *= chop * lerpf(0.45, 1.0, knot)
 			ring.append(center + side * (point.x * width + lean * height) + Vector3(0, height * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
@@ -970,6 +973,41 @@ func _room_carpet(parent: Node3D) -> void:
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_007.png"))
 	material.set_shader_parameter("tint", Color("#6d8f3a"))
 	_multimesh(parent, quad, points, colors, material, "RoomCarpet", false)
+
+func _room_beds(parent: Node3D) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14119
+	var mesh := _row_bloom()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var beds: Array[Dictionary] = [
+		{"rect": Rect2(-8.15, -5.7, 1.55, 2.15), "color": Color("#e56b8a")},
+		{"rect": Rect2(-8.15, 0.35, 1.45, 1.85), "color": Color("#f2d36b")},
+		{"rect": Rect2(1.85, -5.55, 1.45, 1.55), "color": Color("#f08aa4")},
+		{"rect": Rect2(1.7, 0.55, 1.55, 1.45), "color": Color("#c9a0e8")},
+		{"rect": Rect2(-5.9, -5.85, 2.4, 0.7), "color": Color("#ef7f72")},
+	]
+	for bed in beds:
+		var rect: Rect2 = bed["rect"]
+		var palette: Color = bed["color"]
+		var cols := maxi(int(rect.size.x / 0.28), 1)
+		var rows := maxi(int(rect.size.y / 0.28), 1)
+		for iz in rows:
+			for ix in cols:
+				var x := rect.position.x + (float(ix) + 0.5) * rect.size.x / float(cols)
+				var z := rect.position.y + (float(iz) + 0.5) * rect.size.y / float(rows)
+				x += rng.randf_range(-0.04, 0.04)
+				z += rng.randf_range(-0.04, 0.04)
+				if GardenLayout.in_plots(x, z, 0.18) or GardenLayout.on_path(x, z):
+					continue
+				if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.3:
+					continue
+				var y := GardenLayout.height_at(x, z)
+				var scale := rng.randf_range(1.35, 2.15)
+				var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, rng.randf_range(-0.06, 0.06))).scaled(Vector3(scale, scale, scale))
+				points.append(Transform3D(basis, Vector3(x, y, z)))
+				colors.append(palette.lerp(Color("#fff6ea"), rng.randf() * 0.2))
+	_multimesh(parent, mesh, points, colors, _bloom_material(), "RoomBeds", false)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()
