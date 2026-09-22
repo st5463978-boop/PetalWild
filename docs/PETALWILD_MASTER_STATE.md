@@ -49,11 +49,11 @@ No parallel workers are running. A second wave committed to `main` during this i
 
 ## Branches and merges
 
-`main` only. Nothing is waiting to merge. The lost Garden Grove tree was not recoverable. See `docs/RECOVERY_MATRIX.md`.
+`main` is the playable Hedge Hollow scene. `cursor/opening-grove-parallel-a334` keeps a second grove that was written before this tree landed. It is not compiled. See `docs/RECOVERY_MATRIX.md`.
 
 ## Assets and licences
 
-Inter 4.1 (OFL) is the UI font. Nunito (OFL) and the Asset Quest Stylized Garden demo (CC0) arrived with the parallel commit and are staged, not yet the garden's look. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
+Inter 4.1 (OFL) is the UI font. The Asset Quest Stylized Garden demo (CC0) is placed as flowers, grass, a bench, and a planter. Nunito (OFL) is in `third_party/fonts/` and is not the live UI font. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
 
 ## Higgsfield
 
@@ -61,15 +61,15 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 ## Visual compare
 
-Compared `docs/screenshots/wave1_overview.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
+Compared `docs/screenshots/wave1_overview.png` and `wave1_night.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png` after the hedge-room pass.
 
-The shot now looks over a trimmed hedge into four beds, a pond, a stall, and cone trees. Night lanterns read. That is as far as this wave goes.
+The outer hedge is taller and thicker. A lower hedge now boxes the four beds, with gaps on the existing paths. More of the same CC0 flowers and grass sit along that inner wall. Night lanterns still read, and the night frame is actually dark.
 
-Three largest gaps, and who has them next:
+Three largest gaps still open:
 
-1. **Creatures.** The close-up is still a glossy ball. PETAL-03 and PETAL-06: authored blossom mesh, seed eyes on the surface, internal structure in the jelly shader.
-2. **Cast.** Lumen is a capsule, an apron, and spectacles. PETAL-04: leek, beet, and pea silhouettes with faces, clothes, and a stance.
-3. **Interior density.** CC0 poppies, cornflowers, and a sunflower now sit in the beds, on the Asset Quest atlas. The lawn between them is still one green plane, the bench and planter are flat-coloured, and there are no hedge rooms or sun shafts. PETAL-05 and PETAL-06 continue this, using more of the same CC0 pack only where the scale and palette already match.
+1. **Hedge surface.** The walls are one smooth shader tube. The concepts are leafy, uneven, and tall enough to make rooms. PETAL-05 and PETAL-06: break the silhouette and keep this palette. Do not drop a second asset pack on top.
+2. **Creatures.** `wave1_jelly.png` is still a glossy ball. PETAL-03: an authored blossom mesh with eyes on the surface.
+3. **Cast and light.** Lumen is still a capsule with an apron. There are no sun shafts and the lawn between props is still one plane. PETAL-04 for the people, PETAL-06 for light.
 
 ## Next integration
 

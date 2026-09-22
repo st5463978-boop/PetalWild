@@ -43,7 +43,7 @@ Take from it: the CC0 Asset Quest demo, the Nunito OFL file, `docs/research/`, a
 
 ### REPLACE
 
-- Flat debug grid and sphere-canopy dressing. Wave 1 now uses a trimmed hedge wall, cone backdrop trees, and a south camera that looks into the beds. The interior is still far from the concept plates.
+- Flat debug grid and sphere-canopy dressing. The running garden has a taller outer hedge, a lower hedge around the four beds, cone trees, and CC0 flowers. The interior is still far from the concept plates.
 - Sphere-stacked Bellhelp. The blossom layout is in, and it still reads as one glossy body at gameplay distance.
 - Capsule Veg People. Spectacles and an apron read at close range. They are not an authored cast yet.
 
@@ -51,3 +51,4 @@ Take from it: the CC0 Asset Quest demo, the Nunito OFL file, `docs/research/`, a
 
 - `docs/reference/current_garden_grove_01.png` and `current_grok_grove_01.png` as evidence of the lost build.
 - `docs/reference/jelly_baby_reference_01.png` and `havenbrook_reference_01.png` as design references, not assets to trace.
+- Branch `cursor/opening-grove-parallel-a334`: a second playable grove written before this tree was on `main`. It is not the scene Godot runs. Salvage from it only if a later wave needs something Hedge Hollow does not already have.
