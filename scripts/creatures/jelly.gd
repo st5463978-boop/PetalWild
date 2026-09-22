@@ -147,11 +147,14 @@ func _bell_lathe() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var profile: Array[Vector2] = [
-		Vector2(0.18, 0.02),
-		Vector2(0.72, 0.08),
-		Vector2(0.5, 0.28),
-		Vector2(0.32, 0.5),
-		Vector2(0.16, 0.74),
+		Vector2(0.2, 0.0),
+		Vector2(0.58, 0.06),
+		Vector2(0.82, 0.16),
+		Vector2(0.58, 0.3),
+		Vector2(0.36, 0.46),
+		Vector2(0.48, 0.62),
+		Vector2(0.2, 0.82),
+		Vector2(0.08, 0.96),
 	]
 	var segments := 16
 	var rings: Array = []
@@ -159,9 +162,9 @@ func _bell_lathe() -> ArrayMesh:
 		var ring: Array[Vector3] = []
 		for seg in segments:
 			var angle := TAU * float(seg) / float(segments)
-			var flute := 1.0
-			if row.y < 0.16:
-				flute = 1.0 + 0.14 * cos(angle * 6.0)
+			var flute := 1.0 + 0.07 * cos(angle * 5.0)
+			if row.y < 0.22:
+				flute = 1.0 + 0.18 * cos(angle * 6.0)
 			ring.append(Vector3(cos(angle) * row.x * flute, row.y, sin(angle) * row.x * flute) * radius)
 		rings.append(ring)
 	for row in rings.size() - 1:
@@ -194,26 +197,28 @@ func _petal_mesh() -> ArrayMesh:
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var length := radius * 2.2
 	var steps := 8
-	var prev_l := Vector3.ZERO
-	var prev_r := Vector3.ZERO
+	var prev: Array[Vector3] = []
 	for i in steps + 1:
 		var t := float(i) / float(steps)
 		var z := t * length * (1.0 - 0.32 * t * t)
 		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1
 		var w := radius * (0.14 + 0.72 * sin(t * PI))
-		var cup := w * 0.3
-		var twist := t * t * radius * 0.14
-		var left := Vector3(-w, y - cup + twist, z)
-		var right := Vector3(w, y - cup - twist * 0.35, z)
-		var ridge := Vector3(0, y + radius * 0.06, z)
+		var cup := sin(t * PI) * radius * 0.55
+		var rib := sin(t * PI) * radius * 0.28
+		var row: Array[Vector3] = [
+			Vector3(-w, y + cup, z),
+			Vector3(-w * 0.42, y + cup * 0.08, z),
+			Vector3(0.0, y + rib, z),
+			Vector3(w * 0.42, y + cup * 0.08, z),
+			Vector3(w, y + cup, z),
+		]
 		if i > 0:
-			var prev_ridge := Vector3(0, prev_l.y + radius * 0.09, prev_l.z)
-			_tri(tool, prev_l, prev_ridge, ridge)
-			_tri(tool, prev_l, ridge, left)
-			_tri(tool, prev_ridge, prev_r, right)
-			_tri(tool, prev_ridge, right, ridge)
-		prev_l = left
-		prev_r = right
+			for k in row.size() - 1:
+				_tri(tool, prev[k], prev[k + 1], row[k + 1])
+				_tri(tool, prev[k], row[k + 1], row[k])
+				_tri(tool, prev[k + 1], prev[k], row[k])
+				_tri(tool, prev[k + 1], row[k], row[k + 1])
+		prev = row
 	tool.generate_normals()
 	return tool.commit()
 
