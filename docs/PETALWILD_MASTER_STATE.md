@@ -39,7 +39,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
-- No CC0 environment pack imported yet.
+- The CC0 demo is in the garden. A full tree and hedge kit is not.
 - Large-text setting applies on the title screen, not live in the garden HUD.
 - Smoke quits during `_ready` and leaks a handful of canvas items. The check itself passes.
 
@@ -63,11 +63,11 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The outer hedge is taller. A lower hedge boxes the four beds, with gaps on the paths. CC0 flowers and grass sit along that wall. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes.
+The outer hedge is taller, and the hedge shader now pushes tufts through the top so the wall is less of a smooth tube. A lower hedge boxes the four beds, with gaps on the paths. CC0 flowers and grass sit along that wall. The stall has the CC0 bench, planter, table, and umbrella on the prop atlas, not flat stand-in colours. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes. Shots recaptured 22 September 2026.
 
 Three largest gaps still open:
 
-1. **Hedge surface.** The walls are one smooth shader tube. The concepts are leafy and uneven. PETAL-05 and PETAL-06: break that silhouette and keep this palette.
+1. **Hedge surface.** The walls break silhouette more, and they are still one shaded volume. The concepts are leafy. PETAL-05 and PETAL-06: leaf cards on this palette, not a new scene.
 2. **Bellhelp’s face.** The petals read, and the core is still a glossy lathe with the eyes off the surface. PETAL-03: seat the face on the bell and curl the petals.
 3. **Lumen’s hands and the lawn.** The leaf crown is there. The body is still capsules, there is no seed tray, and the ground inside the rooms is one plane. PETAL-04 for the face, hands, and tray. PETAL-06 for ground cover and sun shafts.
 

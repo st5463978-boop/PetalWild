@@ -512,6 +512,9 @@ func _cc0_props(parent: Node3D) -> void:
 		load(_PACK + "Textures/Plants_Atlas_1_Basecolor.png"),
 		load(_PACK + "Textures/Plants_Atlas_1_Opacity.png")
 	)
+	var prop_tex: Texture2D = load(_PACK + "Textures/Props_Basecolor.png")
+	var props := _flat_material(Color.WHITE, 0.66)
+	props.albedo_texture = prop_tex
 	var layout := [
 		["FBX/Poppy_Single_Red.fbx", Vector3(-10.4, 0, -2.4), 1.15, 0.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.5, 0, -1.2), 0.95, 2.1],
@@ -525,6 +528,8 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Wild_Grass_Red_small.fbx", Vector3(2.4, 0, 2.2), 1.2, 1.4],
 		["FBX/Bench_1.fbx", Vector3(-1.4, 0, 3.6), 1.0, 0.2],
 		["FBX/Planter_1_Terracotta.fbx", Vector3(-5.4, 0, 4.4), 1.0, 1.1],
+		["FBX/Table_1.fbx", Vector3(-2.55, 0, 6.15), 0.78, 0.35],
+		["FBX/Sun_Umbrella_1.fbx", Vector3(-2.7, 0, 6.35), 0.46, 0.5],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-11.2, 0, -3.1), 0.85, 1.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-9.2, 0, -3.3), 1.05, 2.6],
 		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(-11.6, 0, 1.6), 0.9, 0.7],
@@ -557,11 +562,9 @@ func _cc0_props(parent: Node3D) -> void:
 		node.position = Vector3(at.x, y, at.z)
 		node.rotation.y = float(item[3])
 		node.scale = Vector3.ONE * float(item[2])
-		if file.find("Bench") != -1:
-			_paint_imported(node, _flat_material(Color("#8a6248"), 0.84))
-		elif file.find("Planter") != -1:
-			_paint_imported(node, _flat_material(Color("#c47858"), 0.72))
-		elif file.find("Table") == -1 and file.find("Umbrella") == -1:
+		if file.find("Bench") != -1 or file.find("Planter") != -1 or file.find("Table") != -1 or file.find("Umbrella") != -1:
+			_paint_imported(node, props)
+		else:
 			_paint_imported(node, plants)
 		parent.add_child(node)
 
