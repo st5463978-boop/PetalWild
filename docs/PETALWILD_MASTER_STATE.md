@@ -31,6 +31,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Large text resizes the garden HUD without leaving the scene.
 - Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 - Off-screen jellies hide. A resident walks to the nearest placed home kit. A visitor keeps the flower. Back in frame, the body shows again.
+- By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home. The directory says which.
 
 ## Broken or not built
 
@@ -39,7 +40,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
 - Crest leaf cards are 0.4 scale, and the far hedge keeps one 2.5 m tuft in four. A dark shrub row stands just behind that wall, taller at the east end. Light-green in the upper opening band fell from 53% to 24%, and in the lower band from 36% to 13%. The hill did not move. The stall still shows through the middle. The bright blue in that opening was the awning cloth. That stripe is darker now, about (171, 171, 173), and the sky-blue detector on the overview is 0. The shrub row behind the wall was the pale green in the upper band. That check now covers 1.2%, down from 3.5%. The crest leaf cards and the far trees were the side-opening pale pixels. The north backdrop trees are shorter. Paths are dark dirt with darker flagstones. Blooms are rose. StandardMaterial specular is off. The bench and planter are darkened, bright plant-atlas texels are capped, and the lantern glass is amber. The pink disk by the south-west rail, the untilled grass-plot tops, the meadowbell petals, the mauve bed, the resident hands, the light flagstones, the path dirt, and the loose stones are darkened. Overview pixels at pure white are 0. Eight bees drift over the beds. Four birds cross the garden by day and perch at dusk and in the rain.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
-- On-screen jellies stay at district fidelity or nearer. The directory shows each resident's home and job. Jobs are not a route. The parish page lists venues and marks every room but Petal Stall as not built. Petal Stall demand is the people present plus creature residents. Demand for the other rooms is not simulated.
+- On-screen jellies stay at district fidelity or nearer. The directory shows each resident's home and job. The parish page lists venues and marks every room but Petal Stall as not built. Petal Stall demand is the people present plus creature residents. Demand for the other rooms is not simulated.
 - Trust cannot research, draft, or act outside the process.
 - The running garden and the sidelined Kenney grove both play the CC0 forest loop when the mp3 loads. Tool sounds stay procedural. This VM has no sound card.
 
@@ -73,4 +74,4 @@ Three largest gaps still open, against `docs/reference/petalwild_target_garden_0
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow). Off-screen residents walk to a placed home kit. About 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Bees sit on the flowers while it rains. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow). Residents walk their jobs by day and their homes after dusk. About 1.2% of the upper band is still light green, mostly the west edge of the hill, and the stall still shows through the middle. Bees sit on the flowers while it rains. Do not paint that hill edge, do not cut the hill, and do not raise the east shrubs. Do not fill Bellhelp’s dark throat. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

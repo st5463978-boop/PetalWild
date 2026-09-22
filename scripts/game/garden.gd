@@ -14,6 +14,7 @@ var patches := {}
 var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
+var shift := ""
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -110,6 +111,7 @@ func _process(delta: float) -> void:
 	_wire_jellies()
 	_update_creatures(delta)
 	_check_nessa(world)
+	_apply_shift(false)
 	_drift_people(delta, world)
 	camera.nudge(delta)
 	if bees:
@@ -538,6 +540,25 @@ func _run_smoke() -> void:
 	bell.life = life_was
 	bell.use_berth = false
 	bell.global_position = bell_home
+	var bram := _person("bram")
+	Clock.set_hour(15.3)
+	_apply_shift(false)
+	if bram.waypoints[0].distance_to(GardenLayout.SHED) < 2.0:
+		push_error("smoke: day job was the shed")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	_apply_shift(false)
+	if bram.waypoints[0].distance_to(GardenLayout.SHED) > 2.0:
+		push_error("smoke: night route missed the shed")
+		get_tree().quit(1)
+		return
+	var before := bram.global_position.distance_to(bram.waypoints[0])
+	bram._process(3.0)
+	if bram.global_position.distance_to(bram.waypoints[0]) > before - 0.8:
+		push_error("smoke: bram did not walk home")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -642,22 +663,41 @@ func _spawn_people() -> void:
 		add_child(person)
 		person.setup(ContentDB.person(id))
 		people[id] = person
+	_apply_shift(true)
+
+func _apply_shift(snap: bool) -> void:
+	# ponytail: one day loop and one home point; a room clock when a second venue is built.
+	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
+	var key := "day"
+	if night:
+		key = "night%d" % home_points.size()
+	if key == shift and not snap:
+		return
+	shift = key
+	if night:
+		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
+		_person("bram").set_route([GardenLayout.SHED + Vector3(1.1, 0, -0.6)], snap)
+		var nessa_at := GardenLayout.GATE
+		if not home_points.is_empty():
+			nessa_at = home_points[0]
+		_person("nessa").set_route([nessa_at], snap)
+		return
 	_person("lumen").set_route([
 		GardenLayout.STALL + Vector3(0, 0, 0.95),
 		GardenLayout.STALL + Vector3(1.15, 0, 0.85),
 		GardenLayout.STALL + Vector3(-0.2, 0, 0.95),
-	])
+	], snap)
 	_person("bram").set_route([
 		GardenLayout.cell_center(0, 0),
 		GardenLayout.cell_center(4, 3),
 		GardenLayout.cell_center(5, 4),
 		GardenLayout.cell_center(1, 6),
-	])
+	], snap)
 	_person("nessa").set_route([
 		GardenLayout.GATE,
 		Vector3(-3.4, 0, -2.0),
 		GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
-	])
+	], snap)
 
 func _person(id: String) -> VegPerson:
 	return people.get(id)
@@ -1140,7 +1180,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"role": person.role,
 			"home": home,
 			"job": definition.get("job", ""),
-			"state": "in the garden" if person.present else "not arrived",
+			"state": "not arrived" if not person.present else ("home for the night" if shift.begins_with("night") else "at their job"),
 			"blurb": definition.get("blurb", ""),
 			"present": person.present,
 			"mood": person.mood,

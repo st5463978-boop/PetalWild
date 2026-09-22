@@ -42,9 +42,10 @@ func setup(definition: Dictionary) -> void:
 		speech.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	add_child(speech)
 
-func set_route(points: Array[Vector3]) -> void:
+func set_route(points: Array[Vector3], snap := true) -> void:
 	waypoints = points
-	if not points.is_empty():
+	index = 0
+	if snap and not points.is_empty():
 		global_position = points[0]
 
 func say(line: String) -> void:
