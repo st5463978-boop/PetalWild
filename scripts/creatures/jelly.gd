@@ -48,7 +48,7 @@ func _build(definition: Dictionary) -> void:
 	root.name = "Body"
 	add_child(root)
 	var shape := str(definition.get("shape", "droplet"))
-	face_z = radius * 1.05
+	face_z = -radius * 1.05
 	var eye_y := _shape(root, shape)
 	var organ_y := eye_y * 0.5
 	if shape == "bell":
@@ -60,7 +60,7 @@ func _shape(root: Node3D, shape: String) -> float:
 	match shape:
 		"bell":
 			_bell(root)
-			face_z = radius * 0.78
+			face_z = -radius * 0.72
 			return radius * 0.62
 		"pear":
 			_blob(root, Vector3(0, 0.32, 0), Vector3(0.95, 1.2, 0.95))
@@ -221,7 +221,7 @@ func _organ(root: Node3D, definition: Dictionary, height: float) -> void:
 
 func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
 	var eye_color := Color(str(definition.get("eye", "#fff4c8")))
-	var z := face_z if face_z > 0.0 else radius * 1.05
+	var z := face_z if face_z != 0.0 else -radius * 1.05
 	eye_l = _eye(root, Vector3(-radius * 0.28, eye_y, z), eye_color)
 	eye_r = _eye(root, Vector3(radius * 0.28, eye_y, z), eye_color)
 	mouth = _eye(root, Vector3(0, eye_y - radius * 0.34, z * 0.92), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))
