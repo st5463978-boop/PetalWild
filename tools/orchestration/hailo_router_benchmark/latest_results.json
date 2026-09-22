@@ -1,0 +1,22 @@
+{
+  "status": "not_run",
+  "reason": "no_hailo_device",
+  "selected_model": null,
+  "note": "No accuracy is reported. Confidence labels were not calibrated. This is not a Jev model and not an RLCD policy.",
+  "task_count": 174,
+  "probe": {
+    "hardware": false,
+    "pci": [],
+    "device_node": "",
+    "hailortcli": "",
+    "hef": [],
+    "endpoints": [],
+    "preferred_models": [
+      "Qwen3-1.7B-Instruct",
+      "Qwen2-1.5B-Instruct-FC"
+    ],
+    "available": false,
+    "reason": "no_hailo_device"
+  },
+  "models": []
+}

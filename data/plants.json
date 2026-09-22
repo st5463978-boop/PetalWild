@@ -1,0 +1,51 @@
+{
+  "sunpetal": {
+    "name": "Sunpetal",
+    "kind": "flower",
+    "seed_item": "sunpetal_seed",
+    "harvest_item": "sunpetal_bloom",
+    "grow_seconds": 42,
+    "water_need": 0.34,
+    "fertility_need": 0.12,
+    "likes_phases": ["day", "dusk", "dawn"],
+    "seasons": ["spring", "summer"],
+    "colors": {"stem": "#3E7A32", "leaf": "#7CB342", "bloom": "#F2C14E", "core": "#E39B2B"}
+  },
+  "petal_corn": {
+    "name": "Petal Corn",
+    "kind": "crop",
+    "seed_item": "petal_corn_seed",
+    "harvest_item": "petal_corn_ear",
+    "grow_seconds": 52,
+    "water_need": 0.42,
+    "fertility_need": 0.28,
+    "likes_phases": ["day", "dawn"],
+    "seasons": ["summer", "autumn"],
+    "colors": {"stem": "#3E7A32", "leaf": "#C6D46A", "bloom": "#E6C35C", "core": "#F4E2A4"}
+  },
+  "mossbell": {
+    "name": "Mossbell",
+    "kind": "cover",
+    "seed_item": "mossbell_seed",
+    "harvest_item": "mossbell_clump",
+    "grow_seconds": 30,
+    "water_need": 0.55,
+    "fertility_need": 0.05,
+    "likes_phases": ["day", "dusk", "dawn", "night"],
+    "prefers": "pond",
+    "colors": {"stem": "#2F6B45", "leaf": "#8FBF7A", "bloom": "#D6E27A", "core": "#F4F0C8"}
+  },
+  "nightbloom": {
+    "name": "Nightbloom",
+    "kind": "flower",
+    "seed_item": "nightbloom_seed",
+    "harvest_item": "nightbloom_cup",
+    "grow_seconds": 46,
+    "water_need": 0.5,
+    "fertility_need": 0.55,
+    "likes_phases": ["night", "dusk"],
+    "requires_weather": ["rain", "mist"],
+    "requires_flag": "nightbloom_unlocked",
+    "colors": {"stem": "#1E3A2F", "leaf": "#3D6B58", "bloom": "#6C4CFF", "core": "#E6D6FF"}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "petal_stall": {"name": "Petal Stall", "active": true, "kind": "shop", "phase": "A", "blurb": "Cara's seed counter. The first door that actually opens."},
+  "grove_park": {"name": "Grove Park", "active": false, "kind": "park", "phase": "C", "blurb": "A public lawn beyond the hedge. Not broken ground yet."},
+  "tea_house": {"name": "Hedge Tea House", "active": false, "kind": "venue", "phase": "C", "blurb": "A later room for gossip and rain."},
+  "research_hut": {"name": "Research Hut", "active": false, "kind": "agent", "phase": "G", "blurb": "Where a trusted resident may one day prepare notes. Nothing here can spend or send."},
+  "media_foundry": {"name": "Media Foundry", "active": false, "kind": "agent", "phase": "G", "blurb": "A room for drafts. Approval stays with you."},
+  "town_hall": {"name": "Town Hall", "active": false, "kind": "civic", "phase": "F", "blurb": "The place proposals will be posted when the town exists."}
+}

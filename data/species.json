@@ -1,0 +1,155 @@
+{
+  "sunburst": {
+    "name": "Sunburst",
+    "form": "pear",
+    "hint": "Warm air over open flowers.",
+    "journal": "A pear-shaped sun jelly. It follows open Sunpetals the way heat follows a cleared bed.",
+    "diet": ["sunpetal_bloom"],
+    "variant_chance": 0.35,
+    "colors": {"deep": "#C47A12", "lit": "#FFE56A", "rim": "#FFF8D8", "eye": "#3A2410"},
+    "visit": [
+      {"op": "mature", "plant": "sunpetal", "count": 3},
+      {"op": "phase", "any": ["day", "dusk"]}
+    ],
+    "settle": [
+      {"op": "fed", "id": "sunburst", "count": 1},
+      {"op": "harvested", "item": "sunpetal_bloom", "count": 1}
+    ]
+  },
+  "ribbon": {
+    "name": "Ribbon",
+    "form": "ribbon",
+    "hint": "A dry lawn is keeping something long and bright away.",
+    "journal": "A long brook jelly. The wild water beyond the hedge is not its home. It wants a pond you keep.",
+    "diet": ["mossbell_clump"],
+    "colors": {"deep": "#1C6B78", "lit": "#8FE3E0", "rim": "#E8FFFC", "eye": "#12343A"},
+    "visit": [
+      {"op": "ground", "ground": "pond", "count": 4},
+      {"op": "moisture", "min": 0.4}
+    ],
+    "settle": [
+      {"op": "mature", "plant": "mossbell", "count": 2}
+    ]
+  },
+  "berrybunch": {
+    "name": "Berrybunch",
+    "form": "stack",
+    "hint": "Sweet crops may be drawing a crowd.",
+    "journal": "Stacked berry jellies. They show up when Petal Corn is ripe and the stall is a real place.",
+    "diet": ["petal_corn_ear"],
+    "colors": {"deep": "#6A2148", "lit": "#E25B8A", "rim": "#FFD0E2", "eye": "#2A1020"},
+    "visit": [
+      {"op": "mature", "plant": "petal_corn", "count": 2},
+      {"op": "venue", "id": "petal_stall"}
+    ],
+    "settle": [
+      {"op": "harvested", "item": "petal_corn_ear", "count": 2},
+      {"op": "fed", "id": "berrybunch", "count": 1}
+    ]
+  },
+  "rendle": {
+    "name": "Rendle",
+    "form": "flat",
+    "hint": "Where a sun jelly settles, a flatter appetite follows.",
+    "journal": "A low, wide jelly that follows Sunbursts. What it leaves in the soil is useful. What it takes off the stalk is not.",
+    "diet": ["sunpetal_bloom"],
+    "mischief": "steal_mature",
+    "while_resident": {"fertility_per_second": 0.0025},
+    "colors": {"deep": "#3A2A28", "lit": "#C4785A", "rim": "#F0C8A8", "eye": "#1A100E"},
+    "visit": [
+      {"op": "species", "id": "sunburst", "min": "resident"}
+    ],
+    "settle": [
+      {"op": "fed", "id": "rendle", "count": 1},
+      {"op": "fertility", "min": 0.4}
+    ]
+  },
+  "coriark": {
+    "name": "Coriark",
+    "form": "droplet",
+    "hint": "After dark, if the soil turns strange.",
+    "journal": "A tall dusk jelly. Nightbloom and a dim hour bring it out of the hedges.",
+    "diet": ["nightbloom_cup"],
+    "colors": {"deep": "#241848", "lit": "#7A6AD8", "rim": "#D8D0FF", "eye": "#140E28"},
+    "visit": [
+      {"op": "mature", "plant": "nightbloom", "count": 1},
+      {"op": "phase", "any": ["night", "dusk"]}
+    ],
+    "settle": [
+      {"op": "harvested", "item": "nightbloom_cup", "count": 1},
+      {"op": "fed", "id": "coriark", "count": 1}
+    ]
+  },
+  "ruffles": {
+    "name": "Ruffles",
+    "form": "lobe",
+    "hint": "A lantern in a lived-in garden.",
+    "journal": "A ruffled botanical jelly. It nests where a habitat lantern is actually hanging.",
+    "diet": ["mossbell_clump"],
+    "colors": {"deep": "#1E4A32", "lit": "#A8D48A", "rim": "#F4FFE4", "eye": "#102018"},
+    "visit": [
+      {"op": "prop", "id": "lantern", "count": 1},
+      {"op": "residents", "count": 2}
+    ],
+    "settle": [
+      {"op": "person", "id": "oshi"},
+      {"op": "fed", "id": "ruffles", "count": 1}
+    ]
+  },
+  "cradling": {
+    "name": "Cradling",
+    "form": "crown",
+    "hint": "A garden that has been loved in daylight.",
+    "journal": "A crown jelly that treats a flower-heavy garden as a nursery. It wants benches, not a spectacle.",
+    "diet": ["sunpetal_bloom"],
+    "colors": {"deep": "#8A3A48", "lit": "#F2B3C0", "rim": "#FFF0F3", "eye": "#3A1820"},
+    "visit": [
+      {"op": "mature", "plant": "sunpetal", "count": 6},
+      {"op": "quality", "min": 0.35}
+    ],
+    "settle": [
+      {"op": "prop", "id": "bench", "count": 1},
+      {"op": "residents", "count": 1},
+      {"op": "fed", "id": "cradling", "count": 1}
+    ]
+  },
+  "pegacorn": {
+    "name": "Pegacorn",
+    "form": "crest",
+    "hint": "A rare clear day, and a garden already full.",
+    "journal": "A crested jelly with a botanical sail. No hooves, no horned horse. It crosses the hedge only when the grove is already somebody's home.",
+    "diet": ["sunpetal_bloom"],
+    "variant_chance": 0.4,
+    "colors": {"deep": "#245C3A", "lit": "#D8F08A", "rim": "#FFFFFF", "eye": "#142818"},
+    "visit": [
+      {"op": "residents", "count": 3},
+      {"op": "quality", "min": 0.55},
+      {"op": "weather", "any": ["clear", "golden"]},
+      {"op": "phase", "any": ["day"]}
+    ],
+    "settle": [
+      {"op": "quality", "min": 0.7},
+      {"op": "fed", "id": "pegacorn", "count": 1}
+    ],
+    "legendary": [
+      {"op": "quality", "min": 0.85},
+      {"op": "weather", "any": ["golden"]}
+    ]
+  },
+  "cushion": {
+    "name": "Cushion",
+    "form": "squat",
+    "hint": "The sound of a stall that is actually open.",
+    "journal": "A squat shop jelly. It dozes by the counter once the garden has a resident and the till has rung.",
+    "diet": ["petal_corn_ear"],
+    "colors": {"deep": "#C46A3A", "lit": "#F2C14A", "rim": "#FFF6D8", "eye": "#3A2414"},
+    "visit": [
+      {"op": "venue", "id": "petal_stall"},
+      {"op": "residents", "count": 1}
+    ],
+    "settle": [
+      {"op": "sales", "count": 2},
+      {"op": "fed", "id": "cushion", "count": 1}
+    ]
+  }
+}

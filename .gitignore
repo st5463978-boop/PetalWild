@@ -1,0 +1,13 @@
+.godot/
+*.translation
+export/
+.DS_Store
+/tools/godot/
+*.tmp
+*.log
+/assets/third_party/**/*.zip
+/agent-tools/
+/assets/*.png
+/assets/*.png.import
+Thumbs.db
+/tools/orchestration/runtime/

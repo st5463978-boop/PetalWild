@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://boa7xn0jv8gmd"
+path="res://.godot/imported/plant.obj-71bd65b45d74824023d3164e82827126.mesh"
+
+[deps]
+
+files=["res://.godot/imported/plant.obj-71bd65b45d74824023d3164e82827126.mesh"]
+
+source_file="res://assets/third_party/kenney/mini-forest/Models/OBJ format/plant.obj"
+dest_files=["res://.godot/imported/plant.obj-71bd65b45d74824023d3164e82827126.mesh", "res://.godot/imported/plant.obj-71bd65b45d74824023d3164e82827126.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

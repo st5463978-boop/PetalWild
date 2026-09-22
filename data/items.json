@@ -1,0 +1,12 @@
+{
+  "sunpetal_seed": {"name": "Sunpetal seed", "buy": 6, "sell": 2, "tag": "seed", "plant": "sunpetal"},
+  "petal_corn_seed": {"name": "Petal Corn seed", "buy": 10, "sell": 3, "tag": "seed", "plant": "petal_corn"},
+  "mossbell_seed": {"name": "Mossbell seed", "buy": 8, "sell": 2, "tag": "seed", "plant": "mossbell"},
+  "nightbloom_seed": {"name": "Nightbloom seed", "buy": 28, "sell": 6, "tag": "seed", "plant": "nightbloom", "requires_flag": "nightbloom_unlocked"},
+  "fertiliser": {"name": "Fertiliser pack", "buy": 5, "sell": 1, "tag": "supply"},
+  "sunpetal_bloom": {"name": "Sunpetal bloom", "buy": 0, "sell": 9, "tag": "harvest"},
+  "petal_corn_ear": {"name": "Petal Corn ear", "buy": 0, "sell": 14, "tag": "harvest"},
+  "mossbell_clump": {"name": "Mossbell clump", "buy": 0, "sell": 7, "tag": "harvest"},
+  "nightbloom_cup": {"name": "Nightbloom cup", "buy": 0, "sell": 22, "tag": "harvest"},
+  "habitat_lantern": {"name": "Habitat lantern", "buy": 36, "sell": 0, "tag": "prop", "place": "lantern", "requires_person": "oshi", "requires_item": "nightbloom_cup"}
+}
