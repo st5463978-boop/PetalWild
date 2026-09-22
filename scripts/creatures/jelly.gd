@@ -192,21 +192,20 @@ func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) 
 func _petal_mesh() -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var length := radius * 2.45
+	var length := radius * 2.2
 	var steps := 8
 	var prev_l := Vector3.ZERO
 	var prev_r := Vector3.ZERO
 	for i in steps + 1:
 		var t := float(i) / float(steps)
-		var z := t * length
-		var arch := sin(t * PI) * radius * 0.28
-		var droop := pow(t, 1.7) * radius * 0.72
-		var y := arch - droop
-		var w := radius * (0.12 + sin(t * PI) * 0.62)
-		var twist := t * t * radius * 0.22
-		var left := Vector3(-w, y + twist, z)
-		var right := Vector3(w, y - twist * 0.4, z)
-		var ridge := Vector3(0, y + radius * 0.09, z)
+		var z := t * length * (1.0 - 0.32 * t * t)
+		var y := sin(t * PI) * radius * 0.32 - pow(maxf(t - 0.55, 0.0), 2.0) * radius * 2.1
+		var w := radius * (0.14 + 0.72 * sin(t * PI))
+		var cup := w * 0.3
+		var twist := t * t * radius * 0.14
+		var left := Vector3(-w, y - cup + twist, z)
+		var right := Vector3(w, y - cup - twist * 0.35, z)
+		var ridge := Vector3(0, y + radius * 0.06, z)
 		if i > 0:
 			var prev_ridge := Vector3(0, prev_l.y + radius * 0.09, prev_l.z)
 			_tri(tool, prev_l, prev_ridge, ridge)
