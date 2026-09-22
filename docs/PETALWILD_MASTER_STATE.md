@@ -33,13 +33,13 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s blossom still reads as one glossy sphere in the close shot.
-- Veg People are readable primitives, not an authored cast.
-- No hedge rooms, no sun shafts, no insect or bird life.
+- Bellhelp has a face on the blossom. The petals are still flat cards on a lathe.
+- Veg People are readable primitives, not an authored cast. Lumen holds a seed tray.
+- Hedge rooms exist. There are still no sun shafts, insects, or birds.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
-- No CC0 environment pack imported yet.
+- Kenney foliage cards and the Asset Quest garden demo are in the scene. They are not yet one hedge mass.
 - Large-text setting applies on the title screen, not live in the garden HUD.
 - Smoke quits during `_ready` and leaks a handful of canvas items. The check itself passes.
 
@@ -63,13 +63,13 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The outer hedge is taller. A lower hedge boxes the four beds, with gaps on the paths. CC0 flowers and grass sit along that wall. Bellhelp’s close-up is a lathed bell with two rings of petals. Lumen has a stacked leek stalk, a leaf crown, an apron, and a satchel. `PETAL_SMOKE_OK` still passes.
+The outer hedge and the room walls carry Kenney leaf cards along the crown, and the lawn is a deeper green than the previous capture. Leaf litter sits on the room floor. Bellhelp’s eyes and mouth sit on the front of the blossom. Lumen’s right arm holds a seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` still pass. Shots are the six `wave1_*.png` files from this pass.
 
 Three largest gaps still open:
 
-1. **Hedge surface.** The walls are one smooth shader tube. The concepts are leafy and uneven. PETAL-05 and PETAL-06: break that silhouette and keep this palette.
-2. **Bellhelp’s face.** The petals read, and the core is still a glossy lathe with the eyes off the surface. PETAL-03: seat the face on the bell and curl the petals.
-3. **Lumen’s hands and the lawn.** The leaf crown is there. The body is still capsules, there is no seed tray, and the ground inside the rooms is one plane. PETAL-04 for the face, hands, and tray. PETAL-06 for ground cover and sun shafts.
+1. **Hedge mass.** The leaf cards break the top edge, and the wall underneath is still a smooth tube. The concepts are a dense, uneven hedge you cannot see through to a primitive. PETAL-05 and PETAL-06: cover the faces, not only the crown.
+2. **Bellhelp’s body.** The face is on the blossom. The petals are flat cards and the core is still a lathe. PETAL-03: give the petals thickness and a softer jelly read.
+3. **Room ground and the cast.** Litter is sparse, the lawn is still one plane, and Lumen is still stacked capsules with a tray. PETAL-04 for an authored face and hands. PETAL-06 for ground cover, sun shafts, and insects.
 
 ## Next integration
 

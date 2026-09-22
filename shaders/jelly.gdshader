@@ -21,7 +21,7 @@ void fragment() {
 	vec3 col = mix(deep_color.rgb, lit_color.rgb, fres * 0.55 + height * 0.35);
 	float bubble = smoothstep(0.9, 1.0, sin(VERTEX.x * 34.0 + TIME) * sin(VERTEX.y * 28.0));
 	ALBEDO = col;
-	ROUGHNESS = mix(0.55, 0.22, fres);
-	SPECULAR = 0.28;
+	ROUGHNESS = mix(0.74, 0.46, fres);
+	SPECULAR = 0.1;
 	EMISSION = glow_color.rgb * (fres * 0.12 + bubble * 0.16 + height * 0.05);
 }

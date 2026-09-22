@@ -27,6 +27,7 @@ var eye_l: Node3D
 var eye_r: Node3D
 var mouth: Node3D
 var face_z := 0.0
+var eye_scale := 1.0
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -60,8 +61,9 @@ func _shape(root: Node3D, shape: String) -> float:
 	match shape:
 		"bell":
 			_bell(root)
-			face_z = radius * 0.78
-			return radius * 0.62
+			face_z = radius * 0.62
+			eye_scale = 0.68
+			return radius * 0.12
 		"pear":
 			_blob(root, Vector3(0, 0.32, 0), Vector3(0.95, 1.2, 0.95))
 			_blob(root, Vector3(0, 0.72, 0), Vector3(0.36, 0.3, 0.36))
@@ -168,15 +170,21 @@ func _petal_mesh() -> ArrayMesh:
 	for i in steps + 1:
 		var t := float(i) / float(steps)
 		var z := t * length
-		var y := sin(t * PI) * radius * 0.12
+		var y := sin(t * PI) * radius * 0.22
 		var w := radius * 0.82 * (1.0 - t * 0.45)
 		var left := Vector3(-w, y, z)
 		var right := Vector3(w, y, z)
+		var ridge := Vector3(0, y + radius * 0.07, z)
 		if i > 0:
-			_tri(tool, prev_l, prev_r, right)
-			_tri(tool, prev_l, right, left)
-			_tri(tool, prev_r, prev_l, left)
-			_tri(tool, prev_r, left, right)
+			var prev_ridge := Vector3(0, prev_l.y + radius * 0.07, prev_l.z)
+			_tri(tool, prev_l, prev_ridge, ridge)
+			_tri(tool, prev_l, ridge, left)
+			_tri(tool, prev_ridge, prev_r, right)
+			_tri(tool, prev_ridge, right, ridge)
+			_tri(tool, prev_ridge, prev_l, left)
+			_tri(tool, prev_ridge, left, ridge)
+			_tri(tool, prev_r, prev_ridge, ridge)
+			_tri(tool, prev_r, ridge, right)
 		prev_l = left
 		prev_r = right
 	tool.generate_normals()
@@ -222,18 +230,33 @@ func _organ(root: Node3D, definition: Dictionary, height: float) -> void:
 func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
 	var eye_color := Color(str(definition.get("eye", "#fff4c8")))
 	var z := face_z if face_z > 0.0 else radius * 1.05
-	eye_l = _eye(root, Vector3(-radius * 0.28, eye_y, z), eye_color)
-	eye_r = _eye(root, Vector3(radius * 0.28, eye_y, z), eye_color)
-	mouth = _eye(root, Vector3(0, eye_y - radius * 0.34, z * 0.92), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))
-	mouth.scale = Vector3(0.85, 0.16, 0.22)
+	var bell := str(definition.get("shape", "")) == "bell"
+	var spread := radius * 0.2 if bell else minf(radius * 0.26, maxf(z * 0.38, radius * 0.12))
+	eye_l = _eye(root, Vector3(-spread, eye_y, z), eye_color)
+	eye_r = _eye(root, Vector3(spread, eye_y, z), eye_color)
+	var mouth_y := radius * 0.05 if bell else eye_y - radius * 0.22
+	var mouth_z := radius * 0.7 if bell else z
+	mouth = _eye(root, Vector3(0, mouth_y, mouth_z), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))
+	mouth.scale = Vector3(0.7, 0.14, 0.2)
 
 func _eye(root: Node3D, at: Vector3, color: Color) -> Node3D:
 	var pivot := Node3D.new()
 	pivot.position = at
 	root.add_child(pivot)
+	var socket := MeshInstance3D.new()
+	var socket_mesh := SphereMesh.new()
+	socket_mesh.radius = radius * 0.14 * eye_scale
+	socket_mesh.height = radius * 0.2 * eye_scale
+	socket.mesh = socket_mesh
+	var socket_material := StandardMaterial3D.new()
+	socket_material.albedo_color = Color("#243024")
+	socket_material.roughness = 0.8
+	socket.material_override = socket_material
+	socket.position = Vector3(0, 0, -radius * 0.02)
+	pivot.add_child(socket)
 	var mesh := SphereMesh.new()
-	mesh.radius = radius * 0.1
-	mesh.height = radius * 0.16
+	mesh.radius = radius * 0.1 * eye_scale
+	mesh.height = radius * 0.16 * eye_scale
 	mesh.radial_segments = 10
 	mesh.rings = 6
 	var node := MeshInstance3D.new()

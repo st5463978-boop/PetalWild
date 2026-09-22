@@ -104,9 +104,10 @@ func _leek() -> void:
 		var length := 0.7 if i % 2 == 0 else 0.46
 		_ribbon(Color("#2c6e32").lightened(0.06 * float(i % 3)), 0.8, i * (360.0 / 7.0), droop, length)
 	_arm(Vector3(-0.18, 0.5, 0), Color("#efe6c9"))
-	_arm(Vector3(0.18, 0.5, 0), Color("#efe6c9"))
+	var right := _arm(Vector3(0.2, 0.46, 0.04), Color("#efe6c9"), -18.0, 68.0)
 	_apron(Color("#d9815a"))
 	_satchel()
+	_seed_tray(right)
 	_spectacles_at(0.68)
 	_mouth_at(0.62)
 	_feet(Color("#c4b49a"))
@@ -151,15 +152,17 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color, squash :=
 	parent.add_child(node)
 	return node
 
-func _arm(at: Vector3, color: Color) -> void:
+func _arm(at: Vector3, color: Color, pitch: float = 0.0, roll: float = 0.0) -> Node3D:
 	var mesh := CapsuleMesh.new()
 	mesh.radius = 0.035
 	mesh.height = 0.28
 	var node := _paint(mesh, color, 0.5)
 	node.position = at
-	node.rotation_degrees = Vector3(0, 0, 18 if at.x > 0 else -18)
+	var z_roll := roll if roll != 0.0 else (12.0 if at.x > 0 else -12.0)
+	node.rotation_degrees = Vector3(pitch, 0, z_roll)
 	body.add_child(node)
-	_sphere(body, at + Vector3(0.04 if at.x > 0 else -0.04, -0.16, 0.04), 0.045, Color("#f6f1e4"))
+	_sphere(node, Vector3(0, -0.15, 0.02), 0.045, Color("#f6f1e4"))
+	return node
 
 func _feet(color: Color) -> void:
 	_sphere(body, Vector3(-0.07, 0.06, 0.02), 0.05, color, Vector3(1.2, 0.6, 1.5))
@@ -206,6 +209,20 @@ func _mouth_at(y: float) -> void:
 	var node := _paint(mesh, Color("#c46a58"), 0.55)
 	node.position = Vector3(0, y, 0.105)
 	body.add_child(node)
+
+func _seed_tray(arm: Node3D) -> void:
+	var tray := BoxMesh.new()
+	tray.size = Vector3(0.16, 0.018, 0.1)
+	var board := _paint(tray, Color("#c4a15a"), 0.7)
+	board.position = Vector3(0.0, -0.2, 0.04)
+	arm.add_child(board)
+	for i in 4:
+		var seed := SphereMesh.new()
+		seed.radius = 0.012
+		seed.height = 0.02
+		var node := _paint(seed, Color("#e7d59a") if i % 2 == 0 else Color("#c46a58"), 0.45)
+		node.position = Vector3(-0.045 + float(i) * 0.03, 0.016, 0.0)
+		board.add_child(node)
 
 func _satchel() -> void:
 	var bag := BoxMesh.new()
