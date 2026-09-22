@@ -15,6 +15,7 @@ func build(parent: Node3D) -> void:
 	_hedge_fringe(parent)
 	_hedge_coat(parent)
 	_hedge_bulges(parent)
+	_hedge_volume(parent)
 	_scatter_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
@@ -26,6 +27,7 @@ func build(parent: Node3D) -> void:
 	_lawn_tufts(parent)
 	_room_clumps(parent)
 	_room_carpet(parent)
+	_room_beds(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -217,7 +219,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
 		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
 		var waist := 0.22 + 0.78 * knot
-		var width := (0.36 + scale * 0.1) * bulge * waist
+		var width := (0.62 + scale * 0.22) * bulge * lerpf(0.4, 1.2, knot)
 		if _hedge_gap(center):
 			open = true
 		for point in profile:
@@ -573,17 +575,73 @@ func _hedge_bulges(parent: Node3D) -> void:
 					continue
 			if _hedge_gap(center):
 				continue
-			var sign := -1.0 if rng.randf() > 0.5 else 1.0
-			var reach := rng.randf_range(0.55, 1.05)
-			for n in 5:
-				var at := center + side * sign * reach + dir * rng.randf_range(-0.28, 0.28)
-				at.y = height * rng.randf_range(0.28, 1.35)
+			for n in 8:
+				var sign := -1.0 if n < 4 else 1.0
+				var at := center + side * sign * rng.randf_range(0.25, 1.15) + dir * rng.randf_range(-0.45, 0.45)
+				at.y = height * rng.randf_range(0.2, 1.45)
 				var basis := Basis.from_euler(Vector3(rng.randf_range(-0.7, 0.45), rng.randf() * TAU, rng.randf_range(-0.4, 0.4)))
-				var scale := rng.randf_range(1.4, 2.6)
-				points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.8, 1.5), scale)), at))
+				var scale := rng.randf_range(1.8, 3.4)
+				points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.75, 1.45), scale)), at))
 				colors.append(Color("#174d28").lerp(Color("#e2ee86"), rng.randf()))
 				customs.append(Color(rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs)
+
+func _hedge_volume(parent: Node3D) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.42, 0.32)
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14091
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.22, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.22},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.22},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.22},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.78, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.78, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.78, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.78},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var span := a.distance_to(b)
+		if span < 0.2:
+			continue
+		var dir := (b - a) / span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var steps := int(span / 0.34)
+		for i in steps:
+			var center := a.lerp(b, (float(i) + 0.5) / float(steps))
+			if _hedge_gap(center):
+				continue
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
+					continue
+			var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
+			for n in 2:
+				var sign := -1.0 if n == 0 else 1.0
+				var outward := side * sign
+				for layer in 3:
+					var at := center + outward * rng.randf_range(0.35, 0.55 + knot * 0.9)
+					at += dir * rng.randf_range(-0.12, 0.12)
+					at.y = (0.18 + float(layer) * 0.42) * height * lerpf(0.7, 1.15, knot)
+					var normal := (outward * 0.85 + Vector3.UP * 0.25).normalized()
+					var x_axis := dir.cross(normal).normalized()
+					var y_axis := normal.cross(x_axis).normalized()
+					var basis := Basis(x_axis, y_axis, normal)
+					basis = basis.rotated(normal, rng.randf_range(-0.8, 0.8))
+					var size := rng.randf_range(0.8, 1.45)
+					points.append(Transform3D(basis.scaled(Vector3(size, size * rng.randf_range(0.8, 1.3), 1.0)), at))
+					colors.append(Color("#1d5228").lerp(Color("#c5dc62"), knot * 0.45 + rng.randf() * 0.35))
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/leaf_card.gdshader")
+	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
+	material.set_shader_parameter("tint", Color("#3a7a32"))
+	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false)
 
 func _hedge_leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -970,6 +1028,36 @@ func _room_carpet(parent: Node3D) -> void:
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_007.png"))
 	material.set_shader_parameter("tint", Color("#6d8f3a"))
 	_multimesh(parent, quad, points, colors, material, "RoomCarpet", false)
+
+func _room_beds(parent: Node3D) -> void:
+	var mesh := _row_bloom()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var beds: Array[Dictionary] = [
+		{"rect": Rect2(-7.15, -1.9, 4.35, 0.95), "color": Color("#e56b8a")},
+		{"rect": Rect2(-1.55, -1.9, 4.15, 0.95), "color": Color("#f4e2a8")},
+		{"rect": Rect2(-7.15, 2.7, 4.2, 0.7), "color": Color("#f7f0d8")},
+		{"rect": Rect2(-1.5, 2.7, 3.6, 0.7), "color": Color("#ef7f4a")},
+	]
+	for bed in beds:
+		var rect: Rect2 = bed["rect"]
+		var palette: Color = bed["color"]
+		var cols := maxi(int(rect.size.x / 0.28), 1)
+		var rows := maxi(int(rect.size.y / 0.28), 1)
+		for iz in rows:
+			for ix in cols:
+				var x := rect.position.x + (float(ix) + 0.5) * rect.size.x / float(cols)
+				var z := rect.position.y + (float(iz) + 0.5) * rect.size.y / float(rows)
+				x += _rng.randf_range(-0.05, 0.05)
+				z += _rng.randf_range(-0.05, 0.05)
+				if GardenLayout.in_plots(x, z, 0.15) or GardenLayout.on_path(x, z):
+					continue
+				var y := GardenLayout.height_at(x, z)
+				var scale := _rng.randf_range(1.9, 2.7)
+				var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, _rng.randf_range(-0.06, 0.06))).scaled(Vector3(scale, scale, scale))
+				points.append(Transform3D(basis, Vector3(x, y, z)))
+				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.22))
+	_multimesh(parent, mesh, points, colors, _bloom_material(), "RoomBeds", false)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()
