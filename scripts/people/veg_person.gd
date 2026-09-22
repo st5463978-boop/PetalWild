@@ -204,7 +204,8 @@ func _arm(at: Vector3, color: Color, pitch: float = 0.0, roll: float = 0.0) -> N
 	var z_roll := roll if roll != 0.0 else (18.0 if at.x > 0.0 else -18.0)
 	node.rotation_degrees = Vector3(pitch, 0, z_roll)
 	body.add_child(node)
-	_hand(node, Color("#f6f1e4"))
+	# ponytail: pale hands clip to white under this sun; raise if the fingers go dull.
+	_hand(node, Color("#6a5c4c"))
 	return node
 
 func _hand(arm: Node3D, color: Color) -> void:
@@ -380,6 +381,7 @@ func _paint(mesh: Mesh, color: Color, rough: float) -> MeshInstance3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = rough
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	return node
 

@@ -174,7 +174,8 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 	var slab_colors: Array[Color] = []
 	var chips: Array[Transform3D] = []
 	var chip_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#b9a88c"), Color("#b7a48c"), Color("#7d6e5c"), Color("#a89878"), Color("#5c5146")]
+	# ponytail: light flagstones clip under this sun; raise if the path goes muddy.
+	var palette: Array[Color] = [Color("#7a6f5c"), Color("#796c5c"), Color("#7d6e5c"), Color("#7a6f57"), Color("#5c5146")]
 	for strip in strips:
 		var a: Vector3 = strip[0]
 		var b: Vector3 = strip[1]
@@ -860,7 +861,7 @@ func _flowers(parent: Node3D) -> void:
 		{"at": Vector2(-9.0, 2.2), "radius": 1.6, "color": Color("#5c503c")},
 		{"at": Vector2(3.2, -7.2), "radius": 2.2, "color": Color("#f0a04a")},
 		{"at": Vector2(1.2, -7.6), "radius": 1.5, "color": Color("#5c5870")},
-		{"at": Vector2(6.2, 1.5), "radius": 1.8, "color": Color("#c9a0e8")},
+		{"at": Vector2(6.2, 1.5), "radius": 1.8, "color": Color("#7d658f")},
 		{"at": Vector2(5.4, -5.4), "radius": 1.4, "color": Color("#f2d36b")},
 		{"at": Vector2(-4.0, -7.8), "radius": 1.8, "color": Color("#ef7f72")},
 		{"at": Vector2(10.2, 3.4), "radius": 1.6, "color": Color("#5c5648")},
@@ -897,7 +898,7 @@ func _flower_rows(parent: Node3D) -> void:
 		{"rect": Rect2(-11.6, -6.95, 23.2, 0.42), "color": Color("#f2d36b")},
 		{"rect": Rect2(-12.5, -6.2, 1.15, 10.6), "color": Color("#c45a80")},
 		{"rect": Rect2(4.15, -7.4, 0.7, 4.6), "color": Color("#e39a52")},
-		{"rect": Rect2(4.15, -1.6, 0.7, 4.2), "color": Color("#c9a0e8")},
+		{"rect": Rect2(4.15, -1.6, 0.7, 4.2), "color": Color("#7d658f")},
 		{"rect": Rect2(-12.2, 5.9, 5.6, 1.15), "color": Color("#5c5648")},
 		{"rect": Rect2(-2.6, 5.9, 13.6, 1.15), "color": Color("#ef7f72")},
 	]
@@ -1154,7 +1155,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 	var customs: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72")]
+	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#7d658f"), Color("#ef7f72")]
 	var tries := 0
 	while points.size() < 2200 and tries < 8000:
 		tries += 1
@@ -1252,7 +1253,7 @@ func _room_beds(parent: Node3D) -> void:
 		{"rect": Rect2(-8.15, -5.7, 1.55, 2.15), "color": Color("#b84a68")},
 		{"rect": Rect2(-8.15, 0.35, 1.45, 1.85), "color": Color("#f2d36b")},
 		{"rect": Rect2(1.85, -5.55, 1.45, 1.55), "color": Color("#c45a80")},
-		{"rect": Rect2(1.7, 0.55, 1.55, 1.45), "color": Color("#c9a0e8")},
+		{"rect": Rect2(1.7, 0.55, 1.55, 1.45), "color": Color("#7d658f")},
 		{"rect": Rect2(-5.9, -5.85, 2.4, 0.7), "color": Color("#ef7f72")},
 	]
 	for bed in beds:
@@ -1285,7 +1286,7 @@ func _room_floor(parent: Node3D) -> void:
 	var blade_custom: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72"), Color("#5c5238")]
+	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#7d658f"), Color("#ef7f72"), Color("#5c5238")]
 	var tries := 0
 	while blades.size() < 2600 and tries < 9000:
 		tries += 1
