@@ -220,7 +220,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
 		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
 		var waist := 0.22 + 0.78 * knot
-		var width := (0.62 + scale * 0.22) * bulge * lerpf(0.28, 1.0, waist)
+		var width := (0.95 + scale * 0.42) * bulge * waist
 		if _hedge_gap(center):
 			open = true
 		for point in profile:
@@ -288,7 +288,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 		var dir := along / length
 		var side := Vector3(-dir.z, 0.0, dir.x)
 		var steps := int(length / 0.28)
-		var width := 0.62 + scale * 0.22
+		var width := 1.15 + scale * 0.45
 		for i in steps:
 			var center := origin + dir * ((float(i) + 0.5) / float(steps) * length)
 			var blocked := false
@@ -393,7 +393,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 			if _hedge_gap(center):
 				continue
 			var scale := _rng.randf_range(1.15, 1.9)
-			var at := center + side * _rng.randf_range(-0.32, 0.32)
+			var at := center + side * _rng.randf_range(-0.72, 0.72)
 			at.y = height * _rng.randf_range(1.05, 1.45)
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			points.append(Transform3D(basis, at))
@@ -468,7 +468,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 				continue
 			for face in 2:
 				var sign := -1.0 if face == 0 else 1.0
-				var at := center + side * sign * _rng.randf_range(0.02, 0.38)
+				var at := center + side * sign * _rng.randf_range(0.55, 1.28)
 				at.y = height * _rng.randf_range(0.08, 1.18)
 				var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.6, 0.5), _rng.randf() * TAU, _rng.randf_range(-0.45, 0.45)))
 				var scale := _rng.randf_range(1.35, 2.35)
@@ -519,7 +519,7 @@ func _hedge_coat(parent: Node3D) -> void:
 				var side_sign := -1.0 if n == 0 else 1.0
 				for layer in 3:
 					var outward := side * side_sign
-					var at := center + outward * _rng.randf_range(0.28, 0.85)
+					var at := center + outward * _rng.randf_range(0.55, 1.42)
 					at.y = (0.22 + float(layer) * 0.42) * scale + _rng.randf_range(-0.04, 0.1)
 					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
 					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
@@ -528,7 +528,7 @@ func _hedge_coat(parent: Node3D) -> void:
 					colors.append(Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35))
 					customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 					if layer < 2:
-						var ball_at := center + outward * _rng.randf_range(0.15, 0.55)
+						var ball_at := center + outward * _rng.randf_range(0.42, 1.15)
 						ball_at.y = at.y * 0.92
 						var ball_scale := _rng.randf_range(0.7, 1.25)
 						balls.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(ball_scale, ball_scale * _rng.randf_range(0.75, 1.15), ball_scale)), ball_at))
