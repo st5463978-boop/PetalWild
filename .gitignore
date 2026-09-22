@@ -11,3 +11,5 @@ export/
 /assets/*.png.import
 Thumbs.db
 /tools/orchestration/runtime/
+__pycache__/
+*.pyc
