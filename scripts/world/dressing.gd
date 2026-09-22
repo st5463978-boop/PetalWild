@@ -10,6 +10,7 @@ func build(parent: Node3D) -> void:
 	_plots(parent)
 	_paths(parent)
 	_hedge(parent)
+	_hedge_clumps(parent)
 	_hedge_leaves(parent)
 	_scatter_grass(parent)
 	_flowers(parent)
@@ -224,6 +225,44 @@ func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
 	return material
+
+func _hedge_clumps(parent: Node3D) -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.46
+	mesh.height = 0.62
+	mesh.radial_segments = 8
+	mesh.rings = 5
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var segments: Array[Dictionary] = [
+		{"a": Vector3(-13.6, 0, -9.9), "b": Vector3(12.8, 0, -9.9), "h": 1.15, "gate": Vector2(0.0, -9.9), "gate_r": 3.1},
+		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.15},
+		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.15},
+		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.15},
+		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.72, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.72, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
+		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.72, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
+		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.72},
+	]
+	for seg in segments:
+		var a: Vector3 = seg["a"]
+		var b: Vector3 = seg["b"]
+		var height: float = seg["h"]
+		var count := maxi(int(a.distance_to(b) / 0.85), 1)
+		for i in count:
+			var center := a.lerp(b, float(i) / float(count))
+			if seg.has("gate"):
+				var gate: Vector2 = seg["gate"]
+				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
+					continue
+			var away := Vector3(center.x, 0.0, center.z).normalized()
+			var scale := _rng.randf_range(0.72, 1.35)
+			var at := center + away * _rng.randf_range(-0.15, 0.35)
+			at.y = height * _rng.randf_range(0.72, 1.15)
+			var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * _rng.randf_range(0.75, 1.25), scale * 0.85))
+			points.append(Transform3D(basis, at))
+			colors.append(Color("#1f6a32").lerp(Color("#8fbf55"), _rng.randf() * 0.55))
+	_multimesh(parent, mesh, points, colors, _hedge_material(), "HedgeClumps", true)
 
 func _hedge_leaves(parent: Node3D) -> void:
 	var mesh := _leaf_card()

@@ -33,7 +33,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp is a lathed bell with two petal rings, a seed in the throat, and a softer surface. It still is not an authored sculpt.
+- Bellhelp is a lathed bell with curled petals, a dark throat, and a seed. The petals are still simple strips.
 - Lumen has a leek crown, apron, spectacles, and satchel facing that camera. The body is still capsules.
 - Hedge walls have a leaf-card fringe. There are no sun shafts and no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
