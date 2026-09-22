@@ -129,6 +129,8 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))
+	journal_box.add_child(ThemeKit.label("Petal Stall demand  %s" % str(stats.get("stall_demand", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Demand for the other rooms is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Venues", 16))
 	for line in stats.get("venues", []):
 		journal_box.add_child(ThemeKit.label(str(line), 14))

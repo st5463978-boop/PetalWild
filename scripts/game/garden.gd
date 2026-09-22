@@ -515,6 +515,11 @@ func _run_smoke() -> void:
 		push_error("smoke: onscreen jelly was hidden")
 		get_tree().quit(1)
 		return
+	var demand := int(_place_stats(world_snapshot()).get("stall_demand", -1))
+	if demand != _present_people() + ecology.resident_total() or demand < 1:
+		push_error("smoke: stall demand mismatch")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1135,6 +1140,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
+	stats["stall_demand"] = _present_people() + ecology.resident_total()
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
