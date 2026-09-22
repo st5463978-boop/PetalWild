@@ -33,9 +33,9 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 ## Broken or not built
 
 - The garden does not yet look like the concept plates. See the gap list below.
-- Bellhelp’s five sphere lobes are gone. The body is a low pad, five standing petals, and the skirt. The close-up is on open lawn and the cup reads. The shader is still glossy.
+- Bellhelp’s five sphere lobes are gone. The body is a low pad, five standing petals, and the skirt. The close-up is on open lawn, the cup reads, and the shader is matte. The yellow center still blows out.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
-- The far hedge has one sky notch. The rest of that band is still solid foliage. The north backdrop trees are shorter, and the hill behind the notch is cut so the opening is sky. Paths are dark dirt with flagstones. Blooms are rose. About 1.2% of overview pixels are still pure white. There is still no insect or bird life.
+- The far hedge has three sky notches, with the hill cut behind each one. The stretches between them are still flat foliage. The north backdrop trees are shorter. Paths are dark dirt with flagstones. Blooms are rose. About 1.0% of overview pixels are still pure white. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The north backdrop trees are shorter than the hedge. The far wall has one opening, and rows 240–288 of the overview stay sky-colored there while the side hedge is dark olive. The rest of the skyline is still one leafy band. Bellhelp’s sphere lobes are gone; the close-up is on open lawn and the body reads as a cup of five standing petals around a yellow center. The shader is still glossy. Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The north backdrop trees are shorter than the hedge. The far wall has three openings onto the pale sky. At overview row 320 the center opening is about 76% sky and 2% hedge, and the wall just to its right is about 61% hedge. Bellhelp’s sphere lobes are gone; the close-up is on open lawn and the body reads as a matte cup of green petals around a yellow center. The center still blows out. Paths are flagstones on dark dirt. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK`, `PETAL_RULES_OK`, and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
-1. **Hedge skyline.** One notch shows the pale sky. The rest of the far band is still a solid leafy wall. PETAL-05.
-2. **Bellhelp.** The cup reads in the close-up. The surface is still glossy. PETAL-03.
-3. **Highlights.** About 1.2% of overview pixels are still pure white. PETAL-06.
+1. **Hedge skyline.** Three notches show sky. The stretches between them are still flat leafy slabs. PETAL-05.
+2. **Bellhelp.** The cup reads and the surface is matte. The yellow center still blows out. PETAL-03.
+3. **Highlights.** About 1.0% of overview pixels are still pure white. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): break the remaining skyline into more than one notch, and take the gloss off Bellhelp’s petals. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): mound the hedge between the notches so the gaps read as grown breaks, and stop Bellhelp’s yellow center clipping to white. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

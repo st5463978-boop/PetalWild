@@ -43,8 +43,8 @@ func _terrain(parent: Node3D) -> void:
 		for ix in count:
 			var x0 := -half + float(ix) * step
 			var z0 := -half + float(iz) * step
-			# ponytail: one missing patch behind the north arch. The hill was the skyline.
-			if z0 > 9.0 and absf(x0 + 2.6) < 3.4:
+			# ponytail: the hill is the skyline, so each north notch needs a hole behind it.
+			if z0 > 9.0 and _north_notch(x0, true):
 				continue
 			_quad(tool, x0, z0, step)
 	tool.generate_normals()
@@ -287,8 +287,18 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 func _hedge_knot(at: Vector3) -> float:
 	return absf(sin(at.x * 0.55 + at.z * 0.42))
 
+func _north_notch(x: float, wide: bool) -> bool:
+	var pad := 0.6 if wide else 0.0
+	if absf(x + 12.0) < 1.8 + pad:
+		return true
+	if absf(x + 2.6) < 2.8 + pad:
+		return true
+	if absf(x - 8.2) < 2.0 + pad:
+		return true
+	return false
+
 func _hedge_gap(at: Vector3) -> bool:
-	if at.z > 6.2 and absf(at.x + 2.6) < 2.8:
+	if at.z > 6.2 and _north_notch(at.x, false):
 		return true
 	return _hedge_knot(at) < 0.72
 
@@ -765,7 +775,7 @@ func _scatter_grass(parent: Node3D) -> void:
 		var y := GardenLayout.height_at(x, z)
 		if y < -0.12:
 			continue
-		var hide := z > 9.0 and absf(x + 2.6) < 3.4
+		var hide := z > 9.0 and _north_notch(x, true)
 		var scale := _rng.randf_range(0.55, 1.35)
 		var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * _rng.randf_range(0.8, 1.5), scale))
 		var tint := Color("#6fa344").lerp(Color("#d5e07a"), _rng.randf() * 0.65)
@@ -945,8 +955,13 @@ func _trees(parent: Node3D) -> void:
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
 		var behind := spot.y > 9.0
-		if behind and absf(spot.x + 2.6) < 3.4:
-			spot.x += 5.2 if spot.x < -2.6 else -5.2
+		if behind and _north_notch(spot.x, true):
+			var centers: Array[float] = [-12.0, -2.6, 8.2]
+			var nearest := centers[0]
+			for center in centers:
+				if absf(spot.x - center) < absf(spot.x - nearest):
+					nearest = center
+			spot.x = nearest + (4.2 if spot.x >= nearest else -4.2)
 		var height := (1.05 if behind else 1.7) + float(index % 4) * (0.1 if behind else 0.32)
 		var trunk := MeshInstance3D.new()
 		trunk.mesh = trunk_mesh
@@ -1012,7 +1027,7 @@ func _groundcover(parent: Node3D) -> void:
 		var y := GardenLayout.height_at(x, z)
 		var scale := _rng.randf_range(0.4, 1.1)
 		var tint := Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf())
-		if z > 9.0 and absf(x + 2.6) < 3.4:
+		if z > 9.0 and _north_notch(x, true):
 			continue
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
 		colors.append(tint)
