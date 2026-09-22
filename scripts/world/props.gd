@@ -52,13 +52,13 @@ func _shed(parent: Node3D) -> void:
 	root.name = "PottingShed"
 	root.position = GardenLayout.SHED
 	parent.add_child(root)
-	_box(root, Vector3(0, 0.85, 0), Vector3(2.3, 1.7, 1.8), Color("#f4f0e6"))
-	_box(root, Vector3(0, 0.75, 0.9), Vector3(0.55, 1.15, 0.06), Color("#d7efe4"))
-	_box(root, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#9fd8cf"))
-	_box(root, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#9fd8cf"))
+	_box(root, Vector3(0, 0.85, 0), Vector3(2.3, 1.7, 1.8), Color("#4a453e"))
+	_box(root, Vector3(0, 0.75, 0.9), Vector3(0.55, 1.15, 0.06), Color("#3f6a5c"))
+	_box(root, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_box(root, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
 	var roof_l := _box(root, Vector3(0, 1.95, -0.15), Vector3(2.6, 0.08, 1.15), Color("#c47c74"))
 	roof_l.rotation_degrees = Vector3(-22, 0, 0)
-	var roof_r := _box(root, Vector3(0, 1.95, 0.35), Vector3(2.6, 0.08, 1.15), Color("#f7f3ea"))
+	var roof_r := _box(root, Vector3(0, 1.95, 0.35), Vector3(2.6, 0.08, 1.15), Color("#524c44"))
 	roof_r.rotation_degrees = Vector3(22, 0, 0)
 	_cylinder(root, Vector3(-0.85, 0.16, 1.15), 0.12, 0.14, 0.22, Color("#c46a45"))
 	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
@@ -67,7 +67,7 @@ func _shed(parent: Node3D) -> void:
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.2, 0.2)
 	light.light_color = Color("ffc98a")
-	light.light_energy = 0.35
+	light.light_energy = 0.16
 	light.omni_range = 3.2
 	light.shadow_enabled = false
 	root.add_child(light)
