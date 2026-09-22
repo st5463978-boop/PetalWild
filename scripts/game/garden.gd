@@ -532,6 +532,7 @@ func _build_patches() -> void:
 		node.mesh = mesh
 		var material := StandardMaterial3D.new()
 		material.roughness = 0.95
+		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 		node.material_override = material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
@@ -892,7 +893,8 @@ func _refresh_soil_colors() -> void:
 		material.albedo_color = _soil_color(plot)
 
 func _soil_color(plot: SoilCell) -> Color:
-	var color := Color("#6f9a49")
+	# ponytail: flat grass tops clip to white under this sun; raise if the beds go dull.
+	var color := Color("#4f6e34")
 	if plot.tilled:
 		color = Color("#6d4632")
 	if plot.chem == "nightloam":

@@ -856,7 +856,7 @@ func _flowers(parent: Node3D) -> void:
 	var colors: Array[Color] = []
 	# ponytail: pale petals clip to white under this sun; raise if the beds go dull.
 	var regions := [
-		{"at": Vector2(-10.5, -2.0), "radius": 2.4, "color": Color("#f08aa4")},
+		{"at": Vector2(-10.5, -2.0), "radius": 2.4, "color": Color("#c45a80")},
 		{"at": Vector2(-9.0, 2.2), "radius": 1.6, "color": Color("#5c503c")},
 		{"at": Vector2(3.2, -7.2), "radius": 2.2, "color": Color("#f0a04a")},
 		{"at": Vector2(1.2, -7.6), "radius": 1.5, "color": Color("#5c5870")},
@@ -864,7 +864,7 @@ func _flowers(parent: Node3D) -> void:
 		{"at": Vector2(5.4, -5.4), "radius": 1.4, "color": Color("#f2d36b")},
 		{"at": Vector2(-4.0, -7.8), "radius": 1.8, "color": Color("#ef7f72")},
 		{"at": Vector2(10.2, 3.4), "radius": 1.6, "color": Color("#5c5648")},
-		{"at": Vector2(-8.05, -2.2), "radius": 0.75, "color": Color("#f4b4c4")},
+		{"at": Vector2(-8.05, -2.2), "radius": 0.75, "color": Color("#a05870")},
 		{"at": Vector2(-4.6, -6.15), "radius": 0.7, "color": Color("#5c5238")},
 		{"at": Vector2(3.15, -3.4), "radius": 0.75, "color": Color("#f0a06a")},
 		{"at": Vector2(-5.2, 2.7), "radius": 0.7, "color": Color("#5a5470")},
@@ -893,9 +893,9 @@ func _flower_rows(parent: Node3D) -> void:
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var bands: Array[Dictionary] = [
-		{"rect": Rect2(-11.6, -7.7, 23.2, 0.85), "color": Color("#e56b8a")},
+		{"rect": Rect2(-11.6, -7.7, 23.2, 0.85), "color": Color("#b84a68")},
 		{"rect": Rect2(-11.6, -6.95, 23.2, 0.42), "color": Color("#f2d36b")},
-		{"rect": Rect2(-12.5, -6.2, 1.15, 10.6), "color": Color("#f08aa4")},
+		{"rect": Rect2(-12.5, -6.2, 1.15, 10.6), "color": Color("#c45a80")},
 		{"rect": Rect2(4.15, -7.4, 0.7, 4.6), "color": Color("#e39a52")},
 		{"rect": Rect2(4.15, -1.6, 0.7, 4.2), "color": Color("#c9a0e8")},
 		{"rect": Rect2(-12.2, 5.9, 5.6, 1.15), "color": Color("#5c5648")},
@@ -1154,7 +1154,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 	var customs: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#e56b8a"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72")]
+	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72")]
 	var tries := 0
 	while points.size() < 2200 and tries < 8000:
 		tries += 1
@@ -1245,13 +1245,13 @@ func _room_beds(parent: Node3D) -> void:
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var beds: Array[Dictionary] = [
-		{"rect": Rect2(-7.15, -1.9, 4.35, 0.95), "color": Color("#e56b8a")},
+		{"rect": Rect2(-7.15, -1.9, 4.35, 0.95), "color": Color("#b84a68")},
 		{"rect": Rect2(-1.55, -1.9, 4.15, 0.95), "color": Color("#5c5238")},
 		{"rect": Rect2(-7.15, 2.7, 4.2, 0.7), "color": Color("#5c5648")},
 		{"rect": Rect2(-1.5, 2.7, 3.6, 0.7), "color": Color("#ef7f4a")},
-		{"rect": Rect2(-8.15, -5.7, 1.55, 2.15), "color": Color("#e56b8a")},
+		{"rect": Rect2(-8.15, -5.7, 1.55, 2.15), "color": Color("#b84a68")},
 		{"rect": Rect2(-8.15, 0.35, 1.45, 1.85), "color": Color("#f2d36b")},
-		{"rect": Rect2(1.85, -5.55, 1.45, 1.55), "color": Color("#f08aa4")},
+		{"rect": Rect2(1.85, -5.55, 1.45, 1.55), "color": Color("#c45a80")},
 		{"rect": Rect2(1.7, 0.55, 1.55, 1.45), "color": Color("#c9a0e8")},
 		{"rect": Rect2(-5.9, -5.85, 2.4, 0.7), "color": Color("#ef7f72")},
 	]
@@ -1285,7 +1285,7 @@ func _room_floor(parent: Node3D) -> void:
 	var blade_custom: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#e56b8a"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72"), Color("#5c5238")]
+	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#c9a0e8"), Color("#ef7f72"), Color("#5c5238")]
 	var tries := 0
 	while blades.size() < 2600 and tries < 9000:
 		tries += 1

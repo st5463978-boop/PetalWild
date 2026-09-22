@@ -16,7 +16,8 @@ func _build(id: String) -> void:
 	match id:
 		"meadowbell":
 			_stem(0.35, 0.035, Color("#3f8f45"))
-			_blossom(Vector3(0, 0.42, 0), Color("#f4ecd0"), Color("#f0c14e"))
+			# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
+			_blossom(Vector3(0, 0.42, 0), Color("#7a6a52"), Color("#c4923a"))
 		"peach":
 			_stem(0.42, 0.05, Color("#6b4a32"))
 			_ball(Vector3(0, 0.62, 0), 0.22, Color("#3f8a3a"))
