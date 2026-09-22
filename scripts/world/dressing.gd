@@ -264,25 +264,31 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
 		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
-		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
+		var spine := center - side * offset_side
+		var knot := _hedge_knot(spine)
 		var waist := 0.22 + 0.78 * knot
 		var width := (0.95 + scale * 0.42) * bulge * waist
-		if _hedge_gap(center):
+		if _hedge_gap(spine):
 			open = true
+		var mound := _hedge_crown(spine)
 		for point in profile:
 			var height := point.y
-			if height > 0.72:
-				height = 0.72 + (height - 0.72) * 0.22
 			if height > 0.12:
-				height *= chop * lerpf(0.45, 1.0, knot)
+				height *= chop * lerpf(0.34, 1.0, mound)
 			ring.append(center + side * (point.x * width + lean * height) + Vector3(0, height * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
 		previous = ring
 		previous_open = open
 
+func _hedge_knot(at: Vector3) -> float:
+	return absf(sin(at.x * 0.92 + at.z * 0.7))
+
 func _hedge_gap(at: Vector3) -> bool:
-	return absf(sin(at.x * 0.48 + at.z * 0.36)) < 0.28
+	return _hedge_knot(at) < 0.38
+
+func _hedge_crown(at: Vector3) -> float:
+	return smoothstep(0.38, 1.0, _hedge_knot(at))
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
@@ -347,7 +353,8 @@ func _hedge_leaves(parent: Node3D) -> void:
 				continue
 			if _hedge_gap(center):
 				continue
-			var lift := sin(center.x * 0.85 + center.z * 0.7) * 0.42 * scale
+			var mound := _hedge_crown(center)
+			var lift := sin(center.x * 0.85 + center.z * 0.7) * 0.22 * scale * mound
 			for point in shell:
 				var flank := point.x
 				if absf(flank) < 0.04:
@@ -356,7 +363,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 				var crown := absf(point.x) < 0.04
 				var poke := _rng.randf_range(0.05, 0.2)
 				var at := center + side * (point.x * width) + outward * poke
-				at.y = point.y * scale + lift + _rng.randf_range(-0.03, 0.07)
+				at.y = (point.y * scale + lift) * lerpf(0.4, 1.0, mound) + _rng.randf_range(-0.03, 0.07)
 				var normal := (outward * (0.28 if crown else 0.82) + Vector3.UP * (0.95 if crown else 0.4)).normalized()
 				var x_axis := dir.cross(normal).normalized()
 				var y_axis := normal.cross(x_axis).normalized()
@@ -440,7 +447,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 				continue
 			var scale := _rng.randf_range(1.15, 1.9)
 			var at := center + side * _rng.randf_range(-0.72, 0.72)
-			at.y = height * _rng.randf_range(1.05, 1.45)
+			at.y = height * _rng.randf_range(0.82, 1.2) * lerpf(0.38, 1.05, _hedge_crown(center))
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			points.append(Transform3D(basis, at))
 			colors.append(Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf()))
@@ -515,7 +522,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 			for face in 2:
 				var sign := -1.0 if face == 0 else 1.0
 				var at := center + side * sign * _rng.randf_range(0.55, 1.28)
-				at.y = height * _rng.randf_range(0.08, 1.18)
+				at.y = height * _rng.randf_range(0.08, 1.02) * lerpf(0.32, 1.0, _hedge_crown(center))
 				var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.6, 0.5), _rng.randf() * TAU, _rng.randf_range(-0.45, 0.45)))
 				var scale := _rng.randf_range(1.35, 2.35)
 				points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.9, 1.6), scale)), at))
@@ -565,8 +572,9 @@ func _hedge_coat(parent: Node3D) -> void:
 				var side_sign := -1.0 if n == 0 else 1.0
 				for layer in 3:
 					var outward := side * side_sign
+					var mound := _hedge_crown(center)
 					var at := center + outward * _rng.randf_range(0.55, 1.42)
-					at.y = (0.22 + float(layer) * 0.42) * scale + _rng.randf_range(-0.04, 0.1)
+					at.y = (0.22 + float(layer) * 0.42) * scale * lerpf(0.32, 1.0, mound) + _rng.randf_range(-0.04, 0.08)
 					var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.7), _rng.randf() * TAU, _rng.randf_range(-0.4, 0.4)))
 					var size := _rng.randf_range(1.6, 2.8) * (1.2 if layer == 2 else 1.0)
 					points.append(Transform3D(basis.scaled(Vector3(size, size * _rng.randf_range(0.9, 1.45), size)), at))
@@ -627,7 +635,7 @@ func _hedge_bulges(parent: Node3D) -> void:
 			for n in 8:
 				var sign := -1.0 if n < 4 else 1.0
 				var at := center + side * sign * rng.randf_range(0.25, 1.15) + dir * rng.randf_range(-0.45, 0.45)
-				at.y = height * rng.randf_range(0.2, 1.45)
+				at.y = height * rng.randf_range(0.18, 1.15) * lerpf(0.35, 1.0, _hedge_crown(center))
 				var basis := Basis.from_euler(Vector3(rng.randf_range(-0.7, 0.45), rng.randf() * TAU, rng.randf_range(-0.4, 0.4)))
 				var scale := rng.randf_range(1.8, 3.4)
 				points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.75, 1.45), scale)), at))
@@ -670,14 +678,14 @@ func _hedge_volume(parent: Node3D) -> void:
 				var gate: Vector2 = seg["gate"]
 				if Vector2(center.x, center.z).distance_to(gate) < float(seg["gate_r"]):
 					continue
-			var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
+			var knot := _hedge_knot(center)
 			for n in 2:
 				var sign := -1.0 if n == 0 else 1.0
 				var outward := side * sign
 				for layer in 3:
 					var at := center + outward * rng.randf_range(0.35, 0.55 + knot * 0.9)
 					at += dir * rng.randf_range(-0.12, 0.12)
-					at.y = (0.18 + float(layer) * 0.42) * height * lerpf(0.7, 1.15, knot)
+					at.y = (0.18 + float(layer) * 0.42) * height * lerpf(0.32, 1.05, _hedge_crown(center))
 					var normal := (outward * 0.85 + Vector3.UP * 0.25).normalized()
 					var x_axis := dir.cross(normal).normalized()
 					var y_axis := normal.cross(x_axis).normalized()
