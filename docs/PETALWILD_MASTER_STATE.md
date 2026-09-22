@@ -1,69 +1,65 @@
 # PetalWild master state
 
-Date: 2026-09-22
+Updated 2026-09-22 after wave 1 capture and smoke.
 
 ## Active build
 
-Branch: `main`
+| | |
+| --- | --- |
+| Branch | `main` |
+| Engine | Godot `4.8.dev6.official.8898c2b3d` (4.8-dev6). See `docs/ENGINE_VERSION.md` |
+| Scene | `res://scenes/main.tscn` → garden |
+| Save | Version 1, `user://saves/slot_N.json` |
+| Smoke | `PETAL_SMOKE_OK` and `PETAL_RULES_OK` on this tree |
+| Latest shots | `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`, `wave1_stall.png`, `wave1_journal.png`, `wave1_night.png` |
 
-Engine: Godot `4.8.dev6.official.8898c2b3d` (see `docs/ENGINE_VERSION.md`)
-
-Renderer: GL Compatibility, Mesa llvmpipe, shadows off
-
-Smoke: `tests/smoke.gd` prints `SMOKE OK`
-
-Shots: `docs/screenshots/petalwild_overview.png`, `creature`, `person`, `shop`, `night`, `rain`
+This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Audio falls back to the dummy driver. Screenshots still save. FPS on a real GPU has not been measured.
 
 ## Working
 
-- New game, three save slots, versioned JSON under `user://petalwild/`
-- Till, plant, water, fertilise, tend, pond scoop, home kit
-- Sunpetal, petal corn, mossbell, nightbloom data
-- Nine grokbot jellies with visit and settle requirements
-- Cara present; Mia, Pod, Bran, Oshi gated
-- Petal Stall buy and sell
-- Grab, pet, throw, mood
-- Journal, map, town panel, debug keys, photo mode
-- Clock, weather, seasons
-- Oshi proposal writes an audit row and does not spend coins or leave the simulation
-- CC0 Kenney nature kit, foliage, mini forest, interface sounds; CC0 Poly Haven 1K grounds; CC0 forest ambience
+- Title, three slots, settings, licence reader, pause.
+- Orbit camera, tool row, journal, stall, trust page, F3 debug.
+- Soil till, plant, water, fertilise, tend, pond scoop, home kit.
+- Clock (6 game-minutes per real second), golden / mist / rain / night.
+- Data-driven plants and nine jelly species. Bellhelp arrives for 3 mature Meadowbells.
+- Chain continues through Bulrush, Reedic, Cirlark, Dusknip night-loam, Pegapear, Gushorn.
+- Grab, drop, and throw on the jelly spring body. Mood and bond change.
+- Lumen Peel, Bram Cobble, and Nessa Pod (Nessa waits for a resident Bellhelp and a home kit).
+- Petal coins. Fertiliser purchase spends coins. Peach-tray proposal spends 8 only after approval, once a day.
+- Save and reload round-trip coins and garden state.
+- Procedural wind, pad, UI, squish, and harvest tones. No third-party audio.
+- Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 
-## Broken or still placeholder
+## Broken or not built
 
-- Visual target not met. See `docs/VISUAL_GAP.md`
-- Forest ambience file is not wired into the bed yet
-- City venues other than the stall are listed as not built
-- L3 and L4 simulation are records only
-- No real-world action is implemented, by design
-- ALSA has no sound card here; audio falls back to the dummy driver
+- The garden does not yet look like the concept plates. See the gap list below.
+- Bellhelp’s blossom still reads as one glossy sphere in the close shot.
+- Veg People are readable primitives, not an authored cast.
+- No hedge rooms, no sun shafts, no insect or bird life.
+- City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
+- Tiers 3 and 4 of the simulation are specified, not simulated.
+- Trust cannot research, draft, or act outside the process.
+- No CC0 environment pack imported yet.
+- Large-text setting applies on the title screen, not live in the garden HUD.
+- Smoke quits during `_ready` and leaks a handful of canvas items. The check itself passes.
 
 ## Agents
 
-This integration run: `bc-1310adff-2802-4fa6-b870-0aed28cc5bfd`
+No parallel workers are running. A second wave committed to `main` during this integration (`c140089`). Its scripts stay in `game/` behind `.gdignore`. The running scene is still `res://scenes/main.tscn`. Ownership for the next wave is in `docs/AGENT_CONTRACTS.md`.
 
-Asset hunt: [CC0 asset hunt](bc-92f7cabe-42c3-5c56-98d9-6433f0c29b4c) wrote `docs/research/ASSET_HUNT.md` and `assets/third_party/`
+## Branches and merges
 
-Licence notes: [Reference licence notes](bc-e253eec1-0242-5c0e-93d7-c6a3a1fc95dc) wrote `docs/research/REFERENCES.md`
+`main` is the playable Hedge Hollow scene: Forward+, Bellhelp, Lumen Peel, the stall, and the hedge rooms. A second grove import (Sunpetal, Cara, Kenney CC0 files, `scripts/presentation/`, `scripts/sim/`) is in the tree and is not the running scene. `cursor/opening-grove-parallel-a334` is an earlier side grove and is not compiled. See `docs/RECOVERY_MATRIX.md`.
 
-`cursor/opening-grove-parallel-a334` is a second grove branch from before this tree was on `main`. It is not the scene this build runs.
+## Assets and licences
 
-Other executives were visible on the same remote earlier in the session. Do not assume a push is merged until it is on `main`.
-
-## Hailo foreman
-
-`tools/orchestration/` is local development routing. It is not in the game.
-
-Probe result: `no_hailo_device`. Selected router model: none. 174 gold tasks are ready. Invalid model output escalates to Grok. See `tools/orchestration/MODEL_SELECTION.md`.
-
-## Parallel Hedge Hollow tree
-
-`scenes/garden.tscn` and `scripts/world/dressing.gd` are the other playable grove. A follow-up on that scene raised the outer hedge and boxed the beds. It was aimed at Forward Plus and uses different resident names. The running scene stays `scenes/main.tscn` (GL Compatibility, Cara, the salvaged species list) because this machine has no Vulkan device. The CC0 Asset Quest demo in `third_party/incoming/` and the Inter font stay in the tree. They are not required by the running loop.
+Inter 4.1 (OFL) is the UI font. The Asset Quest Stylized Garden demo (CC0) is placed as flowers, grass, a bench, and a planter. Nunito (OFL) is in `third_party/fonts/` and is not the live UI font. Ledger: `ASSET_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE_MATRIX.md`. Hunt list: `docs/ASSET_HUNT.md` and `docs/research/ASSET_HUNT.md`.
 
 ## Higgsfield
 
-Spent this wave: 0
+Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check recorded in `docs/HIGGSFIELD_LEDGER.md`. No generation has been approved.
 
-Balance read 2026-09-22: 367.46 credits, plan pro
+## Visual compare
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 

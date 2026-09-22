@@ -1,155 +1,158 @@
-{
-  "sunburst": {
-    "name": "Sunburst",
-    "form": "pear",
-    "hint": "Warm air over open flowers.",
-    "journal": "A pear-shaped sun jelly. It follows open Sunpetals the way heat follows a cleared bed.",
-    "diet": ["sunpetal_bloom"],
-    "variant_chance": 0.35,
-    "colors": {"deep": "#C47A12", "lit": "#FFE56A", "rim": "#FFF8D8", "eye": "#3A2410"},
-    "visit": [
-      {"op": "mature", "plant": "sunpetal", "count": 3},
-      {"op": "phase", "any": ["day", "dusk"]}
+[
+  {
+    "id": "bellhelp",
+    "name": "Bellhelp",
+    "shape": "bell",
+    "deep": "#2f8f55",
+    "lit": "#e7ffc4",
+    "glow": "#d6ff6a",
+    "eye": "#f4ffd2",
+    "radius": 0.34,
+    "cap": 3,
+    "wobble": 0.7,
+    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
     ],
-    "settle": [
-      {"op": "fed", "id": "sunburst", "count": 1},
-      {"op": "harvested", "item": "sunpetal_bloom", "count": 1}
+    "romance": {"type": "resident_count", "species": "bellhelp", "min": 2, "label": "A second Bellhelp resident"}
+  },
+  {
+    "id": "berrypatch",
+    "name": "Berrypatch",
+    "shape": "lobes",
+    "deep": "#7a3168",
+    "lit": "#ffc2df",
+    "glow": "#ff8fb8",
+    "eye": "#ffe0f0",
+    "radius": 0.32,
+    "cap": 2,
+    "wobble": 0.55,
+    "blurb": "A cluster of berry lobes that settles where the canes fruit.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "bramble", "min": 2, "label": "2 mature Brambles"}
     ]
   },
-  "ribbon": {
-    "name": "Ribbon",
-    "form": "ribbon",
-    "hint": "A dry lawn is keeping something long and bright away.",
-    "journal": "A long brook jelly. The wild water beyond the hedge is not its home. It wants a pond you keep.",
-    "diet": ["mossbell_clump"],
-    "colors": {"deep": "#1C6B78", "lit": "#8FE3E0", "rim": "#E8FFFC", "eye": "#12343A"},
-    "visit": [
-      {"op": "ground", "ground": "pond", "count": 4},
-      {"op": "moisture", "min": 0.4}
+  {
+    "id": "bulrush",
+    "name": "Bulrush",
+    "shape": "long",
+    "deep": "#5d6b2e",
+    "lit": "#e6d48a",
+    "glow": "#f0e2a0",
+    "eye": "#fff6cf",
+    "radius": 0.28,
+    "cap": 2,
+    "wobble": 0.85,
+    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in.",
+    "requirements": [
+      {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
+      {"type": "mature_plant", "plant": "reed", "min": 3, "label": "3 mature Reeds"}
     ],
-    "settle": [
-      {"op": "mature", "plant": "mossbell", "count": 2}
+    "romance": {"type": "resident_count", "species": "bulrush", "min": 2, "label": "A second Bulrush resident"}
+  },
+  {
+    "id": "reedic",
+    "name": "Reedic",
+    "shape": "flat",
+    "deep": "#1d6e72",
+    "lit": "#b7fff0",
+    "glow": "#7dffe0",
+    "eye": "#e7fff8",
+    "radius": 0.36,
+    "cap": 2,
+    "wobble": 0.4,
+    "blurb": "A low water-disc that follows Bulrush into wet ground.",
+    "requirements": [
+      {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
+      {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}
     ]
   },
-  "berrybunch": {
-    "name": "Berrybunch",
-    "form": "stack",
-    "hint": "Sweet crops may be drawing a crowd.",
-    "journal": "Stacked berry jellies. They show up when Petal Corn is ripe and the stall is a real place.",
-    "diet": ["petal_corn_ear"],
-    "colors": {"deep": "#6A2148", "lit": "#E25B8A", "rim": "#FFD0E2", "eye": "#2A1020"},
-    "visit": [
-      {"op": "mature", "plant": "petal_corn", "count": 2},
-      {"op": "venue", "id": "petal_stall"}
-    ],
-    "settle": [
-      {"op": "harvested", "item": "petal_corn_ear", "count": 2},
-      {"op": "fed", "id": "berrybunch", "count": 1}
+  {
+    "id": "cirlark",
+    "name": "Cirlark",
+    "shape": "stacked",
+    "deep": "#2a6fbf",
+    "lit": "#ffe28a",
+    "glow": "#9fd0ff",
+    "eye": "#fff4cc",
+    "radius": 0.26,
+    "cap": 2,
+    "wobble": 0.65,
+    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp.",
+    "requirements": [
+      {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
+      {"type": "garden_quality", "min": 0.42, "label": "The garden is looked after"}
     ]
   },
-  "rendle": {
-    "name": "Rendle",
-    "form": "flat",
-    "hint": "Where a sun jelly settles, a flatter appetite follows.",
-    "journal": "A low, wide jelly that follows Sunbursts. What it leaves in the soil is useful. What it takes off the stalk is not.",
-    "diet": ["sunpetal_bloom"],
-    "mischief": "steal_mature",
-    "while_resident": {"fertility_per_second": 0.0025},
-    "colors": {"deep": "#3A2A28", "lit": "#C4785A", "rim": "#F0C8A8", "eye": "#1A100E"},
-    "visit": [
-      {"op": "species", "id": "sunburst", "min": "resident"}
-    ],
-    "settle": [
-      {"op": "fed", "id": "rendle", "count": 1},
-      {"op": "fertility", "min": 0.4}
+  {
+    "id": "grapling",
+    "name": "Grapling",
+    "shape": "long",
+    "deep": "#1e6a3a",
+    "lit": "#b6f0c0",
+    "glow": "#7dff9a",
+    "eye": "#e9ffe8",
+    "radius": 0.24,
+    "cap": 2,
+    "wobble": 0.9,
+    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "bramble", "min": 3, "label": "3 mature Brambles"},
+      {"type": "fertility", "min": 0.55, "label": "Rich soil across the beds"}
     ]
   },
-  "coriark": {
-    "name": "Coriark",
-    "form": "droplet",
-    "hint": "After dark, if the soil turns strange.",
-    "journal": "A tall dusk jelly. Nightbloom and a dim hour bring it out of the hedges.",
-    "diet": ["nightbloom_cup"],
-    "colors": {"deep": "#241848", "lit": "#7A6AD8", "rim": "#D8D0FF", "eye": "#140E28"},
-    "visit": [
-      {"op": "mature", "plant": "nightbloom", "count": 1},
-      {"op": "phase", "any": ["night", "dusk"]}
+  {
+    "id": "dusknip",
+    "name": "Dusknip",
+    "shape": "crown",
+    "deep": "#4a2c55",
+    "lit": "#e7b0ff",
+    "glow": "#c084fc",
+    "eye": "#f6e4ff",
+    "radius": 0.3,
+    "cap": 2,
+    "wobble": 0.5,
+    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds.",
+    "requirements": [
+      {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
     ],
-    "settle": [
-      {"op": "harvested", "item": "nightbloom_cup", "count": 1},
-      {"op": "fed", "id": "coriark", "count": 1}
+    "soil_effect": {"chem": "nightloam", "count": 5}
+  },
+  {
+    "id": "pegapear",
+    "name": "Pegapear",
+    "shape": "pear",
+    "deep": "#d36b3a",
+    "lit": "#ffe0b0",
+    "glow": "#ffb15a",
+    "eye": "#fff1d8",
+    "radius": 0.36,
+    "cap": 1,
+    "wobble": 0.6,
+    "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk.",
+    "requirements": [
+      {"type": "mature_plant", "plant": "peach", "min": 1, "label": "A ripe Peach"},
+      {"type": "mature_plant", "plant": "nightlantern", "min": 1, "label": "A mature Nightlantern"},
+      {"type": "weather_in", "weather": ["mist", "rain"], "label": "Mist or rain"},
+      {"type": "hour_between", "from": 16.0, "to": 22.0, "label": "Dusk or evening"}
     ]
   },
-  "ruffles": {
-    "name": "Ruffles",
-    "form": "lobe",
-    "hint": "A lantern in a lived-in garden.",
-    "journal": "A ruffled botanical jelly. It nests where a habitat lantern is actually hanging.",
-    "diet": ["mossbell_clump"],
-    "colors": {"deep": "#1E4A32", "lit": "#A8D48A", "rim": "#F4FFE4", "eye": "#102018"},
-    "visit": [
-      {"op": "prop", "id": "lantern", "count": 1},
-      {"op": "residents", "count": 2}
-    ],
-    "settle": [
-      {"op": "person", "id": "oshi"},
-      {"op": "fed", "id": "ruffles", "count": 1}
-    ]
-  },
-  "cradling": {
-    "name": "Cradling",
-    "form": "crown",
-    "hint": "A garden that has been loved in daylight.",
-    "journal": "A crown jelly that treats a flower-heavy garden as a nursery. It wants benches, not a spectacle.",
-    "diet": ["sunpetal_bloom"],
-    "colors": {"deep": "#8A3A48", "lit": "#F2B3C0", "rim": "#FFF0F3", "eye": "#3A1820"},
-    "visit": [
-      {"op": "mature", "plant": "sunpetal", "count": 6},
-      {"op": "quality", "min": 0.35}
-    ],
-    "settle": [
-      {"op": "prop", "id": "bench", "count": 1},
-      {"op": "residents", "count": 1},
-      {"op": "fed", "id": "cradling", "count": 1}
-    ]
-  },
-  "pegacorn": {
-    "name": "Pegacorn",
-    "form": "crest",
-    "hint": "A rare clear day, and a garden already full.",
-    "journal": "A crested jelly with a botanical sail. No hooves, no horned horse. It crosses the hedge only when the grove is already somebody's home.",
-    "diet": ["sunpetal_bloom"],
-    "variant_chance": 0.4,
-    "colors": {"deep": "#245C3A", "lit": "#D8F08A", "rim": "#FFFFFF", "eye": "#142818"},
-    "visit": [
-      {"op": "residents", "count": 3},
-      {"op": "quality", "min": 0.55},
-      {"op": "weather", "any": ["clear", "golden"]},
-      {"op": "phase", "any": ["day"]}
-    ],
-    "settle": [
-      {"op": "quality", "min": 0.7},
-      {"op": "fed", "id": "pegacorn", "count": 1}
-    ],
-    "legendary": [
-      {"op": "quality", "min": 0.85},
-      {"op": "weather", "any": ["golden"]}
-    ]
-  },
-  "cushion": {
-    "name": "Cushion",
-    "form": "squat",
-    "hint": "The sound of a stall that is actually open.",
-    "journal": "A squat shop jelly. It dozes by the counter once the garden has a resident and the till has rung.",
-    "diet": ["petal_corn_ear"],
-    "colors": {"deep": "#C46A3A", "lit": "#F2C14A", "rim": "#FFF6D8", "eye": "#3A2414"},
-    "visit": [
-      {"op": "venue", "id": "petal_stall"},
-      {"op": "residents", "count": 1}
-    ],
-    "settle": [
-      {"op": "sales", "count": 2},
-      {"op": "fed", "id": "cushion", "count": 1}
+  {
+    "id": "gushorn",
+    "name": "Gushorn",
+    "shape": "crown",
+    "deep": "#b85a12",
+    "lit": "#ffd27a",
+    "glow": "#ff9a2e",
+    "eye": "#fff0cc",
+    "radius": 0.42,
+    "cap": 1,
+    "wobble": 0.45,
+    "blurb": "A heavy crown. It wants night-loam, mosspears, and soil that has been fed.",
+    "requirements": [
+      {"type": "chem_cells", "chem": "nightloam", "min": 4, "label": "Night-loam in the beds"},
+      {"type": "mature_plant", "plant": "mosspear", "min": 2, "label": "2 mature Mosspears"},
+      {"type": "fertility", "min": 0.6, "label": "Well-fed soil"}
     ]
   }
-}
+]
