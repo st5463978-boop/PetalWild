@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The outer hedge is taller, a lower hedge boxes the four beds, and leaf cards fringe both walls. Bellhelp’s close-up is a lathed bell with two petal rings, eyes toward the camera. Lumen’s crown, apron, spectacles, and satchel face the same way. `PETAL_SMOKE_OK` still passes.
+The outer hedge rises and falls, and leaf cards fringe the walls. A lower hedge boxes the four beds. Bellhelp is a lathed bell with two petal rings. Lumen’s crown, apron, spectacles, and satchel face the camera. `PETAL_SMOKE_OK` still passes.
 
 Three largest gaps still open:
 
-1. **Hedge mass.** Leaf cards break the outline. The wall under them is still one smooth shader. PETAL-05: a thicker, uneven top in this same green.
-2. **Jelly material.** The blossom silhouette holds. The bell is still a glossy lathe with no inner seed. PETAL-03 and PETAL-06: depth colour and a softer surface.
+1. **Hedge mass.** Leaf cards and a rising top break the outline. The wall under them is still one shader mesh. PETAL-05 and PETAL-06: clumps in this same green.
+2. **Jelly material.** The blossom silhouette holds. The bell is still a glossy lathe with no inner seed. PETAL-03 and PETAL-06.
 3. **Ground and light.** Lumen is still capsules. The lawn inside the rooms is one plane, and there are no sun shafts. PETAL-04 for hands and a seed tray. PETAL-06 for light.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): a thicker hedge top, a softer jelly surface, and ground cover with light. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hedge clumps, a softer jelly surface, and ground cover. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

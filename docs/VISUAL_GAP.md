@@ -1,13 +1,13 @@
 # Visual gap
 
-Compared on 2026-09-22 after the hedge-room pass. Running scene shots: `docs/screenshots/petalwild_overview.png`, `petalwild_creature.png`, `petalwild_person.png`. Targets: `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
+Compared on 2026-09-22. The scene `tools/run.sh` launches is Hedge Hollow. Shots: `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`. Targets: `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The running grove now has an outer bush ring, a cross of taller bushes that splits the terrace into four beds, flowers inside those beds, a pitched blue-and-cream stall roof, a west pond, and a carrot-shaped Cara with a wider leaf crown. Sunburst is a stacked pear with a side leaf rather than one sphere. The CC0 forest loop is the music bed when the file loads.
+The outer hedge rises and falls, with leaf cards along the walls. A lower hedge boxes four beds. Bellhelp is a green bell with a petal skirt. Lumen is a leek with a leaf crown, apron, spectacles, and satchel.
 
 ## Three largest gaps
 
-1. **Hedge surface.** The rooms are rows of the same Kenney bush. The concepts are thick, leafy, uneven walls that enclose a sunken garden. Owner: PETAL_05, with PETAL_13 if a CC0 hedge mesh beats another copy of `plant_bushLarge`.
+1. **Hedge mass.** The outline is broken, and the wall under the cards is still one shader mesh. PETAL-05 and PETAL-06.
 
-2. **Cast.** Cara is still a cone with a leaf crown and a flat apron. Sunburst is still built from scaled spheres. The concept people are small authored figures, and the jellies need silhouettes that read at a distance. Owners: PETAL_04 and PETAL_03.
+2. **Bellhelp.** The petals read. The core is still a glossy lathe with no inner seed. PETAL-03 and PETAL-06.
 
-3. **Light and ground.** Golden hour is a sky gradient. This VM is llvmpipe, so shadows stay off and there are no sun shafts. The plots are still flat tiles. Owner: PETAL_06 for the light that GL Compatibility can do, PETAL_05 for breaking the tile read without a second renderer.
+3. **Ground and light.** Lumen is still capsules. The lawn inside the rooms is one plane, and there are no sun shafts on llvmpipe. PETAL-04 and PETAL-06.

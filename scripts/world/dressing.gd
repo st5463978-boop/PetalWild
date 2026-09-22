@@ -196,8 +196,9 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
-		var width := 0.62 + scale * 0.22
+		var lift := sin(center.x * 1.7 + center.z * 1.2) * 0.18 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9) * 0.22
+		var width := (0.62 + scale * 0.22) * bulge
 		for point in profile:
 			ring.append(center + side * (point.x * width) + Vector3(0, point.y * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
