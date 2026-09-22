@@ -2,11 +2,11 @@ class_name GardenCamera
 extends Camera3D
 
 var yaw := 176.0
-var pitch := 24.0
+var pitch := 18.0
 var distance := 18.0
 var target := Vector3(-2.8, 0.55, -0.2)
 var home_yaw := 176.0
-var home_pitch := 24.0
+var home_pitch := 18.0
 var home_distance := 18.0
 var home_target := Vector3(-2.8, 0.55, -0.2)
 var user_moved := false

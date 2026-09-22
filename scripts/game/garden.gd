@@ -474,7 +474,10 @@ func _run_capture() -> void:
 	await get_tree().create_timer(1.1).timeout
 	await _shot("/workspace/docs/screenshots/wave1_overview.png")
 	if jelly:
-		camera.focus_on(jelly.global_position, 4.8)
+		jelly.global_position = Vector3(-10.6, 0.2, -1.4)
+		jelly.rotation.y = PI
+		jelly.vel = Vector3.ZERO
+		camera.focus_on(jelly.global_position + Vector3(0, 0.28, 0), 2.15)
 		await get_tree().create_timer(0.45).timeout
 		await _shot("/workspace/docs/screenshots/wave1_jelly.png")
 	camera.focus_on(_person("lumen").global_position + Vector3(0, 0.62, 0), 5.4)

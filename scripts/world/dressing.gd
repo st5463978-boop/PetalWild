@@ -43,6 +43,9 @@ func _terrain(parent: Node3D) -> void:
 		for ix in count:
 			var x0 := -half + float(ix) * step
 			var z0 := -half + float(iz) * step
+			# ponytail: one missing patch behind the north arch. The hill was the skyline.
+			if z0 > 9.0 and absf(x0 + 2.6) < 3.4:
+				continue
 			_quad(tool, x0, z0, step)
 	tool.generate_normals()
 	var mesh := tool.commit()
@@ -285,6 +288,8 @@ func _hedge_knot(at: Vector3) -> float:
 	return absf(sin(at.x * 0.55 + at.z * 0.42))
 
 func _hedge_gap(at: Vector3) -> bool:
+	if at.z > 6.2 and absf(at.x + 2.6) < 2.8:
+		return true
 	return _hedge_knot(at) < 0.72
 
 func _hedge_crown(at: Vector3) -> float:
@@ -760,14 +765,18 @@ func _scatter_grass(parent: Node3D) -> void:
 		var y := GardenLayout.height_at(x, z)
 		if y < -0.12:
 			continue
+		var hide := z > 9.0 and absf(x + 2.6) < 3.4
 		var scale := _rng.randf_range(0.55, 1.35)
 		var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * _rng.randf_range(0.8, 1.5), scale))
-		points.append(Transform3D(basis, Vector3(x, y, z)))
 		var tint := Color("#6fa344").lerp(Color("#d5e07a"), _rng.randf() * 0.65)
 		if _rng.randf() > 0.82:
 			tint = Color("#3e7a34")
+		var custom := Color(_rng.randf(), 0.2, 0, 1)
+		if hide:
+			continue
+		points.append(Transform3D(basis, Vector3(x, y, z)))
 		colors.append(tint)
-		customs.append(Color(_rng.randf(), 0.2, 0, 1))
+		customs.append(custom)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "Grass", false, customs)
 
 func _flowers(parent: Node3D) -> void:
@@ -936,6 +945,8 @@ func _trees(parent: Node3D) -> void:
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
 		var behind := spot.y > 9.0
+		if behind and absf(spot.x + 2.6) < 3.4:
+			spot.x += 5.2 if spot.x < -2.6 else -5.2
 		var height := (1.05 if behind else 1.7) + float(index % 4) * (0.1 if behind else 0.32)
 		var trunk := MeshInstance3D.new()
 		trunk.mesh = trunk_mesh
@@ -1000,8 +1011,11 @@ func _groundcover(parent: Node3D) -> void:
 			continue
 		var y := GardenLayout.height_at(x, z)
 		var scale := _rng.randf_range(0.4, 1.1)
+		var tint := Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf())
+		if z > 9.0 and absf(x + 2.6) < 3.4:
+			continue
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
-		colors.append(Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf()))
+		colors.append(tint)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false)
 
 func _lawn_tufts(parent: Node3D) -> void:
