@@ -21,7 +21,7 @@ func _stall(parent: Node3D) -> void:
 	for side in [-1.0, 1.0]:
 		_cylinder(root, Vector3(side * 1.05, 1.15, 0.35), 0.05, 0.05, 1.5, Color("#6b4a32"))
 	for i in 7:
-		var stripe := Color("#f4efe4") if i % 2 == 0 else Color("#3d6f9a")
+		var stripe := Color("#c4b49a") if i % 2 == 0 else Color("#3d6f9a")
 		_box(root, Vector3(-1.05 + float(i) * 0.35, 1.72, 0.15), Vector3(0.34, 0.06, 1.15), stripe)
 	_crate(root, Vector3(-1.35, 0.16, 0.7))
 	_crate(root, Vector3(1.25, 0.16, 0.62))
@@ -32,7 +32,7 @@ func _stall(parent: Node3D) -> void:
 	sign.font_size = 56
 	sign.pixel_size = 0.004
 	sign.position = Vector3(0, 1.35, 0.5)
-	sign.modulate = Color("fff8ee")
+	sign.modulate = Color("#e7d7c0")
 	sign.outline_modulate = Color("2a2118")
 	sign.outline_size = 12
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
@@ -119,6 +119,7 @@ func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInsta
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.74
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	parent.add_child(node)
 	return node
@@ -135,6 +136,7 @@ func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: f
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.7
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	parent.add_child(node)
 
@@ -150,5 +152,6 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> void:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.55
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	parent.add_child(node)
