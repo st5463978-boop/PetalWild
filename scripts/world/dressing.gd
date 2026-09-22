@@ -1061,7 +1061,8 @@ func _gap_fill(parent: Node3D) -> void:
 		var y := GardenLayout.height_at(x, z)
 		var node := MeshInstance3D.new()
 		node.mesh = cone
-		var leaf := Color("#16381c").lerp(Color("#2a5c24"), rng.randf())
+		# ponytail: these shrubs lift to pale green under the sun; raise if the row goes black.
+		var leaf := Color("#0e2212").lerp(Color("#1a3816"), rng.randf())
 		node.material_override = _standard(leaf, 0.88)
 		var lift := clampf((x + 13.0) / 25.0, 0.0, 1.0) * 0.12
 		var h := rng.randf_range(0.96, 1.0) + lift
