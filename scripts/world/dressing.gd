@@ -174,12 +174,12 @@ func _hedge(parent: Node3D) -> void:
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
-	_hedge_run(tool, origin, along, openings, scale, 0.0)
-	_hedge_run(tool, origin, along, openings, scale * 0.78, -0.46)
-	_hedge_run(tool, origin, along, openings, scale * 0.58, 0.34)
+	_hedge_run(tool, origin, along, openings, scale, 0.0, 0.2)
+	_hedge_run(tool, origin, along, openings, scale * 0.74, -0.78, 2.1)
+	_hedge_run(tool, origin, along, openings, scale * 0.66, 0.7, 4.0)
 
 
-func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float, offset_side: float) -> void:
+func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float, offset_side: float, phase: float) -> void:
 	var length := along.length()
 	if length < 0.2:
 		return
@@ -208,11 +208,16 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 1.7 + center.z * 1.2) * 0.18 * scale
-		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9) * 0.22
+		var lift := sin(center.x * 1.7 + center.z * 1.2 + phase) * 0.18 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
+		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
+		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
 		var width := (0.62 + scale * 0.22) * bulge
 		for point in profile:
-			ring.append(center + side * (point.x * width) + Vector3(0, point.y * scale + lift, 0))
+			var height := point.y
+			if height > 0.2:
+				height *= chop
+			ring.append(center + side * (point.x * width + lean * height) + Vector3(0, height * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
 		previous = ring
@@ -309,11 +314,11 @@ func _hedge_leaves(parent: Node3D) -> void:
 
 func _room_cover(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.32, 0.2)
+	quad.size = Vector2(0.48, 0.3)
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
 	var tries := 0
-	while points.size() < 780 and tries < 3200:
+	while points.size() < 1500 and tries < 6000:
 		tries += 1
 		var x := _rng.randf_range(-8.2, 3.5)
 		var z := _rng.randf_range(-6.2, 2.9)

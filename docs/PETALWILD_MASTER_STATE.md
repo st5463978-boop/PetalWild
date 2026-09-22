@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge carries puffs, crown tufts, and leaf cards on the faces. Flower drifts sit in the rooms. Bellhelp’s face stays on the blossom. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
+The hedge crown is chopped across three offset shoulders, with puffs, tufts, and leaf cards on the faces. Flower drifts sit in the rooms. Bellhelp’s core is a pad plus five lobes, and in the close-up those lobes still weld into one glossy body. The face stays on the blossom. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
-1. **Hedge depth.** Leaves sit on the wall, and a smooth core still shows through. The concept hedges are thick and clipped. PETAL-05 and PETAL-06: hide that core.
-2. **Bellhelp’s body.** The face and the cupped petal read. The core is still a lathe. PETAL-03.
-3. **Cast and floor.** Lumen’s stalk is still stacked capsules. The rooms have tufts and a few flowers, not the plates’ ground cover or sun shafts. PETAL-04 and PETAL-06.
+1. **Hedge depth.** The top is uneven and leafy. A smooth core still shows through. PETAL-05 and PETAL-06: hide that core.
+2. **Bellhelp’s body.** The lathe is gone. The lobes still read as one glossy solid. PETAL-03: a crease between them.
+3. **Cast and floor.** Lumen’s stalk is still stacked capsules. The rooms have tufts and flowers, not the plates’ ground cover or sun shafts. PETAL-04 and PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hide the hedge core, then break the lathed bell. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hide the hedge core, separate the bell lobes, and break Lumen’s capsule stalk. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
