@@ -96,24 +96,9 @@ func _shape(root: Node3D, shape: String) -> float:
 			return 0.46
 
 func _bell(root: Node3D) -> void:
-	_blob(root, Vector3(0, radius * 0.16, 0), Vector3(1.05, 0.38, 0.98))
+	_blob(root, Vector3(0, radius * 0.08, 0), Vector3(0.62, 0.18, 0.58))
 	for i in 5:
-		var angle := TAU * float(i) / 5.0 + 0.4
-		var reach := radius * 0.7
-		_blob(root, Vector3(cos(angle) * reach, radius * 0.5, sin(angle) * reach), Vector3(0.4, 0.74, 0.32))
-		var gap := angle + TAU / 10.0
-		var crease := MeshInstance3D.new()
-		var ball := SphereMesh.new()
-		ball.radius = radius * 0.1
-		ball.height = radius * 0.34
-		crease.mesh = ball
-		var dark := StandardMaterial3D.new()
-		dark.albedo_color = Color("#102818")
-		dark.roughness = 0.92
-		crease.material_override = dark
-		crease.position = Vector3(cos(gap) * radius * 0.32, radius * 0.4, sin(gap) * radius * 0.32)
-		root.add_child(crease)
-	_blob(root, Vector3(0, radius * 0.62, -radius * 0.06), Vector3(0.32, 0.5, 0.28))
+		_petal(root, TAU * float(i) / 5.0 + 0.2, 1.55, 0.92, 0.82)
 	for i in 6:
 		_petal(root, TAU * float(i) / 6.0, -0.12, 1.0, 1.0)
 		_petal(root, TAU * float(i) / 6.0 + 0.52, 0.35, 0.72, 0.62)

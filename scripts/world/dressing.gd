@@ -935,7 +935,8 @@ func _trees(parent: Node3D) -> void:
 	var index := 0
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
-		var height := 1.7 + float(index % 4) * 0.32
+		var behind := spot.y > 9.0
+		var height := (1.05 if behind else 1.7) + float(index % 4) * (0.1 if behind else 0.32)
 		var trunk := MeshInstance3D.new()
 		trunk.mesh = trunk_mesh
 		trunk.material_override = _standard(Color("#6a4530").lerp(Color("#8a5a3c"), float(index % 3) / 3.0), 0.9)
@@ -948,8 +949,9 @@ func _trees(parent: Node3D) -> void:
 			cone.mesh = cone_mesh
 			var leaf := Color("#1f5a2c").lerp(Color("#9bc45a"), 0.18 + float(layer) * 0.22)
 			cone.material_override = _standard(leaf, 0.8)
-			var scale := 1.05 - float(layer) * 0.22
-			cone.position = Vector3(spot.x, y + height * 0.62 + float(layer) * 0.62, spot.y)
+			var scale := (0.48 if behind else 1.05) - float(layer) * (0.08 if behind else 0.22)
+			var step := 0.2 if behind else 0.62
+			cone.position = Vector3(spot.x, y + height * 0.48 + float(layer) * step, spot.y)
 			cone.scale = Vector3(scale, 0.78, scale)
 			cone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			parent.add_child(cone)
