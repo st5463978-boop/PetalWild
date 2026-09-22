@@ -108,10 +108,17 @@ func _bell(root: Node3D) -> void:
 		_petal(root, angle, 0.25, 0.62, 0.32)
 	# ponytail: lower whorl flares past the cup; raise drop if the two rims merge.
 	for i in 5:
-		_petal(root, TAU * float(i) / 5.0 + 0.2, 0.42, 1.18, 0.3, null, radius * 0.35)
+		_petal(root, TAU * float(i) / 5.0 + 0.2, 0.42, 1.18, 0.42, null, radius * 0.35)
 	# ponytail: third rim hangs between those tips; raise drop if it merges with the whorl above.
 	for i in 5:
-		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.2, 1.28, 0.28, null, radius * 0.55)
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 0.2, 1.28, 0.38, null, radius * 0.55)
+	# ponytail: darker band under the tips; raise drop if it merges with the flared whorl.
+	var band := StandardMaterial3D.new()
+	band.albedo_color = Color("#1e5c30")
+	band.roughness = 0.9
+	band.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 10.0, 0.7, 1.05, 0.44, band, radius * 0.12, 0.4)
 	# ponytail: gap tips reach past the five lobes; lower reach if they fuse into one rim.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.6, 1.35, 0.28, null, -radius * 0.22, 0.1)
