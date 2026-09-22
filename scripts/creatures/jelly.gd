@@ -96,10 +96,11 @@ func _shape(root: Node3D, shape: String) -> float:
 			return 0.46
 
 func _bell(root: Node3D) -> void:
-	var body := MeshInstance3D.new()
-	body.mesh = _bell_lathe()
-	body.material_override = mat
-	root.add_child(body)
+	_blob(root, Vector3(0, radius * 0.16, 0), Vector3(1.25, 0.42, 1.15))
+	for i in 5:
+		var angle := TAU * float(i) / 5.0 + 0.4
+		_blob(root, Vector3(cos(angle) * radius * 0.46, radius * 0.48, sin(angle) * radius * 0.46), Vector3(0.62, 0.9, 0.46))
+	_blob(root, Vector3(0, radius * 0.62, -radius * 0.06), Vector3(0.4, 0.58, 0.34))
 	for i in 6:
 		_petal(root, TAU * float(i) / 6.0, -0.12, 1.0, 1.0)
 		_petal(root, TAU * float(i) / 6.0 + 0.52, 0.35, 0.72, 0.62)
@@ -142,44 +143,6 @@ func _bell(root: Node3D) -> void:
 	throat.material_override = throat_material
 	throat.position = Vector3(0.0, radius * 0.3, -radius * 0.08)
 	root.add_child(throat)
-
-func _bell_lathe() -> ArrayMesh:
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var profile: Array[Vector2] = [
-		Vector2(0.2, 0.0),
-		Vector2(0.58, 0.06),
-		Vector2(0.82, 0.16),
-		Vector2(0.58, 0.3),
-		Vector2(0.36, 0.46),
-		Vector2(0.48, 0.62),
-		Vector2(0.2, 0.82),
-		Vector2(0.08, 0.96),
-	]
-	var segments := 16
-	var rings: Array = []
-	for row in profile:
-		var ring: Array[Vector3] = []
-		for seg in segments:
-			var angle := TAU * float(seg) / float(segments)
-			var flute := 1.0 + 0.07 * cos(angle * 5.0)
-			if row.y < 0.22:
-				flute = 1.0 + 0.18 * cos(angle * 6.0)
-			ring.append(Vector3(cos(angle) * row.x * flute, row.y, sin(angle) * row.x * flute) * radius)
-		rings.append(ring)
-	for row in rings.size() - 1:
-		var a: Array = rings[row]
-		var b: Array = rings[row + 1]
-		for seg in segments:
-			var n := (seg + 1) % segments
-			_tri(tool, a[seg], b[seg], b[n])
-			_tri(tool, a[seg], b[n], a[n])
-	var tip: Vector3 = Vector3(0, profile[profile.size() - 1].y * radius, 0)
-	var top: Array = rings[rings.size() - 1]
-	for seg in segments:
-		_tri(tool, top[seg], tip, top[(seg + 1) % segments])
-	tool.generate_normals()
-	return tool.commit()
 
 func _petal(root: Node3D, angle: float, lift: float, reach: float, size: float) -> void:
 	var petal := MeshInstance3D.new()

@@ -97,7 +97,7 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 		var furrow := sin(x * 7.5) * 0.5 + 0.5
 		return Color("#8d5a3a").lerp(Color("#c4895c"), furrow)
 	var n := sin(x * 0.33) * cos(z * 0.27)
-	var meadow := Color("#4f7a34").lerp(Color("#7ea84a"), clampf(n * 0.5 + 0.5, 0.0, 1.0))
+	var meadow := Color("#3d6428").lerp(Color("#6a9440"), clampf(n * 0.5 + 0.5, 0.0, 1.0))
 	if sin(x * 0.85 + z * 0.4) > 0.62:
 		meadow = meadow.lerp(Color("#3c7634"), 0.4)
 	if y > 0.8:

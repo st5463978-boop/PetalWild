@@ -20,9 +20,9 @@ void vertex() {
 void fragment() {
 	float broad = sin(world_pos.x * 9.0 + world_pos.y * 4.0) * sin(world_pos.z * 8.0);
 	float fine = sin(world_pos.x * 22.0 + world_pos.y * 15.0 + world_pos.z * 11.0);
-	vec3 deep = vec3(0.05, 0.18, 0.07);
-	vec3 mid = vec3(0.13, 0.34, 0.11);
-	vec3 sun = vec3(0.42, 0.58, 0.2);
+	vec3 deep = vec3(0.02, 0.08, 0.03);
+	vec3 mid = vec3(0.06, 0.18, 0.06);
+	vec3 sun = vec3(0.2, 0.36, 0.1);
 	vec3 col = mix(deep, mid, broad * 0.5 + 0.5);
 	col = mix(col, sun, clamp(up, 0.0, 1.0) * (0.28 + fine * 0.12));
 	float crevice = smoothstep(0.15, 0.85, abs(fine));
