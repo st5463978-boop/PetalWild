@@ -96,7 +96,7 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 	if in_plots(x, z, 0.0):
 		return Color("#5f7d3c")
 	var n := sin(x * 0.33) * cos(z * 0.27)
-	var meadow := Color("#7eac4c").lerp(Color("#d2df78"), clampf(n * 0.5 + 0.5, 0.0, 1.0))
+	var meadow := Color("#4f7a34").lerp(Color("#7ea84a"), clampf(n * 0.5 + 0.5, 0.0, 1.0))
 	if sin(x * 0.85 + z * 0.4) > 0.62:
 		meadow = meadow.lerp(Color("#3c7634"), 0.4)
 	if y > 0.8:

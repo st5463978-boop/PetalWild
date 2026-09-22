@@ -7,7 +7,7 @@ Downloaded bytes kept: 26,864,773 (25.62 MiB) before Godot import sidecars.
 | Name | Creator | Source | Licence | Date | Modifications | Use | Obligations |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Kenney Nature Kit 2.1 | Kenney | https://kenney.nl/assets/nature-kit | CC0 1.0 | 2026-09-22 | Scaled in `prop_kit.gd` to target heights. No mesh edits | Trees, bushes, flowers, grass, bridge, stones | None. Credit kept in CREDITS.md |
-| Kenney Foliage Pack | Kenney Vleugels | https://kenney.nl/assets/foliage-pack | CC0 1.0 | 2026-09-22 | None. A `Thumbs.db` shipped inside the zip and is not used as art | Reserved for billboard clutter | None |
+| Kenney Foliage Pack | Kenney Vleugels | https://kenney.nl/assets/foliage-pack | CC0 1.0 | 2026-09-22 | `shaders/leaf_card.gdshader` keeps the PNG alpha and tints toward the hedge green | Leaf cards on the hedge crown and on the room floor | None |
 | Kenney Mini Forest 1.0 | Kenney | https://kenney.nl/assets/mini-forest | CC0 1.0 | 2026-09-22 | None | Not wired yet | None |
 | Kenney Interface Sounds 1.0 | Kenney | https://kenney.nl/assets/interface-sounds | CC0 1.0 | 2026-09-22 | None | UI, coin, error, dig, harvest, chime when the ogg exists | None |
 | Leafy Grass 1K | Charlotte Baglioni | https://polyhaven.com/a/leafy_grass | CC0 | 2026-09-22 | JPG 1K only | Garden ground albedo | None |

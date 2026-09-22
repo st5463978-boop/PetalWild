@@ -104,7 +104,7 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	var night := 1.0 - day
 	var sun_height := sin(deg_to_rad(clampf((hour - 6.0) / 12.0, 0.0, 1.0) * 180.0))
 	sun.rotation_degrees = Vector3(-12.0 - sun_height * 58.0, -40.0 - hour * 2.0, 0)
-	sun.light_energy = lerpf(0.05, 1.25, day) + golden * 0.25
+	sun.light_energy = lerpf(0.05, 1.15, day) + golden * 0.12
 	sun.light_color = Color("ffd2a4").lerp(Color("fff4dd"), 1.0 - golden)
 	moon.rotation_degrees = Vector3(-35, 140, 0)
 	moon.light_energy = 0.28 * night
@@ -112,9 +112,9 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	fill.rotation_degrees = Vector3(-25, 150, 0)
 	fill.light_energy = lerpf(0.08, 0.28, day)
 	var environment := world_environment.environment
-	environment.ambient_light_energy = lerpf(0.18, 0.58, day)
-	environment.tonemap_exposure = 0.96 + golden * 0.1
-	environment.fog_density = 0.007
+	environment.ambient_light_energy = lerpf(0.18, 0.5, day)
+	environment.tonemap_exposure = 0.96 + golden * 0.06
+	environment.fog_density = 0.006
 	environment.fog_light_color = Color("f0d2b0")
 	environment.glow_enabled = not photosensitivity
 	if weather == "mist":

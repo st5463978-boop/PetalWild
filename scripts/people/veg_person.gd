@@ -104,10 +104,10 @@ func _leek() -> void:
 		var length := 0.7 if i % 2 == 0 else 0.46
 		_ribbon(Color("#2c6e32").lightened(0.06 * float(i % 3)), 0.8, i * (360.0 / 7.0), droop, length)
 	_arm(Vector3(-0.18, 0.5, 0), Color("#efe6c9"))
-	_arm(Vector3(0.18, 0.5, 0), Color("#efe6c9"))
+	var right := _arm(Vector3(0.2, 0.46, 0.04), Color("#efe6c9"), -18.0, 68.0)
 	_apron(Color("#d9815a"))
-	_seed_tray()
 	_satchel()
+	_seed_tray(right)
 	_spectacles_at(0.68)
 	_mouth_at(0.62)
 	_feet(Color("#c4b49a"))
@@ -152,20 +152,20 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color, squash :=
 	parent.add_child(node)
 	return node
 
-func _arm(at: Vector3, color: Color) -> void:
+func _arm(at: Vector3, color: Color, pitch: float = 0.0, roll: float = 0.0) -> Node3D:
 	var mesh := CapsuleMesh.new()
 	mesh.radius = 0.035
 	mesh.height = 0.28
 	var node := _paint(mesh, color, 0.5)
 	node.position = at
-	var side := 1.0 if at.x > 0.0 else -1.0
-	node.rotation_degrees = Vector3(0, 0, 18 if side > 0.0 else -18)
+	var z_roll := roll if roll != 0.0 else (18.0 if at.x > 0.0 else -18.0)
+	node.rotation_degrees = Vector3(pitch, 0, z_roll)
 	body.add_child(node)
-	var wrist := at + Vector3(0.045 * side, -0.16, 0.05)
-	_sphere(body, wrist, 0.04, Color("#f4efe2"), Vector3(1.35, 0.7, 0.95))
+	var wrist := Vector3(0.0, -0.15, 0.02)
+	_sphere(node, wrist, 0.04, Color("#f4efe2"), Vector3(1.35, 0.7, 0.95))
 	for i in 3:
-		var finger := wrist + Vector3(0.016 * side * float(i - 1), -0.018, 0.03)
-		_sphere(body, finger, 0.013, Color("#f7f3e8"), Vector3(0.65, 1.2, 0.7))
+		_sphere(node, wrist + Vector3(0.016 * float(i - 1), -0.022, 0.028), 0.013, Color("#f7f3e8"), Vector3(0.65, 1.2, 0.7))
+	return node
 
 func _feet(color: Color) -> void:
 	_sphere(body, Vector3(-0.07, 0.06, 0.02), 0.05, color, Vector3(1.2, 0.6, 1.5))
@@ -179,18 +179,6 @@ func _leaf_fan(color: Color, y: float) -> void:
 		node.position = Vector3(0, y, 0)
 		node.rotation_degrees = Vector3(-28, i * 36, -18 + i * 8)
 		body.add_child(node)
-
-func _seed_tray() -> void:
-	var board := BoxMesh.new()
-	board.size = Vector3(0.24, 0.028, 0.15)
-	var tray := _paint(board, Color("#8a5a32"), 0.72)
-	tray.position = Vector3(0.02, 0.34, -0.2)
-	tray.rotation_degrees = Vector3(-22, 8, 0)
-	body.add_child(tray)
-	var seeds := [Color("#e6c15a"), Color("#c46a45"), Color("#6a8f3a"), Color("#f4efe4"), Color("#d98a3a")]
-	for i in seeds.size():
-		_sphere(body, tray.position + Vector3(-0.07 + float(i) * 0.035, 0.028, -0.02 + float(i % 2) * 0.04), 0.016, seeds[i])
-
 
 func _apron(color: Color) -> void:
 	var mesh := BoxMesh.new()
@@ -224,6 +212,20 @@ func _mouth_at(y: float) -> void:
 	var node := _paint(mesh, Color("#c46a58"), 0.55)
 	node.position = Vector3(0, y, -0.105)
 	body.add_child(node)
+
+func _seed_tray(arm: Node3D) -> void:
+	var tray := BoxMesh.new()
+	tray.size = Vector3(0.16, 0.018, 0.1)
+	var board := _paint(tray, Color("#c4a15a"), 0.7)
+	board.position = Vector3(0.0, -0.2, 0.04)
+	arm.add_child(board)
+	for i in 4:
+		var seed := SphereMesh.new()
+		seed.radius = 0.012
+		seed.height = 0.02
+		var node := _paint(seed, Color("#e7d59a") if i % 2 == 0 else Color("#c46a58"), 0.45)
+		node.position = Vector3(-0.045 + float(i) * 0.03, 0.016, 0.0)
+		board.add_child(node)
 
 func _satchel() -> void:
 	var bag := BoxMesh.new()

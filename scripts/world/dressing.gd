@@ -12,7 +12,9 @@ func build(parent: Node3D) -> void:
 	_hedge(parent)
 	_hedge_clumps(parent)
 	_hedge_leaves(parent)
+	_hedge_fringe(parent)
 	_scatter_grass(parent)
+	_room_cover(parent)
 	_flowers(parent)
 	_shrubs(parent)
 	_trees(parent)
@@ -227,6 +229,105 @@ func _hedge_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	tool.set_uv(Vector2(0.5, 0))
 	tool.add_vertex(c)
 
+func _hedge_leaves(parent: Node3D) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.5, 0.34)
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var runs: Array = [
+		[Vector3(-13.6, 0, -9.9), Vector3(26.4, 0, 0), 1.22, [Vector3(0.0, -9.9, 2.9)]],
+		[Vector3(12.8, 0, -9.9), Vector3(0, 0, 17.8), 1.22, []],
+		[Vector3(12.8, 0, 7.9), Vector3(-26.4, 0, 0), 1.22, []],
+		[Vector3(-13.6, 0, 7.9), Vector3(0, 0, -17.8), 1.22, []],
+		[Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), 0.78, [Vector3(-2.35, -6.55, 1.2)]],
+		[Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), 0.78, [Vector3(3.85, -2.5, 1.2)]],
+		[Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), 0.78, [Vector3(-4.55, 3.2, 1.25), Vector3(-2.35, 3.2, 1.05)]],
+		[Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), 0.78, []],
+	]
+	var shell: Array[Vector2] = [
+		Vector2(-0.5, 0.4),
+		Vector2(-0.36, 0.76),
+		Vector2(-0.18, 1.06),
+		Vector2(0.0, 1.24),
+		Vector2(0.18, 1.06),
+		Vector2(0.36, 0.76),
+		Vector2(0.5, 0.4),
+	]
+	for run in runs:
+		var origin: Vector3 = run[0]
+		var along: Vector3 = run[1]
+		var scale: float = run[2]
+		var holes: Array = run[3]
+		var length := along.length()
+		var dir := along / length
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var steps := int(length / 0.28)
+		var width := 0.62 + scale * 0.22
+		for i in steps:
+			var center := origin + dir * ((float(i) + 0.5) / float(steps) * length)
+			var blocked := false
+			for hole in holes:
+				var gate := hole as Vector3
+				if Vector2(center.x - gate.x, center.z - gate.y).length() < gate.z + 0.2:
+					blocked = true
+					break
+			if blocked:
+				continue
+			var lift := sin(center.x * 1.8 + center.z * 1.35) * 0.06 * scale
+			for point in shell:
+				var flank := point.x
+				if absf(flank) < 0.04:
+					flank = 0.16 if _rng.randf() > 0.5 else -0.16
+				var outward := side * signf(flank)
+				var crown := absf(point.x) < 0.04
+				var poke := _rng.randf_range(0.05, 0.2)
+				var at := center + side * (point.x * width) + outward * poke
+				at.y = point.y * scale + lift + _rng.randf_range(-0.03, 0.07)
+				var normal := (outward * (0.28 if crown else 0.82) + Vector3.UP * (0.95 if crown else 0.4)).normalized()
+				var x_axis := dir.cross(normal).normalized()
+				var y_axis := normal.cross(x_axis).normalized()
+				var basis := Basis(x_axis, y_axis, normal).rotated(normal, _rng.randf_range(-0.8, 0.8))
+				var scale_leaf := _rng.randf_range(0.75, 1.4)
+				basis = basis.scaled(Vector3.ONE * scale_leaf)
+				var tint := Color("#1f5528").lerp(Color("#c6d96a"), _rng.randf() * 0.55)
+				points.append(Transform3D(basis, at))
+				colors.append(tint)
+				var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
+				points.append(Transform3D(crossed, at + outward * 0.04))
+				colors.append(tint.darkened(0.08))
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/leaf_card.gdshader")
+	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
+	material.set_shader_parameter("tint", Color("#3d7a34"))
+	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false)
+
+func _room_cover(parent: Node3D) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.32, 0.2)
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var tries := 0
+	while points.size() < 780 and tries < 3200:
+		tries += 1
+		var x := _rng.randf_range(-8.2, 3.5)
+		var z := _rng.randf_range(-6.2, 2.9)
+		if GardenLayout.in_plots(x, z, 0.05) or GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
+			continue
+		var y := GardenLayout.height_at(x, z) + 0.025
+		var basis := Basis(Vector3.RIGHT, Vector3.FORWARD, Vector3.UP)
+		basis = basis.rotated(Vector3.UP, _rng.randf() * TAU)
+		basis = basis.rotated(basis.x, _rng.randf_range(-0.55, 0.55))
+		basis = basis.scaled(Vector3.ONE * _rng.randf_range(0.55, 1.2))
+		points.append(Transform3D(basis, Vector3(x, y, z)))
+		colors.append(Color("#6a8f3a").lerp(Color("#c4a15a"), _rng.randf() * 0.35))
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/leaf_card.gdshader")
+	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_007.png"))
+	material.set_shader_parameter("tint", Color("#5c7a32"))
+	_multimesh(parent, quad, points, colors, material, "RoomCover", false)
+
 func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
@@ -304,7 +405,7 @@ func _tuft_leaf(tool: SurfaceTool, yaw: float, pitch: float, width: float, heigh
 	_leaf_tri(tool, rib, a, tip, back, Vector2(0.5, 0.45), Vector2(0, 1), Vector2(0.5, 0))
 	_leaf_tri(tool, rib, tip, b, back, Vector2(0.5, 0.45), Vector2(0.5, 0), Vector2(1, 1))
 
-func _hedge_leaves(parent: Node3D) -> void:
+func _hedge_fringe(parent: Node3D) -> void:
 	var mesh := _hedge_leaf_card()
 	var points: Array[Transform3D] = []
 	var colors: Array[Color] = []
@@ -342,7 +443,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 				points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.9, 1.6), scale)), at))
 				colors.append(Color("#1c5c2c").lerp(Color("#d5e07a"), _rng.randf() * 0.85))
 				customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeLeaves", true, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
 
 func _hedge_leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
