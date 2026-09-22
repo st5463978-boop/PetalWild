@@ -219,13 +219,15 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
 		var knot := absf(sin(center.x * 0.48 + center.z * 0.36))
 		var waist := 0.22 + 0.78 * knot
-		var width := (0.62 + scale * 0.22) * bulge * lerpf(0.4, 1.2, knot)
+		var width := (0.62 + scale * 0.22) * bulge * lerpf(0.28, 1.0, waist)
 		if _hedge_gap(center):
 			open = true
 		for point in profile:
 			var height := point.y
+			if height > 0.72:
+				height = 0.72 + (height - 0.72) * 0.22
 			if height > 0.12:
-				height *= chop * lerpf(0.38, 1.0, knot)
+				height *= chop * lerpf(0.45, 1.0, knot)
 			ring.append(center + side * (point.x * width + lean * height) + Vector3(0, height * scale + lift, 0))
 		if i > 0 and not open and not previous_open:
 			_hedge_bridge(tool, previous, ring)
@@ -1038,6 +1040,11 @@ func _room_beds(parent: Node3D) -> void:
 		{"rect": Rect2(-1.55, -1.9, 4.15, 0.95), "color": Color("#f4e2a8")},
 		{"rect": Rect2(-7.15, 2.7, 4.2, 0.7), "color": Color("#f7f0d8")},
 		{"rect": Rect2(-1.5, 2.7, 3.6, 0.7), "color": Color("#ef7f4a")},
+		{"rect": Rect2(-8.15, -5.7, 1.55, 2.15), "color": Color("#e56b8a")},
+		{"rect": Rect2(-8.15, 0.35, 1.45, 1.85), "color": Color("#f2d36b")},
+		{"rect": Rect2(1.85, -5.55, 1.45, 1.55), "color": Color("#f08aa4")},
+		{"rect": Rect2(1.7, 0.55, 1.55, 1.45), "color": Color("#c9a0e8")},
+		{"rect": Rect2(-5.9, -5.85, 2.4, 0.7), "color": Color("#ef7f72")},
 	]
 	for bed in beds:
 		var rect: Rect2 = bed["rect"]
@@ -1048,15 +1055,17 @@ func _room_beds(parent: Node3D) -> void:
 			for ix in cols:
 				var x := rect.position.x + (float(ix) + 0.5) * rect.size.x / float(cols)
 				var z := rect.position.y + (float(iz) + 0.5) * rect.size.y / float(rows)
-				x += _rng.randf_range(-0.05, 0.05)
-				z += _rng.randf_range(-0.05, 0.05)
-				if GardenLayout.in_plots(x, z, 0.15) or GardenLayout.on_path(x, z):
+				x += _rng.randf_range(-0.04, 0.04)
+				z += _rng.randf_range(-0.04, 0.04)
+				if GardenLayout.in_plots(x, z, 0.18) or GardenLayout.on_path(x, z):
+					continue
+				if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.3:
 					continue
 				var y := GardenLayout.height_at(x, z)
-				var scale := _rng.randf_range(1.9, 2.7)
+				var scale := _rng.randf_range(1.6, 2.3)
 				var basis := Basis.from_euler(Vector3(0, _rng.randf() * TAU, _rng.randf_range(-0.06, 0.06))).scaled(Vector3(scale, scale, scale))
 				points.append(Transform3D(basis, Vector3(x, y, z)))
-				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.22))
+				colors.append(palette.lerp(Color("#fff6ea"), _rng.randf() * 0.2))
 	_multimesh(parent, mesh, points, colors, _bloom_material(), "RoomBeds", false)
 
 func _stones(parent: Node3D) -> void:
