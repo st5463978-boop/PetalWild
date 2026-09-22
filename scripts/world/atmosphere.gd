@@ -91,9 +91,9 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	fill.rotation_degrees = Vector3(-25, 150, 0)
 	fill.light_energy = lerpf(0.08, 0.28, day)
 	var environment := world_environment.environment
-	environment.ambient_light_energy = lerpf(0.22, 0.85, day)
-	environment.tonemap_exposure = 1.02 + golden * 0.08
-	environment.fog_density = 0.004
+	environment.ambient_light_energy = lerpf(0.18, 0.58, day)
+	environment.tonemap_exposure = 0.96 + golden * 0.1
+	environment.fog_density = 0.007
 	environment.fog_light_color = Color("f0d2b0")
 	environment.glow_enabled = not photosensitivity
 	if weather == "mist":

@@ -111,6 +111,22 @@ func _bell(root: Node3D) -> void:
 		stamen.material_override = mat
 		stamen.position = Vector3(cos(angle) * radius * 0.12, radius * 1.28, sin(angle) * radius * 0.12)
 		root.add_child(stamen)
+	var seed := MeshInstance3D.new()
+	var seed_mesh := SphereMesh.new()
+	seed_mesh.radius = radius * 0.13
+	seed_mesh.height = radius * 0.22
+	seed_mesh.radial_segments = 10
+	seed_mesh.rings = 6
+	seed.mesh = seed_mesh
+	var seed_material := StandardMaterial3D.new()
+	seed_material.albedo_color = Color("#e7f27a")
+	seed_material.emission_enabled = true
+	seed_material.emission = Color("#d6e85a")
+	seed_material.emission_energy_multiplier = 0.7
+	seed_material.roughness = 0.55
+	seed.material_override = seed_material
+	seed.position = Vector3(0.0, radius * 0.38, -radius * 0.34)
+	root.add_child(seed)
 
 func _bell_lathe() -> ArrayMesh:
 	var tool := SurfaceTool.new()
