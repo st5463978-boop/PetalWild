@@ -102,6 +102,9 @@ func _bell(root: Node3D) -> void:
 	# ponytail: the gap ring stays inside the cup so it does not glue the five lobes together.
 	for i in 5:
 		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 5.0, 1.9, 0.48, 0.28)
+	# ponytail: wide short petals close the cup inside the tips. Raise reach if the center stays bare.
+	for i in 5:
+		_petal(root, TAU * float(i) / 5.0 + 0.2 + PI / 10.0, 1.45, 0.62, 0.62, null, 0.0, 0.05)
 	for i in 5:
 		var angle := TAU * float(i) / 5.0 + 0.2
 		_petal(root, angle, -0.05, 0.85, 0.42)
