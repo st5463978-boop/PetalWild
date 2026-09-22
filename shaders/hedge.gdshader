@@ -8,11 +8,11 @@ void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	up = NORMAL.y;
 	vec3 p = VERTEX;
-	float lump = sin(world_pos.x * 3.1) * cos(world_pos.z * 2.7);
-	float lump2 = sin(world_pos.x * 8.5 + world_pos.z * 6.4);
+	float lump = sin(world_pos.x * 2.6) * cos(world_pos.z * 2.2);
+	float tuft = sin(world_pos.x * 9.5 + world_pos.z * 6.4);
 	if (up > 0.12) {
-		p += NORMAL * (lump * 0.16 + lump2 * 0.05);
-		p.y += abs(lump) * up * 0.08;
+		p += NORMAL * (lump * 0.18 + tuft * 0.06);
+		p.y += max(tuft, 0.0) * 0.11 * clamp(up, 0.0, 1.0);
 	}
 	VERTEX = p;
 }

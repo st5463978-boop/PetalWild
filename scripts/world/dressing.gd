@@ -17,6 +17,7 @@ func build(parent: Node3D) -> void:
 	_trees(parent)
 	_willow(parent)
 	_groundcover(parent)
+	_lawn_tufts(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -478,6 +479,32 @@ func _groundcover(parent: Node3D) -> void:
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
 		colors.append(Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf()))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false)
+
+func _lawn_tufts(parent: Node3D) -> void:
+	var mesh := _leaf_card()
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var tries := 0
+	while points.size() < 640 and tries < 4000:
+		tries += 1
+		var x := _rng.randf_range(-12.2, 12.2)
+		var z := _rng.randf_range(-9.2, 7.2)
+		if GardenLayout.in_plots(x, z, 0.35):
+			continue
+		if GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+			continue
+		var y := GardenLayout.height_at(x, z)
+		if y < -0.05:
+			continue
+		var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.15, 0.2), _rng.randf() * TAU, 0.0))
+		var scale := _rng.randf_range(0.55, 1.25)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.7, 1.4), scale)), Vector3(x, y, z)))
+		colors.append(Color("#2a6b34").lerp(Color("#d7e48a"), _rng.randf() * 0.7))
+		customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "LawnTufts", false, customs)
 
 func _stones(parent: Node3D) -> void:
 	var mesh := SphereMesh.new()
