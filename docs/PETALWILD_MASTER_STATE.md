@@ -35,7 +35,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - The garden does not yet look like the concept plates. See the gap list below.
 - Bellhelp’s core is a pad plus five lobes, with dark creases in the gaps and a five-point cupped petal. The body is still glossy blobs. It is not an authored sculpt.
 - Lumen’s stalk is one fluted taper, cream at the base and green at the crown. The raised hand holds a seed tray. Each hand is a palm with three fingers and a thumb.
-- Hedge clumps are wider, with a sheared crown and a leaf coat. Flower beds stand between the soil plots and along the room edges. Bloom rows stand outside. Daylight shafts are thin. There is still no insect or bird life.
+- Hedge clumps are wider, with a sheared crown and a leaf coat. Flower beds stand between the soil plots and along the room edges. A meadow of grass and scattered blooms fills the lawn outside the rooms. Daylight shafts are wide pools. There is still no insect or bird life.
 - City, venues, and the agent civilisation are a single parish record (`data/district.json`, Hedge Hollow, phase A).
 - Tiers 3 and 4 of the simulation are specified, not simulated.
 - Trust cannot research, draft, or act outside the process.
@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge clumps are wider, the crown of each clump is sheared, and a leaf coat sits on the knots. The four beds are furrowed soil. A flower cross sits between them, and more beds stand along the room edges, on the leaf carpet. Bloom rows remain on the outer lawn. Bellhelp’s lobes stay split by dark creases. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
+The hedge clumps are wider, the crown of each clump is sheared, and a leaf coat sits on the knots. The four beds are furrowed soil. A flower cross sits between them, and more beds stand along the room edges. Grass and scattered blooms fill the lawn outside the rooms. Daylight shafts are wide pools across the beds. Bellhelp’s lobes stay split by dark creases. Lumen’s stalk is one fluted taper, and the raised hand holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open, against `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`:
 
-1. **Hedge shape.** The clumps are leafy and the tops are sheared. They still read as a wall of cards and tufts, not a thick clipped hedge. PETAL-05 and PETAL-06.
-2. **Open lawn.** Flower strips and room-edge beds are in. The grass between them is still short of the plates. PETAL-05.
-3. **Light.** The overview is a flat golden wash. The shafts do not read as sun through leaves. PETAL-06.
+1. **Hedge craft.** The clumps are leafy and the tops are sheared. They still read as a wall of cards and tufts, not a thick clipped hedge. PETAL-05 and PETAL-06.
+2. **Room floors.** The meadow is outside the rooms. Inside, the floor is still lawn, soil plots, and flower strips. PETAL-05.
+3. **Paths.** The paths are still flat beige ribbons. PETAL-05: break those ribbons into stones.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): break the sheared leaf wall into a clipped hedge, and fill the open lawn between the flower strips. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): stone the paths, and fill the room floors the meadow left open. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

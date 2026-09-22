@@ -25,6 +25,7 @@ func build(parent: Node3D) -> void:
 	_willow(parent)
 	_groundcover(parent)
 	_lawn_tufts(parent)
+	_lawn_meadow(parent)
 	_room_clumps(parent)
 	_room_carpet(parent)
 	_room_beds(parent)
@@ -972,6 +973,42 @@ func _lawn_tufts(parent: Node3D) -> void:
 		colors.append(Color("#2a6b34").lerp(Color("#d7e48a"), _rng.randf() * 0.7))
 		customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "LawnTufts", false, customs)
+
+func _lawn_meadow(parent: Node3D) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14133
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var blooms: Array[Transform3D] = []
+	var bloom_colors: Array[Color] = []
+	var palette: Array[Color] = [Color("#e56b8a"), Color("#f2d36b"), Color("#f7f0d8"), Color("#c9a0e8"), Color("#ef7f72")]
+	var tries := 0
+	while points.size() < 2200 and tries < 8000:
+		tries += 1
+		var x := rng.randf_range(-11.6, 11.4)
+		var z := rng.randf_range(-6.2, 5.5)
+		if x > -8.3 and x < 3.6 and z > -6.3 and z < 2.95:
+			continue
+		if GardenLayout.in_plots(x, z, 0.2) or GardenLayout.on_path(x, z):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.45:
+			continue
+		var y := GardenLayout.height_at(x, z)
+		if y < -0.08:
+			continue
+		var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
+		var scale := rng.randf_range(0.75, 1.5)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.85, 1.55), scale)), Vector3(x, y, z)))
+		colors.append(Color("#3a7a34").lerp(Color("#d5e48a"), rng.randf() * 0.55))
+		customs.append(Color(rng.randf(), 0.15, 0.0, 1.0))
+		if blooms.size() < 480 and rng.randf() > 0.8:
+			var tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+			var bscale := rng.randf_range(0.65, 1.15)
+			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
+			bloom_colors.append(tint)
+	_multimesh(parent, _blade(), points, colors, _foliage_material(), "LawnMeadow", false, customs)
+	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
 func _room_clumps(parent: Node3D) -> void:
 	var mesh := _leaf_card()
