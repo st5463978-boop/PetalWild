@@ -213,7 +213,7 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
 		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
 		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
-		var width := (0.62 + scale * 0.22) * bulge
+		var width := (0.36 + scale * 0.1) * bulge
 		for point in profile:
 			var height := point.y
 			if height > 0.2:

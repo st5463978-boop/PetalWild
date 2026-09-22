@@ -62,14 +62,14 @@ Spent: 0. Remaining on the connected account: **367.46** (pro). Catalog check re
 
 Compared `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, and `wave1_lumen.png` with `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge crown is chopped across three offset shoulders, with puffs, leaf cards, and irregular bulge clusters. Flower drifts sit in the rooms. Bellhelp’s core is a pad plus five lobes, and in the close-up those lobes still weld into one glossy body. The face stays on the blossom. Lumen’s hand is a palm with fingers and holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_CAPTURE_OK` passed on this tree. Shots are the six `wave1_*.png` files.
+The hedge crown is chopped, with irregular bulges, and the solid core is narrower than the leaf cards and puffs around it. The overview still reads as one green mass. Bellhelp’s five lobes are pulled apart, with a dark crease in each gap. Lumen’s stalk is one fluted taper, cream at the base and green at the crown, and the raised hand holds the seed tray. `PETAL_SMOKE_OK` and `PETAL_RULES_OK` pass. Shots are the six `wave1_*.png` files.
 
 Three largest gaps still open:
 
-1. **Hedge depth.** The top is uneven and leafy. A smooth core still shows through. PETAL-05 and PETAL-06: hide that core.
-2. **Bellhelp’s body.** The lathe is gone. The lobes still read as one glossy solid. PETAL-03: a crease between them.
-3. **Cast and floor.** Lumen’s stalk is still stacked capsules. The rooms have tufts and flowers, not the plates’ ground cover or sun shafts. PETAL-04 and PETAL-06.
+1. **Hedge mass.** The core is recessed. The silhouette is still one hedge, not separate clipped clumps. PETAL-05 and PETAL-06: break the volume, not just shrink it.
+2. **Bellhelp’s read.** The lobes and creases separate in the close-up. The body is still glossy blobs under a petal skirt. PETAL-03: a blossom that is not a cluster of spheres.
+3. **Light and floor.** Lumen’s stalk is one taper. The rooms are still short of the plates’ ground cover, and the shafts are thin beams. PETAL-06.
 
 ## Next integration
 
-Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): hide the hedge core, separate the bell lobes, and break Lumen’s capsule stalk. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.
+Keep this build playable. The next pass stays inside `scenes/main.tscn` (Hedge Hollow): break the hedge into separate clumps, and give the rooms the ground cover from the concept plates. Do not open a side demo. The Kenney/Cara grove in `scripts/presentation/` is not the running scene.

@@ -2,12 +2,12 @@
 
 Compared on 2026-09-22. The scene `tools/run.sh` launches is Hedge Hollow. Shots: `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`. Targets: `docs/reference/petalwild_target_garden_01.png` and `petalwild_target_garden_02.png`.
 
-The hedge crown is chopped across three offset shoulders, with puffs, tufts, and Kenney leaf cards on the faces. Flower drifts sit in the rooms. Bellhelp’s core is a pad plus five lobes. In the close-up those lobes still weld into one glossy body. Lumen’s hand is a palm with fingers and holds the seed tray.
+The hedge crown is chopped, with irregular bulges, and the solid core is narrower than the leaf cards and puffs around it. The overview still reads as one green mass. Bellhelp’s lobes are separated by dark creases. Lumen’s stalk is one fluted taper from cream to green, and the raised hand holds the seed tray.
 
 ## Three largest gaps
 
-1. **Hedge depth.** The top is uneven and leafy. A smooth core still shows through. PETAL-05: hide that core.
+1. **Hedge mass.** The core is recessed. The silhouette is still one hedge. PETAL-05: break it into separate clumps.
 
-2. **Bellhelp’s body.** The lathe is gone. The lobes still read as one solid. PETAL-03: a crease between them.
+2. **Bellhelp.** The creases read. The body is still glossy blobs. PETAL-03: a blossom that is not a cluster of spheres.
 
-3. **Cast and light.** Lumen’s stalk is still stacked capsules. The shafts are thin beams. PETAL-04 and PETAL-06.
+3. **Floor and light.** The rooms are still short of the plates’ ground cover, and the shafts are thin beams. PETAL-06.
