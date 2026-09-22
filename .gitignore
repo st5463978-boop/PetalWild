@@ -1,0 +1,8 @@
+.godot/
+*.translation
+export/
+*.tmp
+.import/
+android/
+# Source captures uploaded with the brief. Canonical copies live in docs/reference.
+/assets/*.png

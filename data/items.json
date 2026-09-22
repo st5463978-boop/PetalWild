@@ -1,0 +1,18 @@
+[
+  {"id": "meadowbell_seed", "name": "Meadowbell seed", "price": 4, "plant": "meadowbell", "kind": "seed"},
+  {"id": "peach_seed", "name": "Peach seed", "price": 8, "plant": "peach", "kind": "seed"},
+  {"id": "reed_seed", "name": "Reed seed", "price": 5, "plant": "reed", "kind": "seed"},
+  {"id": "bramble_seed", "name": "Bramble seed", "price": 9, "plant": "bramble", "kind": "seed"},
+  {"id": "mosspear_seed", "name": "Mosspear seed", "price": 10, "plant": "mosspear", "kind": "seed"},
+  {
+    "id": "nightlantern_seed",
+    "name": "Nightlantern seed",
+    "price": 16,
+    "plant": "nightlantern",
+    "kind": "seed",
+    "lock": "nightloam",
+    "lock_reason": "Nightlantern seed stays wrapped until night-loam appears in the beds."
+  },
+  {"id": "fertilizer", "name": "Fertiliser", "price": 6, "kind": "feed"},
+  {"id": "home_kit", "name": "Home kit", "price": 20, "kind": "kit"}
+]
