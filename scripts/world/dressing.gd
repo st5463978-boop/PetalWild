@@ -1046,11 +1046,11 @@ func _trees(parent: Node3D) -> void:
 		index += 1
 
 func _gap_fill(parent: Node3D) -> void:
-	# ponytail: one row just behind the north wall, tops under the hedge line. The hill stays.
+	# ponytail: east end is taller so the lip meets the hedge line. The hill stays.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 19021
 	var cone := CylinderMesh.new()
-	cone.top_radius = 0.55
+	cone.top_radius = 0.64
 	cone.bottom_radius = 0.86
 	cone.height = 2.15
 	cone.radial_segments = 7
@@ -1062,7 +1062,8 @@ func _gap_fill(parent: Node3D) -> void:
 		node.mesh = cone
 		var leaf := Color("#16381c").lerp(Color("#2a5c24"), rng.randf())
 		node.material_override = _standard(leaf, 0.88)
-		var h := rng.randf_range(0.96, 1.0)
+		var lift := clampf((x + 13.0) / 25.0, 0.0, 1.0) * 0.12
+		var h := rng.randf_range(0.96, 1.0) + lift
 		node.position = Vector3(x, y + 1.075 * h, z)
 		node.scale = Vector3(rng.randf_range(0.95, 1.12), h, rng.randf_range(0.92, 1.08))
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
