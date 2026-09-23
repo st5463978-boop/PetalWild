@@ -839,6 +839,40 @@ func _run_smoke() -> void:
 		push_error("smoke: the pair stayed apart")
 		get_tree().quit(1)
 		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: breeding save failed")
+		get_tree().quit(1)
+		return
+	var bred := SaveGame.read_slot(1)
+	apply_state(bred)
+	if str(ecology.states.get("bellhelp", "")) != "breeding" or ecology.status_line("bellhelp", world_snapshot()) != "breeding":
+		push_error("smoke: breeding did not reload")
+		get_tree().quit(1)
+		return
+	if int(ecology.resident_counts().get("bellhelp", 0)) < 2:
+		push_error("smoke: the pair did not reload")
+		get_tree().quit(1)
+		return
+	var lead := ecology.first("bellhelp")
+	var mate: Jelly = null
+	for actor in ecology.actors:
+		var mate_body: Jelly = actor
+		if mate_body != lead and mate_body.species_id == "bellhelp":
+			mate = mate_body
+	if mate == null:
+		push_error("smoke: the reloaded partner is missing")
+		get_tree().quit(1)
+		return
+	lead.global_position = Vector3(-3.2, 0.0, -1.6)
+	mate.global_position = Vector3(-3.2, 0.0, 1.6)
+	var gap := mate.global_position.distance_to(lead.global_position)
+	_update_creatures(0.016)
+	mate.tier = 2
+	mate._process(2.0)
+	if mate.global_position.distance_to(lead.global_position) > gap - 0.8:
+		push_error("smoke: the reloaded pair stayed apart")
+		get_tree().quit(1)
+		return
 	ecology.cooldowns["cirlark"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("cirlark") == null:
