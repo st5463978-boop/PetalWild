@@ -919,6 +919,18 @@ func _run_smoke() -> void:
 		push_error("smoke: birds flew in the rain")
 		get_tree().quit(1)
 		return
+	bees.bodies[0].position = bees.homes[0] + Vector3(2.0, 0.0, 0.0)
+	bees.tick(0.0, true, "mist")
+	if bees.bodies[0].position.distance_to(bees.homes[0]) < 1.0:
+		push_error("smoke: the mist sent the bees home")
+		get_tree().quit(1)
+		return
+	birds.bodies[0].position = birds.perches[0] + Vector3(3.0, 1.0, 0.0)
+	birds.tick(0.0, true, 17.2, "mist")
+	if birds.bodies[0].position.distance_to(birds.perches[0]) < 1.0:
+		push_error("smoke: the mist sat the birds")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(4.5)
 	_apply_shift(false)
 	if not shift.begins_with("night") or _person("bram").waypoints.is_empty() or _person("bram").waypoints[0].distance_to(GardenLayout.SHED) > 2.0:
@@ -1282,6 +1294,28 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain bell missed the tea house")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(17.2)
+	if Clock.weather != "mist":
+		push_error("smoke: the mist hour stayed a shower")
+		get_tree().quit(1)
+		return
+	_apply_shift(false)
+	if shift != "rain" or _person("nessa").waypoints.size() != 3 or _person("nessa").waypoints[0].distance_to(shower_porch) > 0.3 or _person("bram").waypoints.size() != 2 or _person("lumen").waypoints.size() != 2:
+		push_error("smoke: the mist left the parish on the day round")
+		get_tree().quit(1)
+		return
+	var mist_coins := Economy.coins
+	var mist_trust := Trust.level("nessa")
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	_apply_shift(false)
+	if Clock.weather != "golden" or shift == "rain" or _person("bram").waypoints.is_empty() or _person("bram").waypoints[0].distance_to(GardenLayout.SHED) < 2.0 or Economy.coins != mist_coins or Trust.level("nessa") != mist_trust:
+		push_error("smoke: the golden afternoon took the rain shelter")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(15.0)
+	_apply_shift(false)
 	var nessa_was := _person("nessa").present
 	var rain_coins := Economy.coins
 	var rain_trust := Trust.level("nessa")
@@ -5759,9 +5793,9 @@ func _spawn_people() -> void:
 	_apply_shift(true)
 
 func _apply_shift(snap: bool) -> void:
-	# ponytail: three south rooms and the stall; the even shower is already the whole afternoon.
+	# ponytail: mist uses the rain routes; a separate mist round if the rooms should differ.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
-	var shower := Clock.weather == "rain" and not night
+	var shower := (Clock.weather == "rain" or Clock.weather == "mist") and not night
 	var key := "day"
 	if night:
 		key = "night%d-%d" % [home_points.size(), Trust.level("nessa")]
