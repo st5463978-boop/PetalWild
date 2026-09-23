@@ -4906,7 +4906,7 @@ func _bridge_spot(x: float, z: float, n: int, band: Rect2) -> Vector2:
 	return nudged
 
 func _bed_skirt(buckets: Array) -> void:
-	# ponytail: one wavy spill past the bed box; a third ring if the corners still read.
+	# ponytail: a third ring past the corners; drop it if the bloom lands on a worn walk.
 	var step := 0
 	var z := -5.7
 	while z <= 2.75:
@@ -4915,7 +4915,9 @@ func _bed_skirt(buckets: Array) -> void:
 			var reach := 0.34 + absf(sin(z * 2.2 + side)) * 0.16
 			_skirt_drop(buckets, edge + side * reach, z, step)
 			_skirt_drop(buckets, edge + side * (reach + 0.36), z + 0.1, step + 1)
-			step += 2
+			var outer := 0.78 + absf(sin(z * 1.7 + side)) * 0.24
+			_skirt_drop(buckets, edge + side * (reach + outer), z + 0.06, step + 2)
+			step += 3
 		z += 0.38
 	var x := -7.5
 	while x <= 2.9:
@@ -4926,6 +4928,24 @@ func _bed_skirt(buckets: Array) -> void:
 		_skirt_drop(buckets, x + 0.12, 2.92 + sway, step + 3)
 		step += 4
 		x += 0.42
+	# ponytail: four corner clumps past the box; drop one if it lands on a worn walk.
+	var corners: Array[Vector3] = [
+		Vector3(-8.5, 0.0, -5.65),
+		Vector3(-8.85, 0.0, -6.15),
+		Vector3(-8.35, 0.0, -6.55),
+		Vector3(3.55, 0.0, -5.65),
+		Vector3(3.95, 0.0, -6.2),
+		Vector3(3.4, 0.0, -6.6),
+		Vector3(-8.5, 0.0, 2.95),
+		Vector3(-8.85, 0.0, 3.4),
+		Vector3(-8.35, 0.0, 3.7),
+		Vector3(3.55, 0.0, 2.95),
+		Vector3(3.95, 0.0, 3.4),
+		Vector3(3.4, 0.0, 3.7),
+	]
+	for corner in corners:
+		_skirt_drop(buckets, corner.x, corner.z, step)
+		step += 1
 
 func _edge_lips(buckets: Array) -> void:
 	# ponytail: flowers on the south and north lips; the track center stays open.
