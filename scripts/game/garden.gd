@@ -1319,6 +1319,7 @@ func _fill_bed_meadow() -> void:
 			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
 	_bridge_into(buckets)
 	_path_lips(buckets)
+	_bed_skirt(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1368,6 +1369,42 @@ func _bridge_into(buckets: Array) -> void:
 					basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
 					buckets[1 + (ix + iz) % 4].append(Transform3D(basis, at + Vector3(0.08, 0.0, 0.06)))
 				n += 1
+
+func _bed_skirt(buckets: Array) -> void:
+	# ponytail: one wavy spill past the bed box; a third ring if the corners still read.
+	var step := 0
+	var z := -5.7
+	while z <= 2.75:
+		for side in [-1.0, 1.0]:
+			var edge := -7.46 if side < 0.0 else 2.76
+			var reach := 0.34 + absf(sin(z * 2.2 + side)) * 0.16
+			_skirt_drop(buckets, edge + side * reach, z, step)
+			_skirt_drop(buckets, edge + side * (reach + 0.36), z + 0.1, step + 1)
+			step += 2
+		z += 0.38
+	var x := -7.5
+	while x <= 2.9:
+		var sway := sin(x * 1.8) * 0.08
+		_skirt_drop(buckets, x, -5.62 + sway, step)
+		_skirt_drop(buckets, x + 0.12, -5.78 + sway, step + 1)
+		_skirt_drop(buckets, x, 2.76 + sway, step + 2)
+		_skirt_drop(buckets, x + 0.12, 2.92 + sway, step + 3)
+		step += 4
+		x += 0.42
+
+func _skirt_drop(buckets: Array, x: float, z: float, step: int) -> void:
+	if GardenLayout.on_path(x, z) or GardenLayout.in_plots(x, z, 0.0):
+		return
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+		return
+	var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+	var spin := float(step % 5) * 0.55
+	var scale := 0.86 + float(step % 3) * 0.14
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	buckets[0].append(Transform3D(basis, at))
+	if step % 2 == 0:
+		basis = Basis(Vector3.UP, spin + 0.4).scaled(Vector3.ONE * (scale + 0.1))
+		buckets[1 + (step % 4)].append(Transform3D(basis, at + Vector3(0.05, 0.0, 0.04)))
 
 func _path_lips(buckets: Array) -> void:
 	# ponytail: flowers on the path lips; the center stays dirt.
