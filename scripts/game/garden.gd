@@ -18,6 +18,7 @@ var shift := ""
 var bram_bed := Vector2i(-1, -1)
 var nessa_watch: Jelly = null
 var nessa_filing := false
+var nessa_drafting := false
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -263,6 +264,34 @@ func _file_nessa() -> void:
 	toast("Nessa filed the notes. Nothing left the garden.")
 	if _person("nessa").present:
 		_person("nessa").say("Filed. The book stays on the shelf.")
+	refresh_panels()
+
+func accept_draft() -> void:
+	var nessa := _person("nessa")
+	if Trust.level("nessa") < 1:
+		toast("The notes come first. Nothing was drafted.")
+		return
+	if Trust.has_action("parish_draft"):
+		toast("The draft is already in the book.")
+		return
+	if not nessa.present:
+		Trust.file_draft("nessa")
+		toast("The draft stayed in the book. Nothing was sent.")
+		refresh_panels()
+		return
+	nessa_drafting = true
+	nessa_filing = false
+	nessa_watch = null
+	nessa.chore = GardenLayout.FOUNDRY + Vector3(0, 0, -0.95)
+	nessa.has_chore = true
+	nessa.say("I will leave the draft at the foundry.")
+	refresh_panels()
+
+func _keep_draft() -> void:
+	Trust.file_draft("nessa")
+	toast("The draft stayed in the book. Nothing was sent.")
+	if _person("nessa").present:
+		_person("nessa").say("Three episodes, on the shelf. I did not send them.")
 	refresh_panels()
 
 func accept_nessa() -> void:
@@ -850,6 +879,50 @@ func _run_smoke() -> void:
 			saw_hut = false
 	if not saw_hut:
 		push_error("smoke: research hut was not open")
+		get_tree().quit(1)
+		return
+	if int(place.get("foundry_demand", -1)) != 0:
+		push_error("smoke: foundry demand before the draft")
+		get_tree().quit(1)
+		return
+	Trust.levels["nessa"] = 0
+	accept_draft()
+	if nessa_drafting or Trust.has_action("parish_draft"):
+		push_error("smoke: a draft was kept before the notes")
+		get_tree().quit(1)
+		return
+	Trust.levels["nessa"] = 1
+	var tin := Economy.coins
+	accept_draft()
+	var desk := GardenLayout.FOUNDRY + Vector3(0, 0, -0.95)
+	if not nessa_drafting or nessa.chore.distance_to(desk) > 0.3:
+		push_error("smoke: nessa did not head for the foundry")
+		get_tree().quit(1)
+		return
+	nessa.global_position = nessa.chore
+	_drift_people(0.1, world_snapshot())
+	var draft: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
+	if nessa_drafting or Economy.coins != tin or Trust.level("nessa") != 1:
+		push_error("smoke: the draft changed the tin or the trust")
+		get_tree().quit(1)
+		return
+	if str(draft.get("action", "")) != "parish_draft" or bool(draft.get("external", true)) or int(draft.get("cost", -1)) != 0:
+		push_error("smoke: the draft left the parish")
+		get_tree().quit(1)
+		return
+	place = _place_stats(world_snapshot())
+	if int(place.get("foundry_demand", -1)) != 1:
+		push_error("smoke: foundry demand mismatch")
+		get_tree().quit(1)
+		return
+	var saw_foundry := false
+	for line in place.get("venues", []):
+		if str(line).find("Media Foundry") != -1 and str(line).find("open") != -1:
+			saw_foundry = true
+		if str(line).find("Media Foundry") != -1 and str(line).find("not built") != -1:
+			saw_foundry = false
+	if not saw_foundry:
+		push_error("smoke: media foundry was not open")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -1511,7 +1584,13 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 	bram.purpose = move_toward(bram.purpose, clampf(float(world.get("garden_quality", 0.3)) + 0.2, 0.2, 0.9), delta * 0.03)
 	var nessa := _person("nessa")
 	if nessa.present and nessa.has_chore:
-		if nessa_filing:
+		if nessa_drafting:
+			if nessa.global_position.distance_to(nessa.chore) < 0.55:
+				_keep_draft()
+				nessa_drafting = false
+				nessa.has_chore = false
+				nessa_watch = null
+		elif nessa_filing:
 			if nessa.global_position.distance_to(nessa.chore) < 0.55:
 				_file_nessa()
 				nessa_filing = false
@@ -1597,6 +1676,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"relation": person.relation,
 			"unmet": unmet,
 			"can_file": person.present and id == "nessa",
+			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 		})
 	return rows
 
@@ -1620,11 +1700,12 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
+	stats["foundry_demand"] = 1 if Trust.has_action("parish_draft") else 0
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
-		# ponytail: this garden has the tea house and the hut; the shared file stays inactive so the sidelined grove does not claim them.
-		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" else "not built"
+		# ponytail: this garden has these rooms; the shared file stays inactive so the sidelined grove does not claim them.
+		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" or str(id) == "media_foundry" else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines

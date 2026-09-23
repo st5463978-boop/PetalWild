@@ -6,6 +6,7 @@ func build(parent: Node3D) -> void:
 	_shed(parent)
 	_tea(parent)
 	_hut(parent)
+	_foundry(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
@@ -113,6 +114,24 @@ func _hut(parent: Node3D) -> void:
 	light.light_color = Color("ffd2a4")
 	light.light_energy = 0.08
 	light.omni_range = 2.2
+	light.shadow_enabled = false
+	root.add_child(light)
+
+func _foundry(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "MediaFoundry"
+	root.position = GardenLayout.FOUNDRY
+	parent.add_child(root)
+	_box(root, Vector3(0, 0.52, 0), Vector3(2.2, 1.04, 1.15), Color("#3a342e"))
+	_box(root, Vector3(-0.55, 0.42, -0.59), Vector3(0.42, 0.72, 0.06), Color("#243028"))
+	_box(root, Vector3(0, 1.12, 0), Vector3(2.4, 0.08, 1.35), Color("#2e2a26"))
+	for i in 3:
+		_box(root, Vector3(0.35 + float(i) * 0.16, 0.72, -0.62), Vector3(0.1, 0.22, 0.04), Color("#5c4a3c"))
+	var light := OmniLight3D.new()
+	light.position = Vector3(0, 0.9, -0.2)
+	light.light_color = Color("ffd2a4")
+	light.light_energy = 0.06
+	light.omni_range = 2.0
 	light.shadow_enabled = false
 	root.add_child(light)
 

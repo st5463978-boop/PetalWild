@@ -14,6 +14,7 @@ const STALL := Vector3(-4.55, 0.0, 5.15)
 const SHED := Vector3(-11.15, 0.0, 3.55)
 const TEA := Vector3(2.6, 0.0, -7.5)
 const HUT := Vector3(-5.6, 0.0, -7.9)
+const FOUNDRY := Vector3(-1.4, 0.0, -8.3)
 const GATE := Vector3(0.0, 0.0, -11.2)
 
 static func plot_origin(ix: int, iz: int) -> Vector2:

@@ -36,6 +36,25 @@ func blurb(value: int) -> String:
 		_:
 			return "Higher trust is reserved. Nothing in this build can leave the machine."
 
+func has_action(action_id: String) -> bool:
+	for entry in audit:
+		if str(entry.get("action", "")) == action_id:
+			return true
+	return false
+
+func file_draft(person_id: String) -> void:
+	# ponytail: one draft in the book; a stack of episodes if the parish keeps more than three.
+	audit.append({
+		"person": person_id,
+		"action": "parish_draft",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": "Three garden episodes drafted. Nothing was sent or spent.",
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_notes(person_id: String, note: String) -> void:
 	audit.append({
 		"person": person_id,

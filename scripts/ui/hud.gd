@@ -133,6 +133,7 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Potting Shed demand  %s" % str(stats.get("shed_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Hedge Tea House demand  %s" % str(stats.get("tea_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Venues", 16))
 	for line in stats.get("venues", []):
@@ -417,6 +418,14 @@ func _show_lumen() -> void:
 		func(): host.accept_lumen()
 	)
 
+func show_draft() -> void:
+	_fill_proposal(
+		"Nessa Pod",
+		"I can keep three short episodes about the garden in the parish book.\n\nNo coins. Nothing is sent. You would be approving a draft that stays here.",
+		"Keep the draft",
+		func(): host.accept_draft()
+	)
+
 func show_nessa() -> void:
 	_fill_proposal(
 		"Nessa Pod",
@@ -491,6 +500,11 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		button.text = "Hear Nessa's notes proposal"
 		button.pressed.connect(show_nessa)
 		box.add_child(button)
+	if bool(row.get("can_draft", false)):
+		var draft := Button.new()
+		draft.text = "Hear the parish draft"
+		draft.pressed.connect(show_draft)
+		box.add_child(draft)
 	return card
 
 func _clear(box: VBoxContainer) -> void:
