@@ -829,6 +829,16 @@ func _run_smoke() -> void:
 		push_error("smoke: bellhelp pair is short")
 		get_tree().quit(1)
 		return
+	keeper.global_position = Vector3(-3.2, 0.0, -1.6)
+	partner.global_position = Vector3(-3.2, 0.0, 1.6)
+	var apart := partner.global_position.distance_to(keeper.global_position)
+	_update_creatures(0.016)
+	partner.tier = 2
+	partner._process(2.0)
+	if partner.global_position.distance_to(keeper.global_position) > apart - 0.8:
+		push_error("smoke: the pair stayed apart")
+		get_tree().quit(1)
+		return
 	ecology.cooldowns["cirlark"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("cirlark") == null:
@@ -1756,6 +1766,30 @@ func _update_creatures(delta: float) -> void:
 			jelly.berth = berth
 			jelly.use_berth = true
 		jelly.tier = tier
+	_keep_company()
+
+func _keep_company() -> void:
+	# ponytail: the later resident walks to the first; a ring if more than two settle.
+	for id in ContentDB.species_order:
+		if ecology.rules.rank_of(str(ecology.states.get(id, ""))) < ecology.rules.rank_of("breeding"):
+			continue
+		var anchor: Jelly = null
+		for actor in ecology.actors:
+			var jelly: Jelly = actor
+			if not is_instance_valid(jelly) or jelly.species_id != id:
+				continue
+			if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
+				continue
+			if jelly.leaving or jelly.held:
+				continue
+			if anchor == null:
+				anchor = jelly
+				continue
+			if jelly.use_berth:
+				continue
+			jelly.attract = anchor.global_position
+			if jelly.global_position.distance_to(anchor.global_position) > 1.1:
+				jelly.goal = anchor.global_position
 
 func _on_jelly(kind: String, jelly: Jelly) -> void:
 	if kind == "land":
