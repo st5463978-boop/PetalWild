@@ -11,7 +11,7 @@ Updated 2026-09-22 after wave 1 capture and smoke.
 | Scene | `res://scenes/main.tscn` → garden |
 | Save | Version 1, `user://saves/slot_N.json` |
 | Smoke | `PETAL_SMOKE_OK` and `PETAL_RULES_OK` on this tree |
-| Latest shots | `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`, `wave1_stall.png`, `wave1_journal.png`, `wave1_night.png` |
+| Latest shots | `docs/screenshots/wave1_overview.png`, `wave1_jelly.png`, `wave1_lumen.png`, `wave1_stall.png`, `wave1_journal.png`, `wave1_night.png`, `wave1_pond.png` |
 
 This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Audio falls back to the dummy driver. Screenshots still save. FPS on a real GPU has not been measured.
 
