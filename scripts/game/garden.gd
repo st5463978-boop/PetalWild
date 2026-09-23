@@ -122,6 +122,7 @@ func _process(delta: float) -> void:
 			toast("%s took the next bed." % str(ContentDB.plant(soil.seeded).get("name", "A plant")))
 		_hold_loam(minutes / 60.0)
 		_hold_cane(minutes / 60.0)
+		_hold_fruit(minutes / 60.0)
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -2483,6 +2484,129 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	home_points.pop_back()
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "bramble":
+			plot.growth = 1.0
+			plot.moisture = 0.8
+			plot.fertility = 0.7
+	var bitten := soil.get_cell(5, 2)
+	bitten.plant_id = "bramble"
+	bitten.growth = 0.6
+	bitten.tilled = true
+	bitten.moisture = 0.8
+	bitten.fertility = 0.7
+	var berry := ecology.first("berrypatch")
+	if berry == null:
+		berry = ecology.force_spawn("berrypatch")
+	berry.life = "visitor"
+	berry.leaving = false
+	berry.held = false
+	berry.bite_wait = 2.0
+	berry.reduce_motion = false
+	Clock.set_hour(15.3)
+	var bitten_at := GardenLayout.cell_center(5, 2)
+	berry.global_position = Vector3(10.5, 0.0, -8.5)
+	var berry_far := berry.global_position.distance_to(bitten_at)
+	_update_creatures(0.016)
+	if berry.use_berth or berry.goal.distance_to(bitten_at) > 0.2 or berry.goal.distance_to(GardenLayout.cell_center(4, 2)) < 0.3:
+		push_error("smoke: berrypatch missed the bitten cane")
+		get_tree().quit(1)
+		return
+	berry.tier = 2
+	berry._process(2.0)
+	if berry.global_position.distance_to(bitten_at) > berry_far - 0.8:
+		push_error("smoke: berrypatch stayed off the bitten cane")
+		get_tree().quit(1)
+		return
+	berry.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = berry.global_position.distance_to(bitten_at)
+	_update_creatures(0.016)
+	berry.tier = 3
+	berry._process(2.0)
+	if berry.visible or berry.global_position.distance_to(bitten_at) > hidden_far - 0.8:
+		push_error("smoke: a hidden berrypatch stayed off the bitten cane")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	berry.life = "visitor"
+	berry.leaving = false
+	berry.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not berry.use_berth or berry.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let berrypatch leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	berry.leaving = true
+	berry.goal = GardenLayout.GATE
+	berry.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if berry.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a leaving berrypatch walked to the cane")
+		get_tree().quit(1)
+		return
+	berry.leaving = false
+	berry.life = "visitor"
+	berry.global_position = bitten_at
+	bitten.growth = 0.6
+	_hold_fruit(1.0)
+	if bitten.growth > 0.65 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: a visitor berrypatch ripened the cane")
+		get_tree().quit(1)
+		return
+	berry.life = "resident"
+	bitten.moisture = 0.05
+	_hold_fruit(1.0)
+	if bitten.growth > 0.65:
+		push_error("smoke: berrypatch ripened a dry cane")
+		get_tree().quit(1)
+		return
+	bitten.moisture = 0.8
+	bitten.fertility = 0.1
+	_hold_fruit(1.0)
+	if bitten.growth > 0.65:
+		push_error("smoke: berrypatch ripened a tired cane")
+		get_tree().quit(1)
+		return
+	bitten.fertility = 0.7
+	_hold_fruit(1.0)
+	if bitten.growth < 0.9 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: berrypatch left the fruit bitten")
+		get_tree().quit(1)
+		return
+	bitten.growth = 0.6
+	berry.global_position = bitten_at
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the fruit did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	berry = ecology.first("berrypatch")
+	bitten = soil.get_cell(5, 2)
+	if berry == null or berry.life != "resident" or bitten.plant_id != "bramble" or bitten.growth > 0.7 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: the fruit did not reload")
+		get_tree().quit(1)
+		return
+	berry.global_position = GardenLayout.cell_center(5, 2)
+	bitten.moisture = 0.8
+	bitten.fertility = 0.7
+	_hold_fruit(1.0)
+	if bitten.growth < 0.9:
+		push_error("smoke: the reloaded berrypatch left the fruit bitten")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var berry_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(berry_kit)
+	berry.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if not berry.wants_sleep or not berry.use_berth or berry.goal.distance_to(berry_kit) > 0.2:
+		push_error("smoke: night sent berrypatch to the cane")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3395,6 +3519,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_dusk()
 	_seek_loam()
 	_seek_cane()
+	_seek_fruit()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -3617,6 +3742,67 @@ func _seek_cane() -> void:
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
+
+func _seek_fruit() -> void:
+	# ponytail: the bitten cane first; the nearest ripe one if every bramble is whole.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "berrypatch":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		var plot := _bitten_bramble(jelly.global_position)
+		if plot == null:
+			plot = _nearest_bramble(jelly.global_position)
+		if plot == null:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
+
+func _bitten_bramble(at: Vector3) -> SoilCell:
+	var best: SoilCell = null
+	var best_d := 9999.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "bramble" or plot.growth < 0.5 or plot.growth >= 1.0:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if best == null or dist < best_d:
+			best = plot
+			best_d = dist
+	return best
+
+func _hold_fruit(hours: float) -> void:
+	# ponytail: the cane under their body; a row of bitten fruit if more than one berrypatch settles.
+	if hours <= 0.0:
+		return
+	var keeper: Jelly = null
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "berrypatch" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		keeper = jelly
+		break
+	if keeper == null:
+		return
+	var plot := _nearest_bramble(keeper.global_position)
+	if plot == null or plot.growth >= 1.0:
+		return
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	if Vector2(keeper.global_position.x - center.x, keeper.global_position.z - center.z).length() > 1.6:
+		return
+	var definition: Dictionary = ContentDB.plant("bramble")
+	if plot.moisture < float(definition.get("water_need", 0.36)):
+		return
+	if plot.fertility < float(definition.get("fertility_need", 0.24)):
+		return
+	var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.2)))
+	plot.growth = minf(1.0, plot.growth + hours / grow_hours)
 
 func _nearest_bramble(at: Vector3) -> SoilCell:
 	var best: SoilCell = null
