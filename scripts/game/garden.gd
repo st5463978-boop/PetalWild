@@ -1682,6 +1682,66 @@ func _run_smoke() -> void:
 		push_error("smoke: a bonded bulrush stayed on the lawn")
 		get_tree().quit(1)
 		return
+	var wade_tin := Economy.coins
+	var wade_trust := Trust.level("nessa")
+	var wade_spot := bank + Vector3(0.8, 0.0, 0.0)
+	rush.global_position = wade_spot
+	rush.goal = bank
+	rush.use_berth = false
+	rush.wants_sleep = false
+	rush.leaving = false
+	rush.held = false
+	rush._coast(0.05)
+	var wade_line := GardenLayout.height_at(rush.global_position.x, rush.global_position.z) + 0.05
+	if absf(rush.global_position.y - wade_line) > 0.04:
+		push_error("smoke: bulrush stood on the pond")
+		get_tree().quit(1)
+		return
+	rush.global_position = Vector3(-4.0, 0.0, -2.0)
+	rush.goal = bank
+	rush._coast(0.05)
+	if absf(rush.global_position.y) > 0.02:
+		push_error("smoke: bulrush waded the lawn")
+		get_tree().quit(1)
+		return
+	rush.global_position = bank
+	rush.berth = bank
+	rush.use_berth = true
+	rush._coast(0.05)
+	if absf(rush.global_position.y) > 0.02:
+		push_error("smoke: a home put bulrush under the water")
+		get_tree().quit(1)
+		return
+	rush.use_berth = false
+	var disc_at := reed.global_position
+	reed.global_position = bank + Vector3(0.6, 0.0, 0.2)
+	reed.goal = bank
+	reed.use_berth = false
+	reed.wants_sleep = false
+	reed.leaving = false
+	reed.held = false
+	reed._coast(0.05)
+	var disc_line := GardenLayout.height_at(reed.global_position.x, reed.global_position.z) + 0.05
+	if absf(reed.global_position.y - disc_line) > 0.04 or Economy.coins != wade_tin or Trust.level("nessa") != wade_trust:
+		push_error("smoke: reedic stood on the pond")
+		get_tree().quit(1)
+		return
+	reed.global_position = disc_at
+	var young_at := young_rush.global_position
+	young_rush.global_position = bank + Vector3(0.4, 0.0, -0.3)
+	young_rush.goal = bank
+	young_rush.use_berth = false
+	young_rush.wants_sleep = false
+	young_rush.leaving = false
+	young_rush.held = false
+	young_rush._coast(0.05)
+	var young_line := GardenLayout.height_at(young_rush.global_position.x, young_rush.global_position.z) + 0.05
+	if absf(young_rush.global_position.y - young_line) > 0.04:
+		push_error("smoke: the young bulrush stood on the pond")
+		get_tree().quit(1)
+		return
+	young_rush.global_position = young_at
+	rush.global_position = Vector3(-4.0, 0.0, -2.0)
 	var pond_kit := Vector3(-6.0, 0.0, 4.0)
 	home_points.append(pond_kit)
 	Clock.set_hour(21.0)
@@ -5676,12 +5736,13 @@ func _ripe_near(at: Vector3, plant_id: String, reach: float) -> SoilCell:
 	return best
 
 func _attractor_for(definition: Dictionary) -> Vector3:
+	var id := str(definition.get("id", ""))
+	# ponytail: the reeds let them in; the stand is the water, not the reed bed.
+	if id == "bulrush" or id == "reedic":
+		return GardenLayout.POND_CENTER + Vector3(-1.6, 0, 0.3)
 	for req in definition.get("requirements", []):
 		if str(req.get("type", "")) == "mature_plant":
 			return _average_plant(str(req.get("plant", "")))
-	var id := str(definition.get("id", ""))
-	if id == "bulrush" or id == "reedic":
-		return GardenLayout.POND_CENTER + Vector3(-1.6, 0, 0.3)
 	return Vector3(-3.6, 0.0, -1.6)
 
 func _meal_spot(plant_id: String, at: Vector3) -> Vector3:

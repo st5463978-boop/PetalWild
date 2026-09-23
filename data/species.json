@@ -43,7 +43,7 @@
     "radius": 0.28,
     "cap": 2,
     "wobble": 0.85,
-    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
+    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in. In the pond it sits in the water. On the lawn, and under a home kit, it stands on the ground. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
     "requirements": [
       {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
       {"type": "mature_plant", "plant": "reed", "min": 3, "label": "3 mature Reeds"}
@@ -61,7 +61,7 @@
     "radius": 0.36,
     "cap": 2,
     "wobble": 0.4,
-    "blurb": "A low water-disc that follows Bulrush into wet ground.",
+    "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water.",
     "requirements": [
       {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
       {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}

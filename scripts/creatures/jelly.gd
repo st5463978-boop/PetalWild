@@ -371,7 +371,7 @@ func _full(delta: float) -> void:
 			if home.length() > 0.4:
 				global_position += home.normalized() * delta * 0.55
 		hop_wait -= delta
-		var grounded := global_position.y <= 0.02
+		var grounded := global_position.y <= _stand_y() + 0.02
 		if not leaving and not wants_sleep and not heading_home and mood != "dizzy" and grounded and hop_wait <= 0.0:
 			vel.y = randf_range(2.1, 3.3)
 			hop_wait = randf_range(0.7, 1.5)
@@ -386,12 +386,13 @@ func _full(delta: float) -> void:
 		if global_position.distance_to(Vector3(goal.x, global_position.y, goal.z)) < 0.45 and not leaving:
 			_pick_goal()
 	global_position += vel * delta
-	if global_position.y < 0.0:
+	var floor_y := _stand_y()
+	if global_position.y < floor_y:
 		if absf(vel.y) > 1.15:
 			squash = 0.7
 			ripple = 1.0
 			reacted.emit("land", self)
-		global_position.y = 0.0
+		global_position.y = floor_y
 		vel.y = absf(vel.y) * 0.25
 		vel.x *= 0.82
 		vel.z *= 0.82
@@ -419,10 +420,22 @@ func _coast(delta: float) -> void:
 	if flat.length() > 0.4:
 		var pace := 0.32 if species_id == "grapling" else 0.7
 		global_position += flat.normalized() * delta * pace
-	global_position.y = 0.0
-	site_time += delta
-	if not use_berth and global_position.distance_to(goal) < 0.5:
+	var along := target - global_position
+	along.y = 0.0
+	if not use_berth and along.length() < 0.5:
 		_pick_goal()
+	global_position.y = _stand_y()
+	site_time += delta
+
+func _stand_y() -> float:
+	# ponytail: water species sit on the pond skin; a swim if the bowl should take the whole body.
+	if held or leaving or use_berth or wants_sleep:
+		return 0.0
+	if species_id != "bulrush" and species_id != "reedic":
+		return 0.0
+	if GardenLayout.pond_distance(global_position.x, global_position.z) > GardenLayout.POND_RADIUS * 0.92:
+		return 0.0
+	return GardenLayout.height_at(global_position.x, global_position.z) + 0.05
 
 func _pick_goal() -> void:
 	if leaving:
