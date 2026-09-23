@@ -1590,6 +1590,7 @@ func _fill_bed_meadow() -> void:
 	_bed_skirt(buckets)
 	_edge_lips(buckets)
 	_stone_gaps(buckets)
+	_track_meadow(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1686,6 +1687,28 @@ func _stone_gaps(buckets: Array) -> void:
 	for gap in GardenLayout.stone_gaps():
 		_skirt_drop(buckets, gap.x, gap.z, step, false, true)
 		step += 1
+
+func _track_meadow(buckets: Array) -> void:
+	# ponytail: flowers on the old bed tracks; a worn line if feet need one.
+	var step := 0
+	var offsets: Array[float] = [-0.28, 0.0, 0.28]
+	for run in GardenLayout._narrow_runs():
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var dir := b - a
+		dir.y = 0.0
+		var span := dir.length()
+		if span < 0.2:
+			continue
+		dir /= span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var along := 0.2
+		while along < span - 0.15:
+			for lateral in offsets:
+				var at := a + dir * along + side * lateral
+				_skirt_drop(buckets, at.x, at.z, step, false, true)
+				step += 1
+			along += 0.42
 
 func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false, open_track := false) -> void:
 	var blocked := false

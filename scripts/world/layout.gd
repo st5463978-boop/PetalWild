@@ -74,9 +74,9 @@ static func _narrow_runs() -> Array:
 		[Vector3(-7.4, 0.0, -6.35), Vector3(0.6, 0.0, -6.35)],
 	]
 
-static func stone_kept(i: int) -> bool:
-	# ponytail: every other station stays a stone; a spline if the walk still reads as a road.
-	return i % 2 == 0
+static func stone_kept(_i: int) -> bool:
+	# ponytail: bed tracks are meadow; put a stone back if a footpath has to show.
+	return false
 
 static func narrow_stones() -> Array[Vector3]:
 	var stones: Array[Vector3] = []
