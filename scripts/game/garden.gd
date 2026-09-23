@@ -1867,8 +1867,9 @@ func _run_smoke() -> void:
 	rush.bite_wait = 2.0
 	var water_far := rush.global_position.distance_to(bank)
 	_update_creatures(0.016)
-	if rush.use_berth or rush.goal.distance_to(bank) > 0.2:
-		push_error("smoke: a bonded bulrush walked to the gardener")
+	var shore := _shore_point(0.0)
+	if rush.use_berth or rush.goal.distance_to(shore) > 0.2 or GardenLayout.pond_distance(shore.x, shore.z) < GardenLayout.POND_RADIUS:
+		push_error("smoke: a bonded bulrush left the bank")
 		get_tree().quit(1)
 		return
 	rush._coast(2.0)
@@ -1967,7 +1968,7 @@ func _run_smoke() -> void:
 	rush.global_position = Vector3(-4.0, 0.0, -2.0)
 	rush.bite_wait = 2.0
 	_update_creatures(0.016)
-	if rush.goal.distance_to(bank) > 0.2:
+	if rush.goal.distance_to(_shore_point(0.0)) > 0.2:
 		push_error("smoke: the pond bond did not reload")
 		get_tree().quit(1)
 		return
@@ -4037,9 +4038,9 @@ func _run_smoke() -> void:
 	reed.life = "bonded"
 	reed.global_position = Vector3(10.5, 0.0, -8.5)
 	_update_creatures(0.016)
-	bank = _attractor_for(ContentDB.species_def("reedic"))
-	if reed.goal.distance_to(reed_at) < 0.3 or reed.goal.distance_to(bank) > 0.3:
-		push_error("smoke: a bonded reedic left the pond")
+	var reed_shore := _shore_point(0.7)
+	if reed.goal.distance_to(reed_at) < 0.3 or reed.goal.distance_to(reed_shore) > 0.2 or reed.goal.distance_to(_shore_point(0.0)) < 0.3:
+		push_error("smoke: a bonded reedic left the bank")
 		get_tree().quit(1)
 		return
 	reed.life = "visitor"
@@ -6228,6 +6229,30 @@ func _update_creatures(delta: float) -> void:
 	_seek_bells()
 	_seek_reeds()
 	_seek_bees()
+	_walk_shore()
+
+func _shore_point(offset: float) -> Vector3:
+	# ponytail: one loop a day; a second ring if more than the pair wade.
+	var angle := Clock.hour() / 24.0 * TAU + offset
+	var radius := GardenLayout.POND_RADIUS + 0.55
+	return GardenLayout.POND_CENTER + Vector3(cos(angle), 0.0, sin(angle)) * radius
+
+func _walk_shore() -> void:
+	# ponytail: the bonded crown leads; Reedic stays a step behind on the same bank.
+	var lead := _shore_point(0.0)
+	var follow := _shore_point(0.7)
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.life != "bonded":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep:
+			continue
+		if jelly.species_id == "bulrush":
+			jelly.attract = lead
+			jelly.goal = lead
+		elif jelly.species_id == "reedic":
+			jelly.attract = follow
+			jelly.goal = follow
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
