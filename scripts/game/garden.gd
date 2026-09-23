@@ -4905,6 +4905,7 @@ func _build_bed_frame() -> void:
 	bed_frame.multimesh = multi
 	bed_frame.material_override = material
 	bed_frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bed_frame.custom_aabb = AABB(Vector3(-14.0, -1.0, -12.0), Vector3(28.0, 4.0, 24.0))
 	add_child(bed_frame)
 
 func _bed_flower_count() -> int:
@@ -5315,6 +5316,17 @@ func _bed_frames() -> void:
 					n += 1
 					z += 0.46
 			x += 0.48
+	var corners: Array[Vector3] = [
+		Vector3(-7.28, 1.3, -5.4),
+		Vector3(2.55, 1.6, -6.15),
+		Vector3(2.55, 1.4, 2.35),
+		Vector3(-7.2, 1.4, 2.35),
+	]
+	for corner in corners:
+		_corner_drop(rows, corner.x, corner.z, corner.y, n)
+		_corner_drop(rows, corner.x + 0.16, corner.z + 0.1, corner.y, n + 1)
+		_corner_drop(rows, corner.x - 0.14, corner.z + 0.12, corner.y, n + 2)
+		n += 3
 	var multi := bed_frame.multimesh
 	multi.instance_count = rows.size()
 	for i in rows.size():
@@ -5336,6 +5348,24 @@ func _frame_drop(rows: Array[Transform3D], x: float, z: float, n: int) -> void:
 	var y := GardenLayout.height_at(x, z) + 0.22
 	var spin := float(n % 5) * 0.5
 	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	rows.append(Transform3D(basis, Vector3(x, y, z)))
+
+func _corner_drop(rows: Array[Transform3D], x: float, z: float, scale: float, n: int) -> void:
+	# ponytail: small discs on the tan corners; the south path is 0.7 m away.
+	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
+		return
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+		return
+	var reach := 0.34 * scale
+	if absf(x + 2.35) < 0.46 + reach and z > -6.2 and z < 3.35:
+		return
+	if absf(z + 6.35) < 0.5 + reach and x > -8.2 and x < 1.2:
+		return
+	if absf(z - 3.5) < 0.46 + reach and x > -7.2 and x < -1.0:
+		return
+	var y := GardenLayout.height_at(x, z) + 0.45
+	var spin := float(n % 5) * 0.5
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 8.0, scale))
 	rows.append(Transform3D(basis, Vector3(x, y, z)))
 
 func _bridge_lids() -> void:
