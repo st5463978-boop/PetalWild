@@ -4308,6 +4308,10 @@ func _run_smoke() -> void:
 		push_error("smoke: the afternoon lit the rooms")
 		get_tree().quit(1)
 		return
+	if not _awning_matches(true):
+		push_error("smoke: the open stall left the awning cool")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(20.4)
 	_lamps()
 	if lamp_light.light_energy < 0.9 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
@@ -4322,10 +4326,28 @@ func _run_smoke() -> void:
 		push_error("smoke: dusk left the rooms dim")
 		get_tree().quit(1)
 		return
+	if not _awning_matches(false):
+		push_error("smoke: the shut stall left the awning warm")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(lamp_hour)
 	_lamps()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
+
+func _awning_matches(open_hours: bool) -> bool:
+	var stripes := get_tree().get_nodes_in_group("parish_awning")
+	if stripes.size() != 7:
+		return false
+	for node in stripes:
+		var stripe := node as MeshInstance3D
+		if stripe == null or not (stripe.material_override is StandardMaterial3D):
+			return false
+		var got := (stripe.material_override as StandardMaterial3D).albedo_color
+		var want: Color = stripe.get_meta("open_color") if open_hours else stripe.get_meta("shut_color")
+		if absf(got.r - want.r) > 0.02 or absf(got.g - want.g) > 0.02 or absf(got.b - want.b) > 0.02:
+			return false
+	return true
 
 func _rooms_asleep() -> bool:
 	if get_tree().get_nodes_in_group("parish_room").size() != 3 or get_tree().get_nodes_in_group("parish_room_glass").size() != 5:
@@ -4376,6 +4398,12 @@ func _lamps() -> void:
 		var stall_lamp := node as OmniLight3D
 		if stall_lamp:
 			stall_lamp.light_energy = stall_energy
+	var stall_open := _stall_open()
+	for node in get_tree().get_nodes_in_group("parish_awning"):
+		var stripe := node as MeshInstance3D
+		if stripe and stripe.material_override is StandardMaterial3D:
+			var cloth: Color = stripe.get_meta("open_color") if stall_open else stripe.get_meta("shut_color")
+			(stripe.material_override as StandardMaterial3D).albedo_color = cloth
 	var room_glow := 1.15 if night else 0.0
 	for node in get_tree().get_nodes_in_group("parish_room"):
 		var house_lamp := node as OmniLight3D

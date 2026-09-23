@@ -26,8 +26,12 @@ func _stall(parent: Node3D) -> void:
 		_cylinder(root, Vector3(side * 1.05, 1.15, 0.35), 0.05, 0.05, 1.5, Color("#6b4a32"))
 	for i in 7:
 		# ponytail: the blue cloth clips to sky under this sun; raise if the stripe goes black.
-		var stripe := Color("#4a3f34") if i % 2 == 0 else Color("#263444")
-		_box(root, Vector3(-1.05 + float(i) * 0.35, 1.72, 0.15), Vector3(0.34, 0.06, 1.15), stripe)
+		var shut := Color("#4a3f34") if i % 2 == 0 else Color("#263444")
+		var open := Color("#c4895a") if i % 2 == 0 else Color("#8a5344")
+		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.72, 0.15), Vector3(0.34, 0.06, 1.15), shut)
+		stripe.set_meta("open_color", open)
+		stripe.set_meta("shut_color", shut)
+		stripe.add_to_group("parish_awning")
 	_crate(root, Vector3(-1.35, 0.16, 0.7))
 	_crate(root, Vector3(1.25, 0.16, 0.62))
 	for i in 5:
