@@ -5327,6 +5327,7 @@ func _bed_frames() -> void:
 		_corner_drop(rows, corner.x + 0.16, corner.z + 0.1, corner.y, n + 1)
 		_corner_drop(rows, corner.x - 0.14, corner.z + 0.12, corner.y, n + 2)
 		n += 3
+	_meadow_hull(rows, n)
 	var multi := bed_frame.multimesh
 	multi.instance_count = rows.size()
 	for i in rows.size():
@@ -5346,6 +5347,41 @@ func _frame_drop(rows: Array[Transform3D], x: float, z: float, n: int) -> void:
 	if absf(z - 3.5) < 0.46 + reach and x > -7.2 and x < -1.0:
 		return
 	var y := GardenLayout.height_at(x, z) + 0.22
+	var spin := float(n % 5) * 0.5
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	rows.append(Transform3D(basis, Vector3(x, y, z)))
+
+func _meadow_hull(rows: Array[Transform3D], n: int) -> void:
+	# ponytail: lip above the skirt flowers; 0.78 sat under the petals.
+	var z := -5.2
+	while z <= 2.5:
+		var sway := sin(z * 1.2) * 0.1
+		_hull_drop(rows, 3.15 - sway, z, 2.2, 1.45, n)
+		n += 1
+		z += 0.42
+	z = -4.7
+	while z <= 2.55:
+		var swayw := sin(z * 1.2) * 0.1
+		_hull_drop(rows, -8.05 + swayw, z, 2.2, 1.45, n)
+		n += 1
+		z += 0.42
+	_hull_drop(rows, 2.9, -5.35, 2.2, 1.45, n)
+	_hull_drop(rows, 2.9, 2.7, 2.2, 1.45, n + 1)
+	_hull_drop(rows, -8.0, 2.55, 2.2, 1.45, n + 2)
+
+func _hull_drop(rows: Array[Transform3D], x: float, z: float, scale: float, lift: float, n: int) -> void:
+	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
+		return
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+		return
+	var reach := 0.34 * scale
+	if absf(x + 2.35) < 0.46 + reach and z > -6.2 and z < 3.35:
+		return
+	if absf(z + 6.35) < 0.5 + reach and x > -8.2 and x < 1.2:
+		return
+	if absf(z - 3.5) < 0.46 + reach and x > -7.2 and x < -1.0:
+		return
+	var y := GardenLayout.height_at(x, z) + lift
 	var spin := float(n % 5) * 0.5
 	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
 	rows.append(Transform3D(basis, Vector3(x, y, z)))
