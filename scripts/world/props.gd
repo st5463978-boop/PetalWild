@@ -173,6 +173,7 @@ func _lantern(parent: Node3D, at: Vector3) -> void:
 	material.emission_enabled = true
 	material.emission = Color("#c47a28")
 	material.emission_energy_multiplier = 0.4
+	glow.add_to_group("parish_lantern_glass")
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.18, 0)
 	light.light_color = Color("ffd2a4")
@@ -180,6 +181,7 @@ func _lantern(parent: Node3D, at: Vector3) -> void:
 	light.omni_range = 3.4
 	light.shadow_enabled = false
 	root.add_child(light)
+	light.add_to_group("parish_lantern")
 
 func _reeds(parent: Node3D) -> void:
 	for i in 16:

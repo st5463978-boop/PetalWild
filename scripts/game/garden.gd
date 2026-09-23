@@ -154,6 +154,7 @@ func _process(delta: float) -> void:
 		_refresh_soil_colors()
 	_update_highlight()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	_lamps()
 	audio.set_weather(Clock.weather)
 	_update_status()
 	panel_timer += delta
@@ -4264,8 +4265,42 @@ func _run_smoke() -> void:
 		push_error("smoke: the harvest did not reload")
 		get_tree().quit(1)
 		return
+	var lamp_hour := Clock.hour()
+	var lamp_light := get_tree().get_first_node_in_group("parish_lantern") as OmniLight3D
+	if lamp_light == null:
+		push_error("smoke: the path lanterns are missing")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	_lamps()
+	if lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the afternoon lit the path lanterns")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.4)
+	_lamps()
+	if lamp_light.light_energy < 0.9 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: dusk left the path lanterns dim")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(lamp_hour)
+	_lamps()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
+
+func _lamps() -> void:
+	# ponytail: path lamps take the parish night; a mist glow if the fog should light them.
+	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
+	var energy := 1.05 if night else 0.35
+	var glow := 1.05 if night else 0.4
+	for node in get_tree().get_nodes_in_group("parish_lantern"):
+		var lamp := node as OmniLight3D
+		if lamp:
+			lamp.light_energy = energy
+	for node in get_tree().get_nodes_in_group("parish_lantern_glass"):
+		var glass := node as MeshInstance3D
+		if glass and glass.material_override is StandardMaterial3D:
+			(glass.material_override as StandardMaterial3D).emission_energy_multiplier = glow
 
 func _run_capture() -> void:
 	Settings.reduce_motion = true
