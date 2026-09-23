@@ -870,6 +870,59 @@ func _run_smoke() -> void:
 	soil.seeded = dew_seed
 	soil.seed_rain = dew_rain
 	Clock.set_hour(kept_hour)
+	var hold_rows: Array = []
+	for cell in soil.all():
+		var hold_cell: SoilCell = cell
+		hold_rows.append([hold_cell, hold_cell.moisture, hold_cell.growth, hold_cell.fertility, hold_cell.wilt, hold_cell.plant_id, hold_cell.taken])
+	var hold_seed := soil.seeded
+	var hold_rain := soil.seed_rain
+	var hold_tin := Economy.coins
+	var hold_trust := Trust.level("nessa")
+	var hold_bed := soil.get_cell(4, 6)
+	hold_bed.plant_id = ""
+	hold_bed.moisture = 0.55
+	soil.seed_rain = 0.3
+	soil.tick(60.0, "mist")
+	if absf(hold_bed.moisture - 0.55) > 0.001 or soil.seeded != "" or absf(soil.seed_rain) > 0.001:
+		push_error("smoke: the mist watered the bed")
+		get_tree().quit(1)
+		return
+	hold_bed.moisture = 0.55
+	soil.tick(60.0, "clear")
+	if hold_bed.moisture > 0.4:
+		push_error("smoke: a clear hour kept the mist")
+		get_tree().quit(1)
+		return
+	hold_bed.plant_id = "meadowbell"
+	hold_bed.growth = 0.5
+	hold_bed.moisture = 0.1
+	hold_bed.fertility = 0.5
+	hold_bed.wilt = 1.0
+	hold_bed.taken = false
+	soil.tick(60.0, "mist")
+	if absf(hold_bed.wilt - 1.0) > 0.001 or absf(hold_bed.growth - 0.5) > 0.001 or absf(hold_bed.moisture - 0.1) > 0.001 or hold_bed.plant_id != "meadowbell":
+		push_error("smoke: the mist dried a thirsty bed")
+		get_tree().quit(1)
+		return
+	soil.tick(60.0, "clear")
+	if hold_bed.wilt < 1.5 or hold_bed.moisture > 0.1:
+		push_error("smoke: a clear hour spared the thirsty bed")
+		get_tree().quit(1)
+		return
+	if Economy.coins != hold_tin or Trust.level("nessa") != hold_trust:
+		push_error("smoke: the mist moved the parish")
+		get_tree().quit(1)
+		return
+	for row in hold_rows:
+		var kept: SoilCell = row[0]
+		kept.moisture = row[1]
+		kept.growth = row[2]
+		kept.fertility = row[3]
+		kept.wilt = row[4]
+		kept.plant_id = row[5]
+		kept.taken = row[6]
+	soil.seeded = hold_seed
+	soil.seed_rain = hold_rain
 	var dawn_notes: Array = events.duplicate()
 	var dawn_top := ""
 	if not dawn_notes.is_empty():

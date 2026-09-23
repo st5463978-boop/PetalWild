@@ -31,7 +31,8 @@ func tick(game_minutes: float, weather: String) -> Array:
 		var before := soil.moisture
 		if raining:
 			soil.moisture = minf(1.0, soil.moisture + hours * 0.95)
-		else:
+		elif weather != "mist":
+			# ponytail: mist holds the water already in the bed; a drink if the fog should water.
 			soil.moisture = maxf(0.04, soil.moisture - hours * 0.22)
 		if soil.plant_id == "":
 			continue
@@ -41,6 +42,8 @@ func tick(game_minutes: float, weather: String) -> Array:
 		var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.0)))
 		var need := float(definition.get("water_need", 0.3))
 		if soil.moisture < need:
+			if weather == "mist":
+				continue
 			var dry_hours := hours
 			if raining:
 				dry_hours = 0.0
