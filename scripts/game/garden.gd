@@ -134,6 +134,7 @@ func _process(delta: float) -> void:
 		_hold_fruit(minutes / 60.0)
 		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
+		_bee_growth(minutes / 60.0)
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
@@ -4241,6 +4242,24 @@ func _run_smoke() -> void:
 		push_error("smoke: bellhelp stayed silent")
 		get_tree().quit(1)
 		return
+	var hurry_g := first_bed.growth
+	_bee_growth(0.16)
+	if first_bed.growth < hurry_g + 0.08 or first_bed.growth > 0.32 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bees did not hurry the seedling")
+		get_tree().quit(1)
+		return
+	var hurry_rain := Clock.weather
+	Clock.weather = "rain"
+	var rain_g := first_bed.growth
+	_bee_growth(0.16)
+	Clock.weather = hurry_rain
+	bee_day = -1
+	_bee_growth(0.16)
+	bee_day = 1
+	if first_bed.growth != rain_g or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the rain hurried the seedling")
+		get_tree().quit(1)
+		return
 	bees.tick(0.8, false, "clear", bee_flower, true)
 	if bees.bodies[0].position.distance_to(bee_flower) > 1.2:
 		push_error("smoke: the bees stayed off the bell")
@@ -6246,6 +6265,24 @@ func _meal_spot(plant_id: String, at: Vector3) -> Vector3:
 	if near != null:
 		return GardenLayout.cell_center(near.ix, near.iz)
 	return Vector3(-3.6, 0.0, -1.6)
+
+func _bee_growth(hours: float) -> void:
+	# ponytail: one extra hour on the rung seedling; the other ripe bell if that bed should fill too.
+	if hours <= 0.0 or bee_day != Clock.day or Clock.weather == "rain":
+		return
+	var id := GardenLayout.world_to_cell(bee_flower)
+	if id.x < 0:
+		return
+	var plot := soil.get_cell(id.x, id.y)
+	if plot.plant_id != "meadowbell" or plot.growth <= 0.0 or plot.growth >= 1.0:
+		return
+	var definition: Dictionary = ContentDB.plant("meadowbell")
+	if plot.moisture < float(definition.get("water_need", 0.3)):
+		return
+	if plot.fertility < float(definition.get("fertility_need", 0.2)):
+		return
+	var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.0)))
+	plot.growth = minf(1.0, plot.growth + hours / grow_hours)
 
 func _second_bell() -> Vector3:
 	# ponytail: farthest ripe bell; the whole flight if that bed is the only one.
