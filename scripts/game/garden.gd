@@ -4639,7 +4639,8 @@ func _build_bed_meadow() -> void:
 	_add_bed_mesh(leaf, leaf_mat)
 	var palette: Array[Color] = [
 		Color("#8a4560"),
-		Color("#a06a38"),
+		# ponytail: the tan petal read as soil; darken if this coral clips to white.
+		Color("#ef7f72"),
 		Color("#4e6a40"),
 		Color("#6a5078"),
 	]
