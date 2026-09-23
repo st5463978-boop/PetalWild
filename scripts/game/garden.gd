@@ -39,6 +39,7 @@ var photo := false
 var focus: Jelly
 var last_land := 0
 var visual_timer := 0.0
+var loam_hours := 0.0
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -119,6 +120,7 @@ func _process(delta: float) -> void:
 			toast("A bed dried out.")
 		if soil.seeded != "":
 			toast("%s took the next bed." % str(ContentDB.plant(soil.seeded).get("name", "A plant")))
+		_hold_loam(minutes / 60.0)
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -479,6 +481,7 @@ func to_state() -> Dictionary:
 		"nessa_drafting": nessa_drafting,
 		"nessa_farewell": nessa_farewell,
 		"nessa_watch": _watch_record(),
+		"loam_hours": loam_hours,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -523,6 +526,7 @@ func apply_state(data: Dictionary) -> void:
 	nessa_drafting = bool(data.get("nessa_drafting", false))
 	nessa_farewell = bool(data.get("nessa_farewell", false))
 	_bind_watch(data.get("nessa_watch", {}))
+	loam_hours = float(data.get("loam_hours", 0.0))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -2151,6 +2155,150 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	home_points.pop_back()
+	var horn := ecology.first("gushorn")
+	if horn == null:
+		horn = ecology.force_spawn("gushorn")
+	horn.life = "visitor"
+	horn.leaving = false
+	horn.held = false
+	horn.bite_wait = 2.0
+	horn.reduce_motion = false
+	var loam_bed := soil.get_cell(8, 6)
+	loam_bed.plant_id = ""
+	loam_bed.chem = "nightloam"
+	var loam_n := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			loam_n += 1
+	Clock.set_hour(15.3)
+	var loam_at := _nearest_loam(Vector3(10.5, 0.0, -8.5))
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	var loam_far := horn.global_position.distance_to(loam_at)
+	_update_creatures(0.016)
+	if horn.use_berth or horn.goal.distance_to(loam_at) > 0.2:
+		push_error("smoke: gushorn missed the night-loam")
+		get_tree().quit(1)
+		return
+	horn.tier = 2
+	horn._process(2.0)
+	if horn.global_position.distance_to(loam_at) > loam_far - 0.8:
+		push_error("smoke: gushorn stayed off the night-loam")
+		get_tree().quit(1)
+		return
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = horn.global_position.distance_to(loam_at)
+	_update_creatures(0.016)
+	horn.tier = 3
+	horn._process(2.0)
+	if horn.visible or horn.global_position.distance_to(loam_at) > hidden_far - 0.8:
+		push_error("smoke: a hidden gushorn stayed off the night-loam")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	horn.life = "visitor"
+	horn.leaving = false
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not horn.use_berth or horn.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let gushorn leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	horn.leaving = true
+	horn.goal = GardenLayout.GATE
+	horn.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if horn.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a leaving gushorn walked to the night-loam")
+		get_tree().quit(1)
+		return
+	horn.leaving = false
+	var loam_tin := Economy.coins
+	var loam_trust := Trust.level("nessa")
+	loam_hours = 3.2
+	_hold_loam(1.0)
+	var loam_left := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			loam_left += 1
+	if loam_left != loam_n - 1 or loam_hours > 0.3 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: night-loam stayed without a settled crown")
+		get_tree().quit(1)
+		return
+	if events.is_empty() or str(events[0]).find("thinned") == -1:
+		push_error("smoke: the parish did not notice the thin loam")
+		get_tree().quit(1)
+		return
+	var bulb := soil.get_cell(9, 6)
+	bulb.tilled = true
+	bulb.plant_id = "nightlantern"
+	bulb.growth = 0.4
+	bulb.moisture = 0.8
+	bulb.fertility = 0.7
+	bulb.chem = "nightloam"
+	bulb.wilt = 0.0
+	soil.tick(60.0, "clear")
+	if bulb.growth < 0.5:
+		push_error("smoke: a nightlantern ignored the loam")
+		get_tree().quit(1)
+		return
+	bulb.chem = "base"
+	bulb.moisture = 0.9
+	var stalled := bulb.growth
+	soil.tick(60.0, "clear")
+	if bulb.growth > stalled + 0.01:
+		push_error("smoke: a nightlantern grew after the loam thinned")
+		get_tree().quit(1)
+		return
+	horn.life = "resident"
+	loam_hours = 3.2
+	var held_n := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			held_n += 1
+	_hold_loam(1.0)
+	var held_after := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			held_after += 1
+	if held_after != held_n or loam_hours > 0.01 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: a settled gushorn let the loam thin")
+		get_tree().quit(1)
+		return
+	loam_hours = 1.5
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the night-loam did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	horn = ecology.first("gushorn")
+	if horn == null or horn.life != "resident" or absf(loam_hours - 1.5) > 0.05 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: the night-loam did not reload")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	loam_at = _nearest_loam(horn.global_position)
+	_update_creatures(0.016)
+	if horn.goal.distance_to(loam_at) > 0.2:
+		push_error("smoke: the night-loam walk did not reload")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var loam_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(loam_kit)
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if not horn.wants_sleep or not horn.use_berth or horn.goal.distance_to(loam_kit) > 0.2:
+		push_error("smoke: night sent gushorn to the loam")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3061,6 +3209,7 @@ func _update_creatures(delta: float) -> void:
 	_follow_hosts()
 	_seek_bite()
 	_seek_dusk()
+	_seek_loam()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -3254,6 +3403,79 @@ func _seek_dusk() -> void:
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
+
+func _seek_loam() -> void:
+	# ponytail: the nearest night-loam bed; a circuit if the crown keeps more than one.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "gushorn":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		var at := _nearest_loam(jelly.global_position)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
+
+func _nearest_loam(at: Vector3) -> Vector3:
+	var best := _average_plant("mosspear")
+	var best_d := 9999.0
+	var found := false
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem != "nightloam":
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if not found or dist < best_d:
+			found = true
+			best_d = dist
+			best = center
+	return best
+
+func _hold_loam(hours: float) -> void:
+	# ponytail: one bed thins every four hours; a parish fade if several crowns are gone.
+	if _loam_kept():
+		loam_hours = 0.0
+		return
+	var pending := false
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			pending = true
+			break
+	if not pending:
+		return
+	loam_hours += maxf(0.0, hours)
+	var thinned := false
+	while loam_hours >= 4.0:
+		var chosen: SoilCell = null
+		for cell in soil.all():
+			var plot: SoilCell = cell
+			if plot.chem != "nightloam":
+				continue
+			if plot.plant_id == "":
+				chosen = plot
+				break
+			if chosen == null:
+				chosen = plot
+		if chosen == null:
+			loam_hours = 0.0
+			break
+		chosen.chem = "base"
+		loam_hours -= 4.0
+		thinned = true
+	if thinned:
+		toast("The night-loam thinned.")
+
+func _loam_kept() -> bool:
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "gushorn" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("settler"):
+			return true
+	return false
 
 func _feed_plant(species_id: String) -> String:
 	for req in ContentDB.species_def(species_id).get("requirements", []):
