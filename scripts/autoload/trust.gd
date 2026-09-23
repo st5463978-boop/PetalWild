@@ -66,6 +66,19 @@ func file_draft(person_id: String) -> void:
 		"at": Time.get_datetime_string_from_system(),
 	})
 
+func file_bee_note(person_id: String) -> void:
+	# ponytail: one bee line; file_notes if a note should raise trust.
+	audit.append({
+		"person": person_id,
+		"action": "parish_bee_note",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": "Bees on the bed. Nothing was spent.",
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_notes(person_id: String, note: String) -> void:
 	audit.append({
 		"person": person_id,

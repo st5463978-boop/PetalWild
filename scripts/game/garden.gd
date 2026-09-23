@@ -44,6 +44,7 @@ var loam_hours := 0.0
 var bell_day := -1
 var bird_day := -1
 var bee_day := -1
+var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 
 func _ready() -> void:
@@ -135,6 +136,7 @@ func _process(delta: float) -> void:
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
+		_note_bees()
 		_dawn_birds()
 	ecology.tick(delta, world)
 	_wire_jellies()
@@ -471,6 +473,14 @@ func _ring_bells(world: Dictionary) -> void:
 		return
 	toast("Bellhelp rings, very quietly.")
 
+func _note_bees() -> void:
+	# ponytail: one book line a day; a second line if another bed keeps its own flight.
+	if bee_note_day == Clock.day or bee_day != Clock.day or Clock.weather == "rain":
+		return
+	bee_note_day = Clock.day
+	Trust.file_bee_note("nessa")
+	toast("Nessa wrote the bees on that bed into the parish book.")
+
 func _dawn_birds() -> void:
 	# ponytail: one chorus when they leave the perch; a longer song if the morning keeps more birds.
 	var h := Clock.hour()
@@ -558,6 +568,7 @@ func to_state() -> Dictionary:
 		"bell_day": bell_day,
 		"bird_day": bird_day,
 		"bee_day": bee_day,
+		"bee_note_day": bee_note_day,
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 	}
 
@@ -610,6 +621,7 @@ func apply_state(data: Dictionary) -> void:
 	bell_day = int(data.get("bell_day", -1))
 	bird_day = int(data.get("bird_day", -1))
 	bee_day = int(data.get("bee_day", -1))
+	bee_note_day = int(data.get("bee_note_day", -1))
 	var flower = data.get("bee_flower", [])
 	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
 		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
@@ -4252,6 +4264,39 @@ func _run_smoke() -> void:
 			sprout_after += 1
 	if bell_day != 2 or events.size() != ring_notes or sprout_after != sprout_n or soil.seeded != kept_seed:
 		push_error("smoke: a reload rang again the same day")
+		get_tree().quit(1)
+		return
+	var book_n := events.size()
+	var book_audit := Trust.audit.size()
+	Clock.weather = "rain"
+	_note_bees()
+	if events.size() != book_n or bee_note_day != -1 or Trust.audit.size() != book_audit or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the rain wrote the bees into the book")
+		get_tree().quit(1)
+		return
+	Clock.weather = "clear"
+	_note_bees()
+	var book_row: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
+	if events.is_empty() or str(events[0]).find("bees") == -1 or str(events[0]).find("parish book") == -1 or events.size() != book_n + 1 or bee_note_day != Clock.day or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or Trust.audit.size() != book_audit + 1:
+		push_error("smoke: the bees were not written into the book")
+		get_tree().quit(1)
+		return
+	if str(book_row.get("action", "")) != "parish_bee_note" or bool(book_row.get("external", true)) or int(book_row.get("cost", -1)) != 0:
+		push_error("smoke: the bee note left the parish")
+		get_tree().quit(1)
+		return
+	_note_bees()
+	if events.size() != book_n + 1 or bee_note_day != Clock.day or Trust.audit.size() != book_audit + 1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bees were written twice")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the bee note did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if bee_note_day != 2 or bee_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bee note did not reload")
 		get_tree().quit(1)
 		return
 	var cut_bed := soil.get_cell(4, 6)
