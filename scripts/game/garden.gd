@@ -746,10 +746,27 @@ func _run_smoke() -> void:
 		return
 	_apply_shift(false)
 	var shower_porch := GardenLayout.TEA + Vector3(0, 0, -1.15)
-	if shift != "rain" or _person("nessa").waypoints.size() != 1 or _person("nessa").waypoints[0].distance_to(shower_porch) > 0.3 or bram.waypoints[0].distance_to(GardenLayout.SHED) > 2.0:
+	var rain_hut := GardenLayout.HUT + Vector3(0, 0, -1.05)
+	var rain_desk := GardenLayout.FOUNDRY + Vector3(0, 0, -0.95)
+	if shift != "rain" or _person("nessa").waypoints.size() != 3 or _person("nessa").waypoints[0].distance_to(shower_porch) > 0.3 or _person("nessa").waypoints[1].distance_to(rain_hut) > 0.3 or _person("nessa").waypoints[2].distance_to(rain_desk) > 0.3 or bram.waypoints.size() != 2 or bram.waypoints[0].distance_to(GardenLayout.SHED) > 2.0 or bram.waypoints[1].distance_to(GardenLayout.STALL) > 2.0 or _person("lumen").waypoints.size() != 2:
 		push_error("smoke: the rain bell missed the tea house")
 		get_tree().quit(1)
 		return
+	var nessa_was := _person("nessa").present
+	var rain_coins := Economy.coins
+	var rain_trust := Trust.level("nessa")
+	_person("nessa").present = true
+	_person("nessa").has_chore = false
+	_person("nessa").index = 1
+	_person("nessa").pause = 0.0
+	_person("nessa").global_position = shower_porch
+	var rain_far := _person("nessa").global_position.distance_to(rain_hut)
+	_person("nessa")._process(3.0)
+	if _person("nessa").global_position.distance_to(rain_hut) > rain_far - 0.8 or nessa_filing or nessa_drafting or Trust.level("nessa") != rain_trust or Economy.coins != rain_coins:
+		push_error("smoke: nessa stayed on the tea porch")
+		get_tree().quit(1)
+		return
+	_person("nessa").present = nessa_was
 	bell.life = "resident"
 	bell.wants_sleep = false
 	bell.global_position = Vector3(-4.0, 0.0, -2.0)
@@ -909,6 +926,12 @@ func _run_smoke() -> void:
 	apply_state(SaveGame.read_slot(1))
 	if Clock.day != 2 or Clock.weather != "rain" or absf(Clock.hour() - 13.0) > 0.05:
 		push_error("smoke: the shower did not reload")
+		get_tree().quit(1)
+		return
+	shift = ""
+	_apply_shift(false)
+	if shift != "rain" or _person("nessa").waypoints.size() != 3 or _person("nessa").waypoints[0].distance_to(shower_porch) > 0.3 or bram.waypoints.size() != 2:
+		push_error("smoke: the rain round did not reload")
 		get_tree().quit(1)
 		return
 	Clock.day = shower_day
@@ -2077,7 +2100,7 @@ func _spawn_people() -> void:
 	_apply_shift(true)
 
 func _apply_shift(snap: bool) -> void:
-	# ponytail: one porch for a shower; a loop of rooms if rain lasts the day.
+	# ponytail: three south rooms and the stall; a longer rain if the afternoon is not enough.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
 	var shower := Clock.weather == "rain" and not night
 	var key := "day"
@@ -2089,9 +2112,19 @@ func _apply_shift(snap: bool) -> void:
 		return
 	shift = key
 	if shower:
-		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
-		_person("bram").set_route([GardenLayout.SHED + Vector3(1.1, 0, -0.6)], snap)
-		_person("nessa").set_route([GardenLayout.TEA + Vector3(0, 0, -1.15)], snap)
+		_person("lumen").set_route([
+			GardenLayout.STALL + Vector3(0, 0, 0.95),
+			GardenLayout.STALL + Vector3(0.9, 0, 0.2),
+		], snap)
+		_person("bram").set_route([
+			GardenLayout.SHED + Vector3(1.1, 0, -0.6),
+			GardenLayout.STALL + Vector3(-0.9, 0, 0.35),
+		], snap)
+		_person("nessa").set_route([
+			GardenLayout.TEA + Vector3(0, 0, -1.15),
+			GardenLayout.HUT + Vector3(0, 0, -1.05),
+			GardenLayout.FOUNDRY + Vector3(0, 0, -0.95),
+		], snap)
 		return
 	if night:
 		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
