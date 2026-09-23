@@ -679,6 +679,19 @@ func _run_smoke() -> void:
 		push_error("smoke: empty beds kept their meadow")
 		get_tree().quit(1)
 		return
+	soil.get_cell(0, 1).plant_id = ""
+	soil.get_cell(0, 1).growth = 0.0
+	soil.get_cell(0, 1).tilled = false
+	_refresh_soil_colors()
+	var opened := 0
+	for bloom_i in bed_blooms.size():
+		opened += bed_blooms[bloom_i].multimesh.instance_count
+	if opened != meadow_n + 13:
+		push_error("smoke: a planted bed kept a bare rim")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 1, "meadowbell", 1.0)
+	_refresh_soil_colors()
 	var bridges := 0
 	for bridge_node in get_children():
 		if str(bridge_node.name).begins_with("BedBridge"):
@@ -4387,6 +4400,31 @@ func _fill_bed_meadow() -> void:
 			at = center + gaps[i]
 			spin = float((plot.ix + plot.iz + i) % 6) * 0.5
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.25)
+			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
+	# ponytail: eight flowers on the rim of a planted cell; the stem stays clear.
+	var rim: Array[Vector3] = [
+		Vector3(-0.38, 0.03, -0.32),
+		Vector3(0.38, 0.03, -0.30),
+		Vector3(-0.36, 0.03, 0.32),
+		Vector3(0.36, 0.03, 0.34),
+		Vector3(0.0, 0.03, -0.38),
+		Vector3(0.0, 0.03, 0.38),
+		Vector3(-0.40, 0.03, 0.0),
+		Vector3(0.40, 0.03, 0.02),
+	]
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "" or not _joined_bed(plot):
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		for i in rim.size():
+			var at := center + rim[i]
+			if GardenLayout.on_path(at.x, at.z):
+				continue
+			if GardenLayout.pond_distance(at.x, at.z) < GardenLayout.POND_RADIUS:
+				continue
+			var spin := float((plot.ix + plot.iz + i) % 6) * 0.45
+			var basis := Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.05)
 			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
 	_bridge_into(buckets)
 	_path_lips(buckets)
