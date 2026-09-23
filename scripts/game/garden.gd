@@ -2219,6 +2219,90 @@ func _run_smoke() -> void:
 		push_error("smoke: the dusk walk left the hour")
 		get_tree().quit(1)
 		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id != "pegapear":
+			body.bite_wait = 4.0
+	pear.life = "visitor"
+	pear.leaving = false
+	pear.held = false
+	pear.bite_wait = 0.0
+	pear.tier = 2
+	Clock.set_hour(18.0)
+	pear.global_position = GardenLayout.cell_center(1, 3)
+	_browse(0.1)
+	if soil.get_cell(0, 3).growth < 0.95 or soil.get_cell(1, 3).growth < 0.95 or pear.bite_wait > 0.05 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: a visitor ate at dusk")
+		get_tree().quit(1)
+		return
+	pear.life = "resident"
+	pear.bite_wait = 0.0
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	_update_creatures(0.016)
+	if pear.use_berth or pear.goal.distance_to(lantern) > 0.2 or pear.goal.distance_to(peach_at) < 0.3 or soil.get_cell(0, 3).growth < 0.95 or soil.get_cell(1, 3).growth < 0.95:
+		push_error("smoke: a hungry dusk walk left the lantern")
+		get_tree().quit(1)
+		return
+	pear.global_position = GardenLayout.cell_center(1, 3)
+	_browse(0.1)
+	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0 or events.is_empty() or str(events[0]).find("bite") == -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: dusk left the lantern whole")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	pear.bite_wait = 0.0
+	pear.global_position = camera.global_position + camera.global_transform.basis.z * 8.0
+	pear.global_position.y = 0.0
+	if camera.is_position_in_frustum(pear.global_position) or pear.global_position.distance_to(GardenLayout.cell_center(1, 3)) < 1.6:
+		push_error("smoke: the hidden pegapear was still by the lantern")
+		get_tree().quit(1)
+		return
+	_browse(0.1)
+	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0:
+		push_error("smoke: a hidden dusk left the lantern whole")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	Clock.set_hour(10.0)
+	pear.life = "resident"
+	pear.bite_wait = 0.0
+	pear.global_position = GardenLayout.cell_center(0, 3)
+	_browse(0.1)
+	if soil.get_cell(0, 3).growth > 0.6 or soil.get_cell(1, 3).growth < 0.95 or pear.bite_wait < 3.0 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: morning ate the lantern")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the dusk meal did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	pear = ecology.first("pegapear")
+	if pear == null or pear.life != "resident" or soil.get_cell(0, 3).growth > 0.6 or soil.get_cell(1, 3).growth < 0.95 or pear.bite_wait < 3.0 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: the dusk meal did not reload")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	Clock.set_hour(22.0)
+	pear.bite_wait = 0.0
+	pear.global_position = GardenLayout.cell_center(1, 3)
+	_browse(0.1)
+	if soil.get_cell(0, 3).growth < 0.95 or soil.get_cell(1, 3).growth < 0.95 or pear.bite_wait > 0.05:
+		push_error("smoke: night took a bite")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	pear.life = "resident"
+	pear.leaving = false
+	pear.bite_wait = 2.0
+	pear.tier = 2
+	Clock.set_hour(18.0)
 	Clock.set_hour(21.0)
 	var dusk_kit := Vector3(-6.0, 0.0, 1.0)
 	home_points.append(dusk_kit)
@@ -4942,6 +5026,12 @@ func _loam_kept() -> bool:
 	return false
 
 func _feed_plant(species_id: String) -> String:
+	# ponytail: pegapear eats the lantern from 16 to 22 and the peach otherwise; a diet table if another species keeps two crops.
+	if species_id == "pegapear":
+		var hour := Clock.hour()
+		if hour >= 16.0 and hour < 22.0:
+			return "nightlantern"
+		return "peach"
 	for req in ContentDB.species_def(species_id).get("requirements", []):
 		if str(req.get("type", "")) == "mature_plant":
 			return str(req.get("plant", ""))

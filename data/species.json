@@ -129,7 +129,7 @@
     "radius": 0.36,
     "cap": 1,
     "wobble": 0.6,
-    "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk.",
+    "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk. At dusk it bites the lantern. In the morning it bites the peach.",
     "requirements": [
       {"type": "mature_plant", "plant": "peach", "min": 1, "label": "A ripe Peach"},
       {"type": "mature_plant", "plant": "nightlantern", "min": 1, "label": "A mature Nightlantern"},
