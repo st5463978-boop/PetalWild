@@ -534,6 +534,14 @@ func _run_smoke() -> void:
 		push_error("smoke: empty beds kept their meadow")
 		get_tree().quit(1)
 		return
+	var bridges := 0
+	for bridge_node in get_children():
+		if str(bridge_node.name).begins_with("BedBridge"):
+			bridges += 1
+	if bridges != 2:
+		push_error("smoke: the plots stayed apart")
+		get_tree().quit(1)
+		return
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("bellhelp") == null:
 		push_error("smoke: bellhelp did not arrive")
@@ -1142,6 +1150,7 @@ func _build_bed_meadow() -> void:
 	flower_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for color in palette:
 		_add_bed_mesh(_bed_flower(color), flower_mat)
+	_bridge_lids()
 
 func _add_bed_mesh(mesh: Mesh, material: Material) -> void:
 	var multi := MultiMesh.new()
@@ -1227,12 +1236,56 @@ func _fill_bed_meadow() -> void:
 			scale = 0.95 + float((plot.ix + i) % 3) * 0.22
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
 			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
+	_bridge_into(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
 		multi.instance_count = rows.size()
 		for n in rows.size():
 			multi.set_instance_transform(n, rows[n])
+
+func _bridge_lids() -> void:
+	# ponytail: two strips between the north and south plots; the path stays open.
+	_bridge_lid("BedBridgeWest", Vector3(-5.12, 0.055, -1.4), Vector3(4.2, 0.03, 0.95))
+	_bridge_lid("BedBridgeEast", Vector3(0.42, 0.055, -1.4), Vector3(4.2, 0.03, 0.95))
+
+func _bridge_lid(node_name: String, at: Vector3, size: Vector3) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	var node := MeshInstance3D.new()
+	node.name = node_name
+	node.mesh = mesh
+	node.position = at
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("#1c3420")
+	material.roughness = 0.96
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	node.material_override = material
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(node)
+
+func _bridge_into(buckets: Array) -> void:
+	var bands: Array[Rect2] = [
+		Rect2(-7.25, -1.88, 4.25, 0.95),
+		Rect2(-1.72, -1.88, 4.25, 0.95),
+	]
+	var n := 0
+	for band in bands:
+		for iz in 3:
+			for ix in 8:
+				var x := band.position.x + (float(ix) + 0.5) * band.size.x / 8.0
+				var z := band.position.y + (float(iz) + 0.5) * band.size.y / 3.0
+				if GardenLayout.on_path(x, z):
+					continue
+				var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+				var spin := float((ix * 3 + iz) % 5) * 0.5
+				var scale := 0.9 + float((ix + iz) % 3) * 0.12
+				var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+				buckets[0].append(Transform3D(basis, at))
+				if n % 2 == 0:
+					basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
+					buckets[1 + (ix + iz) % 4].append(Transform3D(basis, at + Vector3(0.08, 0.0, 0.06)))
+				n += 1
 
 func _spawn_people() -> void:
 	for id in ContentDB.people_order:
