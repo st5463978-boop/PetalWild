@@ -4693,6 +4693,17 @@ func _bed_flower(petal: Color) -> ArrayMesh:
 	tool.generate_normals()
 	return tool.commit()
 
+func _bed_spot(center: Vector3, offset: Vector3, ix: int, iz: int, i: int) -> Vector3:
+	# ponytail: a fixed nudge off the cell row; drop it if the flower lands on a worn walk.
+	var jx := (float((ix * 5 + iz * 3 + i * 7) % 7) - 3.0) * 0.16
+	var jz := (float((ix * 3 + iz * 5 + i * 11) % 5) - 2.0) * 0.16
+	var nudged := center + offset + Vector3(jx, 0.0, jz)
+	if GardenLayout.on_path(nudged.x, nudged.z) or GardenLayout.on_track(nudged.x, nudged.z):
+		return center + offset
+	if GardenLayout.pond_distance(nudged.x, nudged.z) < GardenLayout.POND_RADIUS:
+		return center + offset
+	return nudged
+
 func _fill_bed_meadow() -> void:
 	var leaves: Array[Vector3] = [
 		Vector3(-0.26, 0.04, -0.2),
@@ -4727,13 +4738,13 @@ func _fill_bed_meadow() -> void:
 		var basis := Basis.IDENTITY
 		# ponytail: one fuller clump per empty cell; a third rank if the lid still draws a square.
 		for i in leaves.size():
-			at = center + leaves[i]
+			at = _bed_spot(center, leaves[i], plot.ix, plot.iz, i)
 			spin = float((plot.ix * 3 + plot.iz + i) % 5) * 0.4
 			scale = 1.35 + float((plot.iz + i) % 3) * 0.16
 			basis = Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
 			buckets[0].append(Transform3D(basis, at))
 		for i in spots.size():
-			at = center + spots[i]
+			at = _bed_spot(center, spots[i], plot.ix, plot.iz, i)
 			spin = float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.35
 			scale = 1.45 + float((plot.ix + i) % 3) * 0.28
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
@@ -4745,7 +4756,7 @@ func _fill_bed_meadow() -> void:
 			Vector3(0.18, 0.03, -0.14),
 		]
 		for i in gaps.size():
-			at = center + gaps[i]
+			at = _bed_spot(center, gaps[i], plot.ix, plot.iz, i)
 			spin = float((plot.ix + plot.iz + i) % 6) * 0.5
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.25)
 			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
@@ -4766,7 +4777,7 @@ func _fill_bed_meadow() -> void:
 			continue
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
 		for i in rim.size():
-			var at := center + rim[i]
+			var at := _bed_spot(center, rim[i], plot.ix, plot.iz, i)
 			if GardenLayout.on_path(at.x, at.z):
 				continue
 			if GardenLayout.pond_distance(at.x, at.z) < GardenLayout.POND_RADIUS:
