@@ -4378,6 +4378,50 @@ func _run_smoke() -> void:
 		return
 	for split_ix in [0, 1, 2]:
 		soil.get_cell(split_ix, 0).growth = 1.0
+	nip = ecology.first("dusknip")
+	if nip == null:
+		push_error("smoke: dusknip was gone before the bees")
+		get_tree().quit(1)
+		return
+	var poll_life := nip.life
+	var poll_goal := nip.goal
+	var poll_pos := nip.global_position
+	var poll_weather := Clock.weather
+	nip.life = "resident"
+	nip.leaving = false
+	nip.held = false
+	nip.use_berth = false
+	nip.wants_sleep = false
+	nip.global_position = bee_flower + Vector3(3.2, 0.0, 0.4)
+	nip.goal = Vector3(8.0, 0.0, 6.0)
+	Clock.weather = "clear"
+	_seek_bees()
+	if nip.goal.distance_to(bee_flower) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: dusknip stayed off the bees")
+		get_tree().quit(1)
+		return
+	nip.goal = Vector3(8.0, 0.0, 6.0)
+	Clock.weather = "rain"
+	_seek_bees()
+	bee_day = -1
+	Clock.weather = "clear"
+	_seek_bees()
+	if nip.goal.distance_to(Vector3(8.0, 0.0, 6.0)) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a quiet day walked dusknip to the bees")
+		get_tree().quit(1)
+		return
+	bee_day = 1
+	nip.life = "visitor"
+	_seek_bees()
+	if nip.goal.distance_to(Vector3(8.0, 0.0, 6.0)) > 0.2:
+		push_error("smoke: a visitor dusknip walked to the bees")
+		get_tree().quit(1)
+		return
+	nip.life = poll_life
+	nip.goal = poll_goal
+	nip.global_position = poll_pos
+	nip.held = false
+	Clock.weather = poll_weather
 	bees.tick(0.0, true, "rain")
 	_ring_bells(world_snapshot())
 	if bell_day != 1 or events.size() != ring_notes + 1 or second_bed.plant_id != "" or soil.seeded != kept_seed:
@@ -5916,6 +5960,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_fruit()
 	_seek_bells()
 	_seek_reeds()
+	_seek_bees()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -6298,6 +6343,22 @@ func _bells_filling(plot: SoilCell) -> bool:
 		if Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z).length() <= 1.6:
 			return true
 	return false
+
+func _seek_bees() -> void:
+	# ponytail: the rung bed while the flight is out; Bellhelp again once the day turns.
+	if bee_day != Clock.day or Clock.weather == "rain":
+		return
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "dusknip":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
+			continue
+		jelly.attract = bee_flower
+		if bee_flower.distance_to(jelly.global_position) > 1.1:
+			jelly.goal = bee_flower
 
 func _seek_reeds() -> void:
 	# ponytail: the nearest reed stand; a bank circuit if more than one reedic settles.

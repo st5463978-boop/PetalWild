@@ -112,7 +112,7 @@
     "radius": 0.3,
     "cap": 2,
     "wobble": 0.5,
-    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds.",
+    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it.",
     "requirements": [
       {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
     ],
