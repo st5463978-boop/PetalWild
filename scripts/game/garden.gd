@@ -476,12 +476,17 @@ func _ring_bells(world: Dictionary) -> void:
 	toast("Bellhelp rings, very quietly.")
 
 func _note_bees() -> void:
-	# ponytail: one book line a day; a second line if another bed keeps its own flight.
+	# ponytail: one book line a day; the other ripe bell gets the second line.
 	if bee_note_day == Clock.day or bee_day != Clock.day or Clock.weather == "rain":
 		return
 	bee_note_day = Clock.day
 	Trust.file_bee_note("nessa")
 	toast("Nessa wrote the bees on that bed into the parish book.")
+	var other := _second_bell()
+	if other != Vector3.ZERO:
+		var other_name := str(ContentDB.plant("meadowbell").get("name", "Meadowbell"))
+		Trust.file_bee_note("nessa", "Two bees on the other %s. Nothing was spent." % other_name)
+		toast("Nessa wrote the two bees on the other %s into the parish book." % other_name)
 	_walk_to_bees()
 
 func _walk_to_bees() -> void:
@@ -4439,20 +4444,43 @@ func _run_smoke() -> void:
 	Clock.weather = "clear"
 	_note_bees()
 	var book_row: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
-	if events.is_empty() or str(events[0]).find("bees") == -1 or str(events[0]).find("parish book") == -1 or events.size() != book_n + 1 or bee_note_day != Clock.day or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or Trust.audit.size() != book_audit + 1:
+	if events.is_empty() or str(events[0]).find("other Meadowbell") == -1 or str(events[1]).find("that bed") == -1 or events.size() != book_n + 2 or bee_note_day != Clock.day or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or Trust.audit.size() != book_audit + 2:
 		push_error("smoke: the bees were not written into the book")
 		get_tree().quit(1)
 		return
-	if str(book_row.get("action", "")) != "parish_bee_note" or bool(book_row.get("external", true)) or int(book_row.get("cost", -1)) != 0:
+	if str(book_row.get("action", "")) != "parish_bee_note" or bool(book_row.get("external", true)) or int(book_row.get("cost", -1)) != 0 or str(book_row.get("note", "")).find("other Meadowbell") == -1:
 		push_error("smoke: the bee note left the parish")
 		get_tree().quit(1)
 		return
+	var quiet_held: Array = []
+	for quiet_cell in soil.all():
+		var quiet_plot: SoilCell = quiet_cell
+		if quiet_plot.plant_id != "meadowbell" or quiet_plot.growth < 0.85:
+			continue
+		if GardenLayout.cell_center(quiet_plot.ix, quiet_plot.iz).distance_to(bee_flower) <= 0.45:
+			continue
+		quiet_held.append([quiet_plot, quiet_plot.growth])
+		quiet_plot.growth = 0.4
+	bee_note_day = -1
+	var quiet_n := events.size()
+	var quiet_audit := Trust.audit.size()
+	_note_bees()
+	if _second_bell() != Vector3.ZERO or events.size() != quiet_n + 1 or str(events[0]).find("other Meadowbell") != -1 or Trust.audit.size() != quiet_audit + 1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: one ripe bed named a second bell")
+		get_tree().quit(1)
+		return
+	events.pop_front()
+	Trust.audit.pop_back()
+	bee_note_day = Clock.day
+	for quiet_row in quiet_held:
+		var quiet_back: SoilCell = quiet_row[0]
+		quiet_back.growth = quiet_row[1]
 	if not nessa_bees or not pod.has_chore or pod.chore.distance_to(bee_flower) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: nessa did not walk to the bees")
 		get_tree().quit(1)
 		return
 	_note_bees()
-	if events.size() != book_n + 1 or bee_note_day != Clock.day or Trust.audit.size() != book_audit + 1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if events.size() != book_n + 2 or bee_note_day != Clock.day or Trust.audit.size() != book_audit + 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: the bees were written twice")
 		get_tree().quit(1)
 		return
