@@ -2505,6 +2505,40 @@ func _run_smoke() -> void:
 		push_error("smoke: the journal forgot who ate")
 		get_tree().quit(1)
 		return
+	var stay_other := soil.get_cell(3, 2)
+	var stay_id := stay_other.plant_id
+	var stay_growth := stay_other.growth
+	var stay_till := stay_other.tilled
+	var stay_moist := stay_other.moisture
+	var stay_feed := stay_other.fertility
+	var stay_taken := stay_other.taken
+	var stay_who := stay_other.eaten_by
+	var stay_wilt := stay_other.wilt
+	_force_plant(3, 2, "meadowbell", 1.0)
+	var stay_at := GardenLayout.cell_center(1, 1)
+	hand.bite_wait = 0.0
+	hand.global_position = GardenLayout.cell_center(3, 2)
+	_browse(0.1)
+	if soil.get_cell(3, 2).growth < 0.95 or bite_plot.growth > 0.6 or bite_plot.eaten_by != hand.display_name or Trust.level("nessa") != who_trust or Economy.coins != who_tin:
+		push_error("smoke: a short meal did not hold them")
+		get_tree().quit(1)
+		return
+	hand.global_position = camera.target
+	hand.global_position.y = 0.0
+	_update_creatures(0.016)
+	if hand.goal.distance_to(stay_at) > 0.2 or hand.goal.distance_to(GardenLayout.cell_center(3, 2)) < 0.3:
+		push_error("smoke: the resident left the fruit they ate")
+		get_tree().quit(1)
+		return
+	stay_other.plant_id = stay_id
+	stay_other.growth = stay_growth
+	stay_other.tilled = stay_till
+	stay_other.moisture = stay_moist
+	stay_other.fertility = stay_feed
+	stay_other.taken = stay_taken
+	stay_other.eaten_by = stay_who
+	stay_other.wilt = stay_wilt
+	hand.bite_wait = 4.0
 	for cell in soil.all():
 		var bed: SoilCell = cell
 		if bed.plant_id == "meadowbell":
@@ -2578,6 +2612,13 @@ func _run_smoke() -> void:
 		push_error("smoke: the hidden resident was still by the plant")
 		get_tree().quit(1)
 		return
+	_browse(0.1)
+	if off_plot.growth < 0.95 or soil.get_cell(1, 1).eaten_by != hand.display_name or hand.bite_wait > 0.05:
+		push_error("smoke: a short meal let them bite off screen")
+		get_tree().quit(1)
+		return
+	soil.get_cell(1, 1).eaten_by = ""
+	soil.get_cell(1, 1).taken = false
 	_browse(0.1)
 	if off_plot.growth > 0.6 or hand.bite_wait < 3.0:
 		push_error("smoke: a hidden resident left the ripe plant")
@@ -5962,13 +6003,40 @@ func _apply_soil_effect(effect: Dictionary) -> int:
 	_refresh_soil_colors()
 	return count
 
+func _own_meal(jelly: Jelly) -> SoilCell:
+	# ponytail: the bed with their name; a second plate if two of that species both ate.
+	var plant_id := _feed_plant(jelly.species_id)
+	if plant_id == "":
+		return null
+	var best: SoilCell = null
+	var best_d := 80.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.eaten_by != jelly.display_name or plot.plant_id != plant_id:
+			continue
+		if not plot.taken or plot.growth <= 0.0 or plot.growth >= 1.0:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z).length()
+		if dist < best_d:
+			best_d = dist
+			best = plot
+	return best
+
 func _seek_bite() -> void:
-	# ponytail: the nearest ripe plant; a route if a resident keeps two crops.
+	# ponytail: the bed they ate, until it is ripe; the nearest ripe plant after that.
 	for actor in ecology.actors:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly) or jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep:
 			continue
 		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
+			continue
+		var kept := _own_meal(jelly)
+		if kept != null:
+			var at := GardenLayout.cell_center(kept.ix, kept.iz)
+			jelly.attract = at
+			if at.distance_to(jelly.global_position) > 1.1:
+				jelly.goal = at
 			continue
 		if jelly.bite_wait > 0.0:
 			continue
@@ -5998,6 +6066,8 @@ func _browse(hours: float) -> void:
 			continue
 		jelly.bite_wait = maxf(0.0, jelly.bite_wait - hours)
 		if jelly.bite_wait > 0.0:
+			continue
+		if _own_meal(jelly) != null:
 			continue
 		var plant_id := _feed_plant(jelly.species_id)
 		if plant_id == "":
