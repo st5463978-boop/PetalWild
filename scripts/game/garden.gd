@@ -2607,6 +2607,60 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	home_points.pop_back()
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
+	Clock.set_hour(15.3)
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "":
+			plot.fertility = 0.8
+	_force_plant(0, 1, "meadowbell", 1.0)
+	var other := soil.get_cell(0, 1)
+	other.fertility = 0.05
+	other.moisture = 0.8
+	cane = soil.get_cell(4, 2)
+	cane.plant_id = "bramble"
+	cane.growth = 1.0
+	cane.tilled = true
+	cane.fertility = 0.05
+	cane.moisture = 0.8
+	vine = ecology.first("grapling")
+	if vine == null:
+		vine = ecology.force_spawn("grapling")
+	vine.life = "resident"
+	vine.leaving = false
+	vine.global_position = GardenLayout.cell_center(4, 2)
+	var kept_tin := Economy.coins
+	var kept_pouch := Economy.count("fertilizer")
+	_notice_hunger()
+	if not bram.has_chore or not bram_feeding or bram_bed != Vector2i(0, 1) or Economy.coins != kept_tin or Economy.count("fertilizer") != kept_pouch:
+		push_error("smoke: bram fed a cane the grapling was keeping")
+		get_tree().quit(1)
+		return
+	bram.has_chore = false
+	bram_feeding = false
+	other.fertility = 0.8
+	_notice_hunger()
+	if bram.has_chore or bram.speech == null or bram.speech.text != "That cane is kept. I will leave it." or Economy.coins != kept_tin or Economy.count("fertilizer") != kept_pouch:
+		push_error("smoke: bram took the kept cane")
+		get_tree().quit(1)
+		return
+	vine.life = "visitor"
+	_notice_hunger()
+	if not bram.has_chore or bram_bed != Vector2i(4, 2) or Economy.coins != kept_tin or Economy.count("fertilizer") != kept_pouch or Trust.level("nessa") != loam_trust:
+		push_error("smoke: a visitor grapling stopped the feed")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the kept cane did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not bram_feeding or bram_bed != Vector2i(4, 2) or Economy.coins != kept_tin or Economy.count("fertilizer") != kept_pouch:
+		push_error("smoke: the kept cane did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -4042,6 +4096,22 @@ func _notice_thirst() -> void:
 	bram_bed = Vector2i(driest.ix, driest.iz)
 	bram.say("That bed is thirsty. I will walk it.")
 
+func _cane_kept(plot: SoilCell) -> bool:
+	# ponytail: the cane under one settled grapling; a row if several keep separate canes.
+	if plot.plant_id != "bramble":
+		return false
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "grapling" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		var flat := Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z)
+		if flat.length() <= 1.6:
+			return true
+	return false
+
 func _notice_hunger() -> void:
 	# ponytail: the hungriest planted bed under its line; thirst still wins.
 	var bram := _person("bram")
@@ -4051,6 +4121,7 @@ func _notice_hunger() -> void:
 	if hour >= 19.5 or hour < 6.0:
 		return
 	var hungry: SoilCell = null
+	var skipped := false
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		if plot.plant_id == "":
@@ -4058,9 +4129,14 @@ func _notice_hunger() -> void:
 		var line := float(ContentDB.plant(plot.plant_id).get("fertility_need", 0.2))
 		if plot.fertility >= line:
 			continue
+		if _cane_kept(plot):
+			skipped = true
+			continue
 		if hungry == null or plot.fertility < hungry.fertility:
 			hungry = plot
 	if hungry == null:
+		if skipped and bram.speech != null and bram.speech.text != "That cane is kept. I will leave it.":
+			bram.say("That cane is kept. I will leave it.")
 		return
 	bram.chore = GardenLayout.cell_center(hungry.ix, hungry.iz)
 	bram.has_chore = true
