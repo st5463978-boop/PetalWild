@@ -5634,11 +5634,31 @@ func _edge_lips(buckets: Array) -> void:
 		x += 0.42
 
 func _stone_gaps(buckets: Array) -> void:
-	# ponytail: one bloom in the opening; a clump if the walk still reads as a road.
+	# ponytail: a clump beside the worn line; the center stays open.
 	var step := 0
-	for gap in GardenLayout.stone_gaps():
-		_skirt_drop(buckets, gap.x, gap.z, step, false, true)
-		step += 1
+	for run in GardenLayout._narrow_runs():
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var dir := b - a
+		dir.y = 0.0
+		var span := dir.length()
+		if span < 0.2:
+			continue
+		dir /= span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var along := 0.85
+		while along < span - 0.55:
+			for hand in [-1.0, 1.0]:
+				var side_step := float(hand)
+				var heart := a + dir * along + side * (side_step * 0.34)
+				for petal in 3:
+					var spin := float(petal) * TAU / 3.0 + side_step
+					var at := heart + Vector3(cos(spin) * 0.07, 0.0, sin(spin) * 0.07)
+					if GardenLayout.on_track(at.x, at.z) or GardenLayout.in_plots(at.x, at.z, 0.0):
+						continue
+					_skirt_drop(buckets, at.x, at.z, step, false, true)
+					step += 1
+			along += 1.25
 
 func _track_meadow(buckets: Array) -> void:
 	# ponytail: flowers on the old bed tracks; a worn line if feet need one.
