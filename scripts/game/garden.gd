@@ -653,12 +653,39 @@ func _run_smoke() -> void:
 		push_error("smoke: the pond did not widen")
 		get_tree().quit(1)
 		return
+	var lifted := false
+	for vert in pond.mesh.get_faces():
+		var point: Vector3 = vert
+		if GardenLayout.pond_distance(point.x, point.z) > GardenLayout.POND_RADIUS + 0.05 and point.y > -0.04:
+			lifted = true
+			break
+	if not lifted:
+		push_error("smoke: the new shore stayed under the bank")
+		get_tree().quit(1)
+		return
 	for i in 3:
 		_force_plant(8, 5 + i, "reed", 1.0)
 	ecology.cooldowns["bulrush"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if int(world_snapshot().get("pond_cells", 0)) < 26 or ecology.first("bulrush") == null:
 		push_error("smoke: bulrush did not wade in")
+		get_tree().quit(1)
+		return
+	var rush := ecology.first("bulrush")
+	rush.life = "curious"
+	rush.site_time = 7.0
+	ecology.tick(0.2, world_snapshot())
+	if ecology.rules.rank_of(str(ecology.states.get("bulrush", ""))) < ecology.rules.rank_of("visitor"):
+		push_error("smoke: bulrush did not become a visitor")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		plot.moisture = maxf(plot.moisture, 0.62)
+	ecology.cooldowns["reedic"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if ecology.first("reedic") == null:
+		push_error("smoke: reedic did not follow bulrush")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -705,6 +732,13 @@ func _run_capture() -> void:
 	camera.snap_home()
 	await get_tree().create_timer(0.6).timeout
 	await _shot("/workspace/docs/screenshots/wave1_night.png")
+	for i in 4:
+		var angle := TAU * float(i) / 4.0
+		var at := GardenLayout.POND_CENTER + Vector3(cos(angle), 0.0, sin(angle)) * (GardenLayout.POND_RADIUS + 0.5)
+		_scoop(at)
+	camera.focus_on(GardenLayout.POND_CENTER, 8.5)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
 	get_tree().quit(0)
 

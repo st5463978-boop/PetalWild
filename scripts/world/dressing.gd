@@ -107,8 +107,11 @@ static func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
 	var center := GardenLayout.POND_CENTER
 	var x := center.x + cos(angle) * radius
 	var z := center.z + sin(angle) * radius
+	var y := -0.08
+	if radius > GardenLayout.POND_RADIUS:
+		y = GardenLayout.height_at(x, z) + 0.02
 	tool.set_uv(Vector2(x, z))
-	tool.add_vertex(Vector3(x, -0.08, z))
+	tool.add_vertex(Vector3(x, y, z))
 
 func _plots(parent: Node3D) -> void:
 	for px in 2:
