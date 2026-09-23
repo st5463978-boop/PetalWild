@@ -87,7 +87,7 @@ func set_tool(tool_name: String) -> void:
 		button.add_theme_stylebox_override("normal", ThemeKit.button_box(on))
 		button.add_theme_color_override("font_color", ThemeKit.CREAM if on else ThemeKit.INK)
 
-func show_journal(rows: Array, events: Array, residents: int) -> void:
+func show_journal(rows: Array, events: Array, residents: int, bites: Array = []) -> void:
 	_clear(journal_box)
 	journal_box.add_child(ThemeKit.title("Grow journal", 22))
 	journal_box.add_child(ThemeKit.label("%d residents in the parish" % residents, 14, ThemeKit.MOSS_DEEP))
@@ -98,6 +98,10 @@ func show_journal(rows: Array, events: Array, residents: int) -> void:
 	if not events.is_empty():
 		journal_box.add_child(ThemeKit.title("Today", 16))
 		for line in events.slice(0, 6):
+			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+	if not bites.is_empty():
+		journal_box.add_child(ThemeKit.title("Who ate", 16))
+		for line in bites:
 			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
 
 func show_people(rows: Array) -> void:

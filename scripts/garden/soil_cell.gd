@@ -11,6 +11,7 @@ var plant_id: String = ""
 var growth: float = 0.0
 var wilt: float = 0.0
 var taken: bool = false
+var eaten_by: String = ""
 
 func to_dict() -> Dictionary:
 	return {
@@ -24,6 +25,7 @@ func to_dict() -> Dictionary:
 		"growth": growth,
 		"wilt": wilt,
 		"taken": taken,
+		"eaten_by": eaten_by,
 	}
 
 func apply_dict(data: Dictionary) -> void:
@@ -35,3 +37,4 @@ func apply_dict(data: Dictionary) -> void:
 	growth = float(data.get("growth", growth))
 	wilt = float(data.get("wilt", 0.0))
 	taken = bool(data.get("taken", false))
+	eaten_by = str(data.get("eaten_by", ""))

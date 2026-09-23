@@ -246,7 +246,7 @@ func refresh_panels() -> void:
 	elif directory_page == "place":
 		hud.show_place(_place_stats(world))
 	else:
-		hud.show_journal(_journal_rows(world), events, ecology.resident_total())
+		hud.show_journal(_journal_rows(world), events, ecology.resident_total(), _bite_lines())
 	if hud.shop.visible:
 		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open())
 
@@ -2471,6 +2471,8 @@ func _run_smoke() -> void:
 	hand.global_position = GardenLayout.cell_center(1, 1)
 	hand.bite_wait = 0.0
 	var ripe := int(world_snapshot()["mature"].get("meadowbell", 0))
+	var who_tin := Economy.coins
+	var who_trust := Trust.level("nessa")
 	_browse(0.1)
 	if bite_plot.growth > 0.6 or hand.bite_wait < 3.0 or int(world_snapshot()["mature"].get("meadowbell", 0)) >= ripe:
 		push_error("smoke: the resident did not bite")
@@ -2483,8 +2485,24 @@ func _run_smoke() -> void:
 	apply_state(SaveGame.read_slot(1))
 	hand = ecology.first("bellhelp")
 	bite_plot = soil.get_cell(1, 1)
-	if hand == null or bite_plot.growth > 0.6 or hand.bite_wait < 3.0:
+	var who_lines: Array = _bite_lines()
+	var who_line := ""
+	if not who_lines.is_empty():
+		who_line = str(who_lines[0])
+	if hand == null or bite_plot.growth > 0.6 or hand.bite_wait < 3.0 or bite_plot.eaten_by != hand.display_name or who_line != "Bellhelp ate the Meadowbell." or Trust.level("nessa") != who_trust or Economy.coins != who_tin:
 		push_error("smoke: the bite did not reload")
+		get_tree().quit(1)
+		return
+	soil.tick(50.0, "mist")
+	if bite_plot.eaten_by != "" or bite_plot.taken or bite_plot.growth < 1.0:
+		push_error("smoke: a ripe bed kept who ate it")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	hand = ecology.first("bellhelp")
+	bite_plot = soil.get_cell(1, 1)
+	if hand == null or bite_plot.eaten_by != hand.display_name:
+		push_error("smoke: the journal forgot who ate")
 		get_tree().quit(1)
 		return
 	for cell in soil.all():
@@ -2883,7 +2901,7 @@ func _run_smoke() -> void:
 		return
 	pear.global_position = GardenLayout.cell_center(1, 3)
 	_browse(0.1)
-	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0 or not soil.get_cell(1, 3).taken or events.is_empty() or str(events[0]).find("bite") == -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0 or not soil.get_cell(1, 3).taken or soil.get_cell(1, 3).eaten_by != pear.display_name or events.is_empty() or str(events[0]).find("bite") == -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
 		push_error("smoke: dusk left the lantern whole")
 		get_tree().quit(1)
 		return
@@ -4659,6 +4677,7 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
 	plot.moisture = 0.74
 	plot.fertility = 0.38
 	plot.taken = false
+	plot.eaten_by = ""
 
 func _build_patches() -> void:
 	soil_lid = BoxMesh.new()
@@ -5243,6 +5262,7 @@ func _plant(plot: SoilCell) -> void:
 	plot.plant_id = plant_id
 	plot.growth = 0.04
 	plot.taken = false
+	plot.eaten_by = ""
 	plot.moisture = maxf(plot.moisture, 0.45)
 	audio.play_kind("plant")
 	toast("Planted %s." % definition.get("name", plant_id))
@@ -5256,6 +5276,7 @@ func _tend(plot: SoilCell) -> void:
 	Economy.add(plot.plant_id, 1)
 	plot.growth = 0.32
 	plot.taken = true
+	plot.eaten_by = ""
 	audio.play_kind("harvest")
 	toast("Harvested %s." % name)
 	var bram := _person("bram")
@@ -5462,7 +5483,7 @@ func _plot_line(plot: SoilCell) -> String:
 	var chem_need := str(definition.get("chem", ""))
 	if chem_need != "" and plot.chem != chem_need:
 		return line + "  ·  Needs night-loam."
-	# ponytail: one taken flag; a bite log if the journal keeps who ate it.
+	# ponytail: the bed remembers who ate it until the fruit is ripe again.
 	if plot.taken and plot.growth < 1.0:
 		return line + "  ·  Growing back."
 	return line
@@ -5474,6 +5495,17 @@ func _bees_hurrying(plot: SoilCell) -> bool:
 	if plot.plant_id != "meadowbell" or plot.growth <= 0.0 or plot.growth >= 1.0:
 		return false
 	return GardenLayout.cell_center(plot.ix, plot.iz).distance_to(bee_flower) < 0.35
+
+func _bite_lines() -> Array:
+	# ponytail: one line per bitten bed; a page if the parish keeps a season of meals.
+	var lines: Array = []
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.eaten_by == "" or not plot.taken or plot.growth >= 1.0:
+			continue
+		var name := str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
+		lines.append("%s ate the %s." % [plot.eaten_by, name])
+	return lines
 
 func _fruit_returning(plot: SoilCell) -> bool:
 	# ponytail: one settled berrypatch on the bitten cane; a row if several ripen separate canes.
@@ -5852,6 +5884,7 @@ func _browse(hours: float) -> void:
 			continue
 		plot.growth = 0.55
 		plot.taken = true
+		plot.eaten_by = jelly.display_name
 		jelly.bite_wait = 4.0
 		toast("%s takes a bite." % jelly.display_name)
 
