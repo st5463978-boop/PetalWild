@@ -1005,7 +1005,7 @@ func _grow_pond() -> void:
 	var pond := get_node_or_null("Pond") as MeshInstance3D
 	if pond == null:
 		return
-	var radius := GardenLayout.POND_RADIUS + float(scooped.size()) * 0.06
+	var radius := GardenLayout.POND_RADIUS + float(scooped.size()) * 0.11
 	GardenDressing.resize_pond(pond, radius)
 
 func _place_home(point: Vector3, _saved := false) -> void:
