@@ -1233,7 +1233,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			var bscale := rng.randf_range(0.9, 1.35)
 			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
 			bloom_colors.append(tint)
-	# ponytail: tighter blooms on the west margin; a north grid if that apron still reads flat.
+	# ponytail: west margin and the north apron; the worn walks stay open.
 	var gx := -11.2
 	while gx <= -7.75:
 		var gz := -5.6
@@ -1263,6 +1263,32 @@ func _lawn_meadow(parent: Node3D) -> void:
 				bloom_colors.append(west_tint)
 			gz += 0.38
 		gx += 0.38
+	var nx := -7.5
+	while nx <= 2.4:
+		var nz := 4.08
+		while nz <= 5.5:
+			var jx := nx + rng.randf_range(-0.08, 0.08)
+			var jz := nz + rng.randf_range(-0.08, 0.08)
+			var ny := GardenLayout.height_at(jx, jz)
+			var blocked := false
+			if ny < -0.08 or ny > 0.4:
+				blocked = true
+			elif GardenLayout.in_plots(jx, jz, 0.15) or GardenLayout.on_path(jx, jz):
+				blocked = true
+			elif GardenLayout.pond_distance(jx, jz) < GardenLayout.POND_RADIUS + 0.45:
+				blocked = true
+			elif Vector2(jx - GardenLayout.STALL.x, jz - GardenLayout.STALL.z).length() < 1.45:
+				blocked = true
+			elif Vector2(jx - GardenLayout.SHED.x, jz - GardenLayout.SHED.z).length() < 1.5:
+				blocked = true
+			if not blocked:
+				var north_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
+				var north_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+				var north_scale := rng.randf_range(0.95, 1.4)
+				blooms.append(Transform3D(north_basis.scaled(Vector3.ONE * north_scale), Vector3(jx, ny, jz)))
+				bloom_colors.append(north_tint)
+			nz += 0.38
+		nx += 0.38
 	_multimesh(parent, _blade(), points, colors, _foliage_material(), "LawnMeadow", false, customs)
 	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
