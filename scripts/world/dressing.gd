@@ -7,7 +7,6 @@ func build(parent: Node3D) -> void:
 	_rng.seed = 14017
 	_terrain(parent)
 	_water(parent)
-	_plots(parent)
 	_paths(parent)
 	_hedge(parent)
 	_hedge_clumps(parent)
@@ -113,21 +112,6 @@ static func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
 	tool.set_uv(Vector2(x, z))
 	tool.add_vertex(Vector3(x, y, z))
 
-func _plots(parent: Node3D) -> void:
-	for px in 2:
-		for pz in 2:
-			var rect := GardenLayout.plot_rect(px, pz)
-			_frame(parent, rect)
-
-func _frame(parent: Node3D, rect: Rect2) -> void:
-	var y := 0.08
-	var thick := 0.08
-	var h := 0.14
-	_box(parent, Vector3(rect.position.x + rect.size.x * 0.5, y, rect.position.y - thick * 0.5), Vector3(rect.size.x + thick, h, thick), Color("#8a6244"))
-	_box(parent, Vector3(rect.position.x + rect.size.x * 0.5, y, rect.position.y + rect.size.y + thick * 0.5), Vector3(rect.size.x + thick, h, thick), Color("#8a6244"))
-	_box(parent, Vector3(rect.position.x - thick * 0.5, y, rect.position.y + rect.size.y * 0.5), Vector3(thick, h, rect.size.y), Color("#7b563c"))
-	_box(parent, Vector3(rect.position.x + rect.size.x + thick * 0.5, y, rect.position.y + rect.size.y * 0.5), Vector3(thick, h, rect.size.y), Color("#7b563c"))
-
 func _paths(parent: Node3D) -> void:
 	var strips: Array = [
 		[Vector3(-4.55, 0, 5.2), Vector3(-4.55, 0, 3.5), 0.96],
@@ -224,14 +208,6 @@ func _hedge(parent: Node3D) -> void:
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
-	# Lower walls around the four beds, with gaps where the paths already run.
-	var room_south: Array[Vector3] = [Vector3(-2.35, -6.55, 1.2)]
-	var room_north: Array[Vector3] = [Vector3(-4.55, 3.2, 1.25), Vector3(-2.35, 3.2, 1.05)]
-	var room_east: Array[Vector3] = [Vector3(3.85, -2.5, 1.2)]
-	_hedge_wall(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), room_south, 0.78)
-	_hedge_wall(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), room_east, 0.78)
-	_hedge_wall(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), room_north, 0.78)
-	_hedge_wall(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.78)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
@@ -330,6 +306,18 @@ func _hedge_gap(at: Vector3) -> bool:
 func _far_open(at: Vector3) -> bool:
 	return at.z > 6.2 and posmod(int(floor(at.x * 0.4)), 4) == 3
 
+func _room_box(at: Vector3) -> bool:
+	# ponytail: the bed hedge is the plot grid; the parish wall stays. Rng still runs.
+	if absf(at.z + 6.55) < 0.35 and at.x > -8.8 and at.x < 4.1:
+		return true
+	if absf(at.z - 3.2) < 0.35 and at.x > -8.8 and at.x < 4.1:
+		return true
+	if absf(at.x - 3.85) < 0.35 and at.z > -6.8 and at.z < 3.45:
+		return true
+	if absf(at.x + 8.55) < 0.35 and at.z > -6.8 and at.z < 3.45:
+		return true
+	return false
+
 func _notch_lip(x: float) -> float:
 	var lip := 1.0
 	var spans: Array[Vector2] = [Vector2(-12.0, 1.8), Vector2(-2.6, 2.8), Vector2(8.2, 2.0)]
@@ -427,7 +415,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 				var scale_leaf := _rng.randf_range(0.75, 1.4)
 				basis = basis.scaled(Vector3.ONE * scale_leaf)
 				var tint := Color("#1f5528").lerp(Color("#c6d96a"), _rng.randf() * 0.55)
-				if (not _crest_wall(center.z) or point.y >= 0.84) and not _far_open(center):
+				if (not _crest_wall(center.z) or point.y >= 0.84) and not _far_open(center) and not _room_box(center):
 					points.append(Transform3D(basis, at))
 					colors.append(tint)
 					var crossed := basis.rotated(normal, 1.15).scaled(Vector3(0.82, 0.82, 0.82))
@@ -510,7 +498,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 			var basis := Basis.from_euler(Vector3(_rng.randf_range(-0.35, 0.2), _rng.randf() * TAU, _rng.randf_range(-0.25, 0.25))).scaled(Vector3.ONE * scale)
 			var tint := Color("#1e5a2c").lerp(Color("#d2e06a"), _rng.randf())
 			var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-			if not _crest_wall(center.z):
+			if not _crest_wall(center.z) and not _room_box(center):
 				points.append(Transform3D(basis, at))
 				colors.append(tint)
 				customs.append(custom)
@@ -596,7 +584,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 				var tip := Color("#5a7a30") if _crest_wall(center.z) else Color("#d5e07a")
 				var tint := Color("#1c5c2c").lerp(tip, _rng.randf() * 0.85)
 				var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-				if (not _crest_wall(center.z) or rise > 0.62) and not _far_open(center):
+				if (not _crest_wall(center.z) or rise > 0.62) and not _far_open(center) and not _room_box(center):
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
 					colors.append(tint)
 					customs.append(custom)
@@ -655,7 +643,7 @@ func _hedge_coat(parent: Node3D) -> void:
 					var lift := float(layer) / 2.0
 					var tint := Color("#16321c").lerp(Color("#7aaa44"), lift * 0.55 + _rng.randf() * 0.35)
 					var custom := Color(_rng.randf(), 0.0, 0.0, 1.0)
-					var keep := (not _crest_wall(center.z) or layer == 2) and not _far_open(center)
+					var keep := (not _crest_wall(center.z) or layer == 2) and not _far_open(center) and not _room_box(center)
 					if keep:
 						points.append(card)
 						colors.append(tint)
@@ -691,10 +679,6 @@ func _hedge_bulges(parent: Node3D) -> void:
 		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.15},
 		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.15},
 		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.15},
-		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.72, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
-		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.72, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
-		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.72, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
-		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.72},
 	]
 	for seg in segments:
 		var a: Vector3 = seg["a"]
@@ -743,10 +727,6 @@ func _hedge_volume(parent: Node3D) -> void:
 		{"a": Vector3(12.8, 0, -9.9), "b": Vector3(12.8, 0, 7.9), "h": 1.22},
 		{"a": Vector3(12.8, 0, 7.9), "b": Vector3(-13.6, 0, 7.9), "h": 1.22},
 		{"a": Vector3(-13.6, 0, 7.9), "b": Vector3(-13.6, 0, -9.9), "h": 1.22},
-		{"a": Vector3(-8.55, 0, -6.55), "b": Vector3(3.85, 0, -6.55), "h": 0.78, "gate": Vector2(-2.35, -6.55), "gate_r": 1.35},
-		{"a": Vector3(3.85, 0, -6.55), "b": Vector3(3.85, 0, 3.2), "h": 0.78, "gate": Vector2(3.85, -2.5), "gate_r": 1.35},
-		{"a": Vector3(3.85, 0, 3.2), "b": Vector3(-8.55, 0, 3.2), "h": 0.78, "gate": Vector2(-3.4, 3.2), "gate_r": 2.4},
-		{"a": Vector3(-8.55, 0, 3.2), "b": Vector3(-8.55, 0, -6.55), "h": 0.78},
 	]
 	for seg in segments:
 		var a: Vector3 = seg["a"]
@@ -1518,12 +1498,3 @@ func _paint_imported(node: Node, material: Material) -> void:
 		mesh_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for child in node.get_children():
 		_paint_imported(child, material)
-
-func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> void:
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	var node := MeshInstance3D.new()
-	node.mesh = mesh
-	node.material_override = _standard(color, 0.78)
-	node.position = at
-	parent.add_child(node)
