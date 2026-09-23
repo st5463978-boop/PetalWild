@@ -4285,8 +4285,13 @@ func _run_smoke() -> void:
 		return
 	var lamp_hour := Clock.hour()
 	var lamp_light := get_tree().get_first_node_in_group("parish_lantern") as OmniLight3D
+	var stall_lamp := get_tree().get_first_node_in_group("parish_stall_lamp") as OmniLight3D
 	if lamp_light == null:
 		push_error("smoke: the path lanterns are missing")
+		get_tree().quit(1)
+		return
+	if stall_lamp == null:
+		push_error("smoke: the stall lamp is missing")
 		get_tree().quit(1)
 		return
 	Clock.set_hour(15.3)
@@ -4295,10 +4300,18 @@ func _run_smoke() -> void:
 		push_error("smoke: the afternoon lit the path lanterns")
 		get_tree().quit(1)
 		return
+	if stall_lamp.light_energy < 0.5:
+		push_error("smoke: the open stall left its lamp dim")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(20.4)
 	_lamps()
 	if lamp_light.light_energy < 0.9 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: dusk left the path lanterns dim")
+		get_tree().quit(1)
+		return
+	if stall_lamp.light_energy > 0.12:
+		push_error("smoke: the shut stall left its lamp lit")
 		get_tree().quit(1)
 		return
 	Clock.set_hour(lamp_hour)
@@ -4319,6 +4332,12 @@ func _lamps() -> void:
 		var glass := node as MeshInstance3D
 		if glass and glass.material_override is StandardMaterial3D:
 			(glass.material_override as StandardMaterial3D).emission_energy_multiplier = glow
+	# ponytail: one stall lamp follows open hours; a second lamp if the shed should keep its own.
+	var stall_energy := 0.62 if _stall_open() else 0.05
+	for node in get_tree().get_nodes_in_group("parish_stall_lamp"):
+		var stall_lamp := node as OmniLight3D
+		if stall_lamp:
+			stall_lamp.light_energy = stall_energy
 
 func _run_capture() -> void:
 	Settings.reduce_motion = true

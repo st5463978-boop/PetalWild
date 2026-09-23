@@ -51,6 +51,7 @@ func _stall(parent: Node3D) -> void:
 	light.omni_range = 4.5
 	light.shadow_enabled = false
 	root.add_child(light)
+	light.add_to_group("parish_stall_lamp")
 
 func _shed(parent: Node3D) -> void:
 	var root := Node3D.new()
