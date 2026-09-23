@@ -656,7 +656,10 @@ func _run_smoke() -> void:
 	var lifted := false
 	for vert in pond.mesh.get_faces():
 		var point: Vector3 = vert
-		if GardenLayout.pond_distance(point.x, point.z) > GardenLayout.POND_RADIUS + 0.05 and point.y > -0.04:
+		if GardenLayout.pond_distance(point.x, point.z) <= GardenLayout.POND_RADIUS + 0.05:
+			continue
+		var ground := GardenLayout.height_at(point.x, point.z)
+		if point.y >= ground + 0.02 and point.y <= ground + 0.06:
 			lifted = true
 			break
 	if not lifted:

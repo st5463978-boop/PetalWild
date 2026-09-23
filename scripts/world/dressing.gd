@@ -109,7 +109,7 @@ static func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
 	var z := center.z + sin(angle) * radius
 	var y := -0.08
 	if radius > GardenLayout.POND_RADIUS:
-		y = GardenLayout.height_at(x, z) + 0.02
+		y = GardenLayout.height_at(x, z) + 0.04
 	tool.set_uv(Vector2(x, z))
 	tool.add_vertex(Vector3(x, y, z))
 
