@@ -12,6 +12,8 @@ var birds: GardenBirds
 var people := {}
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
+var bed_inside: Array[MultiMeshInstance3D] = []
+var bed_turf: MultiMeshInstance3D
 var soil_lid: BoxMesh
 var bed_lid: BoxMesh
 var plant_views := {}
@@ -699,9 +701,7 @@ func _run_smoke() -> void:
 	for i in 3:
 		_force_plant(i, 1, "meadowbell", 1.0)
 	_refresh_soil_colors()
-	var meadow_n := 0
-	for bloom_i in bed_blooms.size():
-		meadow_n += bed_blooms[bloom_i].multimesh.instance_count
+	var meadow_n := _bed_flower_count()
 	var seam: MeshInstance3D = patches["0,0"]
 	var crop: MeshInstance3D = patches["0,1"]
 	if seam.mesh != bed_lid or crop.mesh != bed_lid:
@@ -710,9 +710,7 @@ func _run_smoke() -> void:
 		return
 	soil.get_cell(0, 0).tilled = true
 	_refresh_soil_colors()
-	var meadow_after := 0
-	for bloom_i in bed_blooms.size():
-		meadow_after += bed_blooms[bloom_i].multimesh.instance_count
+	var meadow_after := _bed_flower_count()
 	if seam.mesh != soil_lid:
 		push_error("smoke: tilled bed kept the meadow lid")
 		get_tree().quit(1)
@@ -727,9 +725,7 @@ func _run_smoke() -> void:
 	soil.get_cell(0, 1).growth = 0.0
 	soil.get_cell(0, 1).tilled = false
 	_refresh_soil_colors()
-	var opened := 0
-	for bloom_i in bed_blooms.size():
-		opened += bed_blooms[bloom_i].multimesh.instance_count
+	var opened := _bed_flower_count()
 	if opened != meadow_n + 13:
 		push_error("smoke: a planted bed kept a bare rim")
 		get_tree().quit(1)
@@ -4855,9 +4851,54 @@ func _build_bed_meadow() -> void:
 	flower_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for color in palette:
 		_add_bed_mesh(_bed_flower(color), flower_mat)
+	# ponytail: interior ranks are meadow; the shared blooms still dress the walks.
+	var inside_leaf := StandardMaterial3D.new()
+	inside_leaf.albedo_color = Color("#3e7a34")
+	inside_leaf.roughness = 0.96
+	inside_leaf.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_add_inside_mesh(leaf, inside_leaf)
+	var inside_colors: Array[Color] = [Color("#5d8f3c"), Color("#ef7f72"), Color("#4e7a36"), Color("#6a9444")]
+	for color in inside_colors:
+		_add_inside_mesh(_bed_flower(color), flower_mat)
+	_build_bed_turf()
 	_bridge_lids()
 
+func _build_bed_turf() -> void:
+	# ponytail: flat discs over empty cells; a blade scatter if the discs still read as paint.
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.36
+	disc.bottom_radius = 0.38
+	disc.height = 0.025
+	disc.radial_segments = 8
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("#4e7a36")
+	material.roughness = 0.96
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = disc
+	bed_turf = MultiMeshInstance3D.new()
+	bed_turf.name = "BedTurf"
+	bed_turf.multimesh = multi
+	bed_turf.material_override = material
+	bed_turf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(bed_turf)
+
+func _bed_flower_count() -> int:
+	var n := 0
+	for bloom_i in bed_blooms.size():
+		n += bed_blooms[bloom_i].multimesh.instance_count
+	for bloom_i in bed_inside.size():
+		n += bed_inside[bloom_i].multimesh.instance_count
+	return n
+
 func _add_bed_mesh(mesh: Mesh, material: Material) -> void:
+	bed_blooms.append(_make_bed_mesh(mesh, material))
+
+func _add_inside_mesh(mesh: Mesh, material: Material) -> void:
+	bed_inside.append(_make_bed_mesh(mesh, material))
+
+func _make_bed_mesh(mesh: Mesh, material: Material) -> MultiMeshInstance3D:
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = mesh
@@ -4866,7 +4907,7 @@ func _add_bed_mesh(mesh: Mesh, material: Material) -> void:
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	inst.material_override = material
 	add_child(inst)
-	bed_blooms.append(inst)
+	return inst
 
 func _bed_flower(petal: Color) -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -5090,11 +5131,39 @@ func _fill_bed_meadow() -> void:
 		Vector3(-0.04, 0.03, 0.26),
 	]
 	var buckets: Array = [[], [], [], [], []]
+	var inside_rows: Array = [[], [], [], [], []]
+	var turf: Array[Transform3D] = []
+	var turf_offsets: Array[Vector3] = [
+		Vector3(-0.2, 0.16, -0.14),
+		Vector3(0.2, 0.16, -0.12),
+		Vector3(-0.16, 0.16, 0.16),
+		Vector3(0.18, 0.16, 0.14),
+		Vector3(0.0, 0.16, 0.0),
+	]
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		if not _meadow_cell(plot):
 			continue
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		for n in turf_offsets.size():
+			# ponytail: stay on the cell; _bed_spot walks the flowers, and that shift uncovered the furrow.
+			var jx := (float((plot.ix * 3 + n * 5) % 5) - 2.0) * 0.05
+			var jz := (float((plot.iz * 3 + n * 7) % 5) - 2.0) * 0.05
+			var cover := center + turf_offsets[n] + Vector3(jx, 0.0, jz)
+			if GardenLayout.on_path(cover.x, cover.z) or GardenLayout.on_track(cover.x, cover.z):
+				continue
+			if GardenLayout.pond_distance(cover.x, cover.z) < GardenLayout.POND_RADIUS:
+				continue
+			var turf_spin := float((plot.ix + plot.iz + n) % 5) * 0.4
+			var turf_scale := 1.35 + float((plot.ix + n) % 3) * 0.08
+			var reach := 0.36 * turf_scale
+			var hits_ns := absf(cover.x + 2.35) < 0.22 + reach and cover.z > -6.2 and cover.z < 3.35
+			var hits_north := absf(cover.z - 3.5) < 0.22 + reach and cover.x > -7.2 and cover.x < -1.0
+			var hits_south := absf(cover.z + 6.35) < 0.22 + reach and cover.x > -8.2 and cover.x < 1.2
+			if hits_ns or hits_north or hits_south:
+				continue
+			var turf_basis := Basis(Vector3.UP, turf_spin).scaled(Vector3(turf_scale, 1.0, turf_scale))
+			turf.append(Transform3D(turf_basis, cover))
 		var at := Vector3.ZERO
 		var spin := 0.0
 		var scale := 1.0
@@ -5105,13 +5174,13 @@ func _fill_bed_meadow() -> void:
 			spin = float((plot.ix * 3 + plot.iz + i) % 5) * 0.4
 			scale = 1.35 + float((plot.iz + i) % 3) * 0.16
 			basis = Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
-			buckets[0].append(Transform3D(basis, at))
+			inside_rows[0].append(Transform3D(basis, at))
 		for i in spots.size():
 			at = _bed_spot(center, spots[i], plot.ix, plot.iz, i)
 			spin = float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.35
 			scale = 1.45 + float((plot.ix + i) % 3) * 0.28
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
-			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
+			inside_rows[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
 		var gaps: Array[Vector3] = [
 			Vector3(-0.14, 0.03, -0.06),
 			Vector3(0.12, 0.03, 0.02),
@@ -5122,7 +5191,7 @@ func _fill_bed_meadow() -> void:
 			at = _bed_spot(center, gaps[i], plot.ix, plot.iz, i)
 			spin = float((plot.ix + plot.iz + i) % 6) * 0.5
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.25)
-			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
+			inside_rows[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
 	# ponytail: eight flowers on the rim of a planted cell; the stem stays clear.
 	var rim: Array[Vector3] = [
 		Vector3(-0.38, 0.03, -0.32),
@@ -5147,7 +5216,7 @@ func _fill_bed_meadow() -> void:
 				continue
 			var spin := float((plot.ix + plot.iz + i) % 6) * 0.45
 			var basis := Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.05)
-			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
+			inside_rows[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
 	_bridge_into(buckets)
 	_path_lips(buckets)
 	_bed_skirt(buckets)
@@ -5161,6 +5230,17 @@ func _fill_bed_meadow() -> void:
 		multi.instance_count = rows.size()
 		for n in rows.size():
 			multi.set_instance_transform(n, rows[n])
+	for i in bed_inside.size():
+		var inside_multi := bed_inside[i].multimesh
+		var inside: Array = inside_rows[i]
+		inside_multi.instance_count = inside.size()
+		for n in inside.size():
+			inside_multi.set_instance_transform(n, inside[n])
+	if bed_turf != null:
+		var turf_multi := bed_turf.multimesh
+		turf_multi.instance_count = turf.size()
+		for n in turf.size():
+			turf_multi.set_instance_transform(n, turf[n])
 
 func _bridge_lids() -> void:
 	# ponytail: two strips between the north and south plots; the path stays open.

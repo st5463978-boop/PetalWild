@@ -175,9 +175,7 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 	if _worn_band(x, z):
 		# ponytail: pale path dirt clips to white under this sun; raise if the path goes muddy.
 		return Color("#6a5e4c")
-	if in_plots(x, z, 0.0):
-		var furrow := sin(x * 7.5) * 0.5 + 0.5
-		return Color("#8d5a3a").lerp(Color("#c4895c"), furrow)
+	# ponytail: the plot footprint is meadow; the tilled lid stays soil if a worked bed has to read as earth.
 	var n := sin(x * 0.33) * cos(z * 0.27)
 	var meadow := Color("#3d6428").lerp(Color("#6a9440"), clampf(n * 0.5 + 0.5, 0.0, 1.0))
 	if sin(x * 0.85 + z * 0.4) > 0.62:
