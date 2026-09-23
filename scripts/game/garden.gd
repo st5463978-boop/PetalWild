@@ -515,7 +515,7 @@ func _finish_bee_walk() -> void:
 	nessa.say("The bees are on that bed. The line is in the book.")
 
 func _dawn_birds() -> void:
-	# ponytail: one chorus when they leave the perch; a longer song if the morning keeps more birds.
+	# ponytail: two lines before seven; a third if the morning keeps more birds.
 	var h := Clock.hour()
 	if h < 5.0 or h >= 7.0 or Clock.weather == "rain" or bird_day == Clock.day:
 		return
@@ -523,6 +523,7 @@ func _dawn_birds() -> void:
 	if audio:
 		audio.play_kind("chirp", -20.0)
 	toast("The birds leave the hedge.")
+	toast("They sing once more before seven.")
 
 func world_snapshot() -> Dictionary:
 	var mature := {}
@@ -1082,7 +1083,7 @@ func _run_smoke() -> void:
 		return
 	Clock.set_hour(5.0)
 	_dawn_birds()
-	if bird_day != Clock.day or events.is_empty() or str(events[0]).find("leave the hedge") == -1 or Economy.coins != dawn_tin or Trust.level("nessa") != dawn_trust:
+	if bird_day != Clock.day or events.size() < dawn_notes.size() + 2 or str(events[1]).find("leave the hedge") == -1 or str(events[0]).find("once more before seven") == -1 or Economy.coins != dawn_tin or Trust.level("nessa") != dawn_trust:
 		push_error("smoke: the birds stayed quiet at morning")
 		get_tree().quit(1)
 		return
@@ -1096,7 +1097,7 @@ func _run_smoke() -> void:
 	Clock.day = dawn_clock + 1
 	Clock.set_hour(5.0)
 	_dawn_birds()
-	if bird_day != Clock.day or events.is_empty() or str(events[0]).find("leave the hedge") == -1:
+	if bird_day != Clock.day or events.size() < 2 or str(events[1]).find("leave the hedge") == -1 or str(events[0]).find("once more before seven") == -1:
 		push_error("smoke: the next morning stayed quiet")
 		get_tree().quit(1)
 		return
