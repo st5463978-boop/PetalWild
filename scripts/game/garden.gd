@@ -1052,6 +1052,91 @@ func _run_smoke() -> void:
 		kept.taken = row[6]
 	soil.seeded = hold_seed
 	soil.seed_rain = hold_rain
+	var feed_rows: Array = []
+	for cell in soil.all():
+		var feed_cell: SoilCell = cell
+		feed_rows.append([feed_cell, feed_cell.moisture, feed_cell.growth, feed_cell.fertility, feed_cell.wilt, feed_cell.plant_id, feed_cell.taken, feed_cell.tilled, feed_cell.chem])
+	var feed_seed := soil.seeded
+	var feed_rain := soil.seed_rain
+	var feed_tin := Economy.coins
+	var feed_trust := Trust.level("nessa")
+	var fallow := soil.get_cell(6, 1)
+	fallow.tilled = true
+	fallow.plant_id = ""
+	fallow.fertility = 0.12
+	soil.tick(60.0, "clear")
+	if fallow.fertility < 0.15 or fallow.fertility > 0.2:
+		push_error("smoke: a clear hour left the empty bed hungry")
+		get_tree().quit(1)
+		return
+	fallow.fertility = 0.4
+	soil.tick(60.0, "clear")
+	if absf(fallow.fertility - 0.42) > 0.001:
+		push_error("smoke: the empty bed grew rich on its own")
+		get_tree().quit(1)
+		return
+	fallow.fertility = 0.55
+	soil.tick(60.0, "clear")
+	if absf(fallow.fertility - 0.55) > 0.001:
+		push_error("smoke: a clear hour spent the feed already in the bed")
+		get_tree().quit(1)
+		return
+	fallow.fertility = 0.12
+	soil.tick(60.0, "golden")
+	if absf(fallow.fertility - 0.12) > 0.001:
+		push_error("smoke: the golden afternoon fed the empty bed")
+		get_tree().quit(1)
+		return
+	fallow.fertility = 0.12
+	soil.tick(60.0, "mist")
+	if absf(fallow.fertility - 0.12) > 0.001:
+		push_error("smoke: the mist fed the empty bed")
+		get_tree().quit(1)
+		return
+	fallow.fertility = 0.12
+	soil.tick(60.0, "rain")
+	if fallow.fertility > 0.121:
+		push_error("smoke: the rain fed the empty bed")
+		get_tree().quit(1)
+		return
+	var grass := soil.get_cell(6, 3)
+	grass.tilled = false
+	grass.plant_id = ""
+	grass.fertility = 0.12
+	soil.tick(60.0, "clear")
+	if absf(grass.fertility - 0.12) > 0.001:
+		push_error("smoke: untilled grass regained feed")
+		get_tree().quit(1)
+		return
+	var living := soil.get_cell(6, 2)
+	living.tilled = true
+	living.plant_id = "meadowbell"
+	living.growth = 0.4
+	living.moisture = 0.8
+	living.fertility = 0.5
+	living.wilt = 0.0
+	living.taken = false
+	soil.tick(60.0, "clear")
+	if living.fertility > 0.48 or living.fertility < 0.45 or living.plant_id != "meadowbell":
+		push_error("smoke: a living crop stopped tiring the soil")
+		get_tree().quit(1)
+		return
+	if Economy.coins != feed_tin or Trust.level("nessa") != feed_trust:
+		push_error("smoke: the fallow hour moved the parish")
+		get_tree().quit(1)
+		return
+	for row in feed_rows:
+		var fed: SoilCell = row[0]
+		fed.moisture = row[1]
+		fed.growth = row[2]
+		fed.fertility = row[3]
+		fed.wilt = row[4]
+		fed.plant_id = row[5]
+		fed.taken = row[6]
+		fed.tilled = row[7]
+		fed.chem = row[8]
+	soil.seeded = feed_seed
+	soil.seed_rain = feed_rain
 	var dawn_notes: Array = events.duplicate()
 	var dawn_top := ""
 	if not dawn_notes.is_empty():

@@ -35,6 +35,9 @@ func tick(game_minutes: float, weather: String) -> Array:
 			# ponytail: mist holds the water already in the bed; a drink if the fog should water.
 			soil.moisture = maxf(0.04, soil.moisture - hours * 0.22)
 		if soil.plant_id == "":
+			# ponytail: a clear hour returns a little feed; rain, mist, and golden leave a bare bed.
+			if soil.tilled and weather == "clear" and soil.fertility < 0.42:
+				soil.fertility = minf(0.42, soil.fertility + hours * 0.04)
 			continue
 		var definition: Dictionary = ContentDB.plant(soil.plant_id)
 		if definition.is_empty():
