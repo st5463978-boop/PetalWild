@@ -4860,6 +4860,14 @@ func _edge_wave(point: Vector3) -> Vector3:
 		var edge := 2.15 + sin(x * 1.6) * 0.4
 		if z > edge:
 			z = edge
+	if _west_bed_z(z) and x > -3.7 and x < -2.65:
+		var edge := -3.12 + sin(z * 1.7) * 0.32
+		if x > edge:
+			x = edge
+	if _west_bed_z(z) and x > -2.05 and x < -1.05:
+		var edge := -1.58 - sin(z * 1.7) * 0.32
+		if x < edge:
+			x = edge
 	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
 		return point
 	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
@@ -4908,6 +4916,18 @@ func _scallop_patch(node: MeshInstance3D, ix: int, iz: int) -> void:
 		if bite > 0.08:
 			node.scale.x = maxf(0.35, (lid_x - bite) / lid_x)
 			node.position.x -= bite * 0.5
+	if ix == 4:
+		var wave_x := -3.12 + sin(center.z * 1.7) * 0.32
+		var bite := (center.x + lid_x * 0.5) - wave_x
+		if bite > 0.08:
+			node.scale.x = maxf(0.35, (lid_x - bite) / lid_x)
+			node.position.x -= bite * 0.5
+	if ix == 5:
+		var wave_x := -1.58 - sin(center.z * 1.7) * 0.32
+		var bite := wave_x - (center.x - lid_x * 0.5)
+		if bite > 0.08:
+			node.scale.x = maxf(0.35, (lid_x - bite) / lid_x)
+			node.position.x += bite * 0.5
 
 func _scallop_lawn() -> void:
 	# ponytail: meadow discs in the bites so the brown furrow does not draw the old line.
@@ -4943,6 +4963,10 @@ func _scallop_lawn() -> void:
 			var east := sin(z * 1.7 + 0.8) * 0.32
 			if east < -0.06:
 				spots.append(Vector3(2.55 + east * 0.5, 0.07, z))
+			var seam := sin(z * 1.7) * 0.32
+			if seam < -0.08:
+				spots.append(Vector3(-3.05 + seam * 0.5, 0.07, z))
+				spots.append(Vector3(-1.65 - seam * 0.5, 0.07, z))
 		z += 0.46
 	multi.instance_count = spots.size()
 	for i in spots.size():
@@ -5220,26 +5244,32 @@ func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := fal
 		buckets[1 + (step % 4)].append(Transform3D(basis, at + Vector3(0.05, 0.0, 0.04)))
 
 func _path_lips(buckets: Array) -> void:
-	# ponytail: flowers on the path lips; the center stays dirt.
-	var lips: Array[float] = [-2.87, -2.62, -2.08, -1.83]
+	# ponytail: the lips wave into the beds; the worn center stays dirt.
 	var step := 0
 	var z := -5.0
 	while z < 2.35:
-		for x in lips:
-			if absf(x + 2.35) < 0.22:
-				continue
-			if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
-				continue
-			var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
-			var spin := float(step % 5) * 0.55
-			var scale := 0.85 + float(step % 3) * 0.1
-			var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
-			buckets[0].append(Transform3D(basis, at))
-			if step % 2 == 0:
-				basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * (scale + 0.15))
-				buckets[1 + (step % 4)].append(Transform3D(basis, at))
-			step += 1
-		z += 0.46
+		var wave := sin(z * 1.7) * 0.32
+		var west := -3.12 + wave
+		var east := -1.58 - wave
+		if not GardenLayout.on_path(west, z) and not GardenLayout.on_track(west, z) and GardenLayout.pond_distance(west, z) >= GardenLayout.POND_RADIUS:
+			_lip_bloom(buckets, west, z, step)
+			_lip_bloom(buckets, west - 0.16, z + 0.06, step + 1)
+			step += 2
+		if not GardenLayout.on_path(east, z) and not GardenLayout.on_track(east, z) and GardenLayout.pond_distance(east, z) >= GardenLayout.POND_RADIUS:
+			_lip_bloom(buckets, east, z, step)
+			_lip_bloom(buckets, east + 0.16, z + 0.06, step + 1)
+			step += 2
+		z += 0.38
+
+func _lip_bloom(buckets: Array, x: float, z: float, step: int) -> void:
+	var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+	var spin := float(step % 5) * 0.55
+	var scale := 0.85 + float(step % 3) * 0.1
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	buckets[0].append(Transform3D(basis, at))
+	if step % 2 == 0:
+		basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * (scale + 0.15))
+		buckets[1 + (step % 4)].append(Transform3D(basis, at))
 
 func _worn_lips(buckets: Array) -> void:
 	# ponytail: flowers beside the spur and the pond path; the worn center stays open.
