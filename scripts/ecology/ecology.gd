@@ -20,6 +20,24 @@ func boot(creature_folder: Node3D) -> void:
 
 func tick(delta: float, world: Dictionary) -> void:
 	_prune()
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if not jelly.leaving or jelly.is_queued_for_deletion():
+			continue
+		if jelly.global_position.distance_to(GardenLayout.GATE) < 0.8 or jelly.site_time > 40.0:
+			jelly.queue_free()
+			continue
+		var gone_def: Dictionary = ContentDB.species_def(jelly.species_id)
+		var back := rules.all_met(gone_def, world)
+		if back and rules.rank_of(jelly.life) < rules.rank_of("settler"):
+			# ponytail: one turn back; a queue if several recover on the same tick.
+			jelly.leaving = false
+			if attractor_provider.is_valid():
+				jelly.attract = attractor_provider.call(gone_def)
+			jelly.goal = jelly.attract
+			event_happened.emit("%s turns back from the hedge." % jelly.display_name)
 	for id in ContentDB.species_order:
 		cooldowns[id] = float(cooldowns.get(id, 0.0)) - delta
 		var definition: Dictionary = ContentDB.species_def(id)
@@ -38,10 +56,10 @@ func tick(delta: float, world: Dictionary) -> void:
 			extra_spawned[id] = true
 			event_happened.emit("%s has company." % definition.get("name", id))
 	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
 		var jelly: Jelly = actor
-		if jelly.leaving:
-			if jelly.global_position.distance_to(GardenLayout.GATE) < 0.8 or jelly.site_time > 40.0:
-				jelly.queue_free()
+		if jelly.leaving or jelly.is_queued_for_deletion():
 			continue
 		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
 		var met := rules.all_met(definition, world)
@@ -64,17 +82,18 @@ func force_spawn(id: String) -> Jelly:
 
 func first(id: String) -> Jelly:
 	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
 		var jelly: Jelly = actor
-		if is_instance_valid(jelly) and jelly.species_id == id:
+		if jelly.species_id == id:
 			return jelly
 	return null
 
 func resident_counts() -> Dictionary:
+	_prune()
 	var counts := {}
 	for actor in actors:
 		var jelly: Jelly = actor
-		if not is_instance_valid(jelly):
-			continue
 		if rules.rank_of(jelly.life) >= rules.rank_of("resident"):
 			counts[jelly.species_id] = int(counts.get(jelly.species_id, 0)) + 1
 	return counts
@@ -193,8 +212,10 @@ func _raise(id: String, state: String) -> void:
 func _all_leaving(id: String) -> bool:
 	var saw := false
 	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
 		var jelly: Jelly = actor
-		if not is_instance_valid(jelly) or jelly.species_id != id:
+		if jelly.species_id != id:
 			continue
 		if not jelly.leaving:
 			return false
@@ -204,8 +225,10 @@ func _all_leaving(id: String) -> bool:
 func _count(id: String) -> int:
 	var total := 0
 	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
 		var jelly: Jelly = actor
-		if is_instance_valid(jelly) and jelly.species_id == id and not jelly.leaving:
+		if jelly.species_id == id and not jelly.leaving:
 			total += 1
 	return total
 

@@ -1797,6 +1797,64 @@ func _run_smoke() -> void:
 		push_error("smoke: nessa did not write the departure")
 		get_tree().quit(1)
 		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "bramble":
+			plot.growth = 1.0
+	departed.global_position = Vector3(-4.0, 0.0, -2.0)
+	departed.leaving = true
+	departed.site_time = 3.0
+	nessa_farewell = true
+	nessa.has_chore = true
+	nessa.chore = GardenLayout.GATE
+	ecology.tick(0.1, world_snapshot())
+	var turned := false
+	for line in events:
+		if str(line).find("turns back") != -1:
+			turned = true
+	if departed.leaving or not turned or nessa_farewell or nessa.has_chore or Trust.level("nessa") != 1 or Economy.coins != tin:
+		push_error("smoke: a visitor did not turn back")
+		get_tree().quit(1)
+		return
+	if ecology.status_line("berrypatch", world_snapshot()) == "heading for the hedge":
+		push_error("smoke: the journal kept a visitor who turned back")
+		get_tree().quit(1)
+		return
+	_update_creatures(0.016)
+	if departed.use_berth or departed.goal.distance_to(GardenLayout.GATE) < 0.2:
+		push_error("smoke: a visitor who turned back kept walking out")
+		get_tree().quit(1)
+		return
+	departed.global_position = Vector3(-4.0, 0.0, -2.0)
+	var cane := departed.goal
+	var cane_far := departed.global_position.distance_to(cane)
+	departed._coast(1.0)
+	if departed.global_position.distance_to(cane) > cane_far - 0.5:
+		push_error("smoke: a visitor who turned back kept walking out")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the turn back did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	departed = null
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "berrypatch" and not body.leaving:
+			departed = body
+			break
+	if departed == null or nessa_farewell or _person("nessa").has_chore or Trust.level("nessa") != 1 or Economy.coins != tin:
+		push_error("smoke: the turn back did not reload")
+		get_tree().quit(1)
+		return
+	departed.global_position = GardenLayout.GATE
+	departed.leaving = true
+	ecology.tick(0.1, world_snapshot())
+	if is_instance_valid(departed) and not departed.is_queued_for_deletion():
+		push_error("smoke: the gate let a visitor turn back")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -2787,6 +2845,13 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 func _on_ecology(text: String) -> void:
 	toast(text)
 	var nessa := _person("nessa")
+	if "turns back" in text:
+		if nessa != null and nessa.present and nessa_farewell and not nessa_filing and not nessa_drafting:
+			nessa_farewell = false
+			nessa.has_chore = false
+			nessa_watch = null
+			nessa.say("They turned back. The page stays blank.")
+		return
 	if "slips" in text:
 		audio.play_kind("ui", -16)
 		# ponytail: one departure note; a page if several leave on the same tick.
