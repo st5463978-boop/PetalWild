@@ -150,6 +150,17 @@ static func _path_band(x: float, z: float, ns_half: float, north_half: float, so
 		return true
 	return false
 
+static func pond_surface(x: float, z: float, rim: float) -> float:
+	# ponytail: the same bowl the mesh uses; a swim if the body should go under.
+	var dist := pond_distance(x, z)
+	var shore := height_at(x, z) + 0.04
+	if dist > POND_RADIUS:
+		return shore
+	var t := 0.0
+	if rim > 0.01:
+		t = clampf(dist / rim, 0.0, 1.0)
+	return lerpf(-0.42, shore, t * t)
+
 static func height_at(x: float, z: float) -> float:
 	var height := 0.0
 	var radius := Vector2(x, z).length()

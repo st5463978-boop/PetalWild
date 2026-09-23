@@ -1906,7 +1906,7 @@ func _run_smoke() -> void:
 	rush.leaving = false
 	rush.held = false
 	rush._coast(0.05)
-	var wade_line := GardenLayout.height_at(rush.global_position.x, rush.global_position.z) + 0.05
+	var wade_line := _bowl_line(rush.global_position)
 	if absf(rush.global_position.y - wade_line) > 0.04:
 		push_error("smoke: bulrush stood on the pond")
 		get_tree().quit(1)
@@ -1935,7 +1935,7 @@ func _run_smoke() -> void:
 	reed.leaving = false
 	reed.held = false
 	reed._coast(0.05)
-	var disc_line := GardenLayout.height_at(reed.global_position.x, reed.global_position.z) + 0.05
+	var disc_line := _bowl_line(reed.global_position)
 	if absf(reed.global_position.y - disc_line) > 0.04 or Economy.coins != wade_tin or Trust.level("nessa") != wade_trust:
 		push_error("smoke: reedic stood on the pond")
 		get_tree().quit(1)
@@ -1949,7 +1949,7 @@ func _run_smoke() -> void:
 	young_rush.leaving = false
 	young_rush.held = false
 	young_rush._coast(0.05)
-	var young_line := GardenLayout.height_at(young_rush.global_position.x, young_rush.global_position.z) + 0.05
+	var young_line := _bowl_line(young_rush.global_position)
 	if absf(young_rush.global_position.y - young_line) > 0.04:
 		push_error("smoke: the young bulrush stood on the pond")
 		get_tree().quit(1)
@@ -6310,6 +6310,13 @@ func _update_creatures(delta: float) -> void:
 	_seek_reeds()
 	_seek_bees()
 	_walk_shore()
+
+func _bowl_line(at: Vector3) -> float:
+	var rim := GardenLayout.POND_RADIUS
+	var pond := get_node_or_null("Pond") as Node3D
+	if pond != null:
+		rim = float(pond.get_meta("rim", rim))
+	return GardenLayout.pond_surface(at.x, at.z, rim) + 0.05
 
 func _shore_point(offset: float) -> Vector3:
 	# ponytail: one loop a day; a second ring if more than the pair wade.

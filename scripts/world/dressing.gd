@@ -80,6 +80,7 @@ func _water(parent: Node3D) -> void:
 	material.shader = load("res://shaders/water.gdshader")
 	node.material_override = material
 	node.name = "Pond"
+	node.add_to_group("parish_pond")
 	parent.add_child(node)
 	resize_pond(node, GardenLayout.POND_RADIUS)
 
@@ -102,19 +103,14 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 			_water_vert(tool, r1, a1, radius)
 			_water_vert(tool, r0, a1, radius)
 	tool.generate_normals()
+	node.set_meta("rim", radius)
 	node.mesh = tool.commit()
 
 static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float) -> void:
 	var center := GardenLayout.POND_CENTER
 	var x := center.x + cos(angle) * dist
 	var z := center.z + sin(angle) * dist
-	var shore := GardenLayout.height_at(x, z) + 0.04
-	var t := 0.0
-	if rim > 0.01:
-		t = clampf(dist / rim, 0.0, 1.0)
-	var y := lerpf(-0.42, shore, t * t)
-	if dist > GardenLayout.POND_RADIUS:
-		y = shore
+	var y := GardenLayout.pond_surface(x, z, rim)
 	tool.set_uv(Vector2(x, z))
 	tool.add_vertex(Vector3(x, y, z))
 

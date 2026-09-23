@@ -428,14 +428,18 @@ func _coast(delta: float) -> void:
 	site_time += delta
 
 func _stand_y() -> float:
-	# ponytail: water species sit on the pond skin; a swim if the bowl should take the whole body.
+	# ponytail: sit on the bowl; a swim if the body should go under.
 	if held or leaving or use_berth or wants_sleep:
 		return 0.0
 	if species_id != "bulrush" and species_id != "reedic":
 		return 0.0
 	if GardenLayout.pond_distance(global_position.x, global_position.z) > GardenLayout.POND_RADIUS * 0.92:
 		return 0.0
-	return GardenLayout.height_at(global_position.x, global_position.z) + 0.05
+	var rim := GardenLayout.POND_RADIUS
+	var pond := get_tree().get_first_node_in_group("parish_pond") as Node3D
+	if pond != null:
+		rim = float(pond.get_meta("rim", rim))
+	return GardenLayout.pond_surface(global_position.x, global_position.z, rim) + 0.05
 
 func _pick_goal() -> void:
 	if leaving:
