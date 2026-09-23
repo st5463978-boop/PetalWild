@@ -351,7 +351,15 @@ func _full(delta: float) -> void:
 			bond = maxf(0.0, bond - delta * 0.04)
 	else:
 		vel.y -= 12.0 * delta
-		if wants_sleep and use_berth:
+		if leaving:
+			vel.x = 0.0
+			vel.z = 0.0
+			goal = GardenLayout.GATE
+			var gate := GardenLayout.GATE - global_position
+			gate.y = 0.0
+			if gate.length() > 0.4:
+				global_position += gate.normalized() * delta * 0.7
+		elif wants_sleep and use_berth:
 			var home := berth - global_position
 			home.y = 0.0
 			if home.length() > 0.4:

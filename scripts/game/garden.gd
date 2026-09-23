@@ -1377,6 +1377,24 @@ func _run_smoke() -> void:
 		push_error("smoke: a long drought left the crop")
 		get_tree().quit(1)
 		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "bramble":
+			plot.growth = 0.2
+	var guest := ecology.force_spawn("berrypatch")
+	guest.life = "visitor"
+	guest.global_position = Vector3(-4.0, 0.0, -2.0)
+	ecology.tick(0.1, world_snapshot())
+	if not guest.leaving:
+		push_error("smoke: a visitor stayed after the canes failed")
+		get_tree().quit(1)
+		return
+	var gate_far := guest.global_position.distance_to(GardenLayout.GATE)
+	guest._full(1.5)
+	if guest.global_position.distance_to(GardenLayout.GATE) > gate_far - 0.5:
+		push_error("smoke: a visitor did not walk to the gate")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 

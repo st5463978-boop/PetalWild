@@ -47,6 +47,8 @@ func tick(delta: float, world: Dictionary) -> void:
 		var met := rules.all_met(definition, world)
 		if not met and rules.rank_of(jelly.life) < rules.rank_of("settler"):
 			jelly.leaving = true
+			jelly.goal = GardenLayout.GATE
+			jelly.attract = GardenLayout.GATE
 			event_happened.emit("%s slips back toward the hedge." % jelly.display_name)
 			continue
 		if not met:
