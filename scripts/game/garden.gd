@@ -2251,6 +2251,144 @@ func _run_smoke() -> void:
 		push_error("smoke: dusk left the lantern whole")
 		get_tree().quit(1)
 		return
+	var meal_back := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		meal_back["%d,%d" % [plot.ix, plot.iz]] = [plot.moisture, plot.growth, plot.wilt, plot.plant_id, plot.fertility, plot.chem, plot.tilled]
+	var kept_seeded := soil.seeded
+	var kept_rain := soil.seed_rain
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "nightlantern" and not (plot.ix == 1 and plot.iz == 3):
+			plot.plant_id = ""
+	var meal_bed := soil.get_cell(1, 3)
+	var meal_at := GardenLayout.cell_center(1, 3)
+	pear.life = "visitor"
+	pear.leaving = false
+	pear.bite_wait = 2.0
+	pear.tier = 2
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	Clock.set_hour(18.0)
+	_update_creatures(0.016)
+	if pear.use_berth or pear.goal.distance_to(meal_at) > 0.2:
+		push_error("smoke: a visitor left the bitten lantern")
+		get_tree().quit(1)
+		return
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	_update_creatures(0.016)
+	pear.tier = 3
+	hidden_far = pear.global_position.distance_to(meal_at)
+	pear._process(2.0)
+	if pear.visible or pear.global_position.distance_to(meal_at) > hidden_far - 0.8 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: a hidden pegapear left the bitten lantern")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = meal_back["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.fertility = float(kept[4])
+		plot.chem = str(kept[5])
+		plot.tilled = bool(kept[6])
+	soil.seeded = kept_seeded
+	soil.seed_rain = kept_rain
+	meal_bed = soil.get_cell(1, 3)
+	meal_bed.plant_id = "nightlantern"
+	meal_bed.growth = 0.55
+	meal_bed.chem = "nightloam"
+	meal_bed.moisture = 1.0
+	meal_bed.fertility = 0.6
+	meal_bed.wilt = 0.0
+	soil.tick(80.0, "clear")
+	if meal_bed.growth < 0.95 or meal_bed.plant_id != "nightlantern" or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: the bitten lantern did not grow back")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the regrown lantern did not save")
+		get_tree().quit(1)
+		return
+	var grew := false
+	for entry in SaveGame.read_slot(1).get("soil", []):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if int(entry.get("ix", -1)) == 1 and int(entry.get("iz", -1)) == 3 and str(entry.get("plant_id", "")) == "nightlantern" and float(entry.get("growth", 0.0)) >= 0.95:
+			grew = true
+	if not grew:
+		push_error("smoke: the regrown lantern did not reload")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = meal_back["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.fertility = float(kept[4])
+		plot.chem = str(kept[5])
+		plot.tilled = bool(kept[6])
+	soil.seeded = kept_seeded
+	soil.seed_rain = kept_rain
+	meal_bed = soil.get_cell(1, 3)
+	meal_bed.plant_id = "nightlantern"
+	meal_bed.growth = 0.55
+	meal_bed.chem = "base"
+	meal_bed.moisture = 1.0
+	meal_bed.fertility = 0.6
+	meal_bed.wilt = 0.0
+	soil.tick(80.0, "clear")
+	if meal_bed.growth > 0.6 or meal_bed.plant_id != "nightlantern":
+		push_error("smoke: a lantern grew back without night-loam")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = meal_back["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.fertility = float(kept[4])
+		plot.chem = str(kept[5])
+		plot.tilled = bool(kept[6])
+	soil.seeded = kept_seeded
+	soil.seed_rain = kept_rain
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "peach" and not (plot.ix == 0 and plot.iz == 3):
+			plot.plant_id = ""
+	soil.get_cell(0, 3).growth = 0.55
+	pear.life = "resident"
+	pear.leaving = false
+	pear.bite_wait = 2.0
+	pear.tier = 2
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	Clock.set_hour(10.0)
+	_update_creatures(0.016)
+	if pear.use_berth or pear.goal.distance_to(GardenLayout.cell_center(0, 3)) > 0.2:
+		push_error("smoke: morning left the bitten peach")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = meal_back["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.fertility = float(kept[4])
+		plot.chem = str(kept[5])
+		plot.tilled = bool(kept[6])
+	soil.seeded = kept_seeded
+	soil.seed_rain = kept_rain
+	pear.life = "resident"
+	pear.leaving = false
+	pear.tier = 2
+	Clock.set_hour(18.0)
 	_force_plant(0, 3, "peach", 1.0)
 	_force_plant(1, 3, "nightlantern", 1.0)
 	pear.bite_wait = 0.0
@@ -4646,7 +4784,8 @@ func _seek_dusk() -> void:
 		if not dusk and ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
 			continue
 		var plant_id := "nightlantern" if dusk else "peach"
-		var at := _average_plant(plant_id)
+		# ponytail: a ripe stand wins; a bitten one still holds them until it grows back.
+		var at := _meal_spot(plant_id, jelly.global_position)
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
@@ -5058,6 +5197,28 @@ func _attractor_for(definition: Dictionary) -> Vector3:
 	var id := str(definition.get("id", ""))
 	if id == "bulrush" or id == "reedic":
 		return GardenLayout.POND_CENTER + Vector3(-1.6, 0, 0.3)
+	return Vector3(-3.6, 0.0, -1.6)
+
+func _meal_spot(plant_id: String, at: Vector3) -> Vector3:
+	var ripe_total := Vector3.ZERO
+	var ripe_n := 0
+	var near: SoilCell = null
+	var near_d := 80.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != plant_id or plot.growth <= 0.0:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		if plot.growth >= 0.85:
+			ripe_total += center
+			ripe_n += 1
+		elif Vector2(at.x - center.x, at.z - center.z).length() < near_d:
+			near_d = Vector2(at.x - center.x, at.z - center.z).length()
+			near = plot
+	if ripe_n > 0:
+		return ripe_total / float(ripe_n)
+	if near != null:
+		return GardenLayout.cell_center(near.ix, near.iz)
 	return Vector3(-3.6, 0.0, -1.6)
 
 func _average_plant(plant_id: String) -> Vector3:
