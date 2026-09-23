@@ -5224,6 +5224,7 @@ func _fill_bed_meadow() -> void:
 	_stone_gaps(buckets)
 	_track_meadow(buckets)
 	_worn_lips(buckets)
+	_meadow_outline(inside_rows)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -5241,6 +5242,34 @@ func _fill_bed_meadow() -> void:
 		turf_multi.instance_count = turf.size()
 		for n in turf.size():
 			turf_multi.set_instance_transform(n, turf[n])
+
+func _meadow_outline(inside_rows: Array) -> void:
+	# ponytail: one ribbon joins the four beds across the seam; a hull if the boxes still read apart.
+	var n := 0
+	var x := -7.15
+	while x <= 2.45:
+		if absf(x + 2.35) > 1.15:
+			var z := -2.22
+			while z <= -0.58:
+				_outline_drop(inside_rows, x, z + sin(x * 1.15) * 0.08, n)
+				n += 1
+				z += 0.26
+		x += 0.32
+
+func _outline_drop(inside_rows: Array, x: float, z: float, n: int) -> void:
+	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
+		return
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+		return
+	# ponytail: flat discs above the seam flowers; sun-facing petals clip to white.
+	var scale := 2.8
+	var reach := 0.22 * scale
+	if absf(x + 2.35) < 0.46 + reach and z > -6.2 and z < 3.35:
+		return
+	var y := GardenLayout.height_at(x, z) + 0.78
+	var spin := float(n % 5) * 0.5
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	inside_rows[0].append(Transform3D(basis, Vector3(x, y, z)))
 
 func _bridge_lids() -> void:
 	# ponytail: two strips between the north and south plots; the path stays open.
