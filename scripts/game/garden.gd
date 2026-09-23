@@ -726,13 +726,20 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	var lawn_node := get_node_or_null("LawnBlooms") as MultiMeshInstance3D
-	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 1320:
+	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 1400:
 		push_error("smoke: the parish lawn stayed a thin scatter")
 		get_tree().quit(1)
 		return
 	var lawn_multi := lawn_node.multimesh
+	var hedge_n := 0
 	for lawn_i in lawn_multi.instance_count:
 		var lawn_at := lawn_multi.get_instance_transform(lawn_i).origin
+		if lawn_at.x < -12.2:
+			push_error("smoke: a lawn bloom sat in the west hedge")
+			get_tree().quit(1)
+			return
+		if lawn_at.x < -11.25 and lawn_at.x > -12.2:
+			hedge_n += 1
 		if GardenLayout.on_path(lawn_at.x, lawn_at.z) or GardenLayout.in_plots(lawn_at.x, lawn_at.z, 0.0):
 			push_error("smoke: a lawn bloom sat on a bed or the worn walk")
 			get_tree().quit(1)
@@ -745,6 +752,10 @@ func _run_smoke() -> void:
 			push_error("smoke: a lawn bloom sat in a room")
 			get_tree().quit(1)
 			return
+	if hedge_n < 60:
+		push_error("smoke: the lawn inside the west hedge stayed thin (%d)" % hedge_n)
+		get_tree().quit(1)
+		return
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("bellhelp") == null:
 		push_error("smoke: bellhelp did not arrive")

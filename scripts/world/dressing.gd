@@ -1289,6 +1289,36 @@ func _lawn_meadow(parent: Node3D) -> void:
 				bloom_colors.append(north_tint)
 			nz += 0.38
 		nx += 0.38
+	# ponytail: lawn just inside the west hedge; the wall stays at x=-13.6.
+	var hx := -12.0
+	while hx <= -11.28:
+		var hz := -6.4
+		while hz <= 5.6:
+			var jx := hx + rng.randf_range(-0.05, 0.05)
+			var jz := hz + rng.randf_range(-0.05, 0.05)
+			var hy := GardenLayout.height_at(jx, jz)
+			var hedge_block := false
+			if jx < -12.15 or hy < -0.08 or hy > 0.4:
+				hedge_block = true
+			elif GardenLayout.in_plots(jx, jz, 0.15) or GardenLayout.on_path(jx, jz):
+				hedge_block = true
+			elif GardenLayout.pond_distance(jx, jz) < GardenLayout.POND_RADIUS + 0.45:
+				hedge_block = true
+			elif Vector2(jx - GardenLayout.SHED.x, jz - GardenLayout.SHED.z).length() < 1.5:
+				hedge_block = true
+			else:
+				for room in rooms:
+					if Vector2(jx - room.x, jz - room.z).length() < 1.2:
+						hedge_block = true
+						break
+			if not hedge_block:
+				var hedge_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
+				var hedge_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+				var hedge_scale := rng.randf_range(1.15, 1.65)
+				blooms.append(Transform3D(hedge_basis.scaled(Vector3.ONE * hedge_scale), Vector3(jx, hy, jz)))
+				bloom_colors.append(hedge_tint)
+			hz += 0.36
+		hx += 0.26
 	_multimesh(parent, _blade(), points, colors, _foliage_material(), "LawnMeadow", false, customs)
 	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
