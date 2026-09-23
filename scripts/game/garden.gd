@@ -672,6 +672,24 @@ func _run_smoke() -> void:
 	bell.life = life_was
 	bell.use_berth = false
 	bell.global_position = bell_home
+	Clock.set_hour(21.0)
+	var night_kit := Vector3(8.0, 0.0, 4.0)
+	home_points.append(night_kit)
+	bell.life = "resident"
+	bell.global_position = Vector3(-4.0, 0.0, -2.0)
+	var night_far := bell.global_position.distance_to(night_kit)
+	_update_creatures(0.016)
+	bell.tier = 1
+	bell._process(2.0)
+	if not bell.wants_sleep or not bell.use_berth or bell.global_position.distance_to(night_kit) > night_far - 0.8:
+		push_error("smoke: the resident stayed out at night")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	bell.life = life_was
+	bell.use_berth = false
+	bell.wants_sleep = false
+	bell.global_position = bell_home
 	var bram := _person("bram")
 	Clock.set_hour(15.3)
 	_apply_shift(false)
@@ -1940,9 +1958,12 @@ func _update_creatures(delta: float) -> void:
 			else:
 				tier = 3
 		jelly.use_berth = false
-		if tier >= 3 and resident and not jelly.leaving and not home_points.is_empty():
+		if resident and not jelly.leaving and not jelly.held and not home_points.is_empty() and (tier >= 3 or jelly.wants_sleep):
 			jelly.berth = _nearest_home(jelly.global_position)
 			jelly.use_berth = true
+			if jelly.wants_sleep:
+				jelly.goal = jelly.berth
+				jelly.attract = jelly.berth
 		jelly.tier = tier
 	_keep_company()
 
@@ -1978,6 +1999,9 @@ func _keep_company() -> void:
 				continue
 			if jelly.use_berth and not home_points.is_empty():
 				jelly.berth = shared
+				if jelly.wants_sleep:
+					jelly.goal = shared
+					jelly.attract = shared
 				continue
 			if jelly.use_berth:
 				continue
