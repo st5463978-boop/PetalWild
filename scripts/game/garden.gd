@@ -773,6 +773,53 @@ func _run_smoke() -> void:
 	bell.use_berth = false
 	bell.wants_sleep = false
 	bell.global_position = bell_home
+	bell.life = "visitor"
+	bell.leaving = false
+	bell.global_position = Vector3(-1.0, 0.0, -2.0)
+	var awning := GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	var awning_far := bell.global_position.distance_to(awning)
+	_update_creatures(0.016)
+	bell.tier = 1
+	bell._process(2.0)
+	if bell.wants_sleep or not bell.use_berth or bell.global_position.distance_to(awning) > awning_far - 0.8:
+		push_error("smoke: a visitor stayed out in the shower")
+		get_tree().quit(1)
+		return
+	bell.global_position = Vector3(6.0, 0.0, -6.0)
+	_update_creatures(0.016)
+	bell.tier = 3
+	var hidden_far := bell.global_position.distance_to(awning)
+	bell._process(2.0)
+	if bell.visible or bell.global_position.distance_to(awning) > hidden_far - 0.8:
+		push_error("smoke: a hidden visitor stayed out in the shower")
+		get_tree().quit(1)
+		return
+	bell.leaving = true
+	bell.goal = GardenLayout.GATE
+	bell.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if bell.use_berth or bell.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: the shower pulled a departure off the gate")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(13.0)
+	bell.leaving = false
+	_update_creatures(0.016)
+	if Clock.weather == "rain" or bell.use_berth:
+		push_error("smoke: a dry afternoon used the awning")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(13.0)
+	bell.life = life_was
+	bell.leaving = false
+	bell.use_berth = false
+	bell.wants_sleep = false
+	bell.global_position = bell_home
+	bell.attract = _attractor_for(ContentDB.species_def("bellhelp"))
+	_update_creatures(0.016)
+	bell._process(0.016)
 	var soaked := {}
 	for cell in soil.all():
 		var plot: SoilCell = cell
@@ -2468,13 +2515,21 @@ func _update_creatures(delta: float) -> void:
 				tier = 3
 		var wet := Clock.weather == "rain"
 		jelly.use_berth = false
-		# ponytail: one kit in the rain; a stall awning if visitors need cover.
+		# ponytail: one spot under the awning; a line if several visitors arrive together.
 		if resident and not jelly.leaving and not jelly.held and not home_points.is_empty() and (tier >= 3 or jelly.wants_sleep or wet):
 			jelly.berth = _nearest_home(jelly.global_position)
 			jelly.use_berth = true
 			if jelly.wants_sleep or wet:
 				jelly.goal = jelly.berth
 				jelly.attract = jelly.berth
+		elif wet and not resident and not jelly.leaving and not jelly.held:
+			var cover := GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+			jelly.berth = cover
+			jelly.use_berth = true
+			jelly.goal = cover
+			jelly.attract = cover
+		elif not resident and not jelly.leaving and not jelly.held:
+			jelly.attract = _attractor_for(ContentDB.species_def(jelly.species_id))
 		if jelly.life == "bonded" and not jelly.wants_sleep and not jelly.use_berth and not jelly.held and not jelly.leaving:
 			var stand := camera.target
 			stand.y = 0.0
