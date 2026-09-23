@@ -631,6 +631,7 @@ func _run_smoke() -> void:
 	ecology.states["bellhelp"] = "visitor"
 	gone.queue_free()
 	ecology.actors.erase(gone)
+	ecology.cooldowns["bellhelp"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	var again := ecology.first("bellhelp")
 	if again == null or again.life != "repeat" or str(ecology.states.get("bellhelp", "")) != "repeat":
