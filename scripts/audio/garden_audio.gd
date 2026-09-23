@@ -15,6 +15,7 @@ func _ready() -> void:
 	bank["ui"] = _tone(660.0, 0.05, 0.16, 20.0, false)
 	bank["coin"] = _arpeggio([880.0, 1174.0], 0.07)
 	bank["discovery"] = _arpeggio([392.0, 494.0, 587.0, 784.0], 0.11)
+	bank["ring"] = _arpeggio([784.0, 1174.0], 0.14)
 	bank["chirp"] = _tone(1480.0, 0.08, 0.12, 16.0, false)
 	wind = AudioStreamPlayer.new()
 	wind.stream = _noise(3.2, 0.18, 420.0)

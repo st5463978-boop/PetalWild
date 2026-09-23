@@ -41,6 +41,7 @@ var focus: Jelly
 var last_land := 0
 var visual_timer := 0.0
 var loam_hours := 0.0
+var bell_day := -1
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -128,6 +129,8 @@ func _process(delta: float) -> void:
 		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
+	if minutes > 0.0:
+		_ring_bells(world)
 	ecology.tick(delta, world)
 	_wire_jellies()
 	_update_creatures(delta)
@@ -414,6 +417,29 @@ func toast(text: String) -> void:
 	if hud:
 		hud.toast(text)
 
+func _ring_bells(world: Dictionary) -> void:
+	# ponytail: one quiet chime a day; a peal if several bellhelps keep their own hours.
+	var hour := Clock.hour()
+	if hour >= 21.0 or hour < 5.0:
+		return
+	var mature: Dictionary = world.get("mature", {})
+	if int(mature.get("meadowbell", 0)) < 3:
+		return
+	var ringer := false
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "bellhelp" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("visitor"):
+			continue
+		ringer = true
+		break
+	if not ringer or bell_day == Clock.day:
+		return
+	bell_day = Clock.day
+	audio.play_kind("ring", -22.0)
+	toast("Bellhelp rings, very quietly.")
+
 func world_snapshot() -> Dictionary:
 	var mature := {}
 	var chem := {}
@@ -488,6 +514,7 @@ func to_state() -> Dictionary:
 		"farewell_names": farewell_names.duplicate(),
 		"nessa_watch": _watch_record(),
 		"loam_hours": loam_hours,
+		"bell_day": bell_day,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -536,6 +563,7 @@ func apply_state(data: Dictionary) -> void:
 		farewell_names.append(str(entry))
 	_bind_watch(data.get("nessa_watch", {}))
 	loam_hours = float(data.get("loam_hours", 0.0))
+	bell_day = int(data.get("bell_day", -1))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -3255,6 +3283,94 @@ func _run_smoke() -> void:
 		return
 	if events.is_empty() or str(events[0]).find("departure") == -1:
 		push_error("smoke: the second departure missed the book")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	bell_day = -1
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "meadowbell":
+			plot.growth = 0.4
+	bell = ecology.first("bellhelp")
+	if bell == null:
+		push_error("smoke: bellhelp left before the ring")
+		get_tree().quit(1)
+		return
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bellhelp":
+			body.life = "visitor"
+			body.leaving = false
+	var ring_notes := events.size()
+	_ring_bells(world_snapshot())
+	if bell_day != -1 or events.size() != ring_notes or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a thin meadow rang")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 0, "meadowbell", 1.0)
+	_force_plant(1, 0, "meadowbell", 1.0)
+	_force_plant(2, 0, "meadowbell", 1.0)
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bellhelp":
+			body.life = "curious"
+			body.leaving = false
+	_ring_bells(world_snapshot())
+	if bell_day != -1 or events.size() != ring_notes:
+		push_error("smoke: a curious bellhelp rang")
+		get_tree().quit(1)
+		return
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bellhelp":
+			body.life = "visitor"
+			body.leaving = true
+	_ring_bells(world_snapshot())
+	if bell_day != -1 or events.size() != ring_notes:
+		push_error("smoke: a departure rang")
+		get_tree().quit(1)
+		return
+	bell = ecology.first("bellhelp")
+	bell.life = "visitor"
+	bell.leaving = false
+	_ring_bells(world_snapshot())
+	if bell_day != 1 or events.is_empty() or str(events[0]).find("rings") == -1 or events.size() != ring_notes + 1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: bellhelp stayed silent")
+		get_tree().quit(1)
+		return
+	_ring_bells(world_snapshot())
+	if bell_day != 1 or events.size() != ring_notes + 1:
+		push_error("smoke: bellhelp rang twice in a day")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(22.0)
+	bell_day = -1
+	_ring_bells(world_snapshot())
+	if bell_day != -1 or events.size() != ring_notes + 1:
+		push_error("smoke: bellhelp rang at night")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(10.0)
+	_ring_bells(world_snapshot())
+	if bell_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the next day stayed silent")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the ring did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if bell_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the ring did not reload")
+		get_tree().quit(1)
+		return
+	ring_notes = events.size()
+	_ring_bells(world_snapshot())
+	if bell_day != 2 or events.size() != ring_notes:
+		push_error("smoke: a reload rang again the same day")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
