@@ -88,6 +88,8 @@ func resident_total() -> int:
 func status_line(id: String, world: Dictionary) -> String:
 	var definition: Dictionary = ContentDB.species_def(id)
 	var state := str(states.get(id, "rumoured"))
+	if _all_leaving(id) and rules.rank_of(state) < rules.rank_of("settler"):
+		return "heading for the hedge"
 	if state == "repeat":
 		return "back again"
 	var met := rules.all_met(definition, world)
@@ -188,6 +190,17 @@ func _raise(id: String, state: String) -> void:
 	if rules.rank_of(state) > rules.rank_of(str(states.get(id, "unknown"))):
 		states[id] = state
 
+func _all_leaving(id: String) -> bool:
+	var saw := false
+	for actor in actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != id:
+			continue
+		if not jelly.leaving:
+			return false
+		saw = true
+	return saw
+
 func _count(id: String) -> int:
 	var total := 0
 	for actor in actors:
@@ -240,7 +253,11 @@ func apply_state(data: Dictionary) -> void:
 		jelly.mood = str(entry.get("mood", "content"))
 		jelly.site_time = float(entry.get("site_time", 0.0))
 		jelly.bite_wait = float(entry.get("bite_wait", 2.0))
+		jelly.leaving = bool(entry.get("leaving", false))
 		var pos = entry.get("position", [0, 0, 0])
 		jelly.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
 		jelly.attract = jelly.global_position
+		if jelly.leaving:
+			jelly.goal = GardenLayout.GATE
+			jelly.attract = GardenLayout.GATE
 		actors.append(jelly)

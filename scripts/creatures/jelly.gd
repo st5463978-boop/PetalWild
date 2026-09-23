@@ -455,5 +455,6 @@ func to_state() -> Dictionary:
 		"mood": mood,
 		"site_time": site_time,
 		"bite_wait": bite_wait,
+		"leaving": leaving,
 		"position": [global_position.x, global_position.y, global_position.z],
 	}

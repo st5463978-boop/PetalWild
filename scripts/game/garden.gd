@@ -1395,6 +1395,38 @@ func _run_smoke() -> void:
 		push_error("smoke: a visitor did not walk to the gate")
 		get_tree().quit(1)
 		return
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "berrypatch":
+			body.leaving = true
+			body.goal = GardenLayout.GATE
+	ecology.states["berrypatch"] = "visitor"
+	if ecology.status_line("berrypatch", world_snapshot()) != "heading for the hedge":
+		push_error("smoke: the journal kept a visitor who was leaving")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the departure did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	var departed: Jelly = null
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "berrypatch" and body.leaving:
+			departed = body
+			break
+	if departed == null or departed.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: the departure did not reload")
+		get_tree().quit(1)
+		return
+	departed.global_position = Vector3(-4.0, 0.0, -2.0)
+	gate_far = departed.global_position.distance_to(GardenLayout.GATE)
+	departed._coast(1.5)
+	if departed.global_position.distance_to(GardenLayout.GATE) > gate_far - 0.5:
+		push_error("smoke: a hidden visitor did not walk to the gate")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
