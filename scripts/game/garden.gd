@@ -5355,6 +5355,7 @@ func _fill_bed_meadow() -> void:
 	_bed_skirt(buckets)
 	_edge_lips(buckets)
 	_stone_gaps(buckets)
+	_wide_shoulders(buckets)
 	_track_meadow(buckets)
 	_worn_lips(buckets)
 	_meadow_outline(inside_rows)
@@ -5694,6 +5695,52 @@ func _stone_gaps(buckets: Array) -> void:
 					_skirt_drop(buckets, at.x, at.z, step, false, true)
 					step += 1
 			along += 1.25
+
+func _wide_center(at: Vector3) -> bool:
+	if absf(at.x + 4.55) < 0.18 and at.z > 3.2 and at.z < 5.5:
+		return true
+	return absf(at.z + 2.5) < 0.18 and at.x > 2.2 and at.x < 6.8
+
+func _wide_shoulders(buckets: Array) -> void:
+	# ponytail: taller blooms on the outer half; drop the scale if they cover the worn center.
+	var runs: Array = [
+		[Vector3(-4.55, 0.0, 3.55), Vector3(-4.55, 0.0, 4.7)],
+		[Vector3(2.75, 0.0, -2.5), Vector3(4.35, 0.0, -2.5)],
+	]
+	var step := 0
+	for run in runs:
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var dir := b - a
+		dir.y = 0.0
+		var span := dir.length()
+		if span < 0.2:
+			continue
+		dir /= span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var along := 0.15
+		while along < span - 0.1:
+			for hand in [-1.0, 1.0]:
+				var side_step := float(hand)
+				var heart := a + dir * along + side * (side_step * 0.4)
+				if _wide_center(heart):
+					continue
+				var y := GardenLayout.height_at(heart.x, heart.z) + 0.05
+				for petal in 5:
+					var spin := float(petal) * TAU / 5.0 + side_step
+					var at := heart + Vector3(cos(spin) * 0.1, 0.0, sin(spin) * 0.1)
+					if _wide_center(at):
+						continue
+					if GardenLayout.pond_distance(at.x, at.z) < GardenLayout.POND_RADIUS + 0.35:
+						continue
+					if GardenLayout.in_plots(at.x, at.z, 0.0):
+						continue
+					var basis := Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.8)
+					var pos := Vector3(at.x, y, at.z)
+					buckets[0].append(Transform3D(basis, pos))
+					buckets[1 + (step % 4)].append(Transform3D(basis, pos))
+					step += 1
+			along += 0.32
 
 func _track_meadow(buckets: Array) -> void:
 	# ponytail: flowers on the old bed tracks; a worn line if feet need one.
