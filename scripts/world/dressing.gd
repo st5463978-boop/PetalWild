@@ -856,7 +856,7 @@ func _scatter_grass(parent: Node3D) -> void:
 		points.append(Transform3D(basis, Vector3(x, y, z)))
 		colors.append(tint)
 		customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "Grass", false, customs)
+	_multimesh(parent, mesh, points, colors, _tuft_material(), "Grass", false, customs)
 
 func _track_grass(parent: Node3D) -> void:
 	# ponytail: a private lawn on the old bed tracks; fold it into the main scatter if that mask can accept them.
@@ -1190,7 +1190,7 @@ func _lawn_tufts(parent: Node3D) -> void:
 		points.append(Transform3D(basis.scaled(Vector3(scale, scale * _rng.randf_range(0.85, 1.5), scale)), Vector3(x, y, z)))
 		colors.append(Color("#2a6b34").lerp(Color("#d7e48a"), _rng.randf() * 0.7))
 		customs.append(Color(_rng.randf(), 0.0, 0.0, 1.0))
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "LawnTufts", false, customs)
+	_multimesh(parent, mesh, points, colors, _tuft_material(), "LawnTufts", false, customs)
 
 func _lawn_meadow(parent: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
@@ -1382,7 +1382,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 				bloom_colors.append(hedge_tint)
 			hz += 0.36
 		hx += 0.26
-	_multimesh(parent, _blade(), points, colors, _foliage_material(), "LawnMeadow", false, customs)
+	_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
 	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
 func _room_clumps(parent: Node3D) -> void:
@@ -1599,6 +1599,12 @@ func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: 
 func _foliage_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/foliage.gdshader")
+	return material
+
+func _tuft_material() -> ShaderMaterial:
+	# ponytail: lawn cards clip to 255; the hedge keeps the shared foliage shader.
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/lawn_tuft.gdshader")
 	return material
 
 func _bark_material() -> StandardMaterial3D:
