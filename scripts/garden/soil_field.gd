@@ -31,14 +31,16 @@ func tick(game_minutes: float, weather: String) -> void:
 		var definition: Dictionary = ContentDB.plant(soil.plant_id)
 		if definition.is_empty():
 			continue
+		var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.0)))
 		if soil.moisture < float(definition.get("water_need", 0.3)):
+			# ponytail: a quarter of the grow rate; a death state if a crop should vanish.
+			soil.growth = maxf(0.04, soil.growth - hours / (grow_hours * 4.0))
 			continue
 		if soil.fertility < float(definition.get("fertility_need", 0.2)):
 			continue
 		var chem_need := str(definition.get("chem", ""))
 		if chem_need != "" and soil.chem != chem_need:
 			continue
-		var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.0)))
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
 
 func apply_chem(chem: String, count: int) -> int:

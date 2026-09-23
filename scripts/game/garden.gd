@@ -1320,6 +1320,18 @@ func _run_smoke() -> void:
 		push_error("smoke: a watered plant stayed limp")
 		get_tree().quit(1)
 		return
+	dry_bed.moisture = 0.05
+	soil.tick(60.0, "clear")
+	if dry_bed.growth > 0.9:
+		push_error("smoke: a dry crop kept its height")
+		get_tree().quit(1)
+		return
+	dry_bed.moisture = 1.0
+	soil.tick(60.0, "clear")
+	if dry_bed.growth < 0.95:
+		push_error("smoke: a watered crop stayed short")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
