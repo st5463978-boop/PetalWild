@@ -1237,6 +1237,7 @@ func _fill_bed_meadow() -> void:
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
 			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
 	_bridge_into(buckets)
+	_path_lips(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1286,6 +1287,28 @@ func _bridge_into(buckets: Array) -> void:
 					basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
 					buckets[1 + (ix + iz) % 4].append(Transform3D(basis, at + Vector3(0.08, 0.0, 0.06)))
 				n += 1
+
+func _path_lips(buckets: Array) -> void:
+	# ponytail: flowers on the path lips; the center stays dirt.
+	var lips: Array[float] = [-2.87, -2.62, -2.08, -1.83]
+	var step := 0
+	var z := -5.0
+	while z < 2.35:
+		for x in lips:
+			if absf(x + 2.35) < 0.22:
+				continue
+			if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
+				continue
+			var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+			var spin := float(step % 5) * 0.55
+			var scale := 0.85 + float(step % 3) * 0.1
+			var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+			buckets[0].append(Transform3D(basis, at))
+			if step % 2 == 0:
+				basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * (scale + 0.15))
+				buckets[1 + (step % 4)].append(Transform3D(basis, at))
+			step += 1
+		z += 0.46
 
 func _spawn_people() -> void:
 	for id in ContentDB.people_order:
