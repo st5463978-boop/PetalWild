@@ -931,6 +931,37 @@ func _run_smoke() -> void:
 		push_error("smoke: the shower invented a home")
 		get_tree().quit(1)
 		return
+	var rain_day := Clock.day
+	Clock.set_hour(22.0)
+	bell.life = "resident"
+	bell.leaving = false
+	bell.held = false
+	bell.young = false
+	bell.global_position = Vector3(10.5, 0.0, -8.5)
+	var bedless := bell.global_position.distance_to(awning)
+	_update_creatures(0.016)
+	bell.tier = 2
+	bell._process(2.0)
+	if not bell.wants_sleep or not bell.use_berth or bell.global_position.distance_to(awning) > bedless - 0.8:
+		push_error("smoke: a resident with no kit stayed out at night")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	bell.goal = awning
+	bell.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if bell.use_berth or bell.wants_sleep or bell.goal.distance_to(awning) < 0.3:
+		push_error("smoke: the morning left a resident under the awning")
+		get_tree().quit(1)
+		return
+	Clock.day = rain_day
+	Clock.set_hour(15.0)
+	bell.life = "resident"
+	bell.leaving = false
+	bell.use_berth = false
+	bell.wants_sleep = false
+	bell.global_position = Vector3(-4.0, 0.0, -2.0)
 	var wet_kit := Vector3(8.0, 0.0, 4.0)
 	home_points.append(wet_kit)
 	var wet_far := bell.global_position.distance_to(wet_kit)
@@ -4784,12 +4815,26 @@ func _update_creatures(delta: float) -> void:
 			jelly.use_berth = true
 			jelly.goal = cover
 			jelly.attract = cover
+		elif night and resident and home_points.is_empty() and not jelly.leaving and not jelly.held:
+			# ponytail: the awning is the bed until a kit is placed; a shed cot if the parish builds one.
+			var cover := GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+			jelly.berth = cover
+			jelly.use_berth = true
+			jelly.goal = cover
+			jelly.attract = cover
 		elif not resident and not jelly.leaving and not jelly.held:
 			var stand := _attractor_for(ContentDB.species_def(jelly.species_id))
 			jelly.attract = stand
 			var cover := GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
 			if jelly.goal.distance_to(cover) < 0.3 and stand.distance_to(jelly.global_position) > 1.1:
 				jelly.goal = stand
+		if resident and jelly.life != "bonded" and not jelly.use_berth and not night and not wet and not jelly.leaving and not jelly.held:
+			var cover := GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+			if jelly.goal.distance_to(cover) < 0.3:
+				var stand := _attractor_for(ContentDB.species_def(jelly.species_id))
+				jelly.attract = stand
+				if stand.distance_to(jelly.global_position) > 1.1:
+					jelly.goal = stand
 		if jelly.life == "bonded" and not jelly.wants_sleep and not jelly.use_berth and not jelly.held and not jelly.leaving:
 			var stand := camera.target
 			stand.y = 0.0
@@ -4872,6 +4917,12 @@ func _keep_company() -> void:
 				if heading_home:
 					jelly.goal = shared
 					jelly.attract = shared
+				continue
+			if jelly.use_berth and home_points.is_empty():
+				jelly.use_berth = false
+				jelly.attract = anchor.global_position
+				if jelly.global_position.distance_to(anchor.global_position) > 1.1:
+					jelly.goal = anchor.global_position
 				continue
 			if jelly.use_berth:
 				continue
