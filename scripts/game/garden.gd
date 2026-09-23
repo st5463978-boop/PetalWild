@@ -693,6 +693,40 @@ func _run_smoke() -> void:
 		push_error("smoke: bees did not shelter from the rain")
 		get_tree().quit(1)
 		return
+	var kept_hour := Clock.hour()
+	birds.tick(1.0, false, 15.3, "golden")
+	if birds.bodies[0].position.distance_to(birds.perches[0]) < 0.4:
+		push_error("smoke: birds did not cross the garden")
+		get_tree().quit(1)
+		return
+	birds.tick(0.0, true, 2.0, "clear")
+	if birds.bodies[0].position.distance_to(birds.perches[0]) > 0.05:
+		push_error("smoke: birds flew through the night")
+		get_tree().quit(1)
+		return
+	birds.tick(1.0, false, 5.0, "clear")
+	if birds.bodies[0].position.distance_to(birds.perches[0]) < 0.4:
+		push_error("smoke: birds stayed on the perch at morning")
+		get_tree().quit(1)
+		return
+	birds.tick(0.0, true, 13.0, "rain")
+	if birds.bodies[0].position.distance_to(birds.perches[0]) > 0.05:
+		push_error("smoke: birds flew in the rain")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(4.5)
+	_apply_shift(false)
+	if not shift.begins_with("night") or _person("bram").waypoints.is_empty() or _person("bram").waypoints[0].distance_to(GardenLayout.SHED) > 2.0:
+		push_error("smoke: the parish was out before dawn")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	_apply_shift(false)
+	if shift.begins_with("night") or _person("bram").waypoints.is_empty() or _person("bram").waypoints[0].distance_to(GardenLayout.SHED) < 2.0:
+		push_error("smoke: the parish stayed in at morning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(kept_hour)
 	var bell := ecology.first("bellhelp")
 	var bell_home := bell.global_position
 	bell.global_position = camera.global_position + camera.global_transform.basis.z * 4.0
@@ -4208,7 +4242,7 @@ func _spawn_people() -> void:
 
 func _apply_shift(snap: bool) -> void:
 	# ponytail: three south rooms and the stall; the even shower is already the whole afternoon.
-	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
+	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
 	var shower := Clock.weather == "rain" and not night
 	var key := "day"
 	if night:
@@ -5441,7 +5475,7 @@ func _notice_thirst() -> void:
 	if bram == null or not bram.present or bram.has_chore:
 		return
 	var hour := Clock.hour()
-	if hour >= 19.5 or hour < 6.0:
+	if hour >= 19.5 or hour < 5.0:
 		return
 	var driest: SoilCell = null
 	for cell in soil.all():
@@ -5485,7 +5519,7 @@ func _notice_hunger() -> void:
 	if bram == null or not bram.present or bram.has_chore:
 		return
 	var hour := Clock.hour()
-	if hour >= 19.5 or hour < 6.0:
+	if hour >= 19.5 or hour < 5.0:
 		return
 	var hungry: SoilCell = null
 	var skipped := false
