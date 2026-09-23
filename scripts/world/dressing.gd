@@ -1289,6 +1289,38 @@ func _lawn_meadow(parent: Node3D) -> void:
 				bloom_colors.append(north_tint)
 			nz += 0.38
 		nx += 0.38
+	# ponytail: the north apron continues east of the beds; the worn walks stay open.
+	var ex := 3.0
+	while ex <= 6.6:
+		var ez := 2.95
+		while ez <= 5.5:
+			var jx := ex + rng.randf_range(-0.08, 0.08)
+			var jz := ez + rng.randf_range(-0.08, 0.08)
+			var ey := GardenLayout.height_at(jx, jz)
+			var east_block := false
+			if ey < -0.08 or ey > 0.4:
+				east_block = true
+			elif GardenLayout.in_plots(jx, jz, 0.15) or GardenLayout.on_path(jx, jz):
+				east_block = true
+			elif GardenLayout.pond_distance(jx, jz) < GardenLayout.POND_RADIUS + 0.45:
+				east_block = true
+			elif Vector2(jx - GardenLayout.STALL.x, jz - GardenLayout.STALL.z).length() < 1.45:
+				east_block = true
+			elif Vector2(jx - GardenLayout.SHED.x, jz - GardenLayout.SHED.z).length() < 1.5:
+				east_block = true
+			else:
+				for room in rooms:
+					if Vector2(jx - room.x, jz - room.z).length() < 1.2:
+						east_block = true
+						break
+			if not east_block:
+				var east_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
+				var east_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+				var east_scale := rng.randf_range(0.95, 1.4)
+				blooms.append(Transform3D(east_basis.scaled(Vector3.ONE * east_scale), Vector3(jx, ey, jz)))
+				bloom_colors.append(east_tint)
+			ez += 0.38
+		ex += 0.38
 	# ponytail: lawn just inside the west hedge; the wall stays at x=-13.6.
 	var hx := -12.0
 	while hx <= -11.28:
