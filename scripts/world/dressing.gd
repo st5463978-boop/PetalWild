@@ -84,7 +84,7 @@ func _water(parent: Node3D) -> void:
 	resize_pond(node, GardenLayout.POND_RADIUS)
 
 static func resize_pond(node: MeshInstance3D, radius: float) -> void:
-	# ponytail: a flat disc; a bowl mesh if the bank needs a real shore.
+	# ponytail: the middle sits down; the rim meets the bank.
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rings := 14
@@ -95,21 +95,26 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 			var r1 := radius * float(ring + 1) / float(rings)
 			var a0 := TAU * float(seg) / float(segments)
 			var a1 := TAU * float(seg + 1) / float(segments)
-			_water_vert(tool, r0, a0)
-			_water_vert(tool, r1, a0)
-			_water_vert(tool, r1, a1)
-			_water_vert(tool, r0, a0)
-			_water_vert(tool, r1, a1)
-			_water_vert(tool, r0, a1)
+			_water_vert(tool, r0, a0, radius)
+			_water_vert(tool, r1, a0, radius)
+			_water_vert(tool, r1, a1, radius)
+			_water_vert(tool, r0, a0, radius)
+			_water_vert(tool, r1, a1, radius)
+			_water_vert(tool, r0, a1, radius)
+	tool.generate_normals()
 	node.mesh = tool.commit()
 
-static func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
+static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float) -> void:
 	var center := GardenLayout.POND_CENTER
-	var x := center.x + cos(angle) * radius
-	var z := center.z + sin(angle) * radius
-	var y := -0.08
-	if radius > GardenLayout.POND_RADIUS:
-		y = GardenLayout.height_at(x, z) + 0.04
+	var x := center.x + cos(angle) * dist
+	var z := center.z + sin(angle) * dist
+	var shore := GardenLayout.height_at(x, z) + 0.04
+	var t := 0.0
+	if rim > 0.01:
+		t = clampf(dist / rim, 0.0, 1.0)
+	var y := lerpf(-0.42, shore, t * t)
+	if dist > GardenLayout.POND_RADIUS:
+		y = shore
 	tool.set_uv(Vector2(x, z))
 	tool.add_vertex(Vector3(x, y, z))
 
