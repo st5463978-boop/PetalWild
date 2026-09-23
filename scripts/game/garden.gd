@@ -23,6 +23,7 @@ var bram_feeding := false
 var nessa_watch: Jelly = null
 var nessa_filing := false
 var nessa_drafting := false
+var nessa_bees := false
 var nessa_farewell := false
 var farewell_names: Array[String] = []
 var scooped: Array[Vector3] = []
@@ -480,6 +481,28 @@ func _note_bees() -> void:
 	bee_note_day = Clock.day
 	Trust.file_bee_note("nessa")
 	toast("Nessa wrote the bees on that bed into the parish book.")
+	_walk_to_bees()
+
+func _walk_to_bees() -> void:
+	# ponytail: one walk to that bed; a queue if she is already filing or saying goodbye.
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present or nessa.has_chore or nessa_filing or nessa_drafting or nessa_farewell:
+		return
+	nessa_bees = true
+	nessa_watch = null
+	nessa.chore = bee_flower
+	nessa.has_chore = true
+	nessa.say("I will walk to the bees.")
+
+func _finish_bee_walk() -> void:
+	if not nessa_bees:
+		return
+	var nessa := _person("nessa")
+	if nessa == null or nessa.global_position.distance_to(nessa.chore) >= 0.55:
+		return
+	nessa_bees = false
+	nessa.has_chore = false
+	nessa.say("The bees are on that bed. The line is in the book.")
 
 func _dawn_birds() -> void:
 	# ponytail: one chorus when they leave the perch; a longer song if the morning keeps more birds.
@@ -561,6 +584,7 @@ func to_state() -> Dictionary:
 		"bram_feeding": bram_feeding,
 		"nessa_filing": nessa_filing,
 		"nessa_drafting": nessa_drafting,
+		"nessa_bees": nessa_bees,
 		"nessa_farewell": nessa_farewell,
 		"farewell_names": farewell_names.duplicate(),
 		"nessa_watch": _watch_record(),
@@ -612,6 +636,7 @@ func apply_state(data: Dictionary) -> void:
 	bram_feeding = bool(data.get("bram_feeding", false))
 	nessa_filing = bool(data.get("nessa_filing", false))
 	nessa_drafting = bool(data.get("nessa_drafting", false))
+	nessa_bees = bool(data.get("nessa_bees", false))
 	nessa_farewell = bool(data.get("nessa_farewell", false))
 	farewell_names.clear()
 	for entry in data.get("farewell_names", []):
@@ -4274,6 +4299,16 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain wrote the bees into the book")
 		get_tree().quit(1)
 		return
+	var pod := _person("nessa")
+	pod.present = true
+	pod.visible = true
+	nessa_filing = false
+	nessa_drafting = false
+	nessa_farewell = false
+	nessa_bees = false
+	nessa_watch = null
+	pod.has_chore = false
+	pod.global_position = GardenLayout.GATE
 	Clock.weather = "clear"
 	_note_bees()
 	var book_row: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
@@ -4283,6 +4318,10 @@ func _run_smoke() -> void:
 		return
 	if str(book_row.get("action", "")) != "parish_bee_note" or bool(book_row.get("external", true)) or int(book_row.get("cost", -1)) != 0:
 		push_error("smoke: the bee note left the parish")
+		get_tree().quit(1)
+		return
+	if not nessa_bees or not pod.has_chore or pod.chore.distance_to(bee_flower) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: nessa did not walk to the bees")
 		get_tree().quit(1)
 		return
 	_note_bees()
@@ -4295,8 +4334,15 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	apply_state(SaveGame.read_slot(1))
-	if bee_note_day != 2 or bee_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bee_note_day != 2 or bee_day != 2 or not nessa_bees or not pod.has_chore or pod.chore.distance_to(bee_flower) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: the bee note did not reload")
+		get_tree().quit(1)
+		return
+	var book_back := events.size()
+	pod.global_position = pod.chore
+	_finish_bee_walk()
+	if nessa_bees or pod.has_chore or events.size() != book_back or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bee walk wrote a second line")
 		get_tree().quit(1)
 		return
 	var cut_bed := soil.get_cell(4, 6)
@@ -5599,6 +5645,7 @@ func _on_ecology(text: String) -> void:
 			var who := _farewell_name(text)
 			if who != "" and not farewell_names.has(who):
 				farewell_names.append(who)
+			nessa_bees = false
 			nessa_farewell = true
 			nessa_watch = null
 			nessa.chore = GardenLayout.GATE
@@ -5611,7 +5658,7 @@ func _on_ecology(text: String) -> void:
 				nessa.say("Someone is leaving. I will write it down.")
 		return
 	audio.play_kind("discovery", -12)
-	if nessa == null or not nessa.present or nessa_filing or nessa_drafting or nessa_farewell:
+	if nessa == null or not nessa.present or nessa_filing or nessa_drafting or nessa_farewell or nessa_bees:
 		return
 	# ponytail: one name in the book; a page per species if the journal grows sections.
 	var watched: Jelly = null
@@ -6301,6 +6348,8 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 				nessa_filing = false
 				nessa.has_chore = false
 				nessa_watch = null
+		elif nessa_bees:
+			_finish_bee_walk()
 		elif nessa_farewell:
 			if nessa.global_position.distance_to(nessa.chore) < 0.55:
 				var line := "Noted. They have gone back to the hedge."
