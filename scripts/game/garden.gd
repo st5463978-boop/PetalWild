@@ -42,6 +42,7 @@ var last_land := 0
 var visual_timer := 0.0
 var loam_hours := 0.0
 var bell_day := -1
+var bird_day := -1
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -132,6 +133,7 @@ func _process(delta: float) -> void:
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
+		_dawn_birds()
 	ecology.tick(delta, world)
 	_wire_jellies()
 	_update_creatures(delta)
@@ -461,6 +463,16 @@ func _ring_bells(world: Dictionary) -> void:
 		return
 	toast("Bellhelp rings, very quietly.")
 
+func _dawn_birds() -> void:
+	# ponytail: one chorus when they leave the perch; a longer song if the morning keeps more birds.
+	var h := Clock.hour()
+	if h < 5.0 or h >= 7.0 or Clock.weather == "rain" or bird_day == Clock.day:
+		return
+	bird_day = Clock.day
+	if audio:
+		audio.play_kind("chirp", -20.0)
+	toast("The birds leave the hedge.")
+
 func world_snapshot() -> Dictionary:
 	var mature := {}
 	var chem := {}
@@ -536,6 +548,7 @@ func to_state() -> Dictionary:
 		"nessa_watch": _watch_record(),
 		"loam_hours": loam_hours,
 		"bell_day": bell_day,
+		"bird_day": bird_day,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -585,6 +598,7 @@ func apply_state(data: Dictionary) -> void:
 	_bind_watch(data.get("nessa_watch", {}))
 	loam_hours = float(data.get("loam_hours", 0.0))
 	bell_day = int(data.get("bell_day", -1))
+	bird_day = int(data.get("bird_day", -1))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -830,6 +844,68 @@ func _run_smoke() -> void:
 	soil.seeded = dew_seed
 	soil.seed_rain = dew_rain
 	Clock.set_hour(kept_hour)
+	var dawn_notes: Array = events.duplicate()
+	var dawn_top := ""
+	if not dawn_notes.is_empty():
+		dawn_top = str(dawn_notes[0])
+	var dawn_clock := Clock.day
+	var dawn_mark := bird_day
+	var dawn_tin := Economy.coins
+	var dawn_trust := Trust.level("nessa")
+	Clock.set_hour(4.5)
+	_dawn_birds()
+	if bird_day != dawn_mark or events.size() != dawn_notes.size() or (not events.is_empty() and str(events[0]) != dawn_top):
+		push_error("smoke: the birds sang before morning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	Clock.weather = "rain"
+	_dawn_birds()
+	if bird_day != dawn_mark or events.size() != dawn_notes.size() or (not events.is_empty() and str(events[0]) != dawn_top):
+		push_error("smoke: the birds sang in the rain")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(7.0)
+	_dawn_birds()
+	Clock.set_hour(22.0)
+	_dawn_birds()
+	if bird_day != dawn_mark or events.size() != dawn_notes.size() or (not events.is_empty() and str(events[0]) != dawn_top):
+		push_error("smoke: the birds sang after the morning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	_dawn_birds()
+	if bird_day != Clock.day or events.is_empty() or str(events[0]).find("leave the hedge") == -1 or Economy.coins != dawn_tin or Trust.level("nessa") != dawn_trust:
+		push_error("smoke: the birds stayed quiet at morning")
+		get_tree().quit(1)
+		return
+	var dawn_size := events.size()
+	var dawn_tail := str(events[dawn_size - 1])
+	_dawn_birds()
+	if events.size() != dawn_size or str(events[dawn_size - 1]) != dawn_tail or bird_day != Clock.day:
+		push_error("smoke: the birds sang twice in one morning")
+		get_tree().quit(1)
+		return
+	Clock.day = dawn_clock + 1
+	Clock.set_hour(5.0)
+	_dawn_birds()
+	if bird_day != Clock.day or events.is_empty() or str(events[0]).find("leave the hedge") == -1:
+		push_error("smoke: the next morning stayed quiet")
+		get_tree().quit(1)
+		return
+	var dawn_pack := to_state()
+	if int(dawn_pack.get("bird_day", -2)) != Clock.day:
+		push_error("smoke: the morning song did not save")
+		get_tree().quit(1)
+		return
+	events = dawn_notes.duplicate()
+	bird_day = dawn_mark
+	Clock.day = dawn_clock
+	Clock.set_hour(kept_hour)
+	if Economy.coins != dawn_tin or Trust.level("nessa") != dawn_trust:
+		push_error("smoke: the morning song moved the parish")
+		get_tree().quit(1)
+		return
 	var bell := ecology.first("bellhelp")
 	var guest_life := bell.life
 	var bell_was := bell.global_position

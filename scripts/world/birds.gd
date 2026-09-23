@@ -24,7 +24,7 @@ func build() -> void:
 func tick(delta: float, frozen: bool, hour: float, weather: String) -> void:
 	if not frozen:
 		phase += delta
-	# ponytail: one roost from dusk through the night; a dawn chorus if the parish keeps more hours.
+	# ponytail: one roost from dusk through the night; the morning song is _dawn_birds.
 	var roost := hour >= 19.5 or hour < 5.0 or weather == "rain"
 	for i in bodies.size():
 		if roost:
