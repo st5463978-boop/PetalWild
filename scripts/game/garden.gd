@@ -718,6 +718,10 @@ func _run_smoke() -> void:
 		push_error("smoke: night route missed the shed")
 		get_tree().quit(1)
 		return
+	if _person("nessa").waypoints.is_empty() or _person("nessa").waypoints[0].distance_to(GardenLayout.HUT + Vector3(0, 0, -1.05)) < 0.3:
+		push_error("smoke: the hut took her before the notes")
+		get_tree().quit(1)
+		return
 	var walk := bram.global_position.distance_to(bram.waypoints[0])
 	bram._process(3.0)
 	if bram.global_position.distance_to(bram.waypoints[0]) > walk - 0.8:
@@ -1595,6 +1599,43 @@ func _run_smoke() -> void:
 		push_error("smoke: research hut was not open")
 		get_tree().quit(1)
 		return
+	var saw_nessa_home := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")).find("Nessa") != -1 and str(row.get("home", "")) == "The research hut":
+			saw_nessa_home = true
+	if not saw_nessa_home:
+		push_error("smoke: the directory left nessa unsettled")
+		get_tree().quit(1)
+		return
+	var hut_tin := Economy.coins
+	Clock.set_hour(21.0)
+	_apply_shift(false)
+	if not shift.begins_with("night") or nessa.waypoints.size() != 1 or nessa.waypoints[0].distance_to(shelf) > 0.3:
+		push_error("smoke: nessa's night home missed the hut")
+		get_tree().quit(1)
+		return
+	nessa.has_chore = false
+	nessa.global_position = GardenLayout.GATE
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: nessa's night home did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	shift = ""
+	_apply_shift(false)
+	if Trust.level("nessa") != 1 or Economy.coins != hut_tin or nessa.waypoints.size() != 1 or nessa.waypoints[0].distance_to(shelf) > 0.3:
+		push_error("smoke: nessa's night home did not reload")
+		get_tree().quit(1)
+		return
+	var hut_far := nessa.global_position.distance_to(shelf)
+	nessa.pause = 0.0
+	nessa._process(3.0)
+	if nessa.global_position.distance_to(shelf) > hut_far - 0.8:
+		push_error("smoke: nessa did not walk home to the hut")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	_apply_shift(false)
 	if int(place.get("foundry_demand", -1)) != 0 or int(place.get("hall_demand", -1)) != 0:
 		push_error("smoke: foundry demand before the draft")
 		get_tree().quit(1)
@@ -2009,6 +2050,107 @@ func _run_smoke() -> void:
 		push_error("smoke: the gate let a visitor turn back")
 		get_tree().quit(1)
 		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	var pear := ecology.first("pegapear")
+	if pear == null:
+		pear = ecology.force_spawn("pegapear")
+	pear.life = "visitor"
+	pear.leaving = false
+	pear.held = false
+	pear.bite_wait = 2.0
+	pear.reduce_motion = false
+	Clock.set_hour(18.0)
+	var lantern := _average_plant("nightlantern")
+	var peach_at := _average_plant("peach")
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	var lantern_far := pear.global_position.distance_to(lantern)
+	_update_creatures(0.016)
+	if pear.use_berth or pear.goal.distance_to(lantern) > 0.2 or pear.goal.distance_to(peach_at) < 0.3:
+		push_error("smoke: pegapear missed the nightlantern")
+		get_tree().quit(1)
+		return
+	pear.tier = 2
+	pear._process(2.0)
+	if pear.global_position.distance_to(lantern) > lantern_far - 0.8 or soil.get_cell(0, 3).growth < 0.95:
+		push_error("smoke: pegapear stayed off the nightlantern")
+		get_tree().quit(1)
+		return
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	hidden_far = pear.global_position.distance_to(lantern)
+	_update_creatures(0.016)
+	pear.tier = 3
+	pear._process(2.0)
+	if pear.visible or pear.global_position.distance_to(lantern) > hidden_far - 0.8:
+		push_error("smoke: a hidden pegapear stayed off the nightlantern")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	pear.life = "visitor"
+	pear.leaving = false
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not pear.use_berth or pear.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let pegapear leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(18.0)
+	pear.leaving = true
+	pear.goal = GardenLayout.GATE
+	pear.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if pear.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a leaving pegapear walked to the lantern")
+		get_tree().quit(1)
+		return
+	pear.leaving = false
+	pear.life = "resident"
+	Clock.set_hour(10.0)
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	pear.bite_wait = 2.0
+	var peach_far := pear.global_position.distance_to(peach_at)
+	_update_creatures(0.016)
+	if pear.use_berth or pear.wants_sleep or pear.goal.distance_to(peach_at) > 0.2 or pear.goal.distance_to(lantern) < 0.3:
+		push_error("smoke: morning left pegapear at the lantern")
+		get_tree().quit(1)
+		return
+	pear.tier = 2
+	pear._process(2.0)
+	if pear.global_position.distance_to(peach_at) > peach_far - 0.8 or soil.get_cell(0, 3).growth < 0.95:
+		push_error("smoke: pegapear did not return to the peach")
+		get_tree().quit(1)
+		return
+	var dusk_tin := Economy.coins
+	var dusk_trust := Trust.level("nessa")
+	Clock.set_hour(18.0)
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the dusk walk did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	pear = ecology.first("pegapear")
+	lantern = _average_plant("nightlantern")
+	if pear == null or pear.life != "resident" or pear.leaving or Clock.hour() < 16.0:
+		push_error("smoke: the dusk walk did not reload")
+		get_tree().quit(1)
+		return
+	_update_creatures(0.016)
+	if pear.goal.distance_to(lantern) > 0.2 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+		push_error("smoke: the dusk walk left the hour")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var dusk_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(dusk_kit)
+	pear.global_position = Vector3(-8.0, 0.0, 2.0)
+	_update_creatures(0.016)
+	if not pear.wants_sleep or not pear.use_berth or pear.goal.distance_to(dusk_kit) > 0.2:
+		push_error("smoke: night sent pegapear to the lantern")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -2444,7 +2586,7 @@ func _apply_shift(snap: bool) -> void:
 	var shower := Clock.weather == "rain" and not night
 	var key := "day"
 	if night:
-		key = "night%d" % home_points.size()
+		key = "night%d-%d" % [home_points.size(), Trust.level("nessa")]
 	elif shower:
 		key = "rain"
 	if key == shift and not snap:
@@ -2469,7 +2611,10 @@ func _apply_shift(snap: bool) -> void:
 		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
 		_person("bram").set_route([GardenLayout.SHED + Vector3(1.1, 0, -0.6)], snap)
 		var nessa_at := GardenLayout.GATE
-		if not home_points.is_empty():
+		if Trust.level("nessa") >= 1:
+			# ponytail: the hut desk is her night home once the notes are filed.
+			nessa_at = GardenLayout.HUT + Vector3(0, 0, -1.05)
+		elif not home_points.is_empty():
 			nessa_at = home_points[0]
 		_person("nessa").set_route([nessa_at], snap)
 		return
@@ -2915,6 +3060,7 @@ func _update_creatures(delta: float) -> void:
 	_keep_company()
 	_follow_hosts()
 	_seek_bite()
+	_seek_dusk()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -3090,6 +3236,24 @@ func _browse(hours: float) -> void:
 		plot.growth = 0.55
 		jelly.bite_wait = 4.0
 		toast("%s takes a bite." % jelly.display_name)
+
+func _seek_dusk() -> void:
+	# ponytail: peach by day, the nightlantern from 16 to 22; a third stop if a species keeps more crops.
+	var hour := Clock.hour()
+	var dusk := hour >= 16.0 and hour < 22.0
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "pegapear":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		if not dusk and ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		var plant_id := "nightlantern" if dusk else "peach"
+		var at := _average_plant(plant_id)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
 
 func _feed_plant(species_id: String) -> String:
 	for req in ContentDB.species_def(species_id).get("requirements", []):
@@ -3339,7 +3503,9 @@ func _people_rows(world: Dictionary) -> Array:
 			if not ecology.rules.requirement_met(req, world):
 				unmet.append(req.get("label", "Condition"))
 		var home := str(definition.get("home", ""))
-		if id == "nessa" and person.present and int(structures.get("home_kit", 0)) >= 1:
+		if id == "nessa" and person.present and Trust.level("nessa") >= 1:
+			home = "The research hut"
+		elif id == "nessa" and person.present and int(structures.get("home_kit", 0)) >= 1:
 			home = "A placed home kit"
 		rows.append({
 			"name": person.display_name,
