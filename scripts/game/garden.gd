@@ -4859,15 +4859,15 @@ func _lamps() -> void:
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
 	var lit := night or Clock.weather == "mist"
 	var energy := 1.05 if lit else 0.35
-	var glow := 1.05 if lit else 0.4
+	var glow := 1.55 if lit else 0.22
 	for node in get_tree().get_nodes_in_group("parish_lantern"):
 		var lamp := node as OmniLight3D
 		if lamp:
 			lamp.light_energy = energy
 	for node in get_tree().get_nodes_in_group("parish_lantern_glass"):
 		var glass := node as MeshInstance3D
-		if glass and glass.material_override is StandardMaterial3D:
-			(glass.material_override as StandardMaterial3D).emission_energy_multiplier = glow
+		if glass and glass.material_override is ShaderMaterial:
+			(glass.material_override as ShaderMaterial).set_shader_parameter("glow", glow)
 	# ponytail: one stall lamp follows open hours; a second lamp if the shed should keep its own.
 	var stall_energy := 0.62 if _stall_open() else 0.05
 	for node in get_tree().get_nodes_in_group("parish_stall_lamp"):

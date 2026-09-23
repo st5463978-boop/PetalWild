@@ -178,10 +178,10 @@ func _lantern(parent: Node3D, at: Vector3) -> void:
 	_cylinder(root, Vector3(0, 0.55, 0), 0.03, 0.04, 1.1, Color("#4a4038"))
 	# ponytail: lantern glass clips to white under this sun; raise the emission if the lamps go out.
 	var glow := _box(root, Vector3(0, 1.18, 0), Vector3(0.16, 0.22, 0.16), Color("#a56b32"))
-	var material := glow.material_override as StandardMaterial3D
-	material.emission_enabled = true
-	material.emission = Color("#c47a28")
-	material.emission_energy_multiplier = 0.4
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/lantern_glass.gdshader")
+	material.set_shader_parameter("glow", 0.22)
+	glow.material_override = material
 	glow.add_to_group("parish_lantern_glass")
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.18, 0)
