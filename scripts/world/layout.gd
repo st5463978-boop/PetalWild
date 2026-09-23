@@ -61,20 +61,20 @@ static func pond_distance(x: float, z: float) -> float:
 	return Vector2(x - POND_CENTER.x, z - POND_CENTER.z).length()
 
 static func on_path(x: float, z: float) -> bool:
-	return _path_band(x, z, 0.46)
+	return _path_band(x, z, 0.46, 0.46, 0.5)
 
 static func on_track(x: float, z: float) -> bool:
-	# ponytail: the north-south center stays a track; widen it if feet leave the stones.
-	return _path_band(x, z, 0.22)
+	# ponytail: the worn center stays a track; widen it if feet leave the stones.
+	return _path_band(x, z, 0.22, 0.22, 0.22)
 
-static func _path_band(x: float, z: float, ns_half: float) -> bool:
+static func _path_band(x: float, z: float, ns_half: float, north_half: float, south_half: float) -> bool:
 	if absf(x + 2.35) < ns_half and z > -6.5 and z < 3.7:
 		return true
-	if absf(z - 3.5) < 0.46 and x > -7.2 and x < -1.0:
+	if absf(z - 3.5) < north_half and x > -7.2 and x < -1.0:
 		return true
 	if absf(z + 2.5) < 0.42 and x > 2.4 and x < 6.8:
 		return true
-	if absf(z + 6.35) < 0.5 and x > -8.2 and x < 1.2:
+	if absf(z + 6.35) < south_half and x > -8.2 and x < 1.2:
 		return true
 	if absf(x + 4.55) < 0.42 and z > 3.3 and z < 5.5:
 		return true

@@ -1429,6 +1429,7 @@ func _fill_bed_meadow() -> void:
 	_bridge_into(buckets)
 	_path_lips(buckets)
 	_bed_skirt(buckets)
+	_edge_lips(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1501,8 +1502,27 @@ func _bed_skirt(buckets: Array) -> void:
 		step += 4
 		x += 0.42
 
-func _skirt_drop(buckets: Array, x: float, z: float, step: int) -> void:
-	if GardenLayout.on_path(x, z) or GardenLayout.in_plots(x, z, 0.0):
+func _edge_lips(buckets: Array) -> void:
+	# ponytail: flowers on the south and north lips; the track center stays open.
+	var step := 0
+	var x := -7.3
+	while x <= 0.7:
+		if absf(x + 2.35) > 0.3:
+			_skirt_drop(buckets, x, -6.68, step, true)
+			_skirt_drop(buckets, x, -6.02, step + 1, true)
+			step += 2
+		x += 0.42
+	x = -6.8
+	while x <= -1.3:
+		if absf(x + 2.35) > 0.3:
+			_skirt_drop(buckets, x, 3.22, step, true)
+			_skirt_drop(buckets, x, 3.78, step + 1, true)
+			step += 2
+		x += 0.42
+
+func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false) -> void:
+	var blocked := GardenLayout.on_track(x, z) if shoulders else GardenLayout.on_path(x, z)
+	if blocked or GardenLayout.in_plots(x, z, 0.0):
 		return
 	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
 		return

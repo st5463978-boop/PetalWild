@@ -131,9 +131,9 @@ func _frame(parent: Node3D, rect: Rect2) -> void:
 func _paths(parent: Node3D) -> void:
 	var strips: Array = [
 		[Vector3(-4.55, 0, 5.2), Vector3(-4.55, 0, 3.5), 0.96],
-		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5), 0.96],
+		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5), 0.44],
 		[Vector3(-2.35, 0, 3.5), Vector3(-2.35, 0, -6.35), 0.44],
-		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.96],
+		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.44],
 		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5), 0.96],
 	]
 	var tool := SurfaceTool.new()
@@ -191,7 +191,7 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 		var dir := (b - a) / span
 		var side := Vector3(-dir.z, 0.0, dir.x)
 		var steps := maxi(int(span / 0.62), 1)
-		var narrow := absf(a.x + 2.35) < 0.15 and absf(b.x + 2.35) < 0.15
+		var narrow := float(strip[2]) < 0.5
 		for i in steps:
 			var center := a.lerp(b, (float(i) + 0.5) / float(steps))
 			var reach := 0.06 if narrow else 0.12
