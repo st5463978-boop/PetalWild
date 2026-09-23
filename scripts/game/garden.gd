@@ -14,6 +14,7 @@ var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
 var bed_inside: Array[MultiMeshInstance3D] = []
 var bed_turf: MultiMeshInstance3D
+var bed_frame: MultiMeshInstance3D
 var soil_lid: BoxMesh
 var bed_lid: BoxMesh
 var plant_views := {}
@@ -4861,6 +4862,7 @@ func _build_bed_meadow() -> void:
 	for color in inside_colors:
 		_add_inside_mesh(_bed_flower(color), flower_mat)
 	_build_bed_turf()
+	_build_bed_frame()
 	_bridge_lids()
 
 func _build_bed_turf() -> void:
@@ -4883,6 +4885,27 @@ func _build_bed_turf() -> void:
 	bed_turf.material_override = material
 	bed_turf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(bed_turf)
+
+func _build_bed_frame() -> void:
+	# ponytail: darker than the leaf discs; those rims clip to white under this sun.
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.34
+	disc.bottom_radius = 0.36
+	disc.height = 0.02
+	disc.radial_segments = 8
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("#345c2c")
+	material.roughness = 0.96
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = disc
+	bed_frame = MultiMeshInstance3D.new()
+	bed_frame.name = "BedFrame"
+	bed_frame.multimesh = multi
+	bed_frame.material_override = material
+	bed_frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(bed_frame)
 
 func _bed_flower_count() -> int:
 	var n := 0
@@ -5225,6 +5248,7 @@ func _fill_bed_meadow() -> void:
 	_track_meadow(buckets)
 	_worn_lips(buckets)
 	_meadow_outline(inside_rows)
+	_bed_frames()
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -5270,6 +5294,49 @@ func _outline_drop(inside_rows: Array, x: float, z: float, n: int) -> void:
 	var spin := float(n % 5) * 0.5
 	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
 	inside_rows[0].append(Transform3D(basis, Vector3(x, y, z)))
+
+func _bed_frames() -> void:
+	# ponytail: meadow over the dark lid edges; a hull if the four boxes still read.
+	if bed_frame == null:
+		return
+	var rows: Array[Transform3D] = []
+	var n := 0
+	var bands: Array[Rect2] = [
+		Rect2(-7.2, -5.2, 9.7, 3.05),
+		Rect2(-7.2, -0.75, 9.7, 3.15),
+	]
+	for band in bands:
+		var x := band.position.x
+		while x <= band.position.x + band.size.x:
+			if absf(x + 2.35) > 1.15:
+				var z := band.position.y
+				while z <= band.position.y + band.size.y:
+					_frame_drop(rows, x, z + sin(x * 1.3) * 0.06, n)
+					n += 1
+					z += 0.46
+			x += 0.48
+	var multi := bed_frame.multimesh
+	multi.instance_count = rows.size()
+	for i in rows.size():
+		multi.set_instance_transform(i, rows[i])
+
+func _frame_drop(rows: Array[Transform3D], x: float, z: float, n: int) -> void:
+	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
+		return
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+		return
+	var scale := 2.0
+	var reach := 0.34 * scale
+	if absf(x + 2.35) < 0.46 + reach and z > -6.2 and z < 3.35:
+		return
+	if absf(z + 6.35) < 0.5 + reach and x > -8.2 and x < 1.2:
+		return
+	if absf(z - 3.5) < 0.46 + reach and x > -7.2 and x < -1.0:
+		return
+	var y := GardenLayout.height_at(x, z) + 0.22
+	var spin := float(n % 5) * 0.5
+	var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+	rows.append(Transform3D(basis, Vector3(x, y, z)))
 
 func _bridge_lids() -> void:
 	# ponytail: two strips between the north and south plots; the path stays open.
