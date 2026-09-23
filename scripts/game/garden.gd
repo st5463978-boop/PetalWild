@@ -14,6 +14,7 @@ var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
 var bed_inside: Array[MultiMeshInstance3D] = []
 var bed_turf: MultiMeshInstance3D
+var bed_blades: MultiMeshInstance3D
 var bed_frame: MultiMeshInstance3D
 var soil_lid: BoxMesh
 var bed_lid: BoxMesh
@@ -4879,6 +4880,7 @@ func _build_bed_meadow() -> void:
 	for color in inside_colors:
 		_add_inside_mesh(_bed_flower(color), flower_mat)
 	_build_bed_turf()
+	_build_bed_blades()
 	_build_bed_frame()
 	_bridge_lids()
 
@@ -4902,6 +4904,35 @@ func _build_bed_turf() -> void:
 	bed_turf.material_override = material
 	bed_turf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(bed_turf)
+
+func _build_bed_blades() -> void:
+	# ponytail: blades over the paint discs; a second mesh if the lids still read flat.
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_bed_blade_tri(tool, Vector3(-0.07, 0.0, 0.0), Vector3(0.07, 0.0, 0.0), Vector3(0.0, 0.46, 0.0))
+	_bed_blade_tri(tool, Vector3(0.0, 0.0, -0.07), Vector3(0.0, 0.0, 0.07), Vector3(0.0, 0.4, 0.0))
+	tool.generate_normals()
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.use_colors = true
+	multi.use_custom_data = true
+	multi.mesh = tool.commit()
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/lawn_tuft.gdshader")
+	bed_blades = MultiMeshInstance3D.new()
+	bed_blades.name = "BedBlades"
+	bed_blades.multimesh = multi
+	bed_blades.material_override = material
+	bed_blades.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(bed_blades)
+
+func _bed_blade_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	tool.set_uv(Vector2(0.0, 1.0))
+	tool.add_vertex(a)
+	tool.set_uv(Vector2(1.0, 1.0))
+	tool.add_vertex(b)
+	tool.set_uv(Vector2(0.5, 0.0))
+	tool.add_vertex(c)
 
 func _build_bed_frame() -> void:
 	# ponytail: darker than the leaf discs; those rims clip to white under this sun.
@@ -5174,6 +5205,9 @@ func _fill_bed_meadow() -> void:
 	var buckets: Array = [[], [], [], [], []]
 	var inside_rows: Array = [[], [], [], [], []]
 	var turf: Array[Transform3D] = []
+	var blades: Array[Transform3D] = []
+	var blade_tints: Array[Color] = []
+	var blade_colors: Array[Color] = [Color("#2f5a28"), Color("#3a6840"), Color("#345c30")]
 	var turf_offsets: Array[Vector3] = [
 		Vector3(-0.2, 0.16, -0.14),
 		Vector3(0.2, 0.16, -0.12),
@@ -5205,6 +5239,12 @@ func _fill_bed_meadow() -> void:
 				continue
 			var turf_basis := Basis(Vector3.UP, turf_spin).scaled(Vector3(turf_scale, 1.0, turf_scale))
 			turf.append(Transform3D(turf_basis, cover))
+			for b in 3:
+				var bspin := turf_spin + float(b) * 1.2
+				var bscale := 0.85 + float(b) * 0.18
+				var bbasis := Basis(Vector3.UP, bspin).scaled(Vector3(bscale, bscale * 1.15, bscale))
+				blades.append(Transform3D(bbasis, cover + Vector3(0.0, 0.02, 0.0)))
+				blade_tints.append(blade_colors[b])
 		var at := Vector3.ZERO
 		var spin := 0.0
 		var scale := 1.0
@@ -5284,6 +5324,13 @@ func _fill_bed_meadow() -> void:
 		turf_multi.instance_count = turf.size()
 		for n in turf.size():
 			turf_multi.set_instance_transform(n, turf[n])
+	if bed_blades != null:
+		var blade_multi := bed_blades.multimesh
+		blade_multi.instance_count = blades.size()
+		for n in blades.size():
+			blade_multi.set_instance_transform(n, blades[n])
+			blade_multi.set_instance_color(n, blade_tints[n])
+			blade_multi.set_instance_custom_data(n, Color(float(n % 7) / 7.0, 0.0, 0.0, 1.0))
 
 func _meadow_outline(inside_rows: Array) -> void:
 	# ponytail: one ribbon joins the four beds across the seam; a hull if the boxes still read apart.
