@@ -700,6 +700,26 @@ func _run_smoke() -> void:
 		push_error("smoke: the plots stayed apart")
 		get_tree().quit(1)
 		return
+	var lawn_node := get_node_or_null("LawnBlooms") as MultiMeshInstance3D
+	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 900:
+		push_error("smoke: the parish lawn stayed a thin scatter")
+		get_tree().quit(1)
+		return
+	var lawn_multi := lawn_node.multimesh
+	for lawn_i in lawn_multi.instance_count:
+		var lawn_at := lawn_multi.get_instance_transform(lawn_i).origin
+		if GardenLayout.on_path(lawn_at.x, lawn_at.z) or GardenLayout.in_plots(lawn_at.x, lawn_at.z, 0.0):
+			push_error("smoke: a lawn bloom sat on a bed or the worn walk")
+			get_tree().quit(1)
+			return
+		if GardenLayout.pond_distance(lawn_at.x, lawn_at.z) < GardenLayout.POND_RADIUS or lawn_at.y > 0.45:
+			push_error("smoke: a lawn bloom climbed the hill or the pond")
+			get_tree().quit(1)
+			return
+		if Vector2(lawn_at.x - GardenLayout.TEA.x, lawn_at.z - GardenLayout.TEA.z).length() < 1.15 or Vector2(lawn_at.x - GardenLayout.HUT.x, lawn_at.z - GardenLayout.HUT.z).length() < 1.15 or Vector2(lawn_at.x - GardenLayout.FOUNDRY.x, lawn_at.z - GardenLayout.FOUNDRY.z).length() < 1.15 or Vector2(lawn_at.x - GardenLayout.HALL.x, lawn_at.z - GardenLayout.HALL.z).length() < 1.15:
+			push_error("smoke: a lawn bloom sat in a room")
+			get_tree().quit(1)
+			return
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("bellhelp") == null:
 		push_error("smoke: bellhelp did not arrive")
