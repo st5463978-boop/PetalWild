@@ -2299,6 +2299,65 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	home_points.pop_back()
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		plot.chem = "base"
+	soil.get_cell(8, 4).plant_id = ""
+	soil.get_cell(8, 4).chem = "nightloam"
+	soil.get_cell(8, 5).plant_id = ""
+	soil.get_cell(8, 5).chem = "nightloam"
+	soil.get_cell(8, 6).plant_id = ""
+	soil.get_cell(8, 6).chem = "nightloam"
+	bulb.chem = "base"
+	nip = ecology.first("dusknip")
+	if nip == null:
+		nip = ecology.force_spawn("dusknip")
+	nip.life = "visitor"
+	nip.leaving = false
+	_restore_loam()
+	if _loam_count() != 3 or bulb.chem != "base":
+		push_error("smoke: a visitor dusknip laid night-loam")
+		get_tree().quit(1)
+		return
+	nip.life = "resident"
+	_restore_loam()
+	if _loam_count() < 4 or bulb.chem != "nightloam" or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: dusknip left the night-loam thin")
+		get_tree().quit(1)
+		return
+	if events.is_empty() or str(events[0]).find("worked the night-loam") == -1:
+		push_error("smoke: the parish did not notice the new loam")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the restored loam did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	bulb = soil.get_cell(9, 6)
+	if _loam_count() < 4 or bulb.chem != "nightloam" or bulb.plant_id != "nightlantern" or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: the restored loam did not reload")
+		get_tree().quit(1)
+		return
+	horn = ecology.first("gushorn")
+	if horn == null:
+		horn = ecology.force_spawn("gushorn")
+	horn.life = "visitor"
+	horn.leaving = true
+	horn.site_time = 3.0
+	horn.global_position = Vector3(10.5, 0.0, -8.5)
+	_force_plant(6, 2, "mosspear", 1.0)
+	_force_plant(6, 3, "mosspear", 1.0)
+	_feed_beds()
+	ecology.tick(0.2, world_snapshot())
+	var loam_back := false
+	for line in events:
+		if str(line).find("turns back") != -1:
+			loam_back = true
+	if horn.leaving or not loam_back or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: gushorn did not turn back for the loam")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3437,6 +3496,7 @@ func _hold_loam(hours: float) -> void:
 	# ponytail: one bed thins every four hours; a parish fade if several crowns are gone.
 	if _loam_kept():
 		loam_hours = 0.0
+		_restore_loam()
 		return
 	var pending := false
 	for cell in soil.all():
@@ -3445,6 +3505,7 @@ func _hold_loam(hours: float) -> void:
 			pending = true
 			break
 	if not pending:
+		_restore_loam()
 		return
 	loam_hours += maxf(0.0, hours)
 	var thinned := false
@@ -3467,6 +3528,39 @@ func _hold_loam(hours: float) -> void:
 		thinned = true
 	if thinned:
 		toast("The night-loam thinned.")
+	_restore_loam()
+
+func _restore_loam() -> void:
+	# ponytail: one laying when the beds fall under four; a round if Dusknip keeps more than one patch.
+	if _loam_count() >= 4 or not _dusknip_home():
+		return
+	var laid := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "nightlantern" and plot.chem != "nightloam":
+			plot.chem = "nightloam"
+			laid += 1
+	laid += soil.apply_chem("nightloam", 5)
+	if laid <= 0:
+		return
+	toast("Dusknip worked the night-loam back into the beds.")
+
+func _loam_count() -> int:
+	var total := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.chem == "nightloam":
+			total += 1
+	return total
+
+func _dusknip_home() -> bool:
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "dusknip" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident"):
+			return true
+	return false
 
 func _loam_kept() -> bool:
 	for actor in ecology.actors:
