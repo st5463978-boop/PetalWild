@@ -351,6 +351,7 @@ func _full(delta: float) -> void:
 			bond = maxf(0.0, bond - delta * 0.04)
 	else:
 		vel.y -= 12.0 * delta
+		var heading_home := use_berth and goal.distance_to(berth) < 0.25
 		if leaving:
 			vel.x = 0.0
 			vel.z = 0.0
@@ -359,14 +360,14 @@ func _full(delta: float) -> void:
 			gate.y = 0.0
 			if gate.length() > 0.4:
 				global_position += gate.normalized() * delta * 0.7
-		elif wants_sleep and use_berth:
+		elif heading_home:
 			var home := berth - global_position
 			home.y = 0.0
 			if home.length() > 0.4:
 				global_position += home.normalized() * delta * 0.55
 		hop_wait -= delta
 		var grounded := global_position.y <= 0.02
-		if not leaving and not wants_sleep and mood != "dizzy" and grounded and hop_wait <= 0.0:
+		if not leaving and not wants_sleep and not heading_home and mood != "dizzy" and grounded and hop_wait <= 0.0:
 			vel.y = randf_range(2.1, 3.3)
 			hop_wait = randf_range(0.7, 1.5)
 			var flat := goal - global_position

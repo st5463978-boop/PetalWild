@@ -746,6 +746,29 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain bell missed the tea house")
 		get_tree().quit(1)
 		return
+	bell.life = "resident"
+	bell.wants_sleep = false
+	bell.global_position = Vector3(-4.0, 0.0, -2.0)
+	_update_creatures(0.016)
+	if bell.use_berth:
+		push_error("smoke: the shower invented a home")
+		get_tree().quit(1)
+		return
+	var wet_kit := Vector3(8.0, 0.0, 4.0)
+	home_points.append(wet_kit)
+	var wet_far := bell.global_position.distance_to(wet_kit)
+	_update_creatures(0.016)
+	bell.tier = 1
+	bell._process(2.0)
+	if bell.wants_sleep or not bell.use_berth or bell.global_position.distance_to(wet_kit) > wet_far - 0.8:
+		push_error("smoke: a resident stayed out in the shower")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	bell.life = life_was
+	bell.use_berth = false
+	bell.wants_sleep = false
+	bell.global_position = bell_home
 	var soaked := {}
 	for cell in soil.all():
 		var plot: SoilCell = cell
@@ -2351,11 +2374,13 @@ func _update_creatures(delta: float) -> void:
 					tier = 2
 			else:
 				tier = 3
+		var wet := Clock.weather == "rain"
 		jelly.use_berth = false
-		if resident and not jelly.leaving and not jelly.held and not home_points.is_empty() and (tier >= 3 or jelly.wants_sleep):
+		# ponytail: one kit in the rain; a stall awning if visitors need cover.
+		if resident and not jelly.leaving and not jelly.held and not home_points.is_empty() and (tier >= 3 or jelly.wants_sleep or wet):
 			jelly.berth = _nearest_home(jelly.global_position)
 			jelly.use_berth = true
-			if jelly.wants_sleep:
+			if jelly.wants_sleep or wet:
 				jelly.goal = jelly.berth
 				jelly.attract = jelly.berth
 		if jelly.life == "bonded" and not jelly.wants_sleep and not jelly.use_berth and not jelly.held and not jelly.leaving:
@@ -2398,8 +2423,9 @@ func _keep_company() -> void:
 					shared = _nearest_home(anchor.global_position)
 				continue
 			if jelly.use_berth and not home_points.is_empty():
+				var heading_home := jelly.wants_sleep or jelly.goal.distance_to(jelly.berth) < 0.25
 				jelly.berth = shared
-				if jelly.wants_sleep:
+				if heading_home:
 					jelly.goal = shared
 					jelly.attract = shared
 				continue
