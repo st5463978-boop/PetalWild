@@ -15,9 +15,7 @@ func show_plant(id: String, growth: float) -> void:
 func _build(id: String) -> void:
 	match id:
 		"meadowbell":
-			_stem(0.35, 0.035, Color("#3f8f45"))
-			# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
-			_blossom(Vector3(0, 0.42, 0), Color("#7a6a52"), Color("#c4923a"))
+			_meadowbell()
 		"peach":
 			_stem(0.42, 0.05, Color("#6b4a32"))
 			_ball(Vector3(0, 0.62, 0), 0.22, Color("#3f8a3a"))
@@ -68,6 +66,19 @@ func _ball(at: Vector3, radius: float, color: Color, squash := Vector3.ONE) -> M
 	add_child(node)
 	return node
 
+func _meadowbell() -> void:
+	# ponytail: three bells and a leaf pad; a flower mesh if the beds get authored plants.
+	# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
+	var petal := Color("#7a6a52")
+	var heart := Color("#c4923a")
+	_stem(0.38, 0.032, Color("#3f8f45"))
+	_blossom(Vector3(0, 0.44, 0), petal, heart)
+	_stem(0.3, 0.026, Color("#3a7a3c"), Vector3(0.14, 0, 0.05))
+	_blossom(Vector3(0.14, 0.36, 0.05), Color("#6e5e48"), Color("#b08030"))
+	_stem(0.26, 0.024, Color("#2f6a34"), Vector3(-0.12, 0, 0.07))
+	_blossom(Vector3(-0.12, 0.32, 0.07), Color("#746656"), heart)
+	_ball(Vector3(0, 0.06, 0), 0.11, Color("#2f6a32"), Vector3(1.5, 0.4, 1.5))
+
 func _blossom(at: Vector3, petal: Color, heart: Color) -> void:
 	_ball(at, 0.07, heart)
 	for i in 5:
@@ -80,6 +91,7 @@ func _paint(mesh: Mesh, color: Color) -> MeshInstance3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.72
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return node
