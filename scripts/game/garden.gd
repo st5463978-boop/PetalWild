@@ -12,6 +12,8 @@ var birds: GardenBirds
 var people := {}
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
+var soil_lid: BoxMesh
+var bed_lid: BoxMesh
 var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
@@ -511,11 +513,20 @@ func _run_smoke() -> void:
 	var meadow_n := 0
 	for bloom_i in bed_blooms.size():
 		meadow_n += bed_blooms[bloom_i].multimesh.instance_count
+	var seam: MeshInstance3D = patches["0,0"]
+	if seam.mesh != bed_lid:
+		push_error("smoke: empty bed stayed a separate lid")
+		get_tree().quit(1)
+		return
 	soil.get_cell(0, 0).tilled = true
 	_refresh_soil_colors()
 	var meadow_after := 0
 	for bloom_i in bed_blooms.size():
 		meadow_after += bed_blooms[bloom_i].multimesh.instance_count
+	if seam.mesh != soil_lid:
+		push_error("smoke: tilled bed kept the meadow lid")
+		get_tree().quit(1)
+		return
 	soil.get_cell(0, 0).tilled = false
 	_refresh_soil_colors()
 	if meadow_n < 40 or meadow_after != meadow_n - 17:
@@ -1049,12 +1060,15 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
 	plot.fertility = 0.38
 
 func _build_patches() -> void:
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(GardenLayout.CELL_W * 0.9, 0.03, GardenLayout.CELL_D * 0.88)
+	soil_lid = BoxMesh.new()
+	soil_lid.size = Vector3(GardenLayout.CELL_W * 0.9, 0.03, GardenLayout.CELL_D * 0.88)
+	# ponytail: overlapping lids hide the seam; one mesh per plot if the join still reads.
+	bed_lid = BoxMesh.new()
+	bed_lid.size = Vector3(GardenLayout.CELL_W * 1.06, 0.03, GardenLayout.CELL_D * 1.06)
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		var node := MeshInstance3D.new()
-		node.mesh = mesh
+		node.mesh = soil_lid
 		var material := StandardMaterial3D.new()
 		material.roughness = 0.95
 		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
@@ -1169,13 +1183,9 @@ func _fill_bed_meadow() -> void:
 	var buckets: Array = [[], [], [], [], []]
 	for cell in soil.all():
 		var plot: SoilCell = cell
-		if plot.plant_id != "" or plot.tilled:
+		if not _meadow_cell(plot):
 			continue
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
-		if GardenLayout.on_path(center.x, center.z):
-			continue
-		if GardenLayout.pond_distance(center.x, center.z) < GardenLayout.POND_RADIUS:
-			continue
 		var at := Vector3.ZERO
 		var spin := 0.0
 		var scale := 1.0
@@ -1568,8 +1578,23 @@ func _refresh_soil_colors() -> void:
 		if patch == null:
 			continue
 		var material := patch.material_override as StandardMaterial3D
-		material.albedo_color = _soil_color(plot)
+		if _meadow_cell(plot):
+			patch.mesh = bed_lid
+			material.albedo_color = Color("#1c3420")
+		else:
+			patch.mesh = soil_lid
+			material.albedo_color = _soil_color(plot)
 	_fill_bed_meadow()
+
+func _meadow_cell(plot: SoilCell) -> bool:
+	if plot.plant_id != "" or plot.tilled:
+		return false
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	if GardenLayout.on_path(center.x, center.z):
+		return false
+	if GardenLayout.pond_distance(center.x, center.z) < GardenLayout.POND_RADIUS:
+		return false
+	return true
 
 func _soil_color(plot: SoilCell) -> Color:
 	# ponytail: flat grass tops clip to white under this sun; raise if the beds go dull.
