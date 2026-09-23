@@ -1870,6 +1870,24 @@ func _run_smoke() -> void:
 	var shore := _shore_point(0.0)
 	if rush.use_berth or rush.goal.distance_to(shore) > 0.2 or GardenLayout.pond_distance(shore.x, shore.z) < GardenLayout.POND_RADIUS:
 		push_error("smoke: a bonded bulrush left the bank")
+	young_rush.global_position = GardenLayout.POND_CENTER
+	young_rush.leaving = false
+	young_rush.held = false
+	young_rush.wants_sleep = false
+	young_rush.use_berth = false
+	_update_creatures(0.016)
+	if GardenLayout.pond_distance(young_rush.goal.x, young_rush.goal.z) < GardenLayout.POND_RADIUS + 0.4:
+		push_error("smoke: the young bulrush cut across the pond")
+		get_tree().quit(1)
+		return
+	var far_bank := _shore_point(PI)
+	young_rush.global_position = far_bank
+	_update_creatures(0.016)
+	var young_goal := young_rush.goal
+	if GardenLayout.pond_distance(young_goal.x, young_goal.z) < GardenLayout.POND_RADIUS + 0.4 or young_goal.distance_to(shore) < 0.4:
+		push_error("smoke: the young bulrush cut across the pond")
+		get_tree().quit(1)
+		return
 		get_tree().quit(1)
 		return
 	rush._coast(2.0)
@@ -6237,6 +6255,22 @@ func _shore_point(offset: float) -> Vector3:
 	var radius := GardenLayout.POND_RADIUS + 0.55
 	return GardenLayout.POND_CENTER + Vector3(cos(angle), 0.0, sin(angle)) * radius
 
+func _bank_step(at: Vector3, toward: Vector3) -> Vector3:
+	# ponytail: step along the ring; a chord across the water if the bank should be a shortcut.
+	var center := GardenLayout.POND_CENTER
+	var radius := GardenLayout.POND_RADIUS + 0.55
+	var flat := Vector2(at.x - center.x, at.z - center.z)
+	var aim := Vector2(toward.x - center.x, toward.z - center.z)
+	var aim_angle := atan2(aim.y, aim.x)
+	var out_angle := aim_angle
+	if flat.length() > 0.15:
+		out_angle = atan2(flat.y, flat.x)
+	if flat.length() < radius - 0.2:
+		return center + Vector3(cos(out_angle), 0.0, sin(out_angle)) * radius
+	var delta := wrapf(aim_angle - out_angle, -PI, PI)
+	var next := out_angle + clampf(delta, -0.35, 0.35)
+	return center + Vector3(cos(next), 0.0, sin(next)) * radius
+
 func _walk_shore() -> void:
 	# ponytail: the bonded crown leads; Reedic stays a step behind on the same bank.
 	var lead := _shore_point(0.0)
@@ -6253,6 +6287,15 @@ func _walk_shore() -> void:
 		elif jelly.species_id == "reedic":
 			jelly.attract = follow
 			jelly.goal = follow
+	for actor in ecology.actors:
+		var young: Jelly = actor
+		if not is_instance_valid(young) or not young.young or young.species_id != "bulrush":
+			continue
+		if young.leaving or young.held or young.use_berth or young.wants_sleep:
+			continue
+		var step := _bank_step(young.global_position, lead)
+		young.attract = step
+		young.goal = step
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
