@@ -49,7 +49,8 @@ func clock_label() -> String:
 func weather_for(h: float, d: int) -> String:
 	if h >= 5.0 and h < 11.0:
 		return "clear"
-	if h >= 12.0 and h < 14.5 and d % 2 == 0:
+	# ponytail: even days rain the whole 11–16.5 window; odd afternoons stay golden.
+	if h >= 11.0 and h < 16.5 and d % 2 == 0:
 		return "rain"
 	if h >= 11.0 and h < 16.5:
 		return "golden"

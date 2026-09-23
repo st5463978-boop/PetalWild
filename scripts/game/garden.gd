@@ -752,11 +752,44 @@ func _run_smoke() -> void:
 		push_error("smoke: an even night rained")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(10.9)
+	if Clock.weather != "clear":
+		push_error("smoke: the even morning rained")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(11.0)
+	if Clock.weather != "rain":
+		push_error("smoke: the even morning edge stayed dry")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(13.0)
 	if Clock.weather != "rain":
 		push_error("smoke: the even afternoon stayed dry")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(15.0)
+	if Clock.weather != "rain":
+		push_error("smoke: the late even afternoon stayed dry")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(16.5)
+	if Clock.weather != "mist":
+		push_error("smoke: dusk joined the shower")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(11.0)
+	if Clock.weather != "golden":
+		push_error("smoke: the odd morning edge rained")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	if Clock.weather != "golden":
+		push_error("smoke: the capture afternoon rained")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(15.0)
 	_apply_shift(false)
 	var shower_porch := GardenLayout.TEA + Vector3(0, 0, -1.15)
 	var rain_hut := GardenLayout.HUT + Vector3(0, 0, -1.05)
@@ -3159,7 +3192,7 @@ func _spawn_people() -> void:
 	_apply_shift(true)
 
 func _apply_shift(snap: bool) -> void:
-	# ponytail: three south rooms and the stall; a longer rain if the afternoon is not enough.
+	# ponytail: three south rooms and the stall; the even shower is already the whole afternoon.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
 	var shower := Clock.weather == "rain" and not night
 	var key := "day"
