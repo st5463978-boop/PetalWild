@@ -356,13 +356,18 @@ func world_snapshot() -> Dictionary:
 	var mature := {}
 	var chem := {}
 	var moisture := 0.0
-	var fertility := 0.0
+	var fertility_all := 0.0
+	var fertility_worked := 0.0
+	var worked := 0
 	var count := 0
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		count += 1
 		moisture += plot.moisture
-		fertility += plot.fertility
+		fertility_all += plot.fertility
+		if plot.tilled:
+			fertility_worked += plot.fertility
+			worked += 1
 		chem[plot.chem] = int(chem.get(plot.chem, 0)) + 1
 		if plot.plant_id != "" and plot.growth >= 1.0:
 			mature[plot.plant_id] = int(mature.get(plot.plant_id, 0)) + 1
@@ -371,11 +376,15 @@ func world_snapshot() -> Dictionary:
 		mature_total += int(value)
 	var quality := clampf(float(mature_total) / 10.0, 0.0, 1.0) * 0.75
 	quality += clampf(moisture / maxf(float(count), 1.0), 0.0, 1.0) * 0.25
+	# ponytail: fertility is the tilled beds; untouched grass stays out until a plot keeps its own score.
+	var fertility := fertility_all / maxf(float(count), 1.0)
+	if worked > 0:
+		fertility = fertility_worked / float(worked)
 	return {
 		"mature": mature,
 		"pond_cells": GardenLayout.BASE_POND_CELLS + scooped.size(),
 		"moisture": moisture / maxf(float(count), 1.0),
-		"fertility": fertility / maxf(float(count), 1.0),
+		"fertility": fertility,
 		"chem": chem,
 		"weather": Clock.weather,
 		"hour": Clock.hour(),
@@ -691,6 +700,75 @@ func _run_smoke() -> void:
 		push_error("smoke: reedic did not follow bulrush")
 		get_tree().quit(1)
 		return
+	_force_plant(4, 2, "bramble", 1.0)
+	_force_plant(5, 2, "bramble", 1.0)
+	ecology.cooldowns["berrypatch"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if ecology.first("berrypatch") == null:
+		push_error("smoke: berrypatch did not come to the canes")
+		get_tree().quit(1)
+		return
+	_force_plant(4, 3, "bramble", 1.0)
+	_feed_beds()
+	ecology.cooldowns["grapling"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if float(world_snapshot()["fertility"]) < 0.55 or ecology.first("grapling") == null:
+		push_error("smoke: grapling did not follow the fed beds")
+		get_tree().quit(1)
+		return
+	var keeper := ecology.first("bellhelp")
+	keeper.life = "repeat"
+	keeper.site_time = 9.0
+	ecology.tick(0.2, world_snapshot())
+	keeper.site_time = 33.0
+	ecology.tick(0.2, world_snapshot())
+	if str(ecology.states.get("bellhelp", "")) != "resident":
+		push_error("smoke: bellhelp did not settle")
+		get_tree().quit(1)
+		return
+	ecology.cooldowns["cirlark"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if ecology.first("cirlark") == null:
+		push_error("smoke: cirlark did not come for the resident")
+		get_tree().quit(1)
+		return
+	if _seed_open("nightlantern_seed"):
+		push_error("smoke: nightlantern was for sale before night-loam")
+		get_tree().quit(1)
+		return
+	var nip := ecology.first("dusknip")
+	if nip == null:
+		push_error("smoke: dusknip did not follow bellhelp")
+		get_tree().quit(1)
+		return
+	nip.life = "curious"
+	nip.site_time = 7.0
+	ecology.tick(0.2, world_snapshot())
+	nip.site_time = 19.0
+	ecology.tick(0.2, world_snapshot())
+	nip.site_time = 33.0
+	ecology.tick(0.2, world_snapshot())
+	if int(world_snapshot().get("chem", {}).get("nightloam", 0)) < 4 or not _seed_open("nightlantern_seed"):
+		push_error("smoke: night-loam did not unwrap the nightlantern")
+		get_tree().quit(1)
+		return
+	_force_plant(0, 3, "peach", 1.0)
+	_force_plant(1, 3, "nightlantern", 1.0)
+	ecology.cooldowns["pegapear"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if ecology.first("pegapear") == null:
+		push_error("smoke: pegapear did not come at dusk")
+		get_tree().quit(1)
+		return
+	_force_plant(6, 2, "mosspear", 1.0)
+	_force_plant(6, 3, "mosspear", 1.0)
+	_feed_beds()
+	ecology.cooldowns["gushorn"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if int(world_snapshot().get("chem", {}).get("nightloam", 0)) < 4 or ecology.first("gushorn") == null:
+		push_error("smoke: gushorn did not come for the night-loam")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -758,6 +836,19 @@ func _opening_plants() -> void:
 	_force_plant(1, 2, "meadowbell", 0.36)
 	_force_plant(3, 2, "peach", 0.28)
 	_force_plant(7, 5, "reed", 0.22)
+
+func _feed_beds() -> void:
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.tilled:
+			plot.fertility = maxf(plot.fertility, 0.7)
+
+func _seed_open(seed_id: String) -> bool:
+	for row in _stock(world_snapshot()):
+		var item: Dictionary = row
+		if str(item.get("id", "")) == seed_id:
+			return not bool(item.get("locked", true))
+	return false
 
 func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
 	var plot := soil.get_cell(ix, iz)
