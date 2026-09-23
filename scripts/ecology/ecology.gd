@@ -9,6 +9,7 @@ var actors: Array = []
 var folder: Node3D
 var cooldowns := {}
 var extra_spawned := {}
+var young_spawned := {}
 var effect_done := {}
 var attractor_provider: Callable
 var soil_effect_cb: Callable
@@ -128,7 +129,32 @@ func clear_actors() -> void:
 			actor.queue_free()
 	actors.clear()
 
-func _spawn(definition: Dictionary, companion: bool) -> Jelly:
+func _young(id: String, definition: Dictionary) -> void:
+	# ponytail: one young per breeding species; a clutch if a parish keeps more than a pair.
+	if bool(young_spawned.get(id, false)):
+		return
+	if _count(id) >= int(definition.get("cap", 1)) + 1:
+		return
+	var anchor: Jelly = null
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if jelly.species_id != id or jelly.leaving:
+			continue
+		if rules.rank_of(jelly.life) < rules.rank_of("resident"):
+			continue
+		anchor = jelly
+		break
+	var child := _spawn(definition, false, true)
+	young_spawned[id] = true
+	if anchor == null:
+		return
+	child.global_position = anchor.global_position + Vector3(0.7, 0.2, 0.35)
+	child.attract = anchor.global_position
+	child.goal = anchor.global_position
+
+func _spawn(definition: Dictionary, companion: bool, young := false) -> Jelly:
 	var jelly := Jelly.new()
 	folder.add_child(jelly)
 	jelly.setup(definition)
@@ -141,12 +167,18 @@ func _spawn(definition: Dictionary, companion: bool) -> Jelly:
 	jelly.goal = jelly.attract
 	var prior := str(states.get(jelly.species_id, "rumoured"))
 	var returning := rules.rank_of(prior) >= rules.rank_of("visitor")
-	if companion:
+	if young:
+		jelly.young = true
+		jelly.life = "curious"
+	elif companion:
 		jelly.life = "curious"
 	elif returning:
 		jelly.life = "repeat"
 	actors.append(jelly)
 	var name := str(definition.get("name", "Someone"))
+	if young:
+		event_happened.emit("A young %s is in the parish." % name)
+		return jelly
 	if returning and not companion:
 		# ponytail: one repeat rank; a visit count if the journal keeps a history.
 		_raise(jelly.species_id, "repeat")
@@ -159,6 +191,10 @@ func _spawn(definition: Dictionary, companion: bool) -> Jelly:
 
 func _promote(jelly: Jelly, definition: Dictionary) -> void:
 	var name := jelly.display_name
+	if jelly.young:
+		if jelly.site_time < 8.0:
+			return
+		jelly.young = false
 	if jelly.life == "curious" and jelly.site_time > 6.0:
 		jelly.life = "visitor"
 		_raise(jelly.species_id, "visitor")
@@ -188,10 +224,10 @@ func _romance(world: Dictionary) -> void:
 			continue
 		if rules.rank_of(str(states.get(id, ""))) < rules.rank_of("resident"):
 			continue
-		if str(states.get(id, "")) == "breeding":
-			continue
-		_raise(id, "breeding")
-		event_happened.emit("%s has a partner in the parish." % definition.get("name", id))
+		if str(states.get(id, "")) != "breeding":
+			_raise(id, "breeding")
+			event_happened.emit("%s has a partner in the parish." % definition.get("name", id))
+		_young(id, definition)
 
 func _soil_effect(definition: Dictionary) -> void:
 	var id := str(definition.get("id", ""))
@@ -252,6 +288,7 @@ func to_state() -> Dictionary:
 		"actors": saved,
 		"extra_spawned": extra_spawned.duplicate(),
 		"effect_done": effect_done.duplicate(),
+		"young_spawned": young_spawned.duplicate(),
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -261,6 +298,7 @@ func apply_state(data: Dictionary) -> void:
 		for key in saved_states.keys():
 			states[str(key)] = str(saved_states[key])
 	extra_spawned = data.get("extra_spawned", {}).duplicate() if typeof(data.get("extra_spawned")) == TYPE_DICTIONARY else {}
+	young_spawned = data.get("young_spawned", {}).duplicate() if typeof(data.get("young_spawned")) == TYPE_DICTIONARY else {}
 	effect_done = data.get("effect_done", {}).duplicate() if typeof(data.get("effect_done")) == TYPE_DICTIONARY else {}
 	for entry in data.get("actors", []):
 		if typeof(entry) != TYPE_DICTIONARY:
@@ -277,6 +315,7 @@ func apply_state(data: Dictionary) -> void:
 		jelly.site_time = float(entry.get("site_time", 0.0))
 		jelly.bite_wait = float(entry.get("bite_wait", 2.0))
 		jelly.leaving = bool(entry.get("leaving", false))
+		jelly.young = bool(entry.get("young", false))
 		var pos = entry.get("position", [0, 0, 0])
 		jelly.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
 		jelly.attract = jelly.global_position

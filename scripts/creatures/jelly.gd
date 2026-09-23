@@ -24,6 +24,7 @@ var squash := 1.0
 var ripple := 0.0
 var hop_wait := 0.4
 var wants_sleep := false
+var young := false
 var reduce_motion := false
 var mat: ShaderMaterial
 var eye_l: Node3D
@@ -322,12 +323,15 @@ func _process(delta: float) -> void:
 	if tier >= 3:
 		visible = false
 		_coast(delta)
-		return
-	visible = true
-	if tier == 2:
+	elif tier == 2:
+		visible = true
 		_coast(delta)
-		return
-	_full(delta)
+	else:
+		visible = true
+		_full(delta)
+	# ponytail: one scale for a young; a growth curve if the parish keeps ages.
+	if young:
+		scale = Vector3(0.55, 0.55, 0.55)
 
 func _full(delta: float) -> void:
 	if reduce_motion:
@@ -460,5 +464,6 @@ func to_state() -> Dictionary:
 		"site_time": site_time,
 		"bite_wait": bite_wait,
 		"leaving": leaving,
+		"young": young,
 		"position": [global_position.x, global_position.y, global_position.z],
 	}

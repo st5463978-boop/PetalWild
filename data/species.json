@@ -10,7 +10,7 @@
     "radius": 0.34,
     "cap": 3,
     "wobble": 0.7,
-    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet, and that ring sets one seed in the next bed.",
+    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet, and that ring sets one seed in the next bed. A breeding pair leaves one young beside them.",
     "requirements": [
       {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
     ],
@@ -43,7 +43,7 @@
     "radius": 0.28,
     "cap": 2,
     "wobble": 0.85,
-    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in.",
+    "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in. A breeding pair leaves one young beside them.",
     "requirements": [
       {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
       {"type": "mature_plant", "plant": "reed", "min": 3, "label": "3 mature Reeds"}

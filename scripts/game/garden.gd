@@ -1342,10 +1342,23 @@ func _run_smoke() -> void:
 		return
 	var saw_pond := false
 	for row in _journal_rows(world_snapshot()):
-		if str(row.get("name", "")) == "Bulrush" and str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1:
+		if str(row.get("name", "")) == "Bulrush" and str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1 and str(row.get("romance", "")).find("young") != -1:
 			saw_pond = true
 	if not saw_pond:
 		push_error("smoke: journal hid the pond pair")
+		get_tree().quit(1)
+		return
+	var young_rush: Jelly = null
+	var rush_bodies := 0
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id != "bulrush":
+			continue
+		rush_bodies += 1
+		if body.young:
+			young_rush = body
+	if young_rush == null or rush_bodies != 3 or events.is_empty() or str(events[0]).find("A young Bulrush") == -1:
+		push_error("smoke: bulrush left no young")
 		get_tree().quit(1)
 		return
 	var bank := _attractor_for(ContentDB.species_def("bulrush"))
@@ -1473,10 +1486,44 @@ func _run_smoke() -> void:
 		return
 	var saw_pair := false
 	for row in _journal_rows(world_snapshot()):
-		if str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1:
+		if str(row.get("name", "")) == "Bellhelp" and str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1 and str(row.get("romance", "")).find("young") != -1:
 			saw_pair = true
 	if not saw_pair:
 		push_error("smoke: journal hid the pair")
+		get_tree().quit(1)
+		return
+	var young_bell: Jelly = null
+	var bell_bodies := 0
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id != "bellhelp":
+			continue
+		bell_bodies += 1
+		if body.young:
+			young_bell = body
+	var young_tin := Economy.coins
+	var young_trust := Trust.level("nessa")
+	if young_bell == null or bell_bodies != 3 or events.is_empty() or str(events[0]).find("A young Bellhelp") == -1 or young_bell.life != "curious":
+		push_error("smoke: bellhelp left no young")
+		get_tree().quit(1)
+		return
+	young_bell.global_position = Vector3(10.5, 0.0, -8.5)
+	young_bell.leaving = false
+	young_bell.held = false
+	young_bell.reduce_motion = true
+	young_bell.tier = 0
+	young_bell._process(0.016)
+	if young_bell.scale.x > 0.7:
+		push_error("smoke: the young bellhelp is full size")
+		get_tree().quit(1)
+		return
+	young_bell.reduce_motion = false
+	var young_far := young_bell.global_position.distance_to(keeper.global_position)
+	_update_creatures(0.016)
+	young_bell.tier = 2
+	young_bell._process(2.0)
+	if young_bell.global_position.distance_to(keeper.global_position) > young_far - 0.8:
+		push_error("smoke: the young bellhelp stayed off the pair")
 		get_tree().quit(1)
 		return
 	if int(ecology.resident_counts().get("bellhelp", 0)) < 2:
@@ -1507,11 +1554,24 @@ func _run_smoke() -> void:
 		push_error("smoke: the pair did not reload")
 		get_tree().quit(1)
 		return
+	young_bell = null
+	bell_bodies = 0
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id != "bellhelp":
+			continue
+		bell_bodies += 1
+		if body.young:
+			young_bell = body
+	if young_bell == null or bell_bodies != 3 or not bool(ecology.young_spawned.get("bellhelp", false)):
+		push_error("smoke: the young bellhelp did not reload")
+		get_tree().quit(1)
+		return
 	var lead := ecology.first("bellhelp")
 	var mate: Jelly = null
 	for actor in ecology.actors:
 		var mate_body: Jelly = actor
-		if mate_body != lead and mate_body.species_id == "bellhelp":
+		if mate_body != lead and mate_body.species_id == "bellhelp" and ecology.rules.rank_of(mate_body.life) >= ecology.rules.rank_of("resident"):
 			mate = mate_body
 	if mate == null:
 		push_error("smoke: the reloaded partner is missing")
@@ -1556,6 +1616,20 @@ func _run_smoke() -> void:
 	mate.use_berth = false
 	lead.global_position = Vector3(-3.2, 0.0, -1.6)
 	mate.global_position = Vector3(-3.2, 0.0, 1.6)
+	young_bell.site_time = 8.0
+	ecology._promote(young_bell, ContentDB.species_def("bellhelp"))
+	young_bell.reduce_motion = true
+	young_bell.tier = 0
+	young_bell._process(0.016)
+	var grown_bodies := 0
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bellhelp":
+			grown_bodies += 1
+	if young_bell.young or young_bell.life != "visitor" or young_bell.scale.x < 0.9 or grown_bodies != 3 or Economy.coins != young_tin or Trust.level("nessa") != young_trust:
+		push_error("smoke: the young bellhelp did not grow")
+		get_tree().quit(1)
+		return
 	ecology.cooldowns["cirlark"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("cirlark") == null:
@@ -4673,6 +4747,12 @@ func _keep_company() -> void:
 			var jelly: Jelly = actor
 			if not is_instance_valid(jelly) or jelly.species_id != id:
 				continue
+			if jelly.young and anchor != null:
+				# ponytail: the young keeps the parent; rain cover returns once they have grown.
+				jelly.use_berth = false
+				jelly.attract = anchor.global_position
+				jelly.goal = anchor.global_position
+				continue
 			if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
 				continue
 			if jelly.leaving or jelly.held:
@@ -5465,6 +5545,13 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 		nessa.belonging = move_toward(nessa.belonging, 0.75 if ecology.resident_total() > 0 else 0.4, delta * 0.03)
 		nessa.purpose = move_toward(nessa.purpose, 0.8, delta * 0.02)
 
+func _has_young(id: String) -> bool:
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if is_instance_valid(jelly) and jelly.species_id == id and jelly.young and not jelly.leaving:
+			return true
+	return false
+
 func _journal_rows(world: Dictionary) -> Array:
 	var rows: Array = []
 	for id in ContentDB.species_order:
@@ -5491,6 +5578,8 @@ func _journal_rows(world: Dictionary) -> Array:
 			romance = "A pair in the parish. One trusts your hands."
 		elif trusts and status == "bonded":
 			romance = "Trusts your hands."
+		if status == "breeding" and _has_young(id):
+			romance += " A young one is with them."
 		rows.append({
 			"name": definition.get("name", id) if known else "A rumour",
 			"status": status,
