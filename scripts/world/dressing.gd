@@ -997,11 +997,10 @@ func _row_bloom() -> ArrayMesh:
 	tool.generate_normals()
 	return tool.commit()
 
-func _bloom_material() -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.roughness = 0.92
-	material.vertex_color_use_as_albedo = true
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+func _bloom_material() -> Material:
+	# ponytail: the sun clips these petals to 255; the bed shader caps the light.
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/bed_flower.gdshader")
 	return material
 
 func _shrubs(parent: Node3D) -> void:

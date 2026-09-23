@@ -4858,17 +4858,15 @@ func _build_bed_meadow() -> void:
 	leaf_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	_add_bed_mesh(leaf, leaf_mat)
 	var palette: Array[Color] = [
-		Color("#8a4560"),
-		# ponytail: the tan petal read as soil; darken if this coral clips to white.
-		Color("#ef7f72"),
+		Color("#6a3848"),
+		# ponytail: the tan petal read as soil; this coral clipped to 255 under the sun.
+		Color("#8d4a44"),
 		Color("#4e6a40"),
 		Color("#6a5078"),
 	]
-	var flower_mat := StandardMaterial3D.new()
-	flower_mat.roughness = 0.94
-	flower_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	flower_mat.vertex_color_use_as_albedo = true
-	flower_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# ponytail: the sun clips these petals to 255; cap the light, drop the cap if they go dull.
+	var flower_mat := ShaderMaterial.new()
+	flower_mat.shader = load("res://shaders/bed_flower.gdshader")
 	for color in palette:
 		_add_bed_mesh(_bed_flower(color), flower_mat)
 	# ponytail: interior ranks are meadow; the shared blooms still dress the walks.
@@ -4877,7 +4875,7 @@ func _build_bed_meadow() -> void:
 	inside_leaf.roughness = 0.96
 	inside_leaf.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	_add_inside_mesh(leaf, inside_leaf)
-	var inside_colors: Array[Color] = [Color("#5d8f3c"), Color("#ef7f72"), Color("#4e7a36"), Color("#6a9444")]
+	var inside_colors: Array[Color] = [Color("#3f6a32"), Color("#8d4a44"), Color("#4e7a36"), Color("#4a6e34")]
 	for color in inside_colors:
 		_add_inside_mesh(_bed_flower(color), flower_mat)
 	_build_bed_turf()
