@@ -4260,6 +4260,29 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain hurried the seedling")
 		get_tree().quit(1)
 		return
+	if _plot_line(first_bed).find("Bees hurrying.") == -1:
+		push_error("smoke: the bed did not say the bees were hurrying %s" % _plot_line(first_bed))
+		get_tree().quit(1)
+		return
+	var hurry_wet := first_bed.moisture
+	first_bed.moisture = 0.1
+	if _plot_line(first_bed).find("Needs water.") == -1 or _plot_line(first_bed).find("Bees hurrying.") != -1:
+		push_error("smoke: a dry bed said the bees were hurrying")
+		get_tree().quit(1)
+		return
+	first_bed.moisture = hurry_wet
+	Clock.weather = "rain"
+	if _plot_line(first_bed).find("Bees hurrying.") != -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the rain still said the bees were hurrying")
+		get_tree().quit(1)
+		return
+	Clock.weather = hurry_rain
+	bee_day = -1
+	if _plot_line(first_bed).find("Bees hurrying.") != -1:
+		push_error("smoke: a quiet day said the bees were hurrying")
+		get_tree().quit(1)
+		return
+	bee_day = 1
 	bees.tick(0.8, false, "clear", bee_flower, true)
 	if bees.bodies[0].position.distance_to(bee_flower) > 1.2:
 		push_error("smoke: the bees stayed off the bell")
@@ -5430,6 +5453,8 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Fruit returning."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
+	if _bees_hurrying(plot):
+		return line + "  ·  Bees hurrying."
 	if plot.plant_id == "meadowbell" and plot.growth < 1.0 and _bells_filling(plot):
 		return line + "  ·  Bells filling."
 	if plot.plant_id == "reed" and _reed_kept(plot):
@@ -5441,6 +5466,14 @@ func _plot_line(plot: SoilCell) -> String:
 	if plot.taken and plot.growth < 1.0:
 		return line + "  ·  Growing back."
 	return line
+
+func _bees_hurrying(plot: SoilCell) -> bool:
+	# ponytail: the rung seedling only; the other ripe bell if that bed should say so too.
+	if bee_day != Clock.day or Clock.weather == "rain":
+		return false
+	if plot.plant_id != "meadowbell" or plot.growth <= 0.0 or plot.growth >= 1.0:
+		return false
+	return GardenLayout.cell_center(plot.ix, plot.iz).distance_to(bee_flower) < 0.35
 
 func _fruit_returning(plot: SoilCell) -> bool:
 	# ponytail: one settled berrypatch on the bitten cane; a row if several ripen separate canes.
