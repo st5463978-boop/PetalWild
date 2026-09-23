@@ -55,8 +55,10 @@ func tick(delta: float, world: Dictionary) -> void:
 	_romance(world)
 
 func force_spawn(id: String) -> Jelly:
-	states[id] = "visitor"
-	return _spawn(ContentDB.species_def(id), false)
+	var jelly := _spawn(ContentDB.species_def(id), false)
+	jelly.life = "visitor"
+	_raise(id, "visitor")
+	return jelly
 
 func first(id: String) -> Jelly:
 	for actor in actors:
@@ -84,6 +86,8 @@ func resident_total() -> int:
 func status_line(id: String, world: Dictionary) -> String:
 	var definition: Dictionary = ContentDB.species_def(id)
 	var state := str(states.get(id, "rumoured"))
+	if state == "repeat":
+		return "back again"
 	var met := rules.all_met(definition, world)
 	if rules.rank_of(state) >= rules.rank_of("breeding"):
 		return "breeding"
@@ -112,15 +116,22 @@ func _spawn(definition: Dictionary, companion: bool) -> Jelly:
 	else:
 		jelly.attract = Vector3(-3.5, 0, -2)
 	jelly.goal = jelly.attract
+	var prior := str(states.get(jelly.species_id, "rumoured"))
+	var returning := rules.rank_of(prior) >= rules.rank_of("visitor")
 	if companion:
 		jelly.life = "curious"
+	elif returning:
+		jelly.life = "repeat"
 	actors.append(jelly)
-	_raise(jelly.species_id, "curious")
 	var name := str(definition.get("name", "Someone"))
-	if rules.rank_of(str(states.get(jelly.species_id, ""))) <= rules.rank_of("curious"):
-		event_happened.emit("%s has come to look." % name)
+	if returning and not companion:
+		# ponytail: one repeat rank; a visit count if the journal keeps a history.
+		_raise(jelly.species_id, "repeat")
+		event_happened.emit("%s is back for another look." % name)
 	else:
-		event_happened.emit("%s is back in the garden." % name)
+		if not returning:
+			_raise(jelly.species_id, "curious")
+		event_happened.emit("%s has come to look." % name)
 	return jelly
 
 func _promote(jelly: Jelly, definition: Dictionary) -> void:
@@ -129,6 +140,10 @@ func _promote(jelly: Jelly, definition: Dictionary) -> void:
 		jelly.life = "visitor"
 		_raise(jelly.species_id, "visitor")
 		event_happened.emit("%s is visiting." % name)
+	elif jelly.life == "repeat" and jelly.site_time > 8.0:
+		jelly.life = "settler"
+		_raise(jelly.species_id, "settler")
+		event_happened.emit("%s is settling." % name)
 	elif jelly.life == "visitor" and jelly.site_time > 18.0:
 		jelly.life = "settler"
 		_raise(jelly.species_id, "settler")

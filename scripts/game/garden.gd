@@ -627,6 +627,20 @@ func _run_smoke() -> void:
 		push_error("smoke: journal names were wrong")
 		get_tree().quit(1)
 		return
+	var gone := ecology.first("bellhelp")
+	ecology.states["bellhelp"] = "visitor"
+	gone.queue_free()
+	ecology.actors.erase(gone)
+	ecology.tick(0.2, world_snapshot())
+	var again := ecology.first("bellhelp")
+	if again == null or again.life != "repeat" or str(ecology.states.get("bellhelp", "")) != "repeat":
+		push_error("smoke: a return was not a repeat visit")
+		get_tree().quit(1)
+		return
+	if ecology.status_line("bellhelp", world_snapshot()) != "back again":
+		push_error("smoke: journal did not say they were back")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
