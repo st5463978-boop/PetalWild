@@ -123,6 +123,7 @@ func _process(delta: float) -> void:
 		_hold_loam(minutes / 60.0)
 		_hold_cane(minutes / 60.0)
 		_hold_fruit(minutes / 60.0)
+		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -2762,6 +2763,210 @@ func _run_smoke() -> void:
 		push_error("smoke: the readout did not reload")
 		get_tree().quit(1)
 		return
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "meadowbell":
+			plot.growth = 1.0
+	_force_plant(1, 1, "meadowbell", 0.55)
+	var short_bell := soil.get_cell(1, 1)
+	short_bell.moisture = 0.8
+	short_bell.fertility = 0.4
+	var bell_at := GardenLayout.cell_center(1, 1)
+	bell = ecology.first("bellhelp")
+	if bell == null:
+		push_error("smoke: bellhelp left before cirlark")
+		get_tree().quit(1)
+		return
+	bell.leaving = false
+	bell.held = false
+	bell.global_position = Vector3(-8.0, 0.0, 2.0)
+	var lark := ecology.first("cirlark")
+	if lark == null:
+		lark = ecology.force_spawn("cirlark")
+	lark.life = "visitor"
+	lark.leaving = false
+	lark.held = false
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	var lark_far := lark.global_position.distance_to(bell.global_position)
+	_update_creatures(0.016)
+	if lark.use_berth or lark.goal.distance_to(bell.global_position) > 0.3 or lark.goal.distance_to(bell_at) < 0.3:
+		push_error("smoke: a visitor cirlark left bellhelp")
+		get_tree().quit(1)
+		return
+	lark.tier = 2
+	lark._process(2.0)
+	if lark.global_position.distance_to(bell.global_position) > lark_far - 0.8:
+		push_error("smoke: a visitor cirlark stayed off bellhelp")
+		get_tree().quit(1)
+		return
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = lark.global_position.distance_to(bell.global_position)
+	_update_creatures(0.016)
+	lark.tier = 3
+	lark._process(2.0)
+	if lark.visible or lark.global_position.distance_to(bell.global_position) > hidden_far - 0.8:
+		push_error("smoke: a hidden visitor cirlark stayed off bellhelp")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	lark.life = "visitor"
+	lark.leaving = false
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not lark.use_berth or lark.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let cirlark leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	lark.life = "resident"
+	lark.leaving = false
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	lark_far = lark.global_position.distance_to(bell_at)
+	_update_creatures(0.016)
+	if lark.use_berth or lark.goal.distance_to(bell_at) > 0.2 or lark.goal.distance_to(bell.global_position) < 0.3:
+		push_error("smoke: cirlark missed the short bell")
+		get_tree().quit(1)
+		return
+	lark.tier = 2
+	lark._process(2.0)
+	if lark.global_position.distance_to(bell_at) > lark_far - 0.8:
+		push_error("smoke: cirlark stayed off the short bell")
+		get_tree().quit(1)
+		return
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = lark.global_position.distance_to(bell_at)
+	_update_creatures(0.016)
+	lark.tier = 3
+	lark._process(2.0)
+	if lark.visible or lark.global_position.distance_to(bell_at) > hidden_far - 0.8:
+		push_error("smoke: a hidden cirlark stayed off the short bell")
+		get_tree().quit(1)
+		return
+	lark.leaving = true
+	lark.goal = GardenLayout.GATE
+	lark.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if lark.use_berth or lark.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a departure left the cirlark gate")
+		get_tree().quit(1)
+		return
+	lark.leaving = false
+	lark.life = "bonded"
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	stand = camera.target
+	stand.y = 0.0
+	if lark.goal.distance_to(bell_at) < 0.3 or lark.goal.distance_to(stand) > 0.3:
+		push_error("smoke: a bonded cirlark left the gardener")
+		get_tree().quit(1)
+		return
+	lark.life = "visitor"
+	lark.global_position = bell_at
+	short_bell.growth = 0.55
+	short_bell.moisture = 0.8
+	short_bell.fertility = 0.4
+	_hold_bells(1.0)
+	if short_bell.growth > 0.6 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a visitor cirlark filled the bell")
+		get_tree().quit(1)
+		return
+	lark.life = "resident"
+	short_bell.moisture = 0.05
+	_hold_bells(1.0)
+	if short_bell.growth > 0.6:
+		push_error("smoke: cirlark filled a dry bell")
+		get_tree().quit(1)
+		return
+	short_bell.moisture = 0.8
+	short_bell.fertility = 0.05
+	_hold_bells(1.0)
+	if short_bell.growth > 0.6:
+		push_error("smoke: cirlark filled a tired bell")
+		get_tree().quit(1)
+		return
+	short_bell.fertility = 0.4
+	_hold_bells(1.0)
+	if short_bell.growth < 0.9 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: cirlark left the bell short")
+		get_tree().quit(1)
+		return
+	short_bell.growth = 0.55
+	lark.global_position = bell_at
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the bell did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	lark = ecology.first("cirlark")
+	short_bell = soil.get_cell(1, 1)
+	if lark == null or lark.life != "resident" or short_bell.plant_id != "meadowbell" or short_bell.growth > 0.6 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bell did not reload")
+		get_tree().quit(1)
+		return
+	lark.global_position = bell_at
+	short_bell.moisture = 0.8
+	short_bell.fertility = 0.4
+	_hold_bells(1.0)
+	if short_bell.growth < 0.9:
+		push_error("smoke: the reloaded cirlark left the bell short")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var lark_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(lark_kit)
+	lark.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if not lark.wants_sleep or not lark.use_berth or lark.goal.distance_to(lark_kit) > 0.2:
+		push_error("smoke: night sent cirlark to the bell")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	Clock.set_hour(15.3)
+	lark.life = "visitor"
+	lark.leaving = false
+	lark.wants_sleep = false
+	lark.use_berth = false
+	lark.global_position = bell_at
+	short_bell.growth = 0.55
+	short_bell.moisture = 0.1
+	short_bell.fertility = 0.4
+	bed_line = _plot_line(short_bell)
+	if bed_line.find("Needs water.") == -1 or bed_line.find("Bells filling.") != -1:
+		push_error("smoke: a dry bell hid its thirst")
+		get_tree().quit(1)
+		return
+	short_bell.moisture = 0.8
+	short_bell.fertility = 0.05
+	bed_line = _plot_line(short_bell)
+	if bed_line.find("Needs feed.") == -1 or bed_line.find("Bells filling.") != -1:
+		push_error("smoke: a tired bell hid its feed")
+		get_tree().quit(1)
+		return
+	short_bell.fertility = 0.4
+	if _plot_line(short_bell).find("Bells filling.") != -1:
+		push_error("smoke: a visitor filled the readout")
+		get_tree().quit(1)
+		return
+	lark.life = "resident"
+	bed_line = _plot_line(short_bell)
+	if bed_line.find("Bells filling.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the readout hid the filling bells")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the bell line did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	lark = ecology.first("cirlark")
+	short_bell = soil.get_cell(1, 1)
+	if lark == null or lark.life != "resident" or _plot_line(short_bell).find("Bells filling.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the bell line did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3555,6 +3760,8 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Fruit returning."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
+	if plot.plant_id == "meadowbell" and plot.growth < 1.0 and _bells_filling(plot):
+		return line + "  ·  Bells filling."
 	return line
 
 func _fruit_returning(plot: SoilCell) -> bool:
@@ -3706,6 +3913,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_loam()
 	_seek_cane()
 	_seek_fruit()
+	_seek_bells()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -3718,10 +3926,10 @@ func _nearest_home(at: Vector3) -> Vector3:
 	return berth
 
 func _follow_hosts() -> void:
-	# ponytail: one host; a flock if several of that species are out.
+	# ponytail: one host; a flock if several of that species are out. Bonded keep the gardener.
 	for actor in ecology.actors:
 		var jelly: Jelly = actor
-		if not is_instance_valid(jelly) or jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep:
+		if not is_instance_valid(jelly) or jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
 			continue
 		var host_id := ""
 		for req in ContentDB.species_def(jelly.species_id).get("requirements", []):
@@ -3946,6 +4154,82 @@ func _seek_fruit() -> void:
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
+
+func _seek_bells() -> void:
+	# ponytail: the short meadowbell; a row if more than one cirlark settles.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "cirlark":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		var plot := _short_bell(jelly.global_position)
+		if plot == null:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
+
+func _short_bell(at: Vector3) -> SoilCell:
+	var best: SoilCell = null
+	var best_d := 9999.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "meadowbell" or plot.growth >= 1.0:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if best == null or dist < best_d:
+			best = plot
+			best_d = dist
+	return best
+
+func _hold_bells(hours: float) -> void:
+	# ponytail: the bell under their body; a row of short bells if more than one cirlark settles.
+	if hours <= 0.0:
+		return
+	var keeper: Jelly = null
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "cirlark" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		keeper = jelly
+		break
+	if keeper == null:
+		return
+	var plot := _short_bell(keeper.global_position)
+	if plot == null:
+		return
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	if Vector2(keeper.global_position.x - center.x, keeper.global_position.z - center.z).length() > 1.6:
+		return
+	var definition: Dictionary = ContentDB.plant("meadowbell")
+	if plot.moisture < float(definition.get("water_need", 0.38)):
+		return
+	if plot.fertility < float(definition.get("fertility_need", 0.18)):
+		return
+	var grow_hours := maxf(0.2, float(definition.get("grow_hours", 1.6)))
+	plot.growth = minf(1.0, plot.growth + hours / grow_hours)
+
+func _bells_filling(plot: SoilCell) -> bool:
+	# ponytail: one settled cirlark on the short bell; a row if several fill separate bells.
+	if plot.plant_id != "meadowbell" or plot.growth >= 1.0:
+		return false
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "cirlark" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		if Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z).length() <= 1.6:
+			return true
+	return false
 
 func _bitten_bramble(at: Vector3) -> SoilCell:
 	var best: SoilCell = null
