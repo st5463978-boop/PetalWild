@@ -117,6 +117,7 @@ func _process(delta: float) -> void:
 		return
 	var minutes := delta * Clock.scale if Clock.running else 0.0
 	if minutes > 0.0:
+		_dew(minutes / 60.0)
 		_prime_reed(minutes / 60.0)
 		var lost := soil.tick(minutes, Clock.weather)
 		if lost.size() > 0:
@@ -726,6 +727,60 @@ func _run_smoke() -> void:
 		push_error("smoke: the parish stayed in at morning")
 		get_tree().quit(1)
 		return
+	var dew_plot := soil.get_cell(3, 3)
+	var dew_meadow := soil.get_cell(3, 4)
+	var dew_moist := dew_plot.moisture
+	var dew_till := dew_plot.tilled
+	var dew_plant := dew_plot.plant_id
+	var dew_growth := dew_plot.growth
+	var meadow_moist := dew_meadow.moisture
+	var meadow_till := dew_meadow.tilled
+	var meadow_plant := dew_meadow.plant_id
+	var dew_seed := soil.seeded
+	var dew_rain := soil.seed_rain
+	var dew_tin := Economy.coins
+	var dew_trust := Trust.level("nessa")
+	dew_plot.tilled = true
+	dew_plot.plant_id = ""
+	dew_plot.moisture = 0.2
+	dew_meadow.tilled = false
+	dew_meadow.plant_id = ""
+	dew_meadow.moisture = 0.2
+	Clock.set_hour(6.0)
+	_dew(1.0)
+	if dew_plot.moisture < 0.6 or dew_meadow.moisture > 0.21 or soil.seeded != dew_seed or absf(soil.seed_rain - dew_rain) > 0.001 or Economy.coins != dew_tin or Trust.level("nessa") != dew_trust:
+		push_error("smoke: the morning dew missed the open bed")
+		get_tree().quit(1)
+		return
+	dew_plot.moisture = 0.2
+	Clock.weather = "rain"
+	_dew(1.0)
+	if dew_plot.moisture > 0.21:
+		push_error("smoke: dew stacked on the rain")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(4.5)
+	dew_plot.moisture = 0.2
+	_dew(1.0)
+	Clock.set_hour(7.0)
+	_dew(1.0)
+	Clock.set_hour(15.3)
+	_dew(1.0)
+	Clock.set_hour(22.0)
+	_dew(1.0)
+	if dew_plot.moisture > 0.21:
+		push_error("smoke: dew fell outside the morning")
+		get_tree().quit(1)
+		return
+	dew_plot.moisture = dew_moist
+	dew_plot.tilled = dew_till
+	dew_plot.plant_id = dew_plant
+	dew_plot.growth = dew_growth
+	dew_meadow.moisture = meadow_moist
+	dew_meadow.tilled = meadow_till
+	dew_meadow.plant_id = meadow_plant
+	soil.seeded = dew_seed
+	soil.seed_rain = dew_rain
 	Clock.set_hour(kept_hour)
 	var bell := ecology.first("bellhelp")
 	var guest_life := bell.life
@@ -5237,6 +5292,19 @@ func _nearest_reed(at: Vector3) -> SoilCell:
 			best = plot
 			best_d = dist
 	return best
+
+func _dew(hours: float) -> void:
+	# ponytail: one damp hour after opening; a fog if the morning should linger past seven.
+	if hours <= 0.0:
+		return
+	var h := Clock.hour()
+	if h < 5.0 or h >= 7.0 or Clock.weather == "rain":
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if not plot.tilled and plot.plant_id == "":
+			continue
+		plot.moisture = minf(1.0, plot.moisture + hours * 0.45)
 
 func _prime_reed(hours: float) -> void:
 	# ponytail: one wet reed; the dry drain is 0.22 an hour, so 0.28 keeps it above the line.
