@@ -148,10 +148,13 @@ func show_place(stats: Dictionary) -> void:
 	var tiers = stats.get("tiers", {})
 	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0)], 14))
 
-func show_shop(stock: Array, produce: Array, proposal_ready: bool) -> void:
+func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true) -> void:
 	_clear(shop_box)
 	shop_box.add_child(ThemeKit.title("Petal Stall", 22))
-	shop_box.add_child(ThemeKit.label("Lumen Peel will not move coins unless you ask.", 14))
+	if stall_open:
+		shop_box.add_child(ThemeKit.label("Lumen Peel will not move coins unless you ask.", 14))
+	else:
+		shop_box.add_child(ThemeKit.label("The stall is shut until morning.", 14))
 	for item in stock:
 		var button := Button.new()
 		var lock := str(item.get("lock_note", ""))
@@ -160,7 +163,9 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool) -> void:
 			button.disabled = true
 		else:
 			button.text = "%s  ·  %d petal" % [item.get("name", ""), int(item.get("price", 0))]
-			button.pressed.connect(func(): host.buy(str(item.get("id", ""))))
+			button.disabled = not stall_open
+			if stall_open:
+				button.pressed.connect(func(): host.buy(str(item.get("id", ""))))
 		shop_box.add_child(button)
 		if lock != "" and bool(item.get("locked", false)):
 			shop_box.add_child(ThemeKit.label(lock, 12, ThemeKit.TERRACOTTA))
@@ -170,8 +175,10 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool) -> void:
 		any = true
 		var button := Button.new()
 		button.text = "Sell %s  ·  %d  (%d)" % [item.get("name", ""), int(item.get("price", 0)), int(item.get("count", 0))]
+		button.disabled = not stall_open
 		var plant_id := str(item.get("id", ""))
-		button.pressed.connect(func(): host.sell(plant_id))
+		if stall_open:
+			button.pressed.connect(func(): host.sell(plant_id))
 		shop_box.add_child(button)
 	if not any:
 		shop_box.add_child(ThemeKit.label("The pouch has no produce yet.", 14))

@@ -25,7 +25,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Chain continues through Bulrush, Reedic, Cirlark, Dusknip night-loam, Pegapear, Gushorn.
 - Grab, drop, and throw on the jelly spring body. Mood and bond change.
 - Lumen Peel, Bram Cobble, and Nessa Pod (Nessa waits for a resident Bellhelp and a home kit).
-- Petal coins. Fertiliser purchase spends coins. Peach-tray proposal spends 8 only after approval, once a day.
+- Petal coins. Fertiliser purchase spends coins from 5:00 until 19:30. Before morning and after dusk the stall is shut and the tin does not move. Peach-tray proposal spends 8 only after approval, once a day.
 - Save and reload round-trip coins and garden state.
 - Slobad's CC0 forest loop is the garden bed. Tool sounds stay procedural. Eight bees drift over the beds and sit on the flowers in the rain. Four birds cross the garden by day, perch from dusk through the night, and in the rain. At 5:00 they leave the perch and the parish takes the day round. From 5:00 to 7:00 the open beds take a little dew. It does not seed, and it does not fall in the rain, at night, or after seven. The parish page counts both.
 - Large text resizes the garden HUD without leaving the scene.

@@ -239,11 +239,24 @@ func refresh_panels() -> void:
 	else:
 		hud.show_journal(_journal_rows(world), events, ecology.resident_total())
 	if hud.shop.visible:
-		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day)
+		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open())
+
+func _stall_open() -> bool:
+	var h := Clock.hour()
+	return h >= 5.0 and h < 19.5
+
+func _stall_shut() -> void:
+	toast("The stall is shut until morning.")
+	var lumen := _person("lumen")
+	if lumen != null:
+		lumen.say("The stall is shut until morning.")
 
 func buy(item_id: String) -> void:
 	var item := ContentDB.item(item_id)
 	if item.is_empty():
+		return
+	if not _stall_open():
+		_stall_shut()
 		return
 	if not _shop_unlocked(item):
 		toast(str(item.get("lock_reason", "Not yet.")))
@@ -259,6 +272,9 @@ func buy(item_id: String) -> void:
 	refresh_panels()
 
 func sell(plant_id: String) -> void:
+	if not _stall_open():
+		_stall_shut()
+		return
 	if Economy.count(plant_id) <= 0:
 		return
 	var price := int(ContentDB.plant(plant_id).get("sell_price", 1))
@@ -664,6 +680,38 @@ func _run_smoke() -> void:
 		push_error("smoke: reload mismatch")
 		get_tree().quit(1)
 		return
+	var open_hour := Clock.hour()
+	var shut_tin := Economy.coins
+	var shut_pouch := Economy.count("fertilizer")
+	Economy.add("meadowbell", 1)
+	var shut_bells := Economy.count("meadowbell")
+	Clock.set_hour(22.0)
+	buy("fertilizer")
+	sell("meadowbell")
+	if Economy.coins != shut_tin or Economy.count("fertilizer") != shut_pouch or Economy.count("meadowbell") != shut_bells or events.is_empty() or str(events[0]).find("shut") == -1:
+		push_error("smoke: the stall took coins at night")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(4.5)
+	buy("fertilizer")
+	if Economy.coins != shut_tin or Economy.count("fertilizer") != shut_pouch:
+		push_error("smoke: the stall took coins before morning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	buy("fertilizer")
+	if Economy.coins >= shut_tin or Economy.count("fertilizer") != shut_pouch + 1:
+		push_error("smoke: the stall stayed shut at morning")
+		get_tree().quit(1)
+		return
+	Economy.earn(shut_tin - Economy.coins)
+	Economy.take("fertilizer", 1)
+	Economy.take("meadowbell", 1)
+	if Economy.coins != shut_tin or Economy.count("fertilizer") != shut_pouch or Economy.count("meadowbell") != shut_bells - 1:
+		push_error("smoke: the morning sale was not put back")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(open_hour)
 	var small := hud.clock_label.get_theme_font_size("font_size")
 	set_large_text(true)
 	var big := hud.clock_label.get_theme_font_size("font_size")
