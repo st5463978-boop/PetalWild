@@ -1260,6 +1260,22 @@ func _run_smoke() -> void:
 		push_error("smoke: the bite did not reload")
 		get_tree().quit(1)
 		return
+	_place_home(Vector3(8.0, 0.0, 4.0))
+	var shelter := home_root.get_child(home_root.get_child_count() - 1)
+	var bright := false
+	for child in shelter.get_children():
+		var part := child as MeshInstance3D
+		if part == null:
+			continue
+		var paint := part.material_override as StandardMaterial3D
+		var albedo := paint.albedo_color
+		if albedo.r > 0.85 or albedo.g > 0.85 or albedo.b > 0.85 or paint.specular_mode != BaseMaterial3D.SPECULAR_DISABLED:
+			bright = true
+	if shelter.name != "HomeKit" or bright:
+		push_error("smoke: the home kit is a bright box")
+		get_tree().quit(1)
+		return
+	shelter.free()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1849,26 +1865,29 @@ func _grow_pond() -> void:
 
 func _place_home(point: Vector3, _saved := false) -> void:
 	var root := Node3D.new()
+	root.name = "HomeKit"
 	root.position = Vector3(point.x, 0.0, point.z)
-	var post := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.35, 0.55, 0.28)
-	post.mesh = mesh
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("#f4f0e6")
-	post.material_override = material
-	post.position = Vector3(0, 0.28, 0)
-	root.add_child(post)
-	var roof := MeshInstance3D.new()
-	var roof_mesh := BoxMesh.new()
-	roof_mesh.size = Vector3(0.48, 0.08, 0.4)
-	roof.mesh = roof_mesh
-	var roof_material := StandardMaterial3D.new()
-	roof_material.albedo_color = Color("#c47c74")
-	roof.material_override = roof_material
-	roof.position = Vector3(0, 0.58, 0)
-	root.add_child(roof)
+	_home_box(root, Vector3(0.08, 0.42, 0.08), Vector3(-0.22, 0.22, 0.16), Color("#3e2c22"))
+	_home_box(root, Vector3(0.08, 0.42, 0.08), Vector3(0.22, 0.22, 0.16), Color("#3e2c22"))
+	_home_box(root, Vector3(0.52, 0.36, 0.08), Vector3(0.0, 0.2, -0.16), Color("#4a382c"))
+	var roof := _home_box(root, Vector3(0.7, 0.08, 0.58), Vector3(0.0, 0.48, 0.0), Color("#2f4a30"))
+	roof.rotation.x = -0.18
 	home_root.add_child(root)
+
+func _home_box(root: Node3D, size: Vector3, at: Vector3, color: Color) -> MeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	var node := MeshInstance3D.new()
+	node.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.94
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	node.material_override = material
+	node.position = at
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(node)
+	return node
 
 func _ground_hit():
 	var mouse := get_viewport().get_mouse_position()

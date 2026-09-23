@@ -187,10 +187,13 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 			at.y = 0.07
 			var yaw := atan2(dir.x, dir.z) + rng.randf_range(-0.22, 0.22)
 			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
-			var fit := 0.48 if narrow else 1.0
+			var fit := 0.32 if narrow else 1.0
 			basis = basis.scaled(Vector3(rng.randf_range(0.85, 1.25) * fit, rng.randf_range(0.85, 1.2), rng.randf_range(0.75, 1.2) * fit))
 			slabs.append(Transform3D(basis, at))
-			slab_colors.append(palette[rng.randi_range(0, palette.size() - 1)])
+			var tint := palette[rng.randi_range(0, palette.size() - 1)]
+			if narrow:
+				tint = tint.darkened(0.28)
+			slab_colors.append(tint)
 			if rng.randf() > 0.35:
 				var grit_reach := 0.1 if narrow else 0.34
 				var grit := center + side * rng.randf_range(-grit_reach, grit_reach)
