@@ -61,7 +61,14 @@ static func pond_distance(x: float, z: float) -> float:
 	return Vector2(x - POND_CENTER.x, z - POND_CENTER.z).length()
 
 static func on_path(x: float, z: float) -> bool:
-	if absf(x + 2.35) < 0.46 and z > -6.5 and z < 3.7:
+	return _path_band(x, z, 0.46)
+
+static func on_track(x: float, z: float) -> bool:
+	# ponytail: the north-south center stays a track; widen it if feet leave the stones.
+	return _path_band(x, z, 0.22)
+
+static func _path_band(x: float, z: float, ns_half: float) -> bool:
+	if absf(x + 2.35) < ns_half and z > -6.5 and z < 3.7:
 		return true
 	if absf(z - 3.5) < 0.46 and x > -7.2 and x < -1.0:
 		return true
@@ -95,7 +102,7 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 		return Color("#1e5c56")
 	if pond < POND_RADIUS + 1.15:
 		return Color("#6e8b49")
-	if on_path(x, z):
+	if on_track(x, z):
 		# ponytail: pale path dirt clips to white under this sun; raise if the path goes muddy.
 		return Color("#6a5e4c")
 	if in_plots(x, z, 0.0):

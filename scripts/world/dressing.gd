@@ -130,16 +130,16 @@ func _frame(parent: Node3D, rect: Rect2) -> void:
 
 func _paths(parent: Node3D) -> void:
 	var strips: Array = [
-		[Vector3(-4.55, 0, 5.2), Vector3(-4.55, 0, 3.5)],
-		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5)],
-		[Vector3(-2.35, 0, 3.5), Vector3(-2.35, 0, -6.35)],
-		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35)],
-		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5)],
+		[Vector3(-4.55, 0, 5.2), Vector3(-4.55, 0, 3.5), 0.96],
+		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5), 0.96],
+		[Vector3(-2.35, 0, 3.5), Vector3(-2.35, 0, -6.35), 0.44],
+		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.96],
+		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5), 0.96],
 	]
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for strip in strips:
-		_ribbon(tool, strip[0], strip[1], 0.96)
+		_ribbon(tool, strip[0], strip[1], float(strip[2]))
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
@@ -191,18 +191,22 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 		var dir := (b - a) / span
 		var side := Vector3(-dir.z, 0.0, dir.x)
 		var steps := maxi(int(span / 0.62), 1)
+		var narrow := absf(a.x + 2.35) < 0.15 and absf(b.x + 2.35) < 0.15
 		for i in steps:
 			var center := a.lerp(b, (float(i) + 0.5) / float(steps))
-			var lateral := rng.randf_range(-0.12, 0.12)
+			var reach := 0.06 if narrow else 0.12
+			var lateral := rng.randf_range(-reach, reach)
 			var at := center + side * lateral + dir * rng.randf_range(-0.04, 0.04)
 			at.y = 0.07
 			var yaw := atan2(dir.x, dir.z) + rng.randf_range(-0.22, 0.22)
 			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
-			basis = basis.scaled(Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.85, 1.2), rng.randf_range(0.75, 1.2)))
+			var fit := 0.48 if narrow else 1.0
+			basis = basis.scaled(Vector3(rng.randf_range(0.85, 1.25) * fit, rng.randf_range(0.85, 1.2), rng.randf_range(0.75, 1.2) * fit))
 			slabs.append(Transform3D(basis, at))
 			slab_colors.append(palette[rng.randi_range(0, palette.size() - 1)])
 			if rng.randf() > 0.35:
-				var grit := center + side * rng.randf_range(-0.34, 0.34)
+				var grit_reach := 0.1 if narrow else 0.34
+				var grit := center + side * rng.randf_range(-grit_reach, grit_reach)
 				grit.y = 0.05
 				var grit_basis := Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0))
 				grit_basis = grit_basis.scaled(Vector3(rng.randf_range(0.5, 1.2), rng.randf_range(0.35, 0.7), rng.randf_range(0.5, 1.1)))
