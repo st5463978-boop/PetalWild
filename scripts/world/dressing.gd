@@ -123,6 +123,9 @@ func _paths(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for strip in strips:
+		# ponytail: narrow tracks are stones; a ribbon if the gaps stop reading as meadow.
+		if float(strip[2]) < 0.5:
+			continue
 		_ribbon(tool, strip[0], strip[1], float(strip[2]))
 	tool.generate_normals()
 	var node := MeshInstance3D.new()

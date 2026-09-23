@@ -67,6 +67,54 @@ static func on_track(x: float, z: float) -> bool:
 	# ponytail: the worn center stays a track; widen it if feet leave the stones.
 	return _path_band(x, z, 0.22, 0.22, 0.22)
 
+static func _narrow_runs() -> Array:
+	return [
+		[Vector3(-6.6, 0.0, 3.5), Vector3(-1.4, 0.0, 3.5)],
+		[Vector3(-2.35, 0.0, 3.5), Vector3(-2.35, 0.0, -6.35)],
+		[Vector3(-7.4, 0.0, -6.35), Vector3(0.6, 0.0, -6.35)],
+	]
+
+static func narrow_stones() -> Array[Vector3]:
+	var stones: Array[Vector3] = []
+	for run in _narrow_runs():
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var span := a.distance_to(b)
+		var steps := maxi(int(span / 0.62), 1)
+		for i in steps:
+			stones.append(a.lerp(b, (float(i) + 0.5) / float(steps)))
+	return stones
+
+static func stone_gaps() -> Array[Vector3]:
+	var gaps: Array[Vector3] = []
+	for run in _narrow_runs():
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var span := a.distance_to(b)
+		var steps := maxi(int(span / 0.62), 1)
+		var prev := a
+		var have := false
+		for i in steps:
+			var at := a.lerp(b, (float(i) + 0.5) / float(steps))
+			if have and prev.distance_to(at) < 0.9:
+				gaps.append((prev + at) * 0.5)
+			prev = at
+			have = true
+	return gaps
+
+static func _stone_pad(x: float, z: float) -> bool:
+	for stone in narrow_stones():
+		if Vector2(x - stone.x, z - stone.z).length() < 0.16:
+			return true
+	return false
+
+static func _worn_band(x: float, z: float) -> bool:
+	if absf(z + 2.5) < 0.42 and x > 2.4 and x < 6.8:
+		return true
+	if absf(x + 4.55) < 0.42 and z > 3.3 and z < 5.5:
+		return true
+	return _stone_pad(x, z)
+
 static func _path_band(x: float, z: float, ns_half: float, north_half: float, south_half: float) -> bool:
 	if absf(x + 2.35) < ns_half and z > -6.5 and z < 3.7:
 		return true
@@ -102,7 +150,7 @@ static func terrain_color(x: float, z: float, y: float) -> Color:
 		return Color("#1e5c56")
 	if pond < POND_RADIUS + 1.15:
 		return Color("#6e8b49")
-	if on_track(x, z):
+	if _worn_band(x, z):
 		# ponytail: pale path dirt clips to white under this sun; raise if the path goes muddy.
 		return Color("#6a5e4c")
 	if in_plots(x, z, 0.0):

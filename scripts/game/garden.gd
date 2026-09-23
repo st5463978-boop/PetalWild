@@ -1475,6 +1475,7 @@ func _fill_bed_meadow() -> void:
 	_path_lips(buckets)
 	_bed_skirt(buckets)
 	_edge_lips(buckets)
+	_stone_gaps(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1565,8 +1566,17 @@ func _edge_lips(buckets: Array) -> void:
 			step += 2
 		x += 0.42
 
-func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false) -> void:
-	var blocked := GardenLayout.on_track(x, z) if shoulders else GardenLayout.on_path(x, z)
+func _stone_gaps(buckets: Array) -> void:
+	# ponytail: one bloom between stones; a clump if the gap still reads as a road.
+	var step := 0
+	for gap in GardenLayout.stone_gaps():
+		_skirt_drop(buckets, gap.x, gap.z, step, false, true)
+		step += 1
+
+func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false, open_track := false) -> void:
+	var blocked := false
+	if not open_track:
+		blocked = GardenLayout.on_track(x, z) if shoulders else GardenLayout.on_path(x, z)
 	if blocked or GardenLayout.in_plots(x, z, 0.0):
 		return
 	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
