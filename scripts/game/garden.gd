@@ -24,6 +24,7 @@ var nessa_watch: Jelly = null
 var nessa_filing := false
 var nessa_drafting := false
 var nessa_farewell := false
+var farewell_names: Array[String] = []
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -484,6 +485,7 @@ func to_state() -> Dictionary:
 		"nessa_filing": nessa_filing,
 		"nessa_drafting": nessa_drafting,
 		"nessa_farewell": nessa_farewell,
+		"farewell_names": farewell_names.duplicate(),
 		"nessa_watch": _watch_record(),
 		"loam_hours": loam_hours,
 	}
@@ -529,6 +531,9 @@ func apply_state(data: Dictionary) -> void:
 	nessa_filing = bool(data.get("nessa_filing", false))
 	nessa_drafting = bool(data.get("nessa_drafting", false))
 	nessa_farewell = bool(data.get("nessa_farewell", false))
+	farewell_names.clear()
+	for entry in data.get("farewell_names", []):
+		farewell_names.append(str(entry))
 	_bind_watch(data.get("nessa_watch", {}))
 	loam_hours = float(data.get("loam_hours", 0.0))
 	_clear_plants()
@@ -3177,6 +3182,81 @@ func _run_smoke() -> void:
 		push_error("smoke: the reed line did not reload")
 		get_tree().quit(1)
 		return
+	nessa = _person("nessa")
+	nessa.present = true
+	nessa_filing = false
+	nessa_drafting = false
+	nessa_farewell = false
+	nessa.has_chore = false
+	farewell_names.clear()
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "bramble":
+			plot.growth = 0.2
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "berrypatch" or body.species_id == "grapling":
+			body.life = "visitor"
+			body.leaving = false
+			body.held = false
+			body.site_time = 3.0
+			body.global_position = Vector3(-4.0, 0.0, -2.0)
+		elif ecology.rules.rank_of(body.life) < ecology.rules.rank_of("settler"):
+			body.life = "resident"
+	ecology.tick(0.1, world_snapshot())
+	if farewell_names.size() != 2 or not farewell_names.has("Berrypatch") or not farewell_names.has("Grapling") or not nessa_farewell or nessa.chore.distance_to(GardenLayout.GATE) > 0.2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: nessa kept one departure %s" % str(farewell_names))
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the departure page did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	nessa = _person("nessa")
+	if farewell_names.size() != 2 or not farewell_names.has("Berrypatch") or not farewell_names.has("Grapling") or not nessa_farewell or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the departure page did not reload")
+		get_tree().quit(1)
+		return
+	var ripe_canes := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "bramble":
+			continue
+		if ripe_canes < 2:
+			plot.growth = 1.0
+			ripe_canes += 1
+		else:
+			plot.growth = 0.2
+	berry = ecology.first("berrypatch")
+	vine = ecology.first("grapling")
+	if berry == null or vine == null:
+		push_error("smoke: the departure pair is missing")
+		get_tree().quit(1)
+		return
+	berry.global_position = Vector3(-4.0, 0.0, -2.0)
+	vine.global_position = Vector3(-3.2, 0.0, -2.0)
+	berry.site_time = 3.0
+	vine.site_time = 3.0
+	berry.leaving = true
+	vine.leaving = true
+	ecology.tick(0.1, world_snapshot())
+	if berry.leaving or farewell_names.has("Berrypatch") or not farewell_names.has("Grapling") or farewell_names.size() != 1 or not nessa_farewell or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a turn back cleared the other name %s" % str(farewell_names))
+		get_tree().quit(1)
+		return
+	nessa.global_position = GardenLayout.GATE
+	nessa.chore = GardenLayout.GATE
+	nessa.has_chore = true
+	_drift_people(0.1, world_snapshot())
+	if nessa_farewell or farewell_names.size() != 0 or nessa.speech == null or nessa.speech.text.find("Grapling") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: nessa wrote the wrong departure")
+		get_tree().quit(1)
+		return
+	if events.is_empty() or str(events[0]).find("departure") == -1:
+		push_error("smoke: the second departure missed the book")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -4212,25 +4292,46 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 		toast("%s bounces." % jelly.display_name)
 		audio.play_kind("squish", -18)
 
+func _farewell_name(text: String) -> String:
+	var slip := " slips back toward the hedge."
+	var back := " turns back from the hedge."
+	if text.ends_with(slip):
+		return text.substr(0, text.length() - slip.length())
+	if text.ends_with(back):
+		return text.substr(0, text.length() - back.length())
+	return ""
+
 func _on_ecology(text: String) -> void:
 	toast(text)
 	var nessa := _person("nessa")
 	if "turns back" in text:
 		if nessa != null and nessa.present and nessa_farewell and not nessa_filing and not nessa_drafting:
-			nessa_farewell = false
-			nessa.has_chore = false
-			nessa_watch = null
-			nessa.say("They turned back. The page stays blank.")
+			var who := _farewell_name(text)
+			if who != "":
+				farewell_names.erase(who)
+			if farewell_names.is_empty():
+				nessa_farewell = false
+				nessa.has_chore = false
+				nessa_watch = null
+				nessa.say("They turned back. The page stays blank.")
 		return
 	if "slips" in text:
 		audio.play_kind("ui", -16)
-		# ponytail: one departure note; a page if several leave on the same tick.
+		# ponytail: the names on this page; a second page if she is already filing.
 		if nessa != null and nessa.present and not nessa_filing and not nessa_drafting:
+			var who := _farewell_name(text)
+			if who != "" and not farewell_names.has(who):
+				farewell_names.append(who)
 			nessa_farewell = true
 			nessa_watch = null
 			nessa.chore = GardenLayout.GATE
 			nessa.has_chore = true
-			nessa.say("Someone is leaving. I will write it down.")
+			if farewell_names.size() > 1:
+				nessa.say("More than one is leaving. I will write them down.")
+			elif farewell_names.size() == 1:
+				nessa.say("%s is leaving. I will write it down." % farewell_names[0])
+			else:
+				nessa.say("Someone is leaving. I will write it down.")
 		return
 	audio.play_kind("discovery", -12)
 	if nessa == null or not nessa.present or nessa_filing or nessa_drafting or nessa_farewell:
@@ -4881,10 +4982,19 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 				nessa_watch = null
 		elif nessa_farewell:
 			if nessa.global_position.distance_to(nessa.chore) < 0.55:
+				var line := "Noted. They have gone back to the hedge."
+				if farewell_names.size() == 1:
+					line = "Noted. %s has gone back to the hedge." % farewell_names[0]
+				elif farewell_names.size() > 1:
+					var packed := PackedStringArray()
+					for entry in farewell_names:
+						packed.append(entry)
+					line = "Noted. %s have gone back to the hedge." % ", ".join(packed)
 				nessa_farewell = false
 				nessa.has_chore = false
 				nessa_watch = null
-				nessa.say("Noted. They have gone back to the hedge.")
+				farewell_names.clear()
+				nessa.say(line)
 				toast("Nessa wrote the departure into the parish book.")
 		else:
 			if nessa_watch != null and is_instance_valid(nessa_watch):
