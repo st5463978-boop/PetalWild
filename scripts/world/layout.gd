@@ -63,6 +63,20 @@ static func pond_distance(x: float, z: float) -> float:
 static func on_path(x: float, z: float) -> bool:
 	return _path_band(x, z, 0.46, 0.46, 0.5)
 
+static func on_bed_track(x: float, z: float) -> bool:
+	# ponytail: the three old bed walks only; the stall spur and the pond path stay worn.
+	if absf(x + 4.55) < 0.46 and z > 3.2 and z < 5.6:
+		return false
+	if absf(z + 2.5) < 0.5 and x > 2.2 and x < 7.0:
+		return false
+	if absf(x + 2.35) < 0.42 and z > -6.2 and z < 3.35:
+		return true
+	if absf(z - 3.5) < 0.42 and x > -6.7 and x < -1.3:
+		return true
+	if absf(z + 6.35) < 0.42 and x > -7.5 and x < 0.7:
+		return true
+	return false
+
 static func on_track(x: float, z: float) -> bool:
 	# ponytail: the worn center stays a track; widen it if feet leave the stones.
 	return _path_band(x, z, 0.22, 0.22, 0.22)

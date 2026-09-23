@@ -16,6 +16,7 @@ func build(parent: Node3D) -> void:
 	_hedge_bulges(parent)
 	_hedge_volume(parent)
 	_scatter_grass(parent)
+	_track_grass(parent)
 	_room_cover(parent)
 	_flowers(parent)
 	_flower_rows(parent)
@@ -856,6 +857,42 @@ func _scatter_grass(parent: Node3D) -> void:
 		colors.append(tint)
 		customs.append(custom)
 	_multimesh(parent, mesh, points, colors, _foliage_material(), "Grass", false, customs)
+
+func _track_grass(parent: Node3D) -> void:
+	# ponytail: a private lawn on the old bed tracks; fold it into the main scatter if that mask can accept them.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14191
+	var points: Array[Transform3D] = []
+	var colors: Array[Color] = []
+	var customs: Array[Color] = []
+	var offsets: Array[float] = [-0.32, -0.1, 0.12, 0.34]
+	for run in GardenLayout._narrow_runs():
+		var a: Vector3 = run[0]
+		var b: Vector3 = run[1]
+		var dir := b - a
+		dir.y = 0.0
+		var span := dir.length()
+		if span < 0.2:
+			continue
+		dir /= span
+		var side := Vector3(-dir.z, 0.0, dir.x)
+		var along := 0.12
+		while along < span - 0.08:
+			for lateral in offsets:
+				var at := a + dir * along + side * (lateral + rng.randf_range(-0.04, 0.04))
+				if not GardenLayout.on_bed_track(at.x, at.z) or GardenLayout.in_plots(at.x, at.z, 0.02):
+					continue
+				var y := GardenLayout.height_at(at.x, at.z)
+				var scale := rng.randf_range(0.55, 1.35)
+				var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0)).scaled(Vector3(scale, scale * rng.randf_range(0.8, 1.5), scale))
+				var tint := Color("#6fa344").lerp(Color("#d5e07a"), rng.randf() * 0.65)
+				if rng.randf() > 0.82:
+					tint = Color("#3e7a34")
+				points.append(Transform3D(basis, Vector3(at.x, y, at.z)))
+				colors.append(tint)
+				customs.append(Color(rng.randf(), 0.2, 0, 1))
+			along += 0.22
+	_multimesh(parent, _blade(), points, colors, _foliage_material(), "TrackGrass", false, customs)
 
 func _flowers(parent: Node3D) -> void:
 	var mesh := _flower()
