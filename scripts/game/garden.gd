@@ -4304,6 +4304,10 @@ func _run_smoke() -> void:
 		push_error("smoke: the open stall left its lamp dim")
 		get_tree().quit(1)
 		return
+	if not _rooms_asleep():
+		push_error("smoke: the afternoon lit the rooms")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(20.4)
 	_lamps()
 	if lamp_light.light_energy < 0.9 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
@@ -4314,10 +4318,44 @@ func _run_smoke() -> void:
 		push_error("smoke: the shut stall left its lamp lit")
 		get_tree().quit(1)
 		return
+	if not _rooms_awake():
+		push_error("smoke: dusk left the rooms dim")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(lamp_hour)
 	_lamps()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
+
+func _rooms_asleep() -> bool:
+	if get_tree().get_nodes_in_group("parish_room").size() != 3 or get_tree().get_nodes_in_group("parish_room_glass").size() != 5:
+		return false
+	for node in get_tree().get_nodes_in_group("parish_room"):
+		var house_lamp := node as OmniLight3D
+		if house_lamp == null or house_lamp.light_energy > float(house_lamp.get_meta("day_energy", 0.1)) * 1.15:
+			return false
+	for node in get_tree().get_nodes_in_group("parish_room_glass"):
+		var pane := node as MeshInstance3D
+		if pane == null or not (pane.material_override is StandardMaterial3D):
+			return false
+		if (pane.material_override as StandardMaterial3D).emission_energy_multiplier > 0.05:
+			return false
+	return true
+
+func _rooms_awake() -> bool:
+	if get_tree().get_nodes_in_group("parish_room").size() != 3 or get_tree().get_nodes_in_group("parish_room_glass").size() != 5:
+		return false
+	for node in get_tree().get_nodes_in_group("parish_room"):
+		var house_lamp := node as OmniLight3D
+		if house_lamp == null or house_lamp.light_energy < float(house_lamp.get_meta("day_energy", 0.1)) * 3.0:
+			return false
+	for node in get_tree().get_nodes_in_group("parish_room_glass"):
+		var pane := node as MeshInstance3D
+		if pane == null or not (pane.material_override is StandardMaterial3D):
+			return false
+		if (pane.material_override as StandardMaterial3D).emission_energy_multiplier < 0.9:
+			return false
+	return true
 
 func _lamps() -> void:
 	# ponytail: path lamps take the parish night; a mist glow if the fog should light them.
@@ -4338,6 +4376,15 @@ func _lamps() -> void:
 		var stall_lamp := node as OmniLight3D
 		if stall_lamp:
 			stall_lamp.light_energy = stall_energy
+	var room_glow := 1.15 if night else 0.0
+	for node in get_tree().get_nodes_in_group("parish_room"):
+		var house_lamp := node as OmniLight3D
+		if house_lamp:
+			house_lamp.light_energy = float(house_lamp.get_meta("day_energy", 0.1)) * (4.5 if night else 1.0)
+	for node in get_tree().get_nodes_in_group("parish_room_glass"):
+		var pane := node as MeshInstance3D
+		if pane and pane.material_override is StandardMaterial3D:
+			(pane.material_override as StandardMaterial3D).emission_energy_multiplier = room_glow
 
 func _run_capture() -> void:
 	Settings.reduce_motion = true

@@ -60,8 +60,9 @@ func _shed(parent: Node3D) -> void:
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.85, 0), Vector3(2.3, 1.7, 1.8), Color("#4a453e"))
 	_box(root, Vector3(0, 0.75, 0.9), Vector3(0.55, 1.15, 0.06), Color("#3f6a5c"))
-	_box(root, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
-	_box(root, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_warm_pane(root, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_warm_pane(root, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_warm_pane(root, Vector3(0.0, 1.05, -0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
 	var roof_l := _box(root, Vector3(0, 1.95, -0.15), Vector3(2.6, 0.08, 1.15), Color("#c47c74"))
 	roof_l.rotation_degrees = Vector3(-22, 0, 0)
 	var roof_r := _box(root, Vector3(0, 1.95, 0.35), Vector3(2.6, 0.08, 1.15), Color("#524c44"))
@@ -77,6 +78,7 @@ func _shed(parent: Node3D) -> void:
 	light.omni_range = 3.2
 	light.shadow_enabled = false
 	root.add_child(light)
+	_room_lamp(light, 0.16)
 
 func _tea(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -85,7 +87,7 @@ func _tea(parent: Node3D) -> void:
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.7, 0), Vector3(1.8, 1.4, 1.5), Color("#4a3a30"))
 	_box(root, Vector3(0, 0.55, -0.76), Vector3(0.46, 0.9, 0.06), Color("#2c4038"))
-	_box(root, Vector3(0.48, 0.85, -0.78), Vector3(0.32, 0.32, 0.05), Color("#6a5340"))
+	_warm_pane(root, Vector3(0.48, 0.85, -0.78), Vector3(0.32, 0.32, 0.05), Color("#6a5340"))
 	_box(root, Vector3(0, 1.52, 0), Vector3(2.05, 0.1, 1.75), Color("#3a322c"))
 	_box(root, Vector3(0, 0.08, -1.05), Vector3(1.1, 0.08, 0.4), Color("#5c4a3c"))
 	_cylinder(root, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
@@ -96,6 +98,7 @@ func _tea(parent: Node3D) -> void:
 	light.omni_range = 2.6
 	light.shadow_enabled = false
 	root.add_child(light)
+	_room_lamp(light, 0.1)
 
 func _hut(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -104,7 +107,7 @@ func _hut(parent: Node3D) -> void:
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.72, 0), Vector3(1.45, 1.44, 1.25), Color("#3e342c"))
 	_box(root, Vector3(0, 0.58, -0.64), Vector3(0.4, 0.86, 0.06), Color("#243830"))
-	_box(root, Vector3(0.42, 0.88, -0.66), Vector3(0.28, 0.28, 0.05), Color("#4a4034"))
+	_warm_pane(root, Vector3(0.42, 0.88, -0.66), Vector3(0.28, 0.28, 0.05), Color("#4a4034"))
 	var roof_l := _box(root, Vector3(0, 1.58, -0.28), Vector3(1.7, 0.08, 0.78), Color("#322c28"))
 	roof_l.rotation_degrees = Vector3(18, 0, 0)
 	var roof_r := _box(root, Vector3(0, 1.58, 0.28), Vector3(1.7, 0.08, 0.78), Color("#2a2622"))
@@ -118,6 +121,7 @@ func _hut(parent: Node3D) -> void:
 	light.omni_range = 2.2
 	light.shadow_enabled = false
 	root.add_child(light)
+	_room_lamp(light, 0.08)
 
 func _foundry(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -195,6 +199,19 @@ func _reeds(parent: Node3D) -> void:
 
 func _crate(parent: Node3D, at: Vector3) -> void:
 	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
+
+func _room_lamp(light: OmniLight3D, day: float) -> void:
+	light.set_meta("day_energy", day)
+	light.add_to_group("parish_room")
+
+func _warm_pane(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> void:
+	var pane := _box(parent, at, size, color)
+	var material := pane.material_override as StandardMaterial3D
+	# ponytail: panes stay dark by day; raise the night emission if the glass stays dull.
+	material.emission_enabled = true
+	material.emission = Color("#c47a28")
+	material.emission_energy_multiplier = 0.0
+	pane.add_to_group("parish_room_glass")
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
