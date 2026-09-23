@@ -2661,6 +2661,74 @@ func _run_smoke() -> void:
 		push_error("smoke: the kept cane did not reload")
 		get_tree().quit(1)
 		return
+	var readout := soil.get_cell(4, 2)
+	readout.plant_id = "bramble"
+	readout.tilled = true
+	readout.growth = 0.6
+	readout.moisture = 0.1
+	readout.fertility = 0.7
+	var bed_line := _plot_line(readout)
+	if bed_line.find("Needs water.") == -1:
+		push_error("smoke: a dry cane hid its thirst")
+		get_tree().quit(1)
+		return
+	readout.moisture = 0.8
+	readout.fertility = 0.05
+	bed_line = _plot_line(readout)
+	if bed_line.find("Needs feed.") == -1 or bed_line.find("Needs water.") != -1:
+		push_error("smoke: a tired cane hid its feed")
+		get_tree().quit(1)
+		return
+	readout.fertility = 0.7
+	berry = ecology.first("berrypatch")
+	if berry == null:
+		berry = ecology.force_spawn("berrypatch")
+	berry.life = "visitor"
+	berry.leaving = false
+	berry.global_position = GardenLayout.cell_center(4, 2)
+	if _plot_line(readout).find("Fruit returning.") != -1:
+		push_error("smoke: a visitor ripened the readout")
+		get_tree().quit(1)
+		return
+	berry.life = "resident"
+	if _plot_line(readout).find("Fruit returning.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the readout hid the returning fruit")
+		get_tree().quit(1)
+		return
+	readout.growth = 1.0
+	vine = ecology.first("grapling")
+	if vine == null:
+		vine = ecology.force_spawn("grapling")
+	vine.life = "visitor"
+	vine.leaving = false
+	vine.global_position = GardenLayout.cell_center(4, 2)
+	if _plot_line(readout).find("Cane kept.") != -1:
+		push_error("smoke: a visitor kept the readout")
+		get_tree().quit(1)
+		return
+	vine.life = "resident"
+	bed_line = _plot_line(readout)
+	if bed_line.find("Cane kept.") == -1 or bed_line.find("Fruit returning.") != -1:
+		push_error("smoke: the readout hid the kept cane")
+		get_tree().quit(1)
+		return
+	readout.moisture = 0.1
+	if _plot_line(readout).find("Needs water.") == -1 or _plot_line(readout).find("Cane kept.") != -1:
+		push_error("smoke: a dry kept cane skipped its thirst")
+		get_tree().quit(1)
+		return
+	readout.moisture = 0.8
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the readout did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	readout = soil.get_cell(4, 2)
+	vine = ecology.first("grapling")
+	if vine == null or vine.life != "resident" or _plot_line(readout).find("Cane kept.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the readout did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3434,12 +3502,43 @@ func _hover_text() -> String:
 		if GardenLayout.pond_distance(hit.x, hit.z) < GardenLayout.POND_RADIUS + 1.2:
 			return "Pond  ·  %d reaches" % (GardenLayout.BASE_POND_CELLS + scooped.size())
 		return SaveGame.garden_name
-	var plot := soil.get_cell(cell_id.x, cell_id.y)
+	return _plot_line(soil.get_cell(cell_id.x, cell_id.y))
+
+func _plot_line(plot: SoilCell) -> String:
 	var soil_name := "Night-loam" if plot.chem == "nightloam" else ("Tilled" if plot.tilled else "Grass")
 	if plot.plant_id == "":
-		return "%s  ·  water %d%%  ·  feed %d%%" % [soil_name, int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
-	var name := str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
-	return "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
+		var bare := "%s  ·  water %d%%  ·  feed %d%%" % [soil_name, int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
+		if plot.tilled and plot.moisture < 0.38:
+			bare += "  ·  Needs water."
+		return bare
+	var definition: Dictionary = ContentDB.plant(plot.plant_id)
+	var name := str(definition.get("name", plot.plant_id))
+	var line := "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
+	if plot.moisture < float(definition.get("water_need", 0.3)):
+		return line + "  ·  Needs water."
+	if plot.fertility < float(definition.get("fertility_need", 0.2)):
+		return line + "  ·  Needs feed."
+	if plot.plant_id == "bramble" and plot.growth < 1.0 and _fruit_returning(plot):
+		return line + "  ·  Fruit returning."
+	if _cane_kept(plot):
+		return line + "  ·  Cane kept."
+	return line
+
+func _fruit_returning(plot: SoilCell) -> bool:
+	# ponytail: one settled berrypatch on the bitten cane; a row if several ripen separate canes.
+	if plot.plant_id != "bramble":
+		return false
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "berrypatch" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		var flat := Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z)
+		if flat.length() <= 1.6:
+			return true
+	return false
 
 func _sync_plants() -> void:
 	var live := {}
