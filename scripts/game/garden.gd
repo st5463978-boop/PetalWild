@@ -606,6 +606,27 @@ func _run_smoke() -> void:
 		push_error("smoke: nessa did not write the book")
 		get_tree().quit(1)
 		return
+	var saw_rumour := false
+	var saw_bell := false
+	for row in _journal_rows(world_snapshot()):
+		var entry: Dictionary = row
+		if str(entry.get("name", "")) == "A rumour":
+			saw_rumour = true
+			if str(entry.get("blurb", "")) != "Not sighted yet.":
+				push_error("smoke: rumour blurb leaked")
+				get_tree().quit(1)
+				return
+			for line in entry.get("unmet", []):
+				if str(line).find("Bellhelp") != -1 and ecology.rules.rank_of(str(ecology.states.get("bellhelp", "rumoured"))) < ecology.rules.rank_of("sighted"):
+					push_error("smoke: hidden name in a rumour")
+					get_tree().quit(1)
+					return
+		if str(entry.get("name", "")) == "Bellhelp":
+			saw_bell = true
+	if not saw_rumour or not saw_bell:
+		push_error("smoke: journal names were wrong")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1254,17 +1275,39 @@ func _journal_rows(world: Dictionary) -> Array:
 	var rows: Array = []
 	for id in ContentDB.species_order:
 		var definition := ContentDB.species_def(id)
+		var known := ecology.rules.rank_of(str(ecology.states.get(id, "rumoured"))) >= ecology.rules.rank_of("sighted")
+		var met: PackedStringArray = ecology.rules.met_labels(definition, world)
+		var unmet: PackedStringArray = ecology.rules.unmet(definition, world)
+		if not known:
+			met = _without_hidden_names(met)
+			unmet = _without_hidden_names(unmet)
 		rows.append({
-			"name": definition.get("name", id),
+			"name": definition.get("name", id) if known else "A rumour",
 			"status": ecology.status_line(id, world),
-			"met": ecology.rules.met_labels(definition, world),
-			"unmet": ecology.rules.unmet(definition, world),
-			"blurb": definition.get("blurb", ""),
-			"romance": ecology.rules.romance_label(definition),
+			"met": met,
+			"unmet": unmet,
+			"blurb": definition.get("blurb", "") if known else "Not sighted yet.",
+			"romance": ecology.rules.romance_label(definition) if known else "",
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
 		})
 	return rows
+
+func _without_hidden_names(lines: PackedStringArray) -> PackedStringArray:
+	# ponytail: a label scan; a sightings set if the journal grows past nine species.
+	var kept := PackedStringArray()
+	for line in lines:
+		var leak := false
+		for id in ContentDB.species_order:
+			var creature := str(ContentDB.species_def(id).get("name", ""))
+			if creature == "" or line.find(creature) == -1:
+				continue
+			if ecology.rules.rank_of(str(ecology.states.get(id, "rumoured"))) < ecology.rules.rank_of("sighted"):
+				leak = true
+				break
+		if not leak:
+			kept.append(line)
+	return kept
 
 func _people_rows(world: Dictionary) -> Array:
 	var rows: Array = []
