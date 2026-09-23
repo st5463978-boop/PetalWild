@@ -53,8 +53,9 @@ func tick(delta: float, frozen: bool, weather: String, flower := Vector3.ZERO, f
 
 func _body(bee: Node3D) -> void:
 	var mesh := CapsuleMesh.new()
-	mesh.radius = 0.11
-	mesh.height = 0.34
+	# ponytail: big enough to read in the home shot; shrink if they cover a flower.
+	mesh.radius = 0.18
+	mesh.height = 0.46
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
 	node.rotation_degrees = Vector3(0, 0, 90)
@@ -67,12 +68,12 @@ func _body(bee: Node3D) -> void:
 	bee.add_child(node)
 	var head := MeshInstance3D.new()
 	var ball := SphereMesh.new()
-	ball.radius = 0.07
-	ball.height = 0.14
+	ball.radius = 0.1
+	ball.height = 0.2
 	ball.radial_segments = 8
 	ball.rings = 4
 	head.mesh = ball
-	head.position = Vector3(0.16, 0.02, 0)
+	head.position = Vector3(0.24, 0.03, 0)
 	head.material_override = material
 	bee.add_child(head)
 	var band := MeshInstance3D.new()
@@ -85,3 +86,15 @@ func _body(bee: Node3D) -> void:
 	dark.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	band.material_override = dark
 	bee.add_child(band)
+	var wing_mat := StandardMaterial3D.new()
+	wing_mat.albedo_color = Color("#c4a56a")
+	wing_mat.roughness = 0.8
+	wing_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	for side in [-1.0, 1.0]:
+		var wing := MeshInstance3D.new()
+		var card := BoxMesh.new()
+		card.size = Vector3(0.22, 0.015, 0.12)
+		wing.mesh = card
+		wing.position = Vector3(0.02, 0.08, side * 0.1)
+		wing.material_override = wing_mat
+		bee.add_child(wing)
