@@ -1622,6 +1622,50 @@ func _run_smoke() -> void:
 		push_error("smoke: the bite did not reload")
 		get_tree().quit(1)
 		return
+	for cell in soil.all():
+		var bed: SoilCell = cell
+		if bed.plant_id == "meadowbell":
+			bed.growth = 0.4
+	_force_plant(1, 1, "meadowbell", 1.0)
+	var fruit := GardenLayout.cell_center(1, 1)
+	hand.global_position = camera.target
+	hand.global_position.y = 0.0
+	hand.bite_wait = 0.0
+	var fruit_far := hand.global_position.distance_to(fruit)
+	if not camera.is_position_in_frustum(hand.global_position) or fruit_far < 2.0:
+		push_error("smoke: the ripe plant was already underfoot")
+		get_tree().quit(1)
+		return
+	_update_creatures(0.016)
+	if hand.goal.distance_to(fruit) > 0.2:
+		push_error("smoke: a hungry resident did not face the fruit")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the hungry walk did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	hand = ecology.first("bellhelp")
+	if hand == null or hand.bite_wait > 0.05 or soil.get_cell(1, 1).growth < 1.0:
+		push_error("smoke: the hungry walk did not reload")
+		get_tree().quit(1)
+		return
+	hand.global_position = camera.target
+	hand.global_position.y = 0.0
+	fruit_far = hand.global_position.distance_to(fruit)
+	_update_creatures(0.016)
+	hand._coast(2.0)
+	if hand.global_position.distance_to(fruit) > fruit_far - 0.5 or soil.get_cell(1, 1).growth < 1.0:
+		push_error("smoke: a hungry resident stayed off the fruit")
+		get_tree().quit(1)
+		return
+	hand.global_position = fruit
+	_browse(0.1)
+	if soil.get_cell(1, 1).growth > 0.6 or hand.bite_wait < 3.0:
+		push_error("smoke: a resident who reached the fruit did not bite")
+		get_tree().quit(1)
+		return
 	_place_home(Vector3(8.0, 0.0, 4.0))
 	var shelter := home_root.get_child(home_root.get_child_count() - 1)
 	var bright := false
@@ -2757,6 +2801,7 @@ func _update_creatures(delta: float) -> void:
 		jelly.tier = tier
 	_keep_company()
 	_follow_hosts()
+	_seek_bite()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -2883,6 +2928,30 @@ func _apply_soil_effect(effect: Dictionary) -> int:
 	var count := soil.apply_chem(str(effect.get("chem", "nightloam")), int(effect.get("count", 4)))
 	_refresh_soil_colors()
 	return count
+
+func _seek_bite() -> void:
+	# ponytail: the nearest ripe plant; a route if a resident keeps two crops.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
+			continue
+		if jelly.bite_wait > 0.0:
+			continue
+		var plant_id := _feed_plant(jelly.species_id)
+		if plant_id == "":
+			continue
+		var plot := _ripe_near(jelly.global_position, plant_id, 40.0)
+		if plot == null:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		if at.distance_to(jelly.global_position) <= 1.6:
+			continue
+		if not camera.is_position_in_frustum(jelly.global_position):
+			continue
+		jelly.goal = at
+		jelly.attract = at
 
 func _browse(hours: float) -> void:
 	# ponytail: one ripe plant per resident; a diet if a species keeps two crops.
