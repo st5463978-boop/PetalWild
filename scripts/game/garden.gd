@@ -675,7 +675,7 @@ func _run_smoke() -> void:
 		return
 	soil.get_cell(0, 0).tilled = false
 	_refresh_soil_colors()
-	if meadow_n < 40 or meadow_after != meadow_n - 17:
+	if meadow_n < 40 or meadow_after != meadow_n - 21:
 		push_error("smoke: empty beds kept their meadow")
 		get_tree().quit(1)
 		return
@@ -4364,18 +4364,30 @@ func _fill_bed_meadow() -> void:
 		var spin := 0.0
 		var scale := 1.0
 		var basis := Basis.IDENTITY
+		# ponytail: one fuller clump per empty cell; a third rank if the lid still draws a square.
 		for i in leaves.size():
 			at = center + leaves[i]
 			spin = float((plot.ix * 3 + plot.iz + i) % 5) * 0.4
-			scale = 0.92 + float((plot.iz + i) % 3) * 0.12
+			scale = 1.35 + float((plot.iz + i) % 3) * 0.16
 			basis = Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
 			buckets[0].append(Transform3D(basis, at))
 		for i in spots.size():
 			at = center + spots[i]
 			spin = float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.35
-			scale = 0.95 + float((plot.ix + i) % 3) * 0.22
+			scale = 1.45 + float((plot.ix + i) % 3) * 0.28
 			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
 			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
+		var gaps: Array[Vector3] = [
+			Vector3(-0.14, 0.03, -0.06),
+			Vector3(0.12, 0.03, 0.02),
+			Vector3(-0.08, 0.03, 0.16),
+			Vector3(0.18, 0.03, -0.14),
+		]
+		for i in gaps.size():
+			at = center + gaps[i]
+			spin = float((plot.ix + plot.iz + i) % 6) * 0.5
+			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * 1.25)
+			buckets[1 + (plot.ix + i) % 4].append(Transform3D(basis, at))
 	_bridge_into(buckets)
 	_path_lips(buckets)
 	_bed_skirt(buckets)
