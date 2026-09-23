@@ -1118,6 +1118,40 @@ func _run_smoke() -> void:
 		push_error("smoke: reedic did not follow bulrush")
 		get_tree().quit(1)
 		return
+	var reed := ecology.first("reedic")
+	Clock.set_hour(15.3)
+	rush.global_position = Vector3(5.0, 0.0, -2.2)
+	rush.leaving = false
+	rush.held = false
+	reed.global_position = Vector3(5.0, 0.0, 1.4)
+	reed.leaving = false
+	reed.held = false
+	var reed_far := reed.global_position.distance_to(rush.global_position)
+	_update_creatures(0.016)
+	reed.tier = 2
+	reed._process(2.0)
+	if reed.global_position.distance_to(rush.global_position) > reed_far - 0.8:
+		push_error("smoke: reedic stayed off the bulrush")
+		get_tree().quit(1)
+		return
+	reed.global_position = Vector3(5.0, 0.0, 1.4)
+	var reed_hidden := reed.global_position.distance_to(rush.global_position)
+	_update_creatures(0.016)
+	reed.tier = 3
+	reed._process(2.0)
+	if reed.visible or reed.global_position.distance_to(rush.global_position) > reed_hidden - 0.8:
+		push_error("smoke: a hidden reedic stayed off the bulrush")
+		get_tree().quit(1)
+		return
+	rush.leaving = true
+	reed.goal = Vector3(-1.0, 0.0, -1.0)
+	_update_creatures(0.016)
+	if reed.goal.distance_to(rush.global_position) < 0.2:
+		push_error("smoke: reedic followed a departure")
+		get_tree().quit(1)
+		return
+	rush.leaving = false
+	Clock.set_hour(21.0)
 	_force_plant(4, 2, "bramble", 1.0)
 	_force_plant(5, 2, "bramble", 1.0)
 	ecology.cooldowns["berrypatch"] = 0.0
@@ -2571,6 +2605,7 @@ func _update_creatures(delta: float) -> void:
 				jelly.goal = stand
 		jelly.tier = tier
 	_keep_company()
+	_follow_hosts()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -2581,6 +2616,26 @@ func _nearest_home(at: Vector3) -> Vector3:
 			best = dist
 			berth = point
 	return berth
+
+func _follow_hosts() -> void:
+	# ponytail: one host; a flock if several of that species are out.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep:
+			continue
+		var host_id := ""
+		for req in ContentDB.species_def(jelly.species_id).get("requirements", []):
+			if str(req.get("type", "")) == "species_state":
+				host_id = str(req.get("species", ""))
+				break
+		if host_id == "":
+			continue
+		var host := ecology.first(host_id)
+		if host == null or host == jelly or not is_instance_valid(host) or host.leaving or host.held:
+			continue
+		jelly.attract = host.global_position
+		if jelly.global_position.distance_to(host.global_position) > 1.1:
+			jelly.goal = host.global_position
 
 func _keep_company() -> void:
 	# ponytail: one shared kit for a breeding pair; a ring of homes if a parish keeps more than two.
