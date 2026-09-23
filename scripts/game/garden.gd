@@ -4697,8 +4697,10 @@ func _build_patches() -> void:
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
 		node.position = Vector3(center.x, 0.055, center.z)
 		add_child(node)
+		_scallop_patch(node, plot.ix, plot.iz)
 		patches["%d,%d" % [plot.ix, plot.iz]] = node
 	_build_bed_meadow()
+	_scallop_lawn()
 	highlight = MeshInstance3D.new()
 	var cursor := BoxMesh.new()
 	cursor.size = Vector3(GardenLayout.CELL_W * 0.94, 0.035, GardenLayout.CELL_D * 0.92)
@@ -4786,10 +4788,131 @@ func _bed_spot(center: Vector3, offset: Vector3, ix: int, iz: int, i: int) -> Ve
 	var jz := (float((ix * 3 + iz * 5 + i * 11) % 5) - 2.0) * 0.16
 	var nudged := center + offset + Vector3(jx, 0.0, jz)
 	if GardenLayout.on_path(nudged.x, nudged.z) or GardenLayout.on_track(nudged.x, nudged.z):
-		return center + offset
+		return _edge_wave(center + offset)
 	if GardenLayout.pond_distance(nudged.x, nudged.z) < GardenLayout.POND_RADIUS:
-		return center + offset
-	return nudged
+		return _edge_wave(center + offset)
+	return _edge_wave(nudged)
+
+func _south_bed_x(x: float) -> bool:
+	return (x >= -7.45 and x <= -2.75) or (x >= -1.95 and x <= 2.75)
+
+func _west_bed_z(z: float) -> bool:
+	return (z >= -5.45 and z <= -1.9) or (z >= -0.9 and z <= 2.65)
+
+func _edge_wave(point: Vector3) -> Vector3:
+	# ponytail: pull the outer rank onto a sine edge; leave it if the wave hits a walk.
+	var x := point.x
+	var z := point.z
+	if _south_bed_x(x) and z < -4.3 and z > -6.0:
+		var edge := -5.2 + sin(x * 1.6) * 0.62
+		if z < edge:
+			z = edge
+	if _west_bed_z(z) and x < -6.0 and x > -8.0:
+		var edge := -7.15 + sin(z * 1.7) * 0.55
+		if x < edge:
+			x = edge
+	if _west_bed_z(z) and x > 1.5 and x < 3.5:
+		var edge := 2.45 + sin(z * 1.7) * 0.5
+		if x > edge:
+			x = edge
+	if _south_bed_x(x) and z > 1.5 and z < 3.2:
+		var edge := 2.15 + sin(x * 1.6) * 0.4
+		if z > edge:
+			z = edge
+	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
+		return point
+	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS:
+		return point
+	return Vector3(x, point.y, z)
+
+func _outer_bite(x: float, z: float) -> bool:
+	if not GardenLayout.in_plots(x, z, 0.0):
+		return false
+	if z <= -4.4 and z >= -5.55 and _south_bed_x(x):
+		return true
+	if x <= -6.4 and x >= -7.55 and _west_bed_z(z):
+		return true
+	if x >= 1.85 and x <= 2.85 and _west_bed_z(z):
+		return true
+	if z >= 1.7 and z <= 2.75 and _south_bed_x(x):
+		return true
+	return false
+
+func _scallop_patch(node: MeshInstance3D, ix: int, iz: int) -> void:
+	# ponytail: the outer lid face follows the same wave; a mesh per plot if the boxes still square.
+	var center := GardenLayout.cell_center(ix, iz)
+	var lid_x := GardenLayout.CELL_W * 1.06
+	var lid_z := GardenLayout.CELL_D * 1.06
+	if iz == 0:
+		var wave_z := -5.2 + sin(center.x * 1.6) * 0.62
+		var bite := wave_z - (center.z - lid_z * 0.5)
+		if bite > 0.08:
+			node.scale.z = maxf(0.35, (lid_z - bite) / lid_z)
+			node.position.z += bite * 0.5
+	if iz == 7:
+		var wave_z := 2.15 + sin(center.x * 1.6) * 0.4
+		var bite := (center.z + lid_z * 0.5) - wave_z
+		if bite > 0.08:
+			node.scale.z = maxf(0.35, (lid_z - bite) / lid_z)
+			node.position.z -= bite * 0.5
+	if ix == 0:
+		var wave_x := -7.15 + sin(center.z * 1.7) * 0.55
+		var bite := wave_x - (center.x - lid_x * 0.5)
+		if bite > 0.08:
+			node.scale.x = maxf(0.35, (lid_x - bite) / lid_x)
+			node.position.x += bite * 0.5
+	if ix == 9:
+		var wave_x := 2.45 + sin(center.z * 1.7) * 0.5
+		var bite := (center.x + lid_x * 0.5) - wave_x
+		if bite > 0.08:
+			node.scale.x = maxf(0.35, (lid_x - bite) / lid_x)
+			node.position.x -= bite * 0.5
+
+func _scallop_lawn() -> void:
+	# ponytail: meadow discs in the bites so the brown furrow does not draw the old line.
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.28
+	disc.bottom_radius = 0.3
+	disc.height = 0.02
+	disc.radial_segments = 8
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("#4e7a36")
+	material.roughness = 0.96
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = disc
+	var spots: Array[Vector3] = []
+	var x := -7.2
+	while x <= 2.5:
+		if _south_bed_x(x):
+			var wave := sin(x * 1.6) * 0.42
+			if wave > 0.08:
+				spots.append(Vector3(x, 0.07, -5.38 + wave * 0.5))
+			var north := sin(x * 1.6 + 1.2) * 0.32
+			if north < -0.06:
+				spots.append(Vector3(x, 0.07, 2.45 + north * 0.5))
+		x += 0.46
+	var z := -5.2
+	while z <= 2.4:
+		if _west_bed_z(z):
+			var wave := sin(z * 1.7) * 0.38
+			if wave > 0.08:
+				spots.append(Vector3(-7.28 + wave * 0.5, 0.07, z))
+			var east := sin(z * 1.7 + 0.8) * 0.32
+			if east < -0.06:
+				spots.append(Vector3(2.55 + east * 0.5, 0.07, z))
+		z += 0.46
+	multi.instance_count = spots.size()
+	for i in spots.size():
+		var basis := Basis(Vector3.UP, float(i) * 0.4)
+		multi.set_instance_transform(i, Transform3D(basis, spots[i]))
+	var node := MultiMeshInstance3D.new()
+	node.name = "BedScallop"
+	node.multimesh = multi
+	node.material_override = material
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(node)
 
 func _fill_bed_meadow() -> void:
 	var leaves: Array[Vector3] = [
@@ -4948,26 +5071,28 @@ func _bridge_spot(x: float, z: float, n: int, band: Rect2) -> Vector2:
 	return nudged
 
 func _bed_skirt(buckets: Array) -> void:
-	# ponytail: a third ring past the corners; drop it if the bloom lands on a worn walk.
+	# ponytail: the outer sides wave in and out; a deeper bay if a side still reads straight.
 	var step := 0
 	var z := -5.7
 	while z <= 2.75:
-		for side in [-1.0, 1.0]:
+		var side := -1.0
+		while side <= 1.0:
 			var edge := -7.46 if side < 0.0 else 2.76
-			var reach := 0.34 + absf(sin(z * 2.2 + side)) * 0.16
-			_skirt_drop(buckets, edge + side * reach, z, step)
-			_skirt_drop(buckets, edge + side * (reach + 0.36), z + 0.1, step + 1)
-			var outer := 0.78 + absf(sin(z * 1.7 + side)) * 0.24
-			_skirt_drop(buckets, edge + side * (reach + outer), z + 0.06, step + 2)
+			var wave := sin(z * 1.7 + side) * 0.72
+			var at := edge + side * (0.28 + wave)
+			_skirt_drop(buckets, at, z, step, false, false, true)
+			_skirt_drop(buckets, at + side * 0.16, z + 0.1, step + 1, false, false, true)
+			_skirt_drop(buckets, at - side * 0.1, z - 0.08, step + 2, false, false, true)
 			step += 3
+			side += 2.0
 		z += 0.38
 	var x := -7.5
 	while x <= 2.9:
-		var sway := sin(x * 1.8) * 0.08
-		_skirt_drop(buckets, x, -5.62 + sway, step)
-		_skirt_drop(buckets, x + 0.12, -5.78 + sway, step + 1)
-		_skirt_drop(buckets, x, 2.76 + sway, step + 2)
-		_skirt_drop(buckets, x + 0.12, 2.92 + sway, step + 3)
+		var sway := sin(x * 1.6) * 0.62
+		_skirt_drop(buckets, x, -5.2 + sway, step, false, false, true)
+		_skirt_drop(buckets, x + 0.18, -5.2 + sin(x * 1.6 + 0.9) * 0.62, step + 1, false, false, true)
+		_skirt_drop(buckets, x, 2.35 + sway * 0.75, step + 2, false, false, true)
+		_skirt_drop(buckets, x + 0.18, 2.35 + sin(x * 1.6 + 0.9) * 0.46, step + 3, false, false, true)
 		step += 4
 		x += 0.42
 	# ponytail: four corner clumps past the box; drop one if it lands on a worn walk.
@@ -5036,13 +5161,13 @@ func _track_meadow(buckets: Array) -> void:
 				step += 1
 			along += 0.42
 
-func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false, open_track := false) -> void:
+func _skirt_drop(buckets: Array, x: float, z: float, step: int, shoulders := false, open_track := false, rim := false) -> void:
 	var blocked := false
 	if not open_track:
 		blocked = GardenLayout.on_track(x, z) if shoulders else GardenLayout.on_path(x, z)
-	if blocked or GardenLayout.in_plots(x, z, 0.0):
+	if blocked or GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
 		return
-	if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.35:
+	if GardenLayout.in_plots(x, z, 0.0) and not (rim and _outer_bite(x, z)):
 		return
 	var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
 	var spin := float(step % 5) * 0.55
