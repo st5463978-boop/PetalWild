@@ -42,6 +42,14 @@ func _build(id: String) -> void:
 			material.emission_energy_multiplier = 1.4
 		_:
 			_ball(Vector3(0, 0.2, 0), 0.12, Color("#7eac4c"))
+	_rosette()
+
+func _rosette() -> void:
+	# ponytail: eight flat leaves under the crop; a bed mesh if the plots get ground cover.
+	for i in 8:
+		var angle := TAU * float(i) / 8.0
+		var leaf := _ball(Vector3(cos(angle) * 0.32, 0.035, sin(angle) * 0.32), 0.09, Color("#2c5a30"), Vector3(1.7, 0.25, 0.85))
+		leaf.rotation.y = angle
 
 func _stem(height: float, radius: float, color: Color, offset := Vector3.ZERO) -> MeshInstance3D:
 	var mesh := CylinderMesh.new()
