@@ -115,6 +115,7 @@ func _process(delta: float) -> void:
 		return
 	var minutes := delta * Clock.scale if Clock.running else 0.0
 	if minutes > 0.0:
+		_prime_reed(minutes / 60.0)
 		var lost := soil.tick(minutes, Clock.weather)
 		if lost.size() > 0:
 			toast("A bed dried out.")
@@ -2967,6 +2968,215 @@ func _run_smoke() -> void:
 		push_error("smoke: the bell line did not reload")
 		get_tree().quit(1)
 		return
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "reed":
+			plot.growth = 0.2
+	_force_plant(8, 5, "reed", 1.0)
+	var reed_bed := soil.get_cell(8, 5)
+	reed_bed.moisture = 0.8
+	reed_bed.fertility = 0.4
+	var reed_at := GardenLayout.cell_center(8, 5)
+	rush = ecology.first("bulrush")
+	if rush == null:
+		push_error("smoke: bulrush left before reedic")
+		get_tree().quit(1)
+		return
+	rush.leaving = false
+	rush.held = false
+	rush.global_position = Vector3(6.0, 0.0, -2.0)
+	reed = ecology.first("reedic")
+	if reed == null:
+		reed = ecology.force_spawn("reedic")
+	reed.life = "visitor"
+	reed.leaving = false
+	reed.held = false
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	reed_far = reed.global_position.distance_to(rush.global_position)
+	_update_creatures(0.016)
+	if reed.use_berth or reed.goal.distance_to(rush.global_position) > 0.3 or reed.goal.distance_to(reed_at) < 0.3:
+		push_error("smoke: a visitor reedic left bulrush")
+		get_tree().quit(1)
+		return
+	reed.tier = 2
+	reed._process(2.0)
+	if reed.global_position.distance_to(rush.global_position) > reed_far - 0.8:
+		push_error("smoke: a visitor reedic stayed off bulrush")
+		get_tree().quit(1)
+		return
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = reed.global_position.distance_to(rush.global_position)
+	_update_creatures(0.016)
+	reed.tier = 3
+	reed._process(2.0)
+	if reed.visible or reed.global_position.distance_to(rush.global_position) > hidden_far - 0.8:
+		push_error("smoke: a hidden visitor reedic stayed off bulrush")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	reed.life = "visitor"
+	reed.leaving = false
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not reed.use_berth or reed.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let reedic leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	reed.life = "resident"
+	reed.leaving = false
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	reed_far = reed.global_position.distance_to(reed_at)
+	_update_creatures(0.016)
+	if reed.use_berth or reed.goal.distance_to(reed_at) > 0.2 or reed.goal.distance_to(rush.global_position) < 0.3:
+		push_error("smoke: reedic missed the reed")
+		get_tree().quit(1)
+		return
+	reed.tier = 2
+	reed._process(2.0)
+	if reed.global_position.distance_to(reed_at) > reed_far - 0.8:
+		push_error("smoke: reedic stayed off the reed")
+		get_tree().quit(1)
+		return
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = reed.global_position.distance_to(reed_at)
+	_update_creatures(0.016)
+	reed.tier = 3
+	reed._process(2.0)
+	if reed.visible or reed.global_position.distance_to(reed_at) > hidden_far - 0.8:
+		push_error("smoke: a hidden reedic stayed off the reed")
+		get_tree().quit(1)
+		return
+	reed.leaving = true
+	reed.goal = GardenLayout.GATE
+	reed.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if reed.use_berth or reed.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a departure left the reedic gate")
+		get_tree().quit(1)
+		return
+	reed.leaving = false
+	reed.life = "bonded"
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	bank = _attractor_for(ContentDB.species_def("reedic"))
+	if reed.goal.distance_to(reed_at) < 0.3 or reed.goal.distance_to(bank) > 0.3:
+		push_error("smoke: a bonded reedic left the pond")
+		get_tree().quit(1)
+		return
+	reed.life = "visitor"
+	reed.global_position = reed_at
+	reed_bed.growth = 1.0
+	reed_bed.moisture = 0.62
+	reed_bed.fertility = 0.4
+	reed_bed.wilt = 0.0
+	_prime_reed(1.0)
+	soil.tick(60.0, "clear")
+	if reed_bed.moisture > 0.5 or reed_bed.wilt <= 0.0 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a visitor reedic held the reed")
+		get_tree().quit(1)
+		return
+	reed.life = "resident"
+	reed_bed.growth = 1.0
+	reed_bed.moisture = 0.2
+	reed_bed.wilt = 0.0
+	_prime_reed(1.0)
+	soil.tick(60.0, "clear")
+	if reed_bed.moisture > 0.25 or reed_bed.wilt <= 0.0:
+		push_error("smoke: reedic watered a dry reed")
+		get_tree().quit(1)
+		return
+	reed_bed.growth = 1.0
+	reed_bed.moisture = 0.62
+	reed_bed.fertility = 0.4
+	reed_bed.wilt = 0.0
+	_prime_reed(1.0)
+	soil.tick(60.0, "clear")
+	if reed_bed.moisture < 0.6 or reed_bed.wilt > 0.05 or reed_bed.growth < 0.95 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: reedic let the reed dry")
+		get_tree().quit(1)
+		return
+	reed_bed.growth = 1.0
+	reed_bed.moisture = 0.62
+	reed_bed.wilt = 0.0
+	reed.global_position = reed_at
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the reed did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	reed = ecology.first("reedic")
+	reed_bed = soil.get_cell(8, 5)
+	if reed == null or reed.life != "resident" or reed_bed.plant_id != "reed" or reed_bed.moisture < 0.55 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the reed did not reload")
+		get_tree().quit(1)
+		return
+	reed.global_position = reed_at
+	reed_bed.growth = 1.0
+	reed_bed.moisture = 0.62
+	reed_bed.fertility = 0.4
+	reed_bed.wilt = 0.0
+	_prime_reed(1.0)
+	soil.tick(60.0, "clear")
+	if reed_bed.moisture < 0.6 or reed_bed.wilt > 0.05:
+		push_error("smoke: the reloaded reedic let the reed dry")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var disc_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(disc_kit)
+	reed.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if not reed.wants_sleep or not reed.use_berth or reed.goal.distance_to(disc_kit) > 0.2:
+		push_error("smoke: night sent reedic to the reed")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	Clock.set_hour(15.3)
+	reed.life = "visitor"
+	reed.leaving = false
+	reed.wants_sleep = false
+	reed.use_berth = false
+	reed.global_position = reed_at
+	reed_bed.moisture = 0.1
+	reed_bed.fertility = 0.4
+	bed_line = _plot_line(reed_bed)
+	if bed_line.find("Needs water.") == -1 or bed_line.find("Reed kept.") != -1:
+		push_error("smoke: a dry reed hid its thirst")
+		get_tree().quit(1)
+		return
+	reed_bed.moisture = 0.8
+	reed_bed.fertility = 0.05
+	bed_line = _plot_line(reed_bed)
+	if bed_line.find("Needs feed.") == -1 or bed_line.find("Reed kept.") != -1:
+		push_error("smoke: a tired reed hid its feed")
+		get_tree().quit(1)
+		return
+	reed_bed.fertility = 0.4
+	if _plot_line(reed_bed).find("Reed kept.") != -1:
+		push_error("smoke: a visitor kept the reed readout")
+		get_tree().quit(1)
+		return
+	reed.life = "resident"
+	bed_line = _plot_line(reed_bed)
+	if bed_line.find("Reed kept.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the readout hid the kept reed")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the reed line did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	reed = ecology.first("reedic")
+	reed_bed = soil.get_cell(8, 5)
+	if reed == null or reed.life != "resident" or _plot_line(reed_bed).find("Reed kept.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the reed line did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3762,6 +3972,8 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Cane kept."
 	if plot.plant_id == "meadowbell" and plot.growth < 1.0 and _bells_filling(plot):
 		return line + "  ·  Bells filling."
+	if plot.plant_id == "reed" and _reed_kept(plot):
+		return line + "  ·  Reed kept."
 	return line
 
 func _fruit_returning(plot: SoilCell) -> bool:
@@ -3914,6 +4126,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_cane()
 	_seek_fruit()
 	_seek_bells()
+	_seek_reeds()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -4224,6 +4437,79 @@ func _bells_filling(plot: SoilCell) -> bool:
 	for actor in ecology.actors:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly) or jelly.species_id != "cirlark" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		if Vector2(jelly.global_position.x - center.x, jelly.global_position.z - center.z).length() <= 1.6:
+			return true
+	return false
+
+func _seek_reeds() -> void:
+	# ponytail: the nearest reed stand; a bank circuit if more than one reedic settles.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "reedic":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		var plot := _nearest_reed(jelly.global_position)
+		if plot == null:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
+
+func _nearest_reed(at: Vector3) -> SoilCell:
+	var best: SoilCell = null
+	var best_d := 9999.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "reed" or plot.growth < 0.5:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if best == null or dist < best_d:
+			best = plot
+			best_d = dist
+	return best
+
+func _prime_reed(hours: float) -> void:
+	# ponytail: one wet reed; the dry drain is 0.22 an hour, so 0.28 keeps it above the line.
+	if hours <= 0.0:
+		return
+	var keeper: Jelly = null
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "reedic" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		keeper = jelly
+		break
+	if keeper == null:
+		return
+	var plot := _nearest_reed(keeper.global_position)
+	if plot == null:
+		return
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	if Vector2(keeper.global_position.x - center.x, keeper.global_position.z - center.z).length() > 1.6:
+		return
+	var need := float(ContentDB.plant("reed").get("water_need", 0.5))
+	if plot.moisture < need:
+		return
+	plot.moisture = minf(1.0, plot.moisture + hours * 0.28)
+
+func _reed_kept(plot: SoilCell) -> bool:
+	# ponytail: one settled reedic on the reed; a bank if several keep separate stands.
+	if plot.plant_id != "reed":
+		return false
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "reedic" or jelly.leaving:
 			continue
 		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
 			continue
