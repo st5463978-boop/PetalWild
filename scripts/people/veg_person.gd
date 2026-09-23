@@ -401,6 +401,8 @@ func to_state() -> Dictionary:
 		"purpose": purpose,
 		"relation": relation,
 		"position": [global_position.x, global_position.y, global_position.z],
+		"has_chore": has_chore,
+		"chore": [chore.x, chore.y, chore.z],
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -414,3 +416,7 @@ func apply_state(data: Dictionary) -> void:
 	var pos = data.get("position", null)
 	if typeof(pos) == TYPE_ARRAY and pos.size() == 3:
 		global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+	has_chore = bool(data.get("has_chore", false))
+	var job = data.get("chore", null)
+	if typeof(job) == TYPE_ARRAY and job.size() == 3:
+		chore = Vector3(float(job[0]), float(job[1]), float(job[2]))

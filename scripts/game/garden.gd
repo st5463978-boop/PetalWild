@@ -463,6 +463,10 @@ func to_state() -> Dictionary:
 		"people": cast,
 		"events": events.slice(0, 20),
 		"gossip_done": gossip_done,
+		"bram_bed": [bram_bed.x, bram_bed.y],
+		"nessa_filing": nessa_filing,
+		"nessa_drafting": nessa_drafting,
+		"nessa_watch": _watch_record(),
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -497,9 +501,46 @@ func apply_state(data: Dictionary) -> void:
 			person.apply_state(entry)
 	events = data.get("events", []).duplicate()
 	gossip_done = bool(data.get("gossip_done", true))
+	bram_bed = Vector2i(-1, -1)
+	var bed = data.get("bram_bed", [])
+	if typeof(bed) == TYPE_ARRAY and bed.size() == 2:
+		bram_bed = Vector2i(int(bed[0]), int(bed[1]))
+	nessa_filing = bool(data.get("nessa_filing", false))
+	nessa_drafting = bool(data.get("nessa_drafting", false))
+	_bind_watch(data.get("nessa_watch", {}))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
+
+func _watch_record() -> Dictionary:
+	# ponytail: one arrival, one hut, one foundry; a queue if Nessa keeps more than one errand.
+	if nessa_watch == null or not is_instance_valid(nessa_watch):
+		return {}
+	return {
+		"species": nessa_watch.species_id,
+		"position": [nessa_watch.global_position.x, nessa_watch.global_position.y, nessa_watch.global_position.z],
+	}
+
+func _bind_watch(saved) -> void:
+	nessa_watch = null
+	if typeof(saved) != TYPE_DICTIONARY:
+		return
+	var pos = saved.get("position", [])
+	if typeof(pos) != TYPE_ARRAY or pos.size() != 3:
+		return
+	var want := Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+	var species := str(saved.get("species", ""))
+	var best: Jelly = null
+	var nearest := 0.75
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != species:
+			continue
+		var dist := jelly.global_position.distance_to(want)
+		if dist < nearest:
+			nearest = dist
+			best = jelly
+	nessa_watch = best
 
 func _run_smoke() -> void:
 	for cell in soil.all():
@@ -661,6 +702,15 @@ func _run_smoke() -> void:
 		push_error("smoke: bram ignored the dry bed")
 		get_tree().quit(1)
 		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: bram's bed did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not bram.has_chore or bram_bed != Vector2i(2, 2) or bram.chore.distance_to(GardenLayout.cell_center(2, 2)) > 0.2:
+		push_error("smoke: bram's bed did not reload")
+		get_tree().quit(1)
+		return
 	var damp := dry.moisture
 	bram.global_position = bram.chore
 	_drift_people(0.1, world_snapshot())
@@ -687,6 +737,15 @@ func _run_smoke() -> void:
 	_on_ecology("%s has come to look." % bell_note.display_name)
 	if not nessa.has_chore or nessa.chore.distance_to(bell_note.global_position) > 0.2:
 		push_error("smoke: nessa did not watch the arrival")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: nessa's walk did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not nessa.has_chore or nessa_watch == null or nessa.chore.distance_to(nessa_watch.global_position) > 0.2:
+		push_error("smoke: nessa's walk did not reload")
 		get_tree().quit(1)
 		return
 	nessa.global_position = nessa.chore
@@ -1000,6 +1059,15 @@ func _run_smoke() -> void:
 		push_error("smoke: nessa did not head for the hut")
 		get_tree().quit(1)
 		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the hut walk did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not nessa_filing or not nessa.has_chore or nessa.chore.distance_to(shelf) > 0.3:
+		push_error("smoke: the hut walk did not reload")
+		get_tree().quit(1)
+		return
 	nessa.global_position = nessa.chore
 	_drift_people(0.1, world_snapshot())
 	var filed: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
@@ -1038,6 +1106,15 @@ func _run_smoke() -> void:
 	var desk := GardenLayout.FOUNDRY + Vector3(0, 0, -0.95)
 	if not nessa_drafting or nessa.chore.distance_to(desk) > 0.3:
 		push_error("smoke: nessa did not head for the foundry")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the foundry walk did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not nessa_drafting or Economy.coins != tin or nessa.chore.distance_to(desk) > 0.3:
+		push_error("smoke: the foundry walk did not reload")
 		get_tree().quit(1)
 		return
 	nessa.global_position = nessa.chore
