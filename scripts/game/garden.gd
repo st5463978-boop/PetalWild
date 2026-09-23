@@ -1193,6 +1193,51 @@ func _run_smoke() -> void:
 		push_error("smoke: town hall board was bare")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(15.3)
+	var hand := ecology.first("bellhelp")
+	if hand == null or hand.life != "resident":
+		push_error("smoke: no resident to bond")
+		get_tree().quit(1)
+		return
+	hand.bond = 0.55
+	ecology.tick(0.2, world_snapshot())
+	if hand.life != "bonded" or str(ecology.states.get("bellhelp", "")) != "breeding":
+		push_error("smoke: the pet did not bond")
+		get_tree().quit(1)
+		return
+	var saw_hands := false
+	for row in _journal_rows(world_snapshot()):
+		if str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1 and str(row.get("romance", "")).find("trusts your hands") != -1:
+			saw_hands = true
+	if not saw_hands:
+		push_error("smoke: journal hid the bond")
+		get_tree().quit(1)
+		return
+	var stand := camera.target
+	stand.y = 0.0
+	hand.global_position = stand + Vector3(3.2, 0.0, 0.0)
+	var hand_far := hand.global_position.distance_to(stand)
+	_update_creatures(0.016)
+	if hand.use_berth:
+		push_error("smoke: the bond sent them home")
+		get_tree().quit(1)
+		return
+	hand.tier = 2
+	hand._process(2.0)
+	if hand.global_position.distance_to(stand) > hand_far - 0.8:
+		push_error("smoke: the bonded resident stayed away")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the bond did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	hand = ecology.first("bellhelp")
+	if hand == null or hand.life != "bonded" or hand.bond < 0.55 or str(ecology.states.get("bellhelp", "")) != "breeding":
+		push_error("smoke: the bond did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -1998,6 +2043,12 @@ func _update_creatures(delta: float) -> void:
 			if jelly.wants_sleep:
 				jelly.goal = jelly.berth
 				jelly.attract = jelly.berth
+		if jelly.life == "bonded" and not jelly.wants_sleep and not jelly.use_berth and not jelly.held and not jelly.leaving:
+			var stand := camera.target
+			stand.y = 0.0
+			jelly.attract = stand
+			if jelly.global_position.distance_to(stand) > 1.2:
+				jelly.goal = stand
 		jelly.tier = tier
 	_keep_company()
 
@@ -2225,6 +2276,16 @@ func _journal_rows(world: Dictionary) -> Array:
 			romance = ecology.rules.romance_label(definition)
 		if status == "breeding":
 			romance = "A pair in the parish"
+		var trusts := false
+		for actor in ecology.actors:
+			var body: Jelly = actor
+			if is_instance_valid(body) and body.species_id == id and body.life == "bonded":
+				trusts = true
+				break
+		if trusts and status == "breeding":
+			romance = "A pair in the parish. One trusts your hands."
+		elif trusts and status == "bonded":
+			romance = "Trusts your hands."
 		rows.append({
 			"name": definition.get("name", id) if known else "A rumour",
 			"status": status,
