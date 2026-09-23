@@ -734,6 +734,7 @@ func _run_smoke() -> void:
 	var lawn_multi := lawn_node.multimesh
 	var hedge_n := 0
 	var apron_n := 0
+	var front_n := 0
 	for lawn_i in lawn_multi.instance_count:
 		var lawn_at := lawn_multi.get_instance_transform(lawn_i).origin
 		if lawn_at.x < -12.2:
@@ -744,6 +745,12 @@ func _run_smoke() -> void:
 			hedge_n += 1
 		if lawn_at.x > 2.9 and lawn_at.x < 6.9 and lawn_at.z > 2.85 and lawn_at.z < 5.65:
 			apron_n += 1
+		if lawn_at.z < -9.55:
+			push_error("smoke: a lawn bloom sat in the south hedge")
+			get_tree().quit(1)
+			return
+		if lawn_at.x > -7.8 and lawn_at.x < 3.3 and lawn_at.z < -7.4 and lawn_at.z > -9.45:
+			front_n += 1
 		if GardenLayout.on_path(lawn_at.x, lawn_at.z) or GardenLayout.in_plots(lawn_at.x, lawn_at.z, 0.0):
 			push_error("smoke: a lawn bloom sat on a bed or the worn walk")
 			get_tree().quit(1)
@@ -762,6 +769,10 @@ func _run_smoke() -> void:
 		return
 	if apron_n < 55:
 		push_error("smoke: the east apron stayed thin (%d)" % apron_n)
+		get_tree().quit(1)
+		return
+	if front_n < 50:
+		push_error("smoke: the south lawn stayed thin (%d)" % front_n)
 		get_tree().quit(1)
 		return
 	ecology.tick(0.2, world_snapshot())
