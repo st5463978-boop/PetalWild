@@ -74,6 +74,10 @@ static func _narrow_runs() -> Array:
 		[Vector3(-7.4, 0.0, -6.35), Vector3(0.6, 0.0, -6.35)],
 	]
 
+static func stone_kept(i: int) -> bool:
+	# ponytail: every other station stays a stone; a spline if the walk still reads as a road.
+	return i % 2 == 0
+
 static func narrow_stones() -> Array[Vector3]:
 	var stones: Array[Vector3] = []
 	for run in _narrow_runs():
@@ -82,6 +86,8 @@ static func narrow_stones() -> Array[Vector3]:
 		var span := a.distance_to(b)
 		var steps := maxi(int(span / 0.62), 1)
 		for i in steps:
+			if not stone_kept(i):
+				continue
 			stones.append(a.lerp(b, (float(i) + 0.5) / float(steps)))
 	return stones
 
@@ -95,8 +101,10 @@ static func stone_gaps() -> Array[Vector3]:
 		var prev := a
 		var have := false
 		for i in steps:
+			if not stone_kept(i):
+				continue
 			var at := a.lerp(b, (float(i) + 0.5) / float(steps))
-			if have and prev.distance_to(at) < 0.9:
+			if have and prev.distance_to(at) < 1.5:
 				gaps.append((prev + at) * 0.5)
 			prev = at
 			have = true

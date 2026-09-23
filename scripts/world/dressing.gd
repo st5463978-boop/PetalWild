@@ -189,19 +189,24 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
 			var fit := 0.32 if narrow else 1.0
 			basis = basis.scaled(Vector3(rng.randf_range(0.85, 1.25) * fit, rng.randf_range(0.85, 1.2), rng.randf_range(0.75, 1.2) * fit))
-			slabs.append(Transform3D(basis, at))
 			var tint := palette[rng.randi_range(0, palette.size() - 1)]
 			if narrow:
 				tint = tint.darkened(0.28)
-			slab_colors.append(tint)
+			var keep := (not narrow) or GardenLayout.stone_kept(i)
+			if keep:
+				slabs.append(Transform3D(basis, at))
+				slab_colors.append(tint)
 			if rng.randf() > 0.35:
 				var grit_reach := 0.1 if narrow else 0.34
 				var grit := center + side * rng.randf_range(-grit_reach, grit_reach)
 				grit.y = 0.05
 				var grit_basis := Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0))
 				grit_basis = grit_basis.scaled(Vector3(rng.randf_range(0.5, 1.2), rng.randf_range(0.35, 0.7), rng.randf_range(0.5, 1.1)))
-				chips.append(Transform3D(grit_basis, grit))
-				chip_colors.append(Color("#9a8c78").lerp(Color("#5e554c"), rng.randf()))
+				if keep:
+					chips.append(Transform3D(grit_basis, grit))
+					chip_colors.append(Color("#9a8c78").lerp(Color("#5e554c"), rng.randf()))
+				else:
+					rng.randf()
 	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true)
 	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false)
 

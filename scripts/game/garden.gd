@@ -1681,7 +1681,7 @@ func _edge_lips(buckets: Array) -> void:
 		x += 0.42
 
 func _stone_gaps(buckets: Array) -> void:
-	# ponytail: one bloom between stones; a clump if the gap still reads as a road.
+	# ponytail: one bloom in the opening; a clump if the walk still reads as a road.
 	var step := 0
 	for gap in GardenLayout.stone_gaps():
 		_skirt_drop(buckets, gap.x, gap.z, step, false, true)
