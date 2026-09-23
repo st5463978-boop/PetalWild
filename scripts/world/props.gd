@@ -4,6 +4,7 @@ extends RefCounted
 func build(parent: Node3D) -> void:
 	_stall(parent)
 	_shed(parent)
+	_tea(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
@@ -70,6 +71,25 @@ func _shed(parent: Node3D) -> void:
 	light.light_color = Color("ffc98a")
 	light.light_energy = 0.16
 	light.omni_range = 3.2
+	light.shadow_enabled = false
+	root.add_child(light)
+
+func _tea(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "HedgeTeaHouse"
+	root.position = GardenLayout.TEA
+	parent.add_child(root)
+	_box(root, Vector3(0, 0.7, 0), Vector3(1.8, 1.4, 1.5), Color("#4a3a30"))
+	_box(root, Vector3(0, 0.55, -0.76), Vector3(0.46, 0.9, 0.06), Color("#2c4038"))
+	_box(root, Vector3(0.48, 0.85, -0.78), Vector3(0.32, 0.32, 0.05), Color("#6a5340"))
+	_box(root, Vector3(0, 1.52, 0), Vector3(2.05, 0.1, 1.75), Color("#3a322c"))
+	_box(root, Vector3(0, 0.08, -1.05), Vector3(1.1, 0.08, 0.4), Color("#5c4a3c"))
+	_cylinder(root, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
+	var light := OmniLight3D.new()
+	light.position = Vector3(0, 1.05, -0.3)
+	light.light_color = Color("ffd2a4")
+	light.light_energy = 0.1
+	light.omni_range = 2.6
 	light.shadow_enabled = false
 	root.add_child(light)
 

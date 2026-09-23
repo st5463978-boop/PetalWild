@@ -769,6 +769,43 @@ func _run_smoke() -> void:
 		push_error("smoke: gushorn did not come for the night-loam")
 		get_tree().quit(1)
 		return
+	nessa.present = false
+	place = _place_stats(world_snapshot())
+	if int(place.get("tea_demand", -1)) != 0:
+		push_error("smoke: tea demand before nessa")
+		get_tree().quit(1)
+		return
+	nessa.present = true
+	place = _place_stats(world_snapshot())
+	if int(place.get("tea_demand", -1)) != 1:
+		push_error("smoke: tea demand mismatch")
+		get_tree().quit(1)
+		return
+	var saw_tea := false
+	for line in place.get("venues", []):
+		if str(line).find("Hedge Tea House") != -1 and str(line).find("open") != -1:
+			saw_tea = true
+		if str(line).find("Hedge Tea House") != -1 and str(line).find("not built") != -1:
+			saw_tea = false
+	if not saw_tea:
+		push_error("smoke: tea house was not open")
+		get_tree().quit(1)
+		return
+	nessa.has_chore = false
+	Clock.set_hour(15.3)
+	_apply_shift(false)
+	var porch := GardenLayout.TEA + Vector3(0, 0, -1.15)
+	if nessa.waypoints.is_empty() or nessa.waypoints[0].distance_to(porch) > 0.3:
+		push_error("smoke: nessa's day round missed the tea house")
+		get_tree().quit(1)
+		return
+	nessa.global_position = porch + Vector3(0, 0, -2.4)
+	var tea_far := nessa.global_position.distance_to(porch)
+	nessa._process(6.0)
+	if nessa.global_position.distance_to(porch) > tea_far - 0.8:
+		push_error("smoke: nessa did not walk to the tea house")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -896,7 +933,7 @@ func _spawn_people() -> void:
 	_apply_shift(true)
 
 func _apply_shift(snap: bool) -> void:
-	# ponytail: one day loop and one home point; a room clock when a second venue is built.
+	# ponytail: Nessa's day round includes the tea house; a rain bell if daytime rain exists.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
 	var key := "day"
 	if night:
@@ -924,6 +961,7 @@ func _apply_shift(snap: bool) -> void:
 		GardenLayout.cell_center(1, 6),
 	], snap)
 	_person("nessa").set_route([
+		GardenLayout.TEA + Vector3(0, 0, -1.15),
 		GardenLayout.GATE,
 		Vector3(-3.4, 0, -2.0),
 		GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
@@ -1527,10 +1565,12 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
 	stats["stall_demand"] = _present_people() + ecology.resident_total()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
+	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
-		var built := "open" if bool(venue.get("active", false)) else "not built"
+		# ponytail: this garden has the tea house mesh; the shared file stays inactive so the sidelined grove does not claim it.
+		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
