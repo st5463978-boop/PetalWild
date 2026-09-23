@@ -24,8 +24,8 @@ func build() -> void:
 		bodies.append(bee)
 		homes.append(spot)
 
-func tick(delta: float, frozen: bool, weather: String, flower := Vector3.ZERO, follow := false) -> void:
-	# ponytail: rain pins them; a rung bed draws the whole flight for that day.
+func tick(delta: float, frozen: bool, weather: String, flower := Vector3.ZERO, follow := false, second := Vector3.ZERO) -> void:
+	# ponytail: rain pins them; two stay on the other ripe bell, the whole flight if there is one bed.
 	if weather == "rain":
 		for i in bodies.size():
 			bodies[i].position = homes[i]
@@ -34,9 +34,11 @@ func tick(delta: float, frozen: bool, weather: String, flower := Vector3.ZERO, f
 	if follow:
 		if not frozen:
 			phase += delta
+		var split := second != Vector3.ZERO and second.distance_to(flower) > 0.45
 		for i in bodies.size():
 			var spin := float(i) * 1.15 + phase
-			var hover := flower + Vector3(sin(spin) * 0.34, 0.5, cos(spin) * 0.28)
+			var mark := second if split and i >= bodies.size() - 2 else flower
+			var hover := mark + Vector3(sin(spin) * 0.34, 0.5, cos(spin) * 0.28)
 			if frozen:
 				bodies[i].position = hover
 			else:

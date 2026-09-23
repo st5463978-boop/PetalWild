@@ -147,7 +147,7 @@ func _process(delta: float) -> void:
 	_drift_people(delta, world)
 	camera.nudge(delta)
 	if bees:
-		bees.tick(delta, Settings.reduce_motion, Clock.weather, bee_flower, bee_day == Clock.day)
+		bees.tick(delta, Settings.reduce_motion, Clock.weather, bee_flower, bee_day == Clock.day, _second_bell())
 	if birds:
 		birds.tick(delta, Settings.reduce_motion, Clock.hour(), Clock.weather)
 	visual_timer += delta
@@ -4246,6 +4246,32 @@ func _run_smoke() -> void:
 		push_error("smoke: the bees stayed off the bell")
 		get_tree().quit(1)
 		return
+	var split_at := _second_bell()
+	bees.tick(0.8, false, "clear", bee_flower, true, split_at)
+	var split_near := 0
+	var split_far := 0
+	for split_i in bees.bodies.size():
+		if bees.bodies[split_i].position.distance_to(bee_flower) < 1.2:
+			split_near += 1
+		if bees.bodies[split_i].position.distance_to(split_at) < 1.2:
+			split_far += 1
+	if split_at == Vector3.ZERO or split_near != 6 or split_far != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: the flight stayed on one bed")
+		get_tree().quit(1)
+		return
+	for split_ix in [0, 1, 2]:
+		soil.get_cell(split_ix, 0).growth = 0.4
+	bees.tick(0.8, false, "clear", bee_flower, true, _second_bell())
+	split_near = 0
+	for split_i in bees.bodies.size():
+		if bees.bodies[split_i].position.distance_to(bee_flower) < 1.2:
+			split_near += 1
+	if split_near != 8 or _second_bell() != Vector3.ZERO or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: one ripe bed split the flight")
+		get_tree().quit(1)
+		return
+	for split_ix in [0, 1, 2]:
+		soil.get_cell(split_ix, 0).growth = 1.0
 	bees.tick(0.0, true, "rain")
 	_ring_bells(world_snapshot())
 	if bell_day != 1 or events.size() != ring_notes + 1 or second_bed.plant_id != "" or soil.seeded != kept_seed:
@@ -6204,6 +6230,21 @@ func _meal_spot(plant_id: String, at: Vector3) -> Vector3:
 	if near != null:
 		return GardenLayout.cell_center(near.ix, near.iz)
 	return Vector3(-3.6, 0.0, -1.6)
+
+func _second_bell() -> Vector3:
+	# ponytail: farthest ripe bell; the whole flight if that bed is the only one.
+	var best := Vector3.ZERO
+	var best_d := 0.45
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "meadowbell" or plot.growth < 0.85:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := at.distance_to(bee_flower)
+		if dist > best_d:
+			best_d = dist
+			best = at
+	return best
 
 func _average_plant(plant_id: String) -> Vector3:
 	var total := Vector3.ZERO
