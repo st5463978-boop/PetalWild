@@ -71,19 +71,19 @@ func _meadowbell() -> void:
 	# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
 	var petal := Color("#7a6a52")
 	var heart := Color("#c4923a")
-	_stem(0.38, 0.032, Color("#3f8f45"))
-	_blossom(Vector3(0, 0.44, 0), petal, heart)
-	_stem(0.3, 0.026, Color("#3a7a3c"), Vector3(0.14, 0, 0.05))
-	_blossom(Vector3(0.14, 0.36, 0.05), Color("#6e5e48"), Color("#b08030"))
-	_stem(0.26, 0.024, Color("#2f6a34"), Vector3(-0.12, 0, 0.07))
-	_blossom(Vector3(-0.12, 0.32, 0.07), Color("#746656"), heart)
-	_ball(Vector3(0, 0.06, 0), 0.11, Color("#2f6a32"), Vector3(1.5, 0.4, 1.5))
+	_stem(0.46, 0.034, Color("#3f8f45"))
+	_blossom(Vector3(0, 0.52, 0), petal, heart)
+	_stem(0.38, 0.028, Color("#3a7a3c"), Vector3(0.36, 0, 0.1))
+	_blossom(Vector3(0.36, 0.44, 0.1), Color("#6e5e48"), Color("#b08030"))
+	_stem(0.34, 0.026, Color("#2f6a34"), Vector3(-0.34, 0, 0.14))
+	_blossom(Vector3(-0.34, 0.4, 0.14), Color("#746656"), heart)
+	_ball(Vector3(0, 0.05, 0), 0.16, Color("#2f6a32"), Vector3(1.8, 0.35, 1.8))
 
 func _blossom(at: Vector3, petal: Color, heart: Color) -> void:
-	_ball(at, 0.07, heart)
+	_ball(at, 0.1, heart)
 	for i in 5:
 		var angle := TAU * float(i) / 5.0
-		_ball(at + Vector3(cos(angle) * 0.09, 0.02, sin(angle) * 0.09), 0.045, petal)
+		_ball(at + Vector3(cos(angle) * 0.13, 0.03, sin(angle) * 0.13), 0.07, petal)
 
 func _paint(mesh: Mesh, color: Color) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
