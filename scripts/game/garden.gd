@@ -1682,6 +1682,18 @@ func _run_smoke() -> void:
 		push_error("smoke: a watered plant stayed limp")
 		get_tree().quit(1)
 		return
+	dry_bed.fertility = 0.05
+	_sync_plants()
+	if dry_view.scale.y > dry_view.scale.x * 0.9 or absf(dry_view.rotation.z) > 0.05:
+		push_error("smoke: a tired plant looked watered or dry")
+		get_tree().quit(1)
+		return
+	dry_bed.fertility = 0.38
+	_sync_plants()
+	if absf(dry_view.scale.y - dry_view.scale.x) > 0.05:
+		push_error("smoke: a fed plant stayed short")
+		get_tree().quit(1)
+		return
 	dry_bed.moisture = 0.05
 	soil.tick(60.0, "clear")
 	if dry_bed.growth > 0.9:
@@ -2560,7 +2572,7 @@ func _hover_text() -> String:
 	if plot.plant_id == "":
 		return "%s  ·  water %d%%  ·  feed %d%%" % [soil_name, int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
 	var name := str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
-	return "%s  ·  %d%%  ·  water %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0)]
+	return "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
 
 func _sync_plants() -> void:
 	var live := {}
@@ -2577,7 +2589,7 @@ func _sync_plants() -> void:
 			var center := GardenLayout.cell_center(plot.ix, plot.iz)
 			view.position = Vector3(center.x, 0.06, center.z)
 			plant_views[key] = view
-		view.show_plant(plot.plant_id, plot.growth, plot.moisture)
+		view.show_plant(plot.plant_id, plot.growth, plot.moisture, plot.fertility)
 	for key in plant_views.keys():
 		if not live.has(key) and is_instance_valid(plant_views[key]):
 			plant_views[key].free()

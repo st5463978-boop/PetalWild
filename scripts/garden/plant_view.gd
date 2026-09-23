@@ -3,7 +3,7 @@ extends Node3D
 
 var plant_id := ""
 
-func show_plant(id: String, growth: float, water: float) -> void:
+func show_plant(id: String, growth: float, water: float, fertility: float) -> void:
 	if id != plant_id:
 		plant_id = id
 		for child in get_children():
@@ -12,7 +12,10 @@ func show_plant(id: String, growth: float, water: float) -> void:
 	var amount := lerpf(0.18, 1.0, clampf(growth, 0.0, 1.0))
 	var need := float(ContentDB.plant(id).get("water_need", 0.3))
 	var limp := water < need
-	scale = Vector3(amount, amount * (0.62 if limp else 1.0), amount)
+	# ponytail: a tired crop stands shorter; a color shift if the squat still reads as healthy.
+	var tired := not limp and fertility < float(ContentDB.plant(id).get("fertility_need", 0.2))
+	var squat := 0.62 if limp else (0.78 if tired else 1.0)
+	scale = Vector3(amount, amount * squat, amount)
 	rotation.z = 0.35 if limp else 0.0
 
 func _build(id: String) -> void:
