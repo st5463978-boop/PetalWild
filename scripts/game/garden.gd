@@ -11,6 +11,7 @@ var bees: GardenBees
 var birds: GardenBirds
 var people := {}
 var patches := {}
+var bed_blooms: Array[MultiMeshInstance3D] = []
 var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
@@ -506,6 +507,21 @@ func _run_smoke() -> void:
 		plot.tilled = false
 	for i in 3:
 		_force_plant(i, 1, "meadowbell", 1.0)
+	_refresh_soil_colors()
+	var meadow_n := 0
+	for bloom_i in bed_blooms.size():
+		meadow_n += bed_blooms[bloom_i].multimesh.instance_count
+	soil.get_cell(0, 0).tilled = true
+	_refresh_soil_colors()
+	var meadow_after := 0
+	for bloom_i in bed_blooms.size():
+		meadow_after += bed_blooms[bloom_i].multimesh.instance_count
+	soil.get_cell(0, 0).tilled = false
+	_refresh_soil_colors()
+	if meadow_n < 40 or meadow_after != meadow_n - 6:
+		push_error("smoke: empty beds kept their meadow")
+		get_tree().quit(1)
+		return
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("bellhelp") == null:
 		push_error("smoke: bellhelp did not arrive")
@@ -1048,6 +1064,7 @@ func _build_patches() -> void:
 		node.position = Vector3(center.x, 0.055, center.z)
 		add_child(node)
 		patches["%d,%d" % [plot.ix, plot.iz]] = node
+	_build_bed_meadow()
 	highlight = MeshInstance3D.new()
 	var cursor := BoxMesh.new()
 	cursor.size = Vector3(GardenLayout.CELL_W * 0.94, 0.035, GardenLayout.CELL_D * 0.92)
@@ -1060,6 +1077,66 @@ func _build_patches() -> void:
 	highlight.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	highlight.visible = false
 	add_child(highlight)
+
+func _build_bed_meadow() -> void:
+	# ponytail: four shared spheres; a stem if the clumps still read as pebbles.
+	var bloom := SphereMesh.new()
+	bloom.radius = 0.11
+	bloom.height = 0.18
+	bloom.radial_segments = 6
+	bloom.rings = 3
+	var palette: Array[Color] = [
+		Color("#8a4560"),
+		Color("#a06a38"),
+		Color("#4e6a40"),
+		Color("#6a5078"),
+	]
+	for color in palette:
+		var multi := MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = bloom
+		var inst := MultiMeshInstance3D.new()
+		inst.multimesh = multi
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var material := StandardMaterial3D.new()
+		material.albedo_color = color
+		material.roughness = 0.94
+		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		inst.material_override = material
+		add_child(inst)
+		bed_blooms.append(inst)
+
+func _fill_bed_meadow() -> void:
+	var spots: Array[Vector3] = [
+		Vector3(-0.22, 0.12, -0.16),
+		Vector3(0.18, 0.11, -0.18),
+		Vector3(-0.02, 0.13, 0.02),
+		Vector3(-0.2, 0.11, 0.18),
+		Vector3(0.22, 0.12, 0.16),
+		Vector3(0.02, 0.1, -0.02),
+	]
+	var buckets: Array = [[], [], [], []]
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "" or plot.tilled:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		if GardenLayout.on_path(center.x, center.z):
+			continue
+		if GardenLayout.pond_distance(center.x, center.z) < GardenLayout.POND_RADIUS:
+			continue
+		for i in spots.size():
+			var at := center + spots[i]
+			var spin := float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.2
+			var scale := 0.82 + float((plot.ix + i) % 3) * 0.14
+			var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, scale * 0.62, scale))
+			buckets[(plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
+	for i in bed_blooms.size():
+		var multi := bed_blooms[i].multimesh
+		var rows: Array = buckets[i]
+		multi.instance_count = rows.size()
+		for n in rows.size():
+			multi.set_instance_transform(n, rows[n])
 
 func _spawn_people() -> void:
 	for id in ContentDB.people_order:
@@ -1431,6 +1508,7 @@ func _refresh_soil_colors() -> void:
 			continue
 		var material := patch.material_override as StandardMaterial3D
 		material.albedo_color = _soil_color(plot)
+	_fill_bed_meadow()
 
 func _soil_color(plot: SoilCell) -> Color:
 	# ponytail: flat grass tops clip to white under this sun; raise if the beds go dull.
