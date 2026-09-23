@@ -518,7 +518,7 @@ func _run_smoke() -> void:
 		meadow_after += bed_blooms[bloom_i].multimesh.instance_count
 	soil.get_cell(0, 0).tilled = false
 	_refresh_soil_colors()
-	if meadow_n < 40 or meadow_after != meadow_n - 6:
+	if meadow_n < 40 or meadow_after != meadow_n - 17:
 		push_error("smoke: empty beds kept their meadow")
 		get_tree().quit(1)
 		return
@@ -1079,43 +1079,94 @@ func _build_patches() -> void:
 	add_child(highlight)
 
 func _build_bed_meadow() -> void:
-	# ponytail: four shared spheres; a stem if the clumps still read as pebbles.
-	var bloom := SphereMesh.new()
-	bloom.radius = 0.11
-	bloom.height = 0.18
-	bloom.radial_segments = 6
-	bloom.rings = 3
+	# ponytail: leaf discs plus eight stems; a second rank if the rectangle still shows.
+	var leaf := CylinderMesh.new()
+	leaf.top_radius = 0.22
+	leaf.bottom_radius = 0.24
+	leaf.height = 0.02
+	leaf.radial_segments = 7
+	var leaf_mat := StandardMaterial3D.new()
+	leaf_mat.albedo_color = Color("#163018")
+	leaf_mat.roughness = 0.96
+	leaf_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_add_bed_mesh(leaf, leaf_mat)
 	var palette: Array[Color] = [
 		Color("#8a4560"),
 		Color("#a06a38"),
 		Color("#4e6a40"),
 		Color("#6a5078"),
 	]
+	var flower_mat := StandardMaterial3D.new()
+	flower_mat.roughness = 0.94
+	flower_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	flower_mat.vertex_color_use_as_albedo = true
+	flower_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for color in palette:
-		var multi := MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.mesh = bloom
-		var inst := MultiMeshInstance3D.new()
-		inst.multimesh = multi
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var material := StandardMaterial3D.new()
-		material.albedo_color = color
-		material.roughness = 0.94
-		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		inst.material_override = material
-		add_child(inst)
-		bed_blooms.append(inst)
+		_add_bed_mesh(_bed_flower(color), flower_mat)
+
+func _add_bed_mesh(mesh: Mesh, material: Material) -> void:
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = mesh
+	var inst := MultiMeshInstance3D.new()
+	inst.multimesh = multi
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inst.material_override = material
+	add_child(inst)
+	bed_blooms.append(inst)
+
+func _bed_flower(petal: Color) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stem_h := 0.32
+	var stem_w := 0.014
+	var stem_color := Color("#243c28")
+	for flip in 2:
+		var yaw := float(flip) * PI * 0.5
+		var c := cos(yaw)
+		var s := sin(yaw)
+		var a := Vector3(-stem_w * c, 0.0, -stem_w * s)
+		var b := Vector3(stem_w * c, 0.0, stem_w * s)
+		var top := Vector3(stem_w * c, stem_h, stem_w * s)
+		var tip := Vector3(-stem_w * c, stem_h, -stem_w * s)
+		for point in [a, b, top, a, top, tip]:
+			tool.set_color(stem_color)
+			tool.add_vertex(point)
+	for i in 5:
+		var angle := TAU * float(i) / 5.0
+		var outer := Vector3(cos(angle) * 0.11, stem_h + 0.04, sin(angle) * 0.11)
+		var left := Vector3(cos(angle - 0.5) * 0.04, stem_h + 0.01, sin(angle - 0.5) * 0.04)
+		var right := Vector3(cos(angle + 0.5) * 0.04, stem_h + 0.01, sin(angle + 0.5) * 0.04)
+		var heart := Vector3(0.0, stem_h + 0.02, 0.0)
+		for point in [heart, left, outer, heart, outer, right]:
+			tool.set_color(petal)
+			tool.add_vertex(point)
+	tool.generate_normals()
+	return tool.commit()
 
 func _fill_bed_meadow() -> void:
-	var spots: Array[Vector3] = [
-		Vector3(-0.22, 0.12, -0.16),
-		Vector3(0.18, 0.11, -0.18),
-		Vector3(-0.02, 0.13, 0.02),
-		Vector3(-0.2, 0.11, 0.18),
-		Vector3(0.22, 0.12, 0.16),
-		Vector3(0.02, 0.1, -0.02),
+	var leaves: Array[Vector3] = [
+		Vector3(-0.26, 0.04, -0.2),
+		Vector3(0.0, 0.045, -0.22),
+		Vector3(0.26, 0.04, -0.18),
+		Vector3(-0.24, 0.04, 0.02),
+		Vector3(0.02, 0.05, 0.0),
+		Vector3(0.26, 0.04, 0.04),
+		Vector3(-0.22, 0.04, 0.22),
+		Vector3(0.04, 0.045, 0.22),
+		Vector3(0.26, 0.04, 0.2),
 	]
-	var buckets: Array = [[], [], [], []]
+	var spots: Array[Vector3] = [
+		Vector3(-0.28, 0.03, -0.22),
+		Vector3(-0.06, 0.03, -0.24),
+		Vector3(0.16, 0.03, -0.16),
+		Vector3(0.3, 0.03, 0.0),
+		Vector3(-0.24, 0.03, 0.08),
+		Vector3(0.02, 0.03, 0.1),
+		Vector3(0.22, 0.03, 0.2),
+		Vector3(-0.04, 0.03, 0.26),
+	]
+	var buckets: Array = [[], [], [], [], []]
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		if plot.plant_id != "" or plot.tilled:
@@ -1125,12 +1176,22 @@ func _fill_bed_meadow() -> void:
 			continue
 		if GardenLayout.pond_distance(center.x, center.z) < GardenLayout.POND_RADIUS:
 			continue
+		var at := Vector3.ZERO
+		var spin := 0.0
+		var scale := 1.0
+		var basis := Basis.IDENTITY
+		for i in leaves.size():
+			at = center + leaves[i]
+			spin = float((plot.ix * 3 + plot.iz + i) % 5) * 0.4
+			scale = 0.92 + float((plot.iz + i) % 3) * 0.12
+			basis = Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
+			buckets[0].append(Transform3D(basis, at))
 		for i in spots.size():
-			var at := center + spots[i]
-			var spin := float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.2
-			var scale := 0.82 + float((plot.ix + i) % 3) * 0.14
-			var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, scale * 0.62, scale))
-			buckets[(plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
+			at = center + spots[i]
+			spin = float((plot.ix * 5 + plot.iz * 3 + i) % 7) * 0.35
+			scale = 0.95 + float((plot.ix + i) % 3) * 0.22
+			basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
+			buckets[1 + (plot.ix + plot.iz + i) % 4].append(Transform3D(basis, at))
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
