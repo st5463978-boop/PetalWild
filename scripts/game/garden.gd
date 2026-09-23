@@ -1305,6 +1305,21 @@ func _run_smoke() -> void:
 		push_error("smoke: the hidden bite did not reload")
 		get_tree().quit(1)
 		return
+	_force_plant(2, 2, "meadowbell", 1.0)
+	var dry_bed := soil.get_cell(2, 2)
+	dry_bed.moisture = 0.05
+	_sync_plants()
+	var dry_view: PlantView = plant_views["2,2"]
+	if dry_view.scale.y > dry_view.scale.x * 0.8:
+		push_error("smoke: a dry plant stood up")
+		get_tree().quit(1)
+		return
+	dry_bed.moisture = 0.8
+	_sync_plants()
+	if absf(dry_view.scale.y - dry_view.scale.x) > 0.05:
+		push_error("smoke: a watered plant stayed limp")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -2032,7 +2047,7 @@ func _sync_plants() -> void:
 			var center := GardenLayout.cell_center(plot.ix, plot.iz)
 			view.position = Vector3(center.x, 0.06, center.z)
 			plant_views[key] = view
-		view.show_plant(plot.plant_id, plot.growth)
+		view.show_plant(plot.plant_id, plot.growth, plot.moisture)
 	for key in plant_views.keys():
 		if not live.has(key) and is_instance_valid(plant_views[key]):
 			plant_views[key].free()

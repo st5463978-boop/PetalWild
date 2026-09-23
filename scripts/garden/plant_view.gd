@@ -3,14 +3,17 @@ extends Node3D
 
 var plant_id := ""
 
-func show_plant(id: String, growth: float) -> void:
+func show_plant(id: String, growth: float, water: float) -> void:
 	if id != plant_id:
 		plant_id = id
 		for child in get_children():
 			child.free()
 		_build(id)
 	var amount := lerpf(0.18, 1.0, clampf(growth, 0.0, 1.0))
-	scale = Vector3(amount, amount, amount)
+	var need := float(ContentDB.plant(id).get("water_need", 0.3))
+	var limp := water < need
+	scale = Vector3(amount, amount * (0.62 if limp else 1.0), amount)
+	rotation.z = 0.35 if limp else 0.0
 
 func _build(id: String) -> void:
 	match id:
