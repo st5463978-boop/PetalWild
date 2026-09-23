@@ -797,6 +797,30 @@ func _run_smoke() -> void:
 		push_error("smoke: bellhelp did not settle")
 		get_tree().quit(1)
 		return
+	ecology.tick(0.2, world_snapshot())
+	var partner: Jelly = null
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body != keeper and body.species_id == "bellhelp":
+			partner = body
+	if partner == null:
+		push_error("smoke: bellhelp has no company")
+		get_tree().quit(1)
+		return
+	partner.site_time = 33.0
+	# ponytail: one rank per tick, and romance reads the opening snapshot, so breeding lands on the fourth tick.
+	ecology.tick(0.2, world_snapshot())
+	ecology.tick(0.2, world_snapshot())
+	ecology.tick(0.2, world_snapshot())
+	ecology.tick(0.2, world_snapshot())
+	if str(ecology.states.get("bellhelp", "")) != "breeding" or ecology.status_line("bellhelp", world_snapshot()) != "breeding":
+		push_error("smoke: bellhelp did not breed")
+		get_tree().quit(1)
+		return
+	if int(ecology.resident_counts().get("bellhelp", 0)) < 2:
+		push_error("smoke: bellhelp pair is short")
+		get_tree().quit(1)
+		return
 	ecology.cooldowns["cirlark"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("cirlark") == null:
