@@ -374,6 +374,8 @@ func _full(delta: float) -> void:
 			flat.y = 0.0
 			if flat.length() > 0.25:
 				var hop := flat.normalized() * randf_range(0.5, 1.15)
+				if species_id == "grapling":
+					hop *= 0.45
 				vel.x = hop.x
 				vel.z = hop.z
 		if global_position.distance_to(Vector3(goal.x, global_position.y, goal.z)) < 0.45 and not leaving:
@@ -410,7 +412,8 @@ func _coast(delta: float) -> void:
 	var flat := target - global_position
 	flat.y = 0.0
 	if flat.length() > 0.4:
-		global_position += flat.normalized() * delta * 0.7
+		var pace := 0.32 if species_id == "grapling" else 0.7
+		global_position += flat.normalized() * delta * pace
 	global_position.y = 0.0
 	site_time += delta
 	if not use_berth and global_position.distance_to(goal) < 0.5:

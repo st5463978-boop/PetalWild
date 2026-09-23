@@ -121,6 +121,7 @@ func _process(delta: float) -> void:
 		if soil.seeded != "":
 			toast("%s took the next bed." % str(ContentDB.plant(soil.seeded).get("name", "A plant")))
 		_hold_loam(minutes / 60.0)
+		_hold_cane(minutes / 60.0)
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -2025,10 +2026,10 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	departed.global_position = Vector3(-4.0, 0.0, -2.0)
-	var cane := departed.goal
-	var cane_far := departed.global_position.distance_to(cane)
+	var back_at := departed.goal
+	var cane_far := departed.global_position.distance_to(back_at)
 	departed._coast(1.0)
-	if departed.global_position.distance_to(cane) > cane_far - 0.5:
+	if departed.global_position.distance_to(back_at) > cane_far - 0.5:
 		push_error("smoke: a visitor who turned back kept walking out")
 		get_tree().quit(1)
 		return
@@ -2358,6 +2359,130 @@ func _run_smoke() -> void:
 		push_error("smoke: gushorn did not turn back for the loam")
 		get_tree().quit(1)
 		return
+	var vine := ecology.first("grapling")
+	if vine == null:
+		vine = ecology.force_spawn("grapling")
+	vine.life = "visitor"
+	vine.leaving = false
+	vine.held = false
+	vine.bite_wait = 2.0
+	vine.reduce_motion = false
+	_force_plant(4, 2, "bramble", 1.0)
+	var cane := soil.get_cell(4, 2)
+	cane.moisture = 0.8
+	cane.fertility = 0.55
+	Clock.set_hour(15.3)
+	var cane_at := GardenLayout.cell_center(4, 2)
+	vine.global_position = Vector3(10.5, 0.0, -8.5)
+	var vine_plot := _nearest_bramble(vine.global_position)
+	if vine_plot == null:
+		push_error("smoke: grapling had no cane")
+		get_tree().quit(1)
+		return
+	var vine_at := GardenLayout.cell_center(vine_plot.ix, vine_plot.iz)
+	cane_far = vine.global_position.distance_to(vine_at)
+	_update_creatures(0.016)
+	if vine.use_berth or vine.goal.distance_to(vine_at) > 0.2:
+		push_error("smoke: grapling missed the cane")
+		get_tree().quit(1)
+		return
+	vine.tier = 2
+	vine._process(2.0)
+	var cane_moved := cane_far - vine.global_position.distance_to(vine_at)
+	if cane_moved < 0.45 or cane_moved > 1.05:
+		push_error("smoke: grapling was not vine-slow")
+		get_tree().quit(1)
+		return
+	vine.global_position = Vector3(10.5, 0.0, -8.5)
+	hidden_far = vine.global_position.distance_to(vine_at)
+	_update_creatures(0.016)
+	vine.tier = 3
+	vine._process(2.0)
+	var cane_hidden := hidden_far - vine.global_position.distance_to(vine_at)
+	if vine.visible or cane_hidden < 0.45 or cane_hidden > 1.05:
+		push_error("smoke: a hidden grapling was not vine-slow")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(20.0)
+	vine.life = "visitor"
+	vine.leaving = false
+	vine.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	awning = GardenLayout.STALL + Vector3(0.9, 0.0, 0.2)
+	if not vine.use_berth or vine.goal.distance_to(awning) > 0.2:
+		push_error("smoke: rain let grapling leave the awning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	vine.leaving = true
+	vine.goal = GardenLayout.GATE
+	vine.attract = GardenLayout.GATE
+	_update_creatures(0.016)
+	if vine.goal.distance_to(GardenLayout.GATE) > 0.2:
+		push_error("smoke: a leaving grapling walked to the cane")
+		get_tree().quit(1)
+		return
+	vine.leaving = false
+	vine.life = "visitor"
+	vine.global_position = cane_at
+	cane.moisture = 0.8
+	cane.fertility = 0.55
+	soil.tick(60.0, "clear")
+	_hold_cane(1.0)
+	if cane.fertility > 0.53 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: a visitor grapling fed the cane")
+		get_tree().quit(1)
+		return
+	vine.life = "resident"
+	vine.global_position = cane_at
+	cane.moisture = 0.8
+	cane.fertility = 0.55
+	soil.tick(60.0, "clear")
+	_hold_cane(1.0)
+	if cane.fertility < 0.55 or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: grapling let the cane tire")
+		get_tree().quit(1)
+		return
+	cane.moisture = 0.05
+	cane.fertility = 0.55
+	_hold_cane(1.0)
+	if absf(cane.fertility - 0.55) > 0.01:
+		push_error("smoke: grapling fed a dry cane")
+		get_tree().quit(1)
+		return
+	cane.moisture = 0.8
+	cane.fertility = 0.55
+	vine.global_position = cane_at
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the cane did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	vine = ecology.first("grapling")
+	cane = soil.get_cell(4, 2)
+	if vine == null or vine.life != "resident" or cane.plant_id != "bramble" or Trust.level("nessa") != loam_trust or Economy.coins != loam_tin:
+		push_error("smoke: the cane did not reload")
+		get_tree().quit(1)
+		return
+	vine.global_position = GardenLayout.cell_center(4, 2)
+	cane.moisture = 0.8
+	cane.fertility = 0.55
+	soil.tick(60.0, "clear")
+	_hold_cane(1.0)
+	if cane.fertility < 0.55:
+		push_error("smoke: the reloaded grapling let the cane tire")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var cane_kit := Vector3(-6.0, 0.0, 1.0)
+	home_points.append(cane_kit)
+	vine.global_position = Vector3(10.5, 0.0, -8.5)
+	_update_creatures(0.016)
+	if not vine.wants_sleep or not vine.use_berth or vine.goal.distance_to(cane_kit) > 0.2:
+		push_error("smoke: night sent grapling to the cane")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3269,6 +3394,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_bite()
 	_seek_dusk()
 	_seek_loam()
+	_seek_cane()
 
 func _nearest_home(at: Vector3) -> Vector3:
 	var berth: Vector3 = home_points[0]
@@ -3475,6 +3601,62 @@ func _seek_loam() -> void:
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
+
+func _seek_cane() -> void:
+	# ponytail: the nearest ripe cane; a thicket route if several graplings settle.
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "grapling":
+			continue
+		if jelly.leaving or jelly.held or jelly.use_berth or jelly.wants_sleep or jelly.life == "bonded":
+			continue
+		var plot := _nearest_bramble(jelly.global_position)
+		if plot == null:
+			continue
+		var at := GardenLayout.cell_center(plot.ix, plot.iz)
+		jelly.attract = at
+		if jelly.global_position.distance_to(at) > 1.1:
+			jelly.goal = at
+
+func _nearest_bramble(at: Vector3) -> SoilCell:
+	var best: SoilCell = null
+	var best_d := 9999.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "bramble" or plot.growth < 0.5:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if best == null or dist < best_d:
+			best = plot
+			best_d = dist
+	return best
+
+func _hold_cane(hours: float) -> void:
+	# ponytail: the cane under their body; a whole row if more than one grapling settles.
+	if hours <= 0.0:
+		return
+	var keeper: Jelly = null
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.species_id != "grapling" or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("settler"):
+			continue
+		keeper = jelly
+		break
+	if keeper == null:
+		return
+	var plot := _nearest_bramble(keeper.global_position)
+	if plot == null:
+		return
+	var center := GardenLayout.cell_center(plot.ix, plot.iz)
+	if Vector2(keeper.global_position.x - center.x, keeper.global_position.z - center.z).length() > 1.6:
+		return
+	var need := float(ContentDB.plant("bramble").get("water_need", 0.36))
+	if plot.moisture < need:
+		return
+	plot.fertility = minf(1.0, plot.fertility + hours * 0.04)
 
 func _nearest_loam(at: Vector3) -> Vector3:
 	var best := _average_plant("mosspear")
