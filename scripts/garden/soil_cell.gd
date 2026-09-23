@@ -9,6 +9,7 @@ var fertility: float = 0.3
 var chem: String = "base"
 var plant_id: String = ""
 var growth: float = 0.0
+var wilt: float = 0.0
 
 func to_dict() -> Dictionary:
 	return {
@@ -20,6 +21,7 @@ func to_dict() -> Dictionary:
 		"chem": chem,
 		"plant_id": plant_id,
 		"growth": growth,
+		"wilt": wilt,
 	}
 
 func apply_dict(data: Dictionary) -> void:
@@ -29,3 +31,4 @@ func apply_dict(data: Dictionary) -> void:
 	chem = str(data.get("chem", chem))
 	plant_id = str(data.get("plant_id", plant_id))
 	growth = float(data.get("growth", growth))
+	wilt = float(data.get("wilt", 0.0))

@@ -17,11 +17,13 @@ func get_cell(ix: int, iz: int) -> SoilCell:
 func all() -> Array:
 	return cells.values()
 
-func tick(game_minutes: float, weather: String) -> void:
+func tick(game_minutes: float, weather: String) -> Array:
 	var hours := game_minutes / 60.0
 	var raining := weather == "rain"
+	var died: Array = []
 	for cell in all():
 		var soil: SoilCell = cell
+		var before := soil.moisture
 		if raining:
 			soil.moisture = minf(1.0, soil.moisture + hours * 0.95)
 		else:
@@ -32,16 +34,30 @@ func tick(game_minutes: float, weather: String) -> void:
 		if definition.is_empty():
 			continue
 		var grow_hours := maxf(0.2, float(definition.get("grow_hours", 2.0)))
-		if soil.moisture < float(definition.get("water_need", 0.3)):
-			# ponytail: a quarter of the grow rate; a death state if a crop should vanish.
+		var need := float(definition.get("water_need", 0.3))
+		if soil.moisture < need:
+			var dry_hours := hours
+			if raining:
+				dry_hours = 0.0
+			elif before > need:
+				dry_hours = clampf((need - soil.moisture) / 0.22, 0.0, hours)
+			soil.wilt += dry_hours
+			# ponytail: six dry hours clears the bed; a wilt curve if crops should linger.
 			soil.growth = maxf(0.04, soil.growth - hours / (grow_hours * 4.0))
+			if soil.wilt >= 6.0:
+				died.append(soil.plant_id)
+				soil.plant_id = ""
+				soil.growth = 0.0
+				soil.wilt = 0.0
 			continue
+		soil.wilt = 0.0
 		if soil.fertility < float(definition.get("fertility_need", 0.2)):
 			continue
 		var chem_need := str(definition.get("chem", ""))
 		if chem_need != "" and soil.chem != chem_need:
 			continue
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
+	return died
 
 func apply_chem(chem: String, count: int) -> int:
 	var empties: Array[SoilCell] = []
@@ -79,6 +95,7 @@ func apply_state(saved: Array) -> void:
 			soil.chem = "base"
 			soil.plant_id = ""
 			soil.growth = 0.0
+			soil.wilt = 0.0
 	for entry in saved:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue

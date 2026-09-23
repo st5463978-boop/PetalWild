@@ -112,7 +112,9 @@ func _process(delta: float) -> void:
 		return
 	var minutes := delta * Clock.scale if Clock.running else 0.0
 	if minutes > 0.0:
-		soil.tick(minutes, Clock.weather)
+		var lost := soil.tick(minutes, Clock.weather)
+		if lost.size() > 0:
+			toast("A bed dried out.")
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -1350,6 +1352,29 @@ func _run_smoke() -> void:
 	soil.tick(60.0, "clear")
 	if dry_bed.growth < 0.95:
 		push_error("smoke: a watered crop stayed short")
+		get_tree().quit(1)
+		return
+	if dry_bed.wilt > 0.01:
+		push_error("smoke: a watered bed was dying")
+		get_tree().quit(1)
+		return
+	dry_bed.moisture = 0.1
+	dry_bed.wilt = 3.2
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the drought did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	dry_bed = soil.get_cell(2, 2)
+	if dry_bed.plant_id != "meadowbell" or absf(dry_bed.wilt - 3.2) > 0.05:
+		push_error("smoke: the drought did not reload")
+		get_tree().quit(1)
+		return
+	dry_bed.moisture = 0.05
+	dry_bed.wilt = 5.2
+	soil.tick(60.0, "clear")
+	if dry_bed.plant_id != "":
+		push_error("smoke: a long drought left the crop")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
