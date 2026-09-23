@@ -1839,6 +1839,7 @@ func _fill_bed_meadow() -> void:
 	_edge_lips(buckets)
 	_stone_gaps(buckets)
 	_track_meadow(buckets)
+	_worn_lips(buckets)
 	for i in bed_blooms.size():
 		var multi := bed_blooms[i].multimesh
 		var rows: Array = buckets[i]
@@ -1996,6 +1997,29 @@ func _path_lips(buckets: Array) -> void:
 				buckets[1 + (step % 4)].append(Transform3D(basis, at))
 			step += 1
 		z += 0.46
+
+func _worn_lips(buckets: Array) -> void:
+	# ponytail: flowers beside the spur and the pond path; the worn center stays open.
+	var step := _lip_run(buckets, Vector3(-4.55, 0.0, 3.55), Vector3(-4.55, 0.0, 4.75), 0)
+	_lip_run(buckets, Vector3(2.75, 0.0, -2.5), Vector3(4.55, 0.0, -2.5), step)
+
+func _lip_run(buckets: Array, a: Vector3, b: Vector3, step: int) -> int:
+	var dir := b - a
+	dir.y = 0.0
+	var span := dir.length()
+	if span < 0.2:
+		return step
+	dir /= span
+	var side := Vector3(-dir.z, 0.0, dir.x)
+	var laterals: Array[float] = [0.58, 0.76, -0.58, -0.76]
+	var along := 0.12
+	while along < span - 0.08:
+		for lateral in laterals:
+			var at := a + dir * along + side * lateral
+			_skirt_drop(buckets, at.x, at.z, step)
+			step += 1
+		along += 0.34
+	return step
 
 func _spawn_people() -> void:
 	for id in ContentDB.people_order:
