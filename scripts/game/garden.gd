@@ -1276,6 +1276,35 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	shelter.free()
+	for cell in soil.all():
+		var bed: SoilCell = cell
+		if bed.plant_id == "meadowbell":
+			bed.growth = 0.4
+	_force_plant(4, 3, "meadowbell", 1.0)
+	var off_plot := soil.get_cell(4, 3)
+	hand.global_position = camera.global_position + camera.global_transform.basis.z * 8.0
+	hand.global_position.y = 0.0
+	hand.bite_wait = 0.0
+	if camera.is_position_in_frustum(hand.global_position) or hand.global_position.distance_to(GardenLayout.cell_center(4, 3)) < 1.6:
+		push_error("smoke: the hidden resident was still by the plant")
+		get_tree().quit(1)
+		return
+	_browse(0.1)
+	if off_plot.growth > 0.6 or hand.bite_wait < 3.0:
+		push_error("smoke: a hidden resident left the ripe plant")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the hidden bite did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	hand = ecology.first("bellhelp")
+	off_plot = soil.get_cell(4, 3)
+	if hand == null or off_plot.growth > 0.6 or hand.bite_wait < 3.0:
+		push_error("smoke: the hidden bite did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -2210,7 +2239,9 @@ func _browse(hours: float) -> void:
 		var plant_id := _feed_plant(jelly.species_id)
 		if plant_id == "":
 			continue
-		var plot := _ripe_near(jelly.global_position, plant_id)
+		var plot := _ripe_near(jelly.global_position, plant_id, 1.6)
+		if plot == null and not camera.is_position_in_frustum(jelly.global_position):
+			plot = _ripe_near(jelly.global_position, plant_id, 40.0)
 		if plot == null:
 			continue
 		plot.growth = 0.55
@@ -2223,9 +2254,9 @@ func _feed_plant(species_id: String) -> String:
 			return str(req.get("plant", ""))
 	return ""
 
-func _ripe_near(at: Vector3, plant_id: String) -> SoilCell:
+func _ripe_near(at: Vector3, plant_id: String, reach: float) -> SoilCell:
 	var best: SoilCell = null
-	var best_d := 1.6
+	var best_d := reach
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		if plot.plant_id != plant_id or plot.growth < 1.0:
