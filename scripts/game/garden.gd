@@ -1232,6 +1232,116 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	rush.leaving = false
+	rush.life = "settler"
+	rush.site_time = 33.0
+	ecology.tick(0.2, world_snapshot())
+	if rush.life != "resident" or str(ecology.states.get("bulrush", "")) != "resident":
+		push_error("smoke: bulrush did not settle")
+		get_tree().quit(1)
+		return
+	ecology.tick(0.2, world_snapshot())
+	var rush_mate: Jelly = null
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bulrush" and body != rush:
+			rush_mate = body
+			break
+	if rush_mate == null:
+		push_error("smoke: bulrush has no company")
+		get_tree().quit(1)
+		return
+	rush_mate.life = "settler"
+	rush_mate.site_time = 33.0
+	ecology.tick(0.2, world_snapshot())
+	ecology.tick(0.2, world_snapshot())
+	if str(ecology.states.get("bulrush", "")) != "breeding":
+		push_error("smoke: bulrush did not breed")
+		get_tree().quit(1)
+		return
+	var saw_pond := false
+	for row in _journal_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Bulrush" and str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1:
+			saw_pond = true
+	if not saw_pond:
+		push_error("smoke: journal hid the pond pair")
+		get_tree().quit(1)
+		return
+	var bank := _attractor_for(ContentDB.species_def("bulrush"))
+	rush.global_position = bank
+	rush.bite_wait = 2.0
+	rush_mate.global_position = bank + Vector3(0.0, 0.0, 3.2)
+	rush_mate.bite_wait = 2.0
+	var wade := rush_mate.global_position.distance_to(rush.global_position)
+	_update_creatures(0.016)
+	rush_mate.tier = 2
+	rush_mate._process(2.0)
+	if rush_mate.global_position.distance_to(rush.global_position) > wade - 0.8:
+		push_error("smoke: the pond pair stayed apart")
+		get_tree().quit(1)
+		return
+	rush.bond = 0.55
+	var pond_tin := Economy.coins
+	ecology.tick(0.2, world_snapshot())
+	if rush.life != "bonded" or str(ecology.states.get("bulrush", "")) != "breeding" or Economy.coins != pond_tin or Trust.level("nessa") != 0:
+		push_error("smoke: the pond pair left the water")
+		get_tree().quit(1)
+		return
+	saw_pond = false
+	for row in _journal_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Bulrush" and str(row.get("romance", "")).find("trusts your hands") != -1:
+			saw_pond = true
+	if not saw_pond:
+		push_error("smoke: journal hid the pond bond")
+		get_tree().quit(1)
+		return
+	rush.global_position = Vector3(-4.0, 0.0, -2.0)
+	rush.bite_wait = 2.0
+	var water_far := rush.global_position.distance_to(bank)
+	_update_creatures(0.016)
+	if rush.use_berth or rush.goal.distance_to(bank) > 0.2:
+		push_error("smoke: a bonded bulrush walked to the gardener")
+		get_tree().quit(1)
+		return
+	rush._coast(2.0)
+	if rush.global_position.distance_to(bank) > water_far - 0.5:
+		push_error("smoke: a bonded bulrush stayed on the lawn")
+		get_tree().quit(1)
+		return
+	var pond_kit := Vector3(-6.0, 0.0, 4.0)
+	home_points.append(pond_kit)
+	Clock.set_hour(21.0)
+	rush.global_position = Vector3(-4.0, 0.0, -2.0)
+	_update_creatures(0.016)
+	if not rush.wants_sleep or not rush.use_berth or rush.goal.distance_to(pond_kit) > 0.2:
+		push_error("smoke: the pond pair skipped the kit")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	Clock.set_hour(15.3)
+	rush.wants_sleep = false
+	rush.use_berth = false
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the pond pair did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	rush = null
+	for actor in ecology.actors:
+		var body: Jelly = actor
+		if body.species_id == "bulrush" and body.life == "bonded":
+			rush = body
+			break
+	if rush == null or rush.bond < 0.55 or str(ecology.states.get("bulrush", "")) != "breeding" or int(ecology.resident_counts().get("bulrush", 0)) < 2:
+		push_error("smoke: the pond pair did not reload")
+		get_tree().quit(1)
+		return
+	rush.global_position = Vector3(-4.0, 0.0, -2.0)
+	rush.bite_wait = 2.0
+	_update_creatures(0.016)
+	if rush.goal.distance_to(bank) > 0.2:
+		push_error("smoke: the pond bond did not reload")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(21.0)
 	_force_plant(4, 2, "bramble", 1.0)
 	_force_plant(5, 2, "bramble", 1.0)
@@ -2795,6 +2905,9 @@ func _update_creatures(delta: float) -> void:
 		if jelly.life == "bonded" and not jelly.wants_sleep and not jelly.use_berth and not jelly.held and not jelly.leaving:
 			var stand := camera.target
 			stand.y = 0.0
+			# ponytail: water species keep the pond; a bank path if more than Bulrush and Reedic bond.
+			if jelly.species_id == "bulrush" or jelly.species_id == "reedic":
+				stand = _attractor_for(ContentDB.species_def(jelly.species_id))
 			jelly.attract = stand
 			if jelly.global_position.distance_to(stand) > 1.2:
 				jelly.goal = stand
