@@ -4808,7 +4808,9 @@ func _build_patches() -> void:
 		node.material_override = material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
-		node.position = Vector3(center.x, 0.055, center.z)
+		var shift := _row_shift(plot.ix, plot.iz)
+		node.position = Vector3(center.x, 0.055, center.z) + shift
+		node.rotation.y = float((plot.ix * 3 + plot.iz) % 5) * 0.22
 		add_child(node)
 		_scallop_patch(node, plot.ix, plot.iz)
 		patches["%d,%d" % [plot.ix, plot.iz]] = node
@@ -4899,12 +4901,26 @@ func _bed_spot(center: Vector3, offset: Vector3, ix: int, iz: int, i: int) -> Ve
 	# ponytail: a fixed nudge off the cell row; drop it if the flower lands on a worn walk.
 	var jx := (float((ix * 5 + iz * 3 + i * 7) % 7) - 3.0) * 0.16
 	var jz := (float((ix * 3 + iz * 5 + i * 11) % 5) - 2.0) * 0.16
-	var nudged := center + offset + Vector3(jx, 0.0, jz)
+	var nudged := center + offset + Vector3(jx, 0.0, jz) + _row_shift(ix, iz)
 	if GardenLayout.on_path(nudged.x, nudged.z) or GardenLayout.on_track(nudged.x, nudged.z):
 		return _edge_wave(center + offset)
 	if GardenLayout.pond_distance(nudged.x, nudged.z) < GardenLayout.POND_RADIUS:
 		return _edge_wave(center + offset)
 	return _edge_wave(nudged)
+
+func _row_shift(ix: int, iz: int) -> Vector3:
+	# ponytail: interior cells leave the row; the outer wave still owns the rim.
+	var interior := (ix == 1 or ix == 2 or ix == 3 or ix == 6 or ix == 7 or ix == 8) and (iz == 1 or iz == 2 or iz == 5 or iz == 6)
+	if not interior:
+		return Vector3.ZERO
+	var jx := (float((ix * 5 + iz * 3) % 5) - 2.0) * 0.42
+	var jz := (float((ix * 3 + iz * 5) % 5) - 2.0) * 0.34
+	var center := GardenLayout.cell_center(ix, iz)
+	if GardenLayout.on_path(center.x + jx, center.z + jz) or GardenLayout.on_track(center.x + jx, center.z + jz):
+		return Vector3.ZERO
+	if GardenLayout.pond_distance(center.x + jx, center.z + jz) < GardenLayout.POND_RADIUS:
+		return Vector3.ZERO
+	return Vector3(jx, 0.0, jz)
 
 func _south_bed_x(x: float) -> bool:
 	return (x >= -7.45 and x <= -2.75) or (x >= -1.95 and x <= 2.75)
@@ -5820,7 +5836,7 @@ func _sync_plants() -> void:
 			view = PlantView.new()
 			add_child(view)
 			var center := GardenLayout.cell_center(plot.ix, plot.iz)
-			view.position = Vector3(center.x, 0.06, center.z)
+			view.position = Vector3(center.x, 0.06, center.z) + _row_shift(plot.ix, plot.iz)
 			plant_views[key] = view
 		view.show_plant(plot.plant_id, plot.growth, plot.moisture, plot.fertility)
 	for key in plant_views.keys():
