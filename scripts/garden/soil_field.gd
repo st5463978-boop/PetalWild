@@ -52,6 +52,7 @@ func tick(game_minutes: float, weather: String) -> Array:
 				soil.plant_id = ""
 				soil.growth = 0.0
 				soil.wilt = 0.0
+				soil.taken = false
 			continue
 		soil.wilt = 0.0
 		if soil.fertility < float(definition.get("fertility_need", 0.2)):
@@ -60,6 +61,8 @@ func tick(game_minutes: float, weather: String) -> Array:
 		if chem_need != "" and soil.chem != chem_need:
 			continue
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
+		if soil.growth >= 1.0:
+			soil.taken = false
 		# ponytail: a living crop tires the bed; a slower season if he should come less often.
 		soil.fertility = maxf(0.04, soil.fertility - hours * 0.03)
 	if raining:
@@ -91,6 +94,7 @@ func _seed_one(only: String = "") -> String:
 			spot.plant_id = parent.plant_id
 			spot.growth = 0.18
 			spot.wilt = 0.0
+			spot.taken = false
 			spot.moisture = maxf(spot.moisture, 0.74)
 			return parent.plant_id
 	return ""

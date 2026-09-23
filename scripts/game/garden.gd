@@ -2247,8 +2247,17 @@ func _run_smoke() -> void:
 		return
 	pear.global_position = GardenLayout.cell_center(1, 3)
 	_browse(0.1)
-	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0 or events.is_empty() or str(events[0]).find("bite") == -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+	if soil.get_cell(1, 3).growth > 0.6 or soil.get_cell(0, 3).growth < 0.95 or pear.bite_wait < 3.0 or not soil.get_cell(1, 3).taken or events.is_empty() or str(events[0]).find("bite") == -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
 		push_error("smoke: dusk left the lantern whole")
+		get_tree().quit(1)
+		return
+	if soil.get_cell(1, 3).chem == "nightloam":
+		if _plot_line(soil.get_cell(1, 3)).find("Growing back.") == -1:
+			push_error("smoke: the bitten lantern hid the recovery")
+			get_tree().quit(1)
+			return
+	elif _plot_line(soil.get_cell(1, 3)).find("Needs night-loam.") == -1 or _plot_line(soil.get_cell(1, 3)).find("Growing back.") != -1:
+		push_error("smoke: the bitten lantern hid the loam")
 		get_tree().quit(1)
 		return
 	var meal_back := {}
@@ -2302,8 +2311,13 @@ func _run_smoke() -> void:
 	meal_bed.moisture = 1.0
 	meal_bed.fertility = 0.6
 	meal_bed.wilt = 0.0
+	meal_bed.taken = true
+	if _plot_line(meal_bed).find("Growing back.") == -1:
+		push_error("smoke: the bitten lantern hid the recovery")
+		get_tree().quit(1)
+		return
 	soil.tick(80.0, "clear")
-	if meal_bed.growth < 0.95 or meal_bed.plant_id != "nightlantern" or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
+	if meal_bed.growth < 0.95 or meal_bed.plant_id != "nightlantern" or meal_bed.taken or _plot_line(meal_bed).find("Growing back.") != -1 or Trust.level("nessa") != dusk_trust or Economy.coins != dusk_tin:
 		push_error("smoke: the bitten lantern did not grow back")
 		get_tree().quit(1)
 		return
@@ -2340,8 +2354,13 @@ func _run_smoke() -> void:
 	meal_bed.moisture = 1.0
 	meal_bed.fertility = 0.6
 	meal_bed.wilt = 0.0
+	meal_bed.taken = true
+	if _plot_line(meal_bed).find("Needs night-loam.") == -1 or _plot_line(meal_bed).find("Growing back.") != -1:
+		push_error("smoke: a bare lantern claimed it was growing back")
+		get_tree().quit(1)
+		return
 	soil.tick(80.0, "clear")
-	if meal_bed.growth > 0.6 or meal_bed.plant_id != "nightlantern":
+	if meal_bed.growth > 0.6 or meal_bed.plant_id != "nightlantern" or not meal_bed.taken:
 		push_error("smoke: a lantern grew back without night-loam")
 		get_tree().quit(1)
 		return
@@ -3624,6 +3643,35 @@ func _run_smoke() -> void:
 		push_error("smoke: a reload rang again the same day")
 		get_tree().quit(1)
 		return
+	var cut_bed := soil.get_cell(4, 6)
+	_force_plant(4, 6, "peach", 1.0)
+	cut_bed.moisture = 0.8
+	cut_bed.fertility = 0.5
+	var peach_n := Economy.count("peach")
+	_tend(cut_bed)
+	if Economy.count("peach") != peach_n + 1 or cut_bed.growth > 0.4 or not cut_bed.taken or _plot_line(cut_bed).find("Growing back.") == -1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a harvest did not leave the peach growing back")
+		get_tree().quit(1)
+		return
+	cut_bed.moisture = 0.1
+	if _plot_line(cut_bed).find("Needs water.") == -1 or _plot_line(cut_bed).find("Growing back.") != -1:
+		push_error("smoke: a dry harvest hid the thirst")
+		get_tree().quit(1)
+		return
+	if not Economy.take("peach", 1) or not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the harvest did not save")
+		get_tree().quit(1)
+		return
+	var kept_cut := false
+	for entry in SaveGame.read_slot(1).get("soil", []):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if int(entry.get("ix", -1)) == 4 and int(entry.get("iz", -1)) == 6 and bool(entry.get("taken", false)) and float(entry.get("growth", 1.0)) <= 0.4:
+			kept_cut = true
+	if not kept_cut or Economy.count("peach") != peach_n:
+		push_error("smoke: the harvest did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -3712,6 +3760,7 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
 	plot.growth = growth
 	plot.moisture = 0.74
 	plot.fertility = 0.38
+	plot.taken = false
 
 func _build_patches() -> void:
 	soil_lid = BoxMesh.new()
@@ -4208,6 +4257,7 @@ func _plant(plot: SoilCell) -> void:
 		return
 	plot.plant_id = plant_id
 	plot.growth = 0.04
+	plot.taken = false
 	plot.moisture = maxf(plot.moisture, 0.45)
 	audio.play_kind("plant")
 	toast("Planted %s." % definition.get("name", plant_id))
@@ -4220,6 +4270,7 @@ func _tend(plot: SoilCell) -> void:
 	var name := str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
 	Economy.add(plot.plant_id, 1)
 	plot.growth = 0.32
+	plot.taken = true
 	audio.play_kind("harvest")
 	toast("Harvested %s." % name)
 	var bram := _person("bram")
@@ -4421,6 +4472,12 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Bells filling."
 	if plot.plant_id == "reed" and _reed_kept(plot):
 		return line + "  ·  Reed kept."
+	var chem_need := str(definition.get("chem", ""))
+	if chem_need != "" and plot.chem != chem_need:
+		return line + "  ·  Needs night-loam."
+	# ponytail: one taken flag; a bite log if the journal keeps who ate it.
+	if plot.taken and plot.growth < 1.0:
+		return line + "  ·  Growing back."
 	return line
 
 func _fruit_returning(plot: SoilCell) -> bool:
@@ -4768,6 +4825,7 @@ func _browse(hours: float) -> void:
 		if plot == null:
 			continue
 		plot.growth = 0.55
+		plot.taken = true
 		jelly.bite_wait = 4.0
 		toast("%s takes a bite." % jelly.display_name)
 
