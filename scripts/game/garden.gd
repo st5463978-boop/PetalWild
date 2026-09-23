@@ -514,7 +514,8 @@ func _run_smoke() -> void:
 	for bloom_i in bed_blooms.size():
 		meadow_n += bed_blooms[bloom_i].multimesh.instance_count
 	var seam: MeshInstance3D = patches["0,0"]
-	if seam.mesh != bed_lid:
+	var crop: MeshInstance3D = patches["0,1"]
+	if seam.mesh != bed_lid or crop.mesh != bed_lid:
 		push_error("smoke: empty bed stayed a separate lid")
 		get_tree().quit(1)
 		return
@@ -1578,7 +1579,7 @@ func _refresh_soil_colors() -> void:
 		if patch == null:
 			continue
 		var material := patch.material_override as StandardMaterial3D
-		if _meadow_cell(plot):
+		if _joined_bed(plot):
 			patch.mesh = bed_lid
 			material.albedo_color = Color("#1c3420")
 		else:
@@ -1587,7 +1588,13 @@ func _refresh_soil_colors() -> void:
 	_fill_bed_meadow()
 
 func _meadow_cell(plot: SoilCell) -> bool:
-	if plot.plant_id != "" or plot.tilled:
+	return plot.plant_id == "" and not plot.tilled and _joined_bed(plot)
+
+func _joined_bed(plot: SoilCell) -> bool:
+	# ponytail: a planted cell keeps the meadow lid; a soil disc under the stem if the crop needs bare earth.
+	if plot.chem == "nightloam":
+		return false
+	if plot.plant_id == "" and plot.tilled:
 		return false
 	var center := GardenLayout.cell_center(plot.ix, plot.iz)
 	if GardenLayout.on_path(center.x, center.z):
