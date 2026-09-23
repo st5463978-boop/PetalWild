@@ -22,6 +22,7 @@ var bram_bed := Vector2i(-1, -1)
 var nessa_watch: Jelly = null
 var nessa_filing := false
 var nessa_drafting := false
+var nessa_farewell := false
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -287,6 +288,7 @@ func accept_draft() -> void:
 		return
 	nessa_drafting = true
 	nessa_filing = false
+	nessa_farewell = false
 	nessa_watch = null
 	nessa.chore = GardenLayout.FOUNDRY + Vector3(0, 0, -0.95)
 	nessa.has_chore = true
@@ -307,6 +309,7 @@ func accept_nessa() -> void:
 		return
 	# ponytail: the walk is not in the save; the filed audit is. Bram's bed is the same.
 	nessa_filing = true
+	nessa_farewell = false
 	nessa_watch = null
 	nessa.chore = GardenLayout.HUT + Vector3(0, 0, -1.05)
 	nessa.has_chore = true
@@ -469,6 +472,7 @@ func to_state() -> Dictionary:
 		"bram_bed": [bram_bed.x, bram_bed.y],
 		"nessa_filing": nessa_filing,
 		"nessa_drafting": nessa_drafting,
+		"nessa_farewell": nessa_farewell,
 		"nessa_watch": _watch_record(),
 	}
 
@@ -510,13 +514,14 @@ func apply_state(data: Dictionary) -> void:
 		bram_bed = Vector2i(int(bed[0]), int(bed[1]))
 	nessa_filing = bool(data.get("nessa_filing", false))
 	nessa_drafting = bool(data.get("nessa_drafting", false))
+	nessa_farewell = bool(data.get("nessa_farewell", false))
 	_bind_watch(data.get("nessa_watch", {}))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
 
 func _watch_record() -> Dictionary:
-	# ponytail: one arrival, one hut, one foundry; a queue if Nessa keeps more than one errand.
+	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
 	if nessa_watch == null or not is_instance_valid(nessa_watch):
 		return {}
 	return {
@@ -1389,6 +1394,10 @@ func _run_smoke() -> void:
 		push_error("smoke: a visitor stayed after the canes failed")
 		get_tree().quit(1)
 		return
+	if not nessa_farewell or not nessa.has_chore or nessa.chore.distance_to(GardenLayout.GATE) > 0.2 or Trust.level("nessa") != 1 or Economy.coins != tin:
+		push_error("smoke: nessa did not note the departure")
+		get_tree().quit(1)
+		return
 	var gate_far := guest.global_position.distance_to(GardenLayout.GATE)
 	guest._full(1.5)
 	if guest.global_position.distance_to(GardenLayout.GATE) > gate_far - 0.5:
@@ -1420,11 +1429,25 @@ func _run_smoke() -> void:
 		push_error("smoke: the departure did not reload")
 		get_tree().quit(1)
 		return
+	if not nessa_farewell or not nessa.has_chore or nessa.chore.distance_to(GardenLayout.GATE) > 0.2 or Trust.level("nessa") != 1 or Economy.coins != tin:
+		push_error("smoke: nessa's departure note did not reload")
+		get_tree().quit(1)
+		return
 	departed.global_position = Vector3(-4.0, 0.0, -2.0)
 	gate_far = departed.global_position.distance_to(GardenLayout.GATE)
 	departed._coast(1.5)
 	if departed.global_position.distance_to(GardenLayout.GATE) > gate_far - 0.5:
 		push_error("smoke: a hidden visitor did not walk to the gate")
+		get_tree().quit(1)
+		return
+	nessa.global_position = GardenLayout.GATE
+	_drift_people(0.1, world_snapshot())
+	if nessa_farewell or nessa.has_chore or Trust.level("nessa") != 1 or Economy.coins != tin:
+		push_error("smoke: the departure note left the parish")
+		get_tree().quit(1)
+		return
+	if events.is_empty() or str(events[0]).find("departure") == -1:
+		push_error("smoke: nessa did not write the departure")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -2342,12 +2365,19 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 
 func _on_ecology(text: String) -> void:
 	toast(text)
+	var nessa := _person("nessa")
 	if "slips" in text:
 		audio.play_kind("ui", -16)
+		# ponytail: one departure note; a page if several leave on the same tick.
+		if nessa != null and nessa.present and not nessa_filing and not nessa_drafting:
+			nessa_farewell = true
+			nessa_watch = null
+			nessa.chore = GardenLayout.GATE
+			nessa.has_chore = true
+			nessa.say("Someone is leaving. I will write it down.")
 		return
 	audio.play_kind("discovery", -12)
-	var nessa := _person("nessa")
-	if not nessa.present:
+	if nessa == null or not nessa.present or nessa_filing or nessa_drafting or nessa_farewell:
 		return
 	# ponytail: one name in the book; a page per species if the journal grows sections.
 	var watched: Jelly = null
@@ -2520,6 +2550,13 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 				nessa_filing = false
 				nessa.has_chore = false
 				nessa_watch = null
+		elif nessa_farewell:
+			if nessa.global_position.distance_to(nessa.chore) < 0.55:
+				nessa_farewell = false
+				nessa.has_chore = false
+				nessa_watch = null
+				nessa.say("Noted. They have gone back to the hedge.")
+				toast("Nessa wrote the departure into the parish book.")
 		else:
 			if nessa_watch != null and is_instance_valid(nessa_watch):
 				nessa.chore = nessa_watch.global_position
