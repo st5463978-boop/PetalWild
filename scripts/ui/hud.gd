@@ -134,7 +134,14 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Hedge Tea House demand  %s" % str(stats.get("tea_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
+	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
+	var notices: Array = stats.get("notices", [])
+	if notices.is_empty():
+		journal_box.add_child(ThemeKit.label("The board is bare. Approved proposals are posted here. The town beyond the hedge is not.", 14))
+	for notice in notices:
+		journal_box.add_child(ThemeKit.label(str(notice), 14))
 	journal_box.add_child(ThemeKit.title("Venues", 16))
 	for line in stats.get("venues", []):
 		journal_box.add_child(ThemeKit.label(str(line), 14))

@@ -36,6 +36,17 @@ func blurb(value: int) -> String:
 		_:
 			return "Higher trust is reserved. Nothing in this build can leave the machine."
 
+func notices() -> PackedStringArray:
+	# ponytail: two proposal lines; a board page if more than the tray and the draft are approved.
+	var lines := PackedStringArray()
+	for entry in audit:
+		var action := str(entry.get("action", ""))
+		if action == "peach_tray":
+			lines.append("Peach tray set aside. The coins stayed in the parish.")
+		elif action == "parish_draft":
+			lines.append("Three episodes kept in the book. Nothing was sent.")
+	return lines
+
 func has_action(action_id: String) -> bool:
 	for entry in audit:
 		if str(entry.get("action", "")) == action_id:

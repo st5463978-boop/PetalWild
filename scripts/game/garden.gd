@@ -881,7 +881,7 @@ func _run_smoke() -> void:
 		push_error("smoke: research hut was not open")
 		get_tree().quit(1)
 		return
-	if int(place.get("foundry_demand", -1)) != 0:
+	if int(place.get("foundry_demand", -1)) != 0 or int(place.get("hall_demand", -1)) != 0:
 		push_error("smoke: foundry demand before the draft")
 		get_tree().quit(1)
 		return
@@ -923,6 +923,24 @@ func _run_smoke() -> void:
 			saw_foundry = false
 	if not saw_foundry:
 		push_error("smoke: media foundry was not open")
+		get_tree().quit(1)
+		return
+	if int(place.get("hall_demand", -1)) != 1:
+		push_error("smoke: the hall did not post the draft")
+		get_tree().quit(1)
+		return
+	var saw_hall := false
+	var saw_notice := false
+	for line in place.get("venues", []):
+		if str(line).find("Town Hall") != -1 and str(line).find("open") != -1:
+			saw_hall = true
+		if str(line).find("Town Hall") != -1 and str(line).find("not built") != -1:
+			saw_hall = false
+	for notice in place.get("notices", []):
+		if str(notice).find("Nothing was sent") != -1:
+			saw_notice = true
+	if not saw_hall or not saw_notice:
+		push_error("smoke: town hall board was bare")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -1701,11 +1719,14 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
 	stats["foundry_demand"] = 1 if Trust.has_action("parish_draft") else 0
+	var notices := Trust.notices()
+	stats["hall_demand"] = notices.size()
+	stats["notices"] = notices
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
 		# ponytail: this garden has these rooms; the shared file stays inactive so the sidelined grove does not claim them.
-		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" or str(id) == "media_foundry" else "not built"
+		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" or str(id) == "media_foundry" or str(id) == "town_hall" else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines

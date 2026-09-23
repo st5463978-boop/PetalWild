@@ -7,6 +7,7 @@ func build(parent: Node3D) -> void:
 	_tea(parent)
 	_hut(parent)
 	_foundry(parent)
+	_hall(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
@@ -132,6 +133,23 @@ func _foundry(parent: Node3D) -> void:
 	light.light_color = Color("ffd2a4")
 	light.light_energy = 0.06
 	light.omni_range = 2.0
+	light.shadow_enabled = false
+	root.add_child(light)
+
+func _hall(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "TownHall"
+	root.position = GardenLayout.HALL
+	parent.add_child(root)
+	_cylinder(root, Vector3(-0.42, 0.55, 0), 0.04, 0.05, 1.1, Color("#4a4038"))
+	_cylinder(root, Vector3(0.42, 0.55, 0), 0.04, 0.05, 1.1, Color("#4a4038"))
+	_box(root, Vector3(0, 1.15, 0), Vector3(1.15, 0.62, 0.06), Color("#4a3e34"))
+	_box(root, Vector3(0, 1.42, 0.02), Vector3(0.7, 0.08, 0.04), Color("#3a322c"))
+	var light := OmniLight3D.new()
+	light.position = Vector3(0, 1.2, 0.15)
+	light.light_color = Color("ffd2a4")
+	light.light_energy = 0.05
+	light.omni_range = 1.6
 	light.shadow_enabled = false
 	root.add_child(light)
 
