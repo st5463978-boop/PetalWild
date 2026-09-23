@@ -4858,7 +4858,8 @@ func _bridge_into(buckets: Array) -> void:
 			var z := band.position.y + 0.12
 			while z <= band.position.y + band.size.y - 0.12:
 				if not GardenLayout.on_path(x, z) and not GardenLayout.on_track(x, z):
-					var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+					var spot := _bridge_spot(x, z, n, band)
+					var at := Vector3(spot.x, GardenLayout.height_at(spot.x, spot.y) + 0.05, spot.y)
 					var spin := float((n * 3) % 5) * 0.5
 					var leaf_scale := 0.95 + float(n % 3) * 0.12
 					var bloom_scale := 1.85 + float(n % 3) * 0.25
@@ -4869,6 +4870,21 @@ func _bridge_into(buckets: Array) -> void:
 					n += 1
 				z += 0.22
 			x += 0.28
+
+func _bridge_spot(x: float, z: float, n: int, band: Rect2) -> Vector2:
+	# ponytail: columns clump and leave a gap; drop the nudge if the bloom leaves the strip or the walk. n stays for a later per-bloom break.
+	var col := int(round((x - band.position.x) / 0.28))
+	var row := int(round((z - band.position.y) / 0.22))
+	var jx := (float((col * 3) % 5) - 2.0) * 0.16
+	var jz := (float((row * 2 + col) % 3) - 1.0) * 0.06
+	var nudged := Vector2(x + jx, z + jz)
+	if not band.grow(0.06).has_point(nudged):
+		return Vector2(x, z)
+	if GardenLayout.on_path(nudged.x, nudged.y) or GardenLayout.on_track(nudged.x, nudged.y):
+		return Vector2(x, z)
+	if GardenLayout.pond_distance(nudged.x, nudged.y) < GardenLayout.POND_RADIUS:
+		return Vector2(x, z)
+	return nudged
 
 func _bed_skirt(buckets: Array) -> void:
 	# ponytail: one wavy spill past the bed box; a third ring if the corners still read.
