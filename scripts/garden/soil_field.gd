@@ -4,6 +4,8 @@ extends RefCounted
 var cells: Dictionary = {}
 var seed_rain := 0.0
 var seeded := ""
+var sown_at := Vector3.ZERO
+var _mark_sown := false
 
 func _init() -> void:
 	for ix in GardenLayout.BED_W:
@@ -78,7 +80,10 @@ func tick(game_minutes: float, weather: String) -> Array:
 
 func seed_from(plant_id: String) -> String:
 	# ponytail: the bell ring reuses the rain neighbor; a scatter if one chime should fill the row.
-	return _seed_one(plant_id)
+	_mark_sown = true
+	var sown := _seed_one(plant_id)
+	_mark_sown = false
+	return sown
 
 func _seed_one(only: String = "") -> String:
 	for iz in GardenLayout.BED_H:
@@ -96,6 +101,8 @@ func _seed_one(only: String = "") -> String:
 			spot.wilt = 0.0
 			spot.taken = false
 			spot.moisture = maxf(spot.moisture, 0.74)
+			if _mark_sown:
+				sown_at = GardenLayout.cell_center(spot.ix, spot.iz)
 			return parent.plant_id
 	return ""
 

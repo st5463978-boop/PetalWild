@@ -43,6 +43,8 @@ var visual_timer := 0.0
 var loam_hours := 0.0
 var bell_day := -1
 var bird_day := -1
+var bee_day := -1
+var bee_flower := Vector3.ZERO
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -142,7 +144,7 @@ func _process(delta: float) -> void:
 	_drift_people(delta, world)
 	camera.nudge(delta)
 	if bees:
-		bees.tick(delta, Settings.reduce_motion, Clock.weather)
+		bees.tick(delta, Settings.reduce_motion, Clock.weather, bee_flower, bee_day == Clock.day)
 	if birds:
 		birds.tick(delta, Settings.reduce_motion, Clock.hour(), Clock.weather)
 	visual_timer += delta
@@ -439,7 +441,7 @@ func toast(text: String) -> void:
 func _ring_bells(world: Dictionary) -> void:
 	# ponytail: one quiet chime a day, and that chime carries one meadowbell seed.
 	var hour := Clock.hour()
-	if hour >= 21.0 or hour < 5.0:
+	if hour >= 21.0 or hour < 5.0 or Clock.weather == "rain":
 		return
 	var mature: Dictionary = world.get("mature", {})
 	if int(mature.get("meadowbell", 0)) < 3:
@@ -458,6 +460,11 @@ func _ring_bells(world: Dictionary) -> void:
 	bell_day = Clock.day
 	audio.play_kind("ring", -22.0)
 	var sown := soil.seed_from("meadowbell")
+	if sown != "":
+		bee_flower = soil.sown_at
+	else:
+		bee_flower = _average_plant("meadowbell")
+	bee_day = Clock.day
 	if sown != "":
 		toast("Bellhelp rings, very quietly. %s took the next bed." % str(ContentDB.plant(sown).get("name", "A plant")))
 		return
@@ -549,6 +556,8 @@ func to_state() -> Dictionary:
 		"loam_hours": loam_hours,
 		"bell_day": bell_day,
 		"bird_day": bird_day,
+		"bee_day": bee_day,
+		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -599,6 +608,10 @@ func apply_state(data: Dictionary) -> void:
 	loam_hours = float(data.get("loam_hours", 0.0))
 	bell_day = int(data.get("bell_day", -1))
 	bird_day = int(data.get("bird_day", -1))
+	bee_day = int(data.get("bee_day", -1))
+	var flower = data.get("bee_flower", [])
+	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
+		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -4038,11 +4051,24 @@ func _run_smoke() -> void:
 	bell = ecology.first("bellhelp")
 	bell.life = "visitor"
 	bell.leaving = false
+	Clock.weather = "rain"
 	_ring_bells(world_snapshot())
-	if bell_day != 1 or events.is_empty() or str(events[0]).find("rings") == -1 or str(events[0]).find("took the next bed") == -1 or events.size() != ring_notes + 1 or first_bed.plant_id != "meadowbell" or first_bed.growth > 0.3 or second_bed.plant_id != "" or soil.seeded != kept_seed or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != -1 or events.size() != ring_notes or first_bed.plant_id != "" or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the bell rang in the rain")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	_ring_bells(world_snapshot())
+	if bell_day != 1 or events.is_empty() or str(events[0]).find("rings") == -1 or str(events[0]).find("took the next bed") == -1 or events.size() != ring_notes + 1 or first_bed.plant_id != "meadowbell" or first_bed.growth > 0.3 or second_bed.plant_id != "" or soil.seeded != kept_seed or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or bee_day != 1 or bee_flower.distance_to(GardenLayout.cell_center(first_bed.ix, first_bed.iz)) > 0.2:
 		push_error("smoke: bellhelp stayed silent")
 		get_tree().quit(1)
 		return
+	bees.tick(0.8, false, "clear", bee_flower, true)
+	if bees.bodies[0].position.distance_to(bee_flower) > 1.2:
+		push_error("smoke: the bees stayed off the bell")
+		get_tree().quit(1)
+		return
+	bees.tick(0.0, true, "rain")
 	_ring_bells(world_snapshot())
 	if bell_day != 1 or events.size() != ring_notes + 1 or second_bed.plant_id != "" or soil.seeded != kept_seed:
 		push_error("smoke: bellhelp rang twice in a day")
@@ -4067,7 +4093,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	apply_state(SaveGame.read_slot(1))
-	if bell_day != 2 or first_bed.plant_id != "meadowbell" or second_bed.plant_id != "meadowbell" or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != 2 or bee_day != 2 or bee_flower.distance_to(GardenLayout.cell_center(second_bed.ix, second_bed.iz)) > 0.2 or first_bed.plant_id != "meadowbell" or second_bed.plant_id != "meadowbell" or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: the ring did not reload")
 		get_tree().quit(1)
 		return
