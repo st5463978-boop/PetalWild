@@ -5368,6 +5368,15 @@ func _meadow_hull(rows: Array[Transform3D], n: int) -> void:
 	_hull_drop(rows, 2.9, -5.35, 2.2, 1.45, n)
 	_hull_drop(rows, 2.9, 2.7, 2.2, 1.45, n + 1)
 	_hull_drop(rows, -8.0, 2.55, 2.2, 1.45, n + 2)
+	n += 3
+	# ponytail: scale stays under the path reach; a wider lip would cover the worn walks.
+	var x := -7.5
+	while x <= 2.6:
+		var swayn := sin(x * 1.3) * 0.05
+		_hull_drop(rows, x, 2.48 + swayn, 1.55, 1.45, n)
+		_hull_drop(rows, x, -5.28 + swayn, 1.55, 1.45, n + 1)
+		n += 2
+		x += 0.36
 
 func _hull_drop(rows: Array[Transform3D], x: float, z: float, scale: float, lift: float, n: int) -> void:
 	if GardenLayout.on_path(x, z) or GardenLayout.on_track(x, z):
