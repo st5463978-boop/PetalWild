@@ -717,6 +717,65 @@ func _run_smoke() -> void:
 		push_error("smoke: bram did not walk home")
 		get_tree().quit(1)
 		return
+	var shower_day := Clock.day
+	Clock.day = 1
+	Clock.set_hour(20.4)
+	if Clock.weather != "rain":
+		push_error("smoke: an odd night stayed dry")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(13.0)
+	if Clock.weather == "rain":
+		push_error("smoke: an odd afternoon rained")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(20.4)
+	if Clock.weather != "mist":
+		push_error("smoke: an even night rained")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(13.0)
+	if Clock.weather != "rain":
+		push_error("smoke: the even afternoon stayed dry")
+		get_tree().quit(1)
+		return
+	_apply_shift(false)
+	var shower_porch := GardenLayout.TEA + Vector3(0, 0, -1.15)
+	if shift != "rain" or _person("nessa").waypoints.size() != 1 or _person("nessa").waypoints[0].distance_to(shower_porch) > 0.3 or bram.waypoints[0].distance_to(GardenLayout.SHED) > 2.0:
+		push_error("smoke: the rain bell missed the tea house")
+		get_tree().quit(1)
+		return
+	var soaked := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		soaked["%d,%d" % [plot.ix, plot.iz]] = [plot.moisture, plot.growth, plot.wilt, plot.plant_id]
+	var rain_bed := soil.get_cell(0, 0)
+	rain_bed.moisture = 0.12
+	soil.tick(60.0, Clock.weather)
+	if rain_bed.moisture < 0.9:
+		push_error("smoke: the afternoon shower missed the bed")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = soaked["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the shower did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if Clock.day != 2 or Clock.weather != "rain" or absf(Clock.hour() - 13.0) > 0.05:
+		push_error("smoke: the shower did not reload")
+		get_tree().quit(1)
+		return
+	Clock.day = shower_day
+	Clock.set_hour(21.0)
+	_apply_shift(false)
 	var dry := soil.get_cell(2, 2)
 	dry.tilled = true
 	dry.moisture = 0.08
@@ -1856,14 +1915,22 @@ func _spawn_people() -> void:
 	_apply_shift(true)
 
 func _apply_shift(snap: bool) -> void:
-	# ponytail: Nessa's day round includes the tea house; a rain bell if daytime rain exists.
+	# ponytail: one porch for a shower; a loop of rooms if rain lasts the day.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 6.0
+	var shower := Clock.weather == "rain" and not night
 	var key := "day"
 	if night:
 		key = "night%d" % home_points.size()
+	elif shower:
+		key = "rain"
 	if key == shift and not snap:
 		return
 	shift = key
+	if shower:
+		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
+		_person("bram").set_route([GardenLayout.SHED + Vector3(1.1, 0, -0.6)], snap)
+		_person("nessa").set_route([GardenLayout.TEA + Vector3(0, 0, -1.15)], snap)
+		return
 	if night:
 		_person("lumen").set_route([GardenLayout.STALL + Vector3(0, 0, 0.95)], snap)
 		_person("bram").set_route([GardenLayout.SHED + Vector3(1.1, 0, -0.6)], snap)
