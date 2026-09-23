@@ -700,6 +700,31 @@ func _run_smoke() -> void:
 		push_error("smoke: the plots stayed apart")
 		get_tree().quit(1)
 		return
+	var bridge_n := 0
+	var bridge_bands: Array[Rect2] = [
+		Rect2(-7.25, -1.88, 4.25, 0.95).grow(0.1),
+		Rect2(-1.72, -1.88, 4.25, 0.95).grow(0.1),
+	]
+	for bloom_i in bed_blooms.size():
+		var bridge_multi := bed_blooms[bloom_i].multimesh
+		for bridge_i in bridge_multi.instance_count:
+			var bridge_at := bridge_multi.get_instance_transform(bridge_i).origin
+			var on_strip := false
+			for bridge_band in bridge_bands:
+				if bridge_band.has_point(Vector2(bridge_at.x, bridge_at.z)):
+					on_strip = true
+					break
+			if not on_strip:
+				continue
+			if GardenLayout.on_path(bridge_at.x, bridge_at.z) or GardenLayout.on_track(bridge_at.x, bridge_at.z):
+				push_error("smoke: a bridge bloom sat on the worn center")
+				get_tree().quit(1)
+				return
+			bridge_n += 1
+	if bridge_n < 180:
+		push_error("smoke: the bridge strips stayed thin")
+		get_tree().quit(1)
+		return
 	var lawn_node := get_node_or_null("LawnBlooms") as MultiMeshInstance3D
 	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 1320:
 		push_error("smoke: the parish lawn stayed a thin scatter")
@@ -4534,27 +4559,29 @@ func _bridge_lid(node_name: String, at: Vector3, size: Vector3) -> void:
 	add_child(node)
 
 func _bridge_into(buckets: Array) -> void:
+	# ponytail: tighter blooms on the two strips; the worn center stays the gap.
 	var bands: Array[Rect2] = [
 		Rect2(-7.25, -1.88, 4.25, 0.95),
 		Rect2(-1.72, -1.88, 4.25, 0.95),
 	]
 	var n := 0
 	for band in bands:
-		for iz in 3:
-			for ix in 8:
-				var x := band.position.x + (float(ix) + 0.5) * band.size.x / 8.0
-				var z := band.position.y + (float(iz) + 0.5) * band.size.y / 3.0
-				if GardenLayout.on_path(x, z):
-					continue
-				var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
-				var spin := float((ix * 3 + iz) % 5) * 0.5
-				var scale := 0.9 + float((ix + iz) % 3) * 0.12
-				var basis := Basis(Vector3.UP, spin).scaled(Vector3(scale, 1.0, scale))
-				buckets[0].append(Transform3D(basis, at))
-				if n % 2 == 0:
-					basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * scale)
-					buckets[1 + (ix + iz) % 4].append(Transform3D(basis, at + Vector3(0.08, 0.0, 0.06)))
-				n += 1
+		var x := band.position.x + 0.14
+		while x <= band.position.x + band.size.x - 0.14:
+			var z := band.position.y + 0.12
+			while z <= band.position.y + band.size.y - 0.12:
+				if not GardenLayout.on_path(x, z) and not GardenLayout.on_track(x, z):
+					var at := Vector3(x, GardenLayout.height_at(x, z) + 0.05, z)
+					var spin := float((n * 3) % 5) * 0.5
+					var leaf_scale := 0.95 + float(n % 3) * 0.12
+					var bloom_scale := 1.85 + float(n % 3) * 0.25
+					var basis := Basis(Vector3.UP, spin).scaled(Vector3(leaf_scale, 1.0, leaf_scale))
+					buckets[0].append(Transform3D(basis, at))
+					basis = Basis(Vector3.UP, spin).scaled(Vector3.ONE * bloom_scale)
+					buckets[1 + (n % 4)].append(Transform3D(basis, at + Vector3(0.06, 0.0, 0.04)))
+					n += 1
+				z += 0.22
+			x += 0.28
 
 func _bed_skirt(buckets: Array) -> void:
 	# ponytail: one wavy spill past the bed box; a third ring if the corners still read.
