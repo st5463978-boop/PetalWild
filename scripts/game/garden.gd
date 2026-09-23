@@ -433,6 +433,7 @@ func apply_state(data: Dictionary) -> void:
 		var point := Vector3(float(entry[0]), float(entry[1]), float(entry[2]))
 		scooped.append(point)
 		_add_scoop_mesh(point)
+	_grow_pond()
 	for entry in data.get("people", []):
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
@@ -640,6 +641,24 @@ func _run_smoke() -> void:
 		return
 	if ecology.status_line("bellhelp", world_snapshot()) != "back again":
 		push_error("smoke: journal did not say they were back")
+		get_tree().quit(1)
+		return
+	var pond := get_node("Pond") as MeshInstance3D
+	var span := pond.get_aabb().size.x
+	for i in 4:
+		var angle := TAU * float(i) / 4.0
+		var at := GardenLayout.POND_CENTER + Vector3(cos(angle), 0.0, sin(angle)) * (GardenLayout.POND_RADIUS + 0.5)
+		_scoop(at)
+	if scooped.size() < 4 or pond.get_aabb().size.x < span + 0.3:
+		push_error("smoke: the pond did not widen")
+		get_tree().quit(1)
+		return
+	for i in 3:
+		_force_plant(8, 5 + i, "reed", 1.0)
+	ecology.cooldowns["bulrush"] = 0.0
+	ecology.tick(0.2, world_snapshot())
+	if int(world_snapshot().get("pond_cells", 0)) < 26 or ecology.first("bulrush") == null:
+		push_error("smoke: bulrush did not wade in")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -912,6 +931,7 @@ func _scoop(point: Vector3) -> void:
 		return
 	scooped.append(point)
 	_add_scoop_mesh(point)
+	_grow_pond()
 	audio.play_kind("water")
 	toast("The pond takes another step. %d scoops." % scooped.size())
 
@@ -943,6 +963,13 @@ func _add_scoop_mesh(point: Vector3) -> void:
 	node.material_override = material
 	node.position = Vector3(point.x, -0.02, point.z)
 	scoop_root.add_child(node)
+
+func _grow_pond() -> void:
+	var pond := get_node_or_null("Pond") as MeshInstance3D
+	if pond == null:
+		return
+	var radius := GardenLayout.POND_RADIUS + float(scooped.size()) * 0.06
+	GardenDressing.resize_pond(pond, radius)
 
 func _place_home(point: Vector3, _saved := false) -> void:
 	var root := Node3D.new()

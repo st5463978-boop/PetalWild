@@ -31,7 +31,7 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 - Large text resizes the garden HUD without leaving the scene.
 - Sim LOD counters. Trust levels named 0–5. Only 0 and 1 can happen, and both stay in the game.
 - Off-screen jellies hide. A resident walks to the nearest placed home kit. A visitor keeps the flower. Back in frame, the body shows again.
-- By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home. The directory says which. Ask Bram and he walks the driest tilled bed and waters it. The potting shed is open. Its demand is 1 while he is here. When a creature arrives and Nessa is here, she walks to them and writes the name in the parish book. The journal hides a species name until that creature is sighted. A species that has already visited comes back as a repeat, and the journal says they are back again. A planted meadowbell is three bells on a leaf pad, and every crop sits in a ring of eight leaves.
+- By day Lumen keeps the stall, Bram walks the plots, and Nessa watches the gate. After dusk they walk home. The directory says which. Ask Bram and he walks the driest tilled bed and waters it. The potting shed is open. Its demand is 1 while he is here. When a creature arrives and Nessa is here, she walks to them and writes the name in the parish book. The journal hides a species name until that creature is sighted. A species that has already visited comes back as a repeat, and the journal says they are back again. Scooping the bank widens the pond. Bulrush wades in once that water and three mature reeds are there. A planted meadowbell is three bells on a leaf pad, and every crop sits in a ring of eight leaves.
 
 ## Broken or not built
 

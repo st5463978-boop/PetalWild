@@ -75,14 +75,24 @@ func _vert(tool: SurfaceTool, x: float, z: float) -> void:
 	tool.add_vertex(Vector3(x, y, z))
 
 func _water(parent: Node3D) -> void:
+	var node := MeshInstance3D.new()
+	var material := ShaderMaterial.new()
+	material.shader = load("res://shaders/water.gdshader")
+	node.material_override = material
+	node.name = "Pond"
+	parent.add_child(node)
+	resize_pond(node, GardenLayout.POND_RADIUS)
+
+static func resize_pond(node: MeshInstance3D, radius: float) -> void:
+	# ponytail: a flat disc; a bowl mesh if the bank needs a real shore.
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rings := 14
 	var segments := 28
 	for ring in rings:
 		for seg in segments:
-			var r0 := GardenLayout.POND_RADIUS * float(ring) / float(rings)
-			var r1 := GardenLayout.POND_RADIUS * float(ring + 1) / float(rings)
+			var r0 := radius * float(ring) / float(rings)
+			var r1 := radius * float(ring + 1) / float(rings)
 			var a0 := TAU * float(seg) / float(segments)
 			var a1 := TAU * float(seg + 1) / float(segments)
 			_water_vert(tool, r0, a0)
@@ -91,16 +101,9 @@ func _water(parent: Node3D) -> void:
 			_water_vert(tool, r0, a0)
 			_water_vert(tool, r1, a1)
 			_water_vert(tool, r0, a1)
-	var mesh := tool.commit()
-	var node := MeshInstance3D.new()
-	node.mesh = mesh
-	var material := ShaderMaterial.new()
-	material.shader = load("res://shaders/water.gdshader")
-	node.material_override = material
-	node.name = "Pond"
-	parent.add_child(node)
+	node.mesh = tool.commit()
 
-func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
+static func _water_vert(tool: SurfaceTool, radius: float, angle: float) -> void:
 	var center := GardenLayout.POND_CENTER
 	var x := center.x + cos(angle) * radius
 	var z := center.z + sin(angle) * radius
