@@ -24,6 +24,8 @@ func all() -> Array:
 func tick(game_minutes: float, weather: String) -> Array:
 	var hours := game_minutes / 60.0
 	var raining := weather == "rain"
+	# ponytail: mist and a golden afternoon hold the water already there; a clear hour still dries it.
+	var holding := weather == "mist" or weather == "golden"
 	var died: Array = []
 	seeded = ""
 	for cell in all():
@@ -31,8 +33,7 @@ func tick(game_minutes: float, weather: String) -> Array:
 		var before := soil.moisture
 		if raining:
 			soil.moisture = minf(1.0, soil.moisture + hours * 0.95)
-		elif weather != "mist":
-			# ponytail: mist holds the water already in the bed; a drink if the fog should water.
+		elif not holding:
 			soil.moisture = maxf(0.04, soil.moisture - hours * 0.22)
 		if soil.plant_id == "":
 			# ponytail: a clear hour returns a little feed; rain, mist, and golden leave a bare bed.

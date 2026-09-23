@@ -1099,6 +1099,38 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain fed the empty bed")
 		get_tree().quit(1)
 		return
+	fallow.plant_id = ""
+	fallow.tilled = true
+	fallow.moisture = 0.5
+	soil.tick(60.0, "golden")
+	if absf(fallow.moisture - 0.5) > 0.001:
+		push_error("smoke: the golden afternoon dried the empty bed")
+		get_tree().quit(1)
+		return
+	fallow.plant_id = "meadowbell"
+	fallow.growth = 0.4
+	fallow.moisture = 0.8
+	fallow.fertility = 0.4
+	fallow.wilt = 0.0
+	soil.tick(60.0, "golden")
+	if absf(fallow.moisture - 0.8) > 0.001:
+		push_error("smoke: the golden afternoon dried a living bed")
+		get_tree().quit(1)
+		return
+	fallow.plant_id = ""
+	fallow.growth = 0.0
+	fallow.moisture = 0.5
+	soil.tick(60.0, "clear")
+	if fallow.moisture > 0.32 or fallow.moisture < 0.24:
+		push_error("smoke: a clear hour left the empty bed wet")
+		get_tree().quit(1)
+		return
+	fallow.moisture = 0.44
+	soil.tick(60.0, "mist")
+	if absf(fallow.moisture - 0.44) > 0.001:
+		push_error("smoke: the mist changed the water it was holding")
+		get_tree().quit(1)
+		return
 	var grass := soil.get_cell(6, 3)
 	grass.tilled = false
 	grass.plant_id = ""
