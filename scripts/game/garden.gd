@@ -741,8 +741,8 @@ func _run_smoke() -> void:
 		return
 	var bridge_n := 0
 	var bridge_bands: Array[Rect2] = [
-		Rect2(-7.25, -1.88, 4.25, 0.95).grow(0.1),
-		Rect2(-1.72, -1.88, 4.25, 0.95).grow(0.1),
+		Rect2(-7.25, -2.62, 4.25, 2.4),
+		Rect2(-1.72, -2.62, 4.07, 2.4),
 	]
 	for bloom_i in bed_blooms.size():
 		var bridge_multi := bed_blooms[bloom_i].multimesh
@@ -5080,19 +5080,29 @@ func _bridge_lids() -> void:
 	_bridge_lid("BedBridgeEast", Vector3(0.42, 0.055, -1.4), Vector3(4.2, 0.03, 0.95))
 
 func _bridge_lid(node_name: String, at: Vector3, size: Vector3) -> void:
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	var node := MeshInstance3D.new()
-	node.name = node_name
-	node.mesh = mesh
-	node.position = at
+	# ponytail: short planks on the sine; one mesh again if the strip has to read as a board.
+	var root := Node3D.new()
+	root.name = node_name
+	add_child(root)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color("#1c3420")
 	material.roughness = 0.96
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	node.material_override = material
-	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(node)
+	var x0 := at.x - size.x * 0.5
+	var i := 0
+	while float(i) * 0.42 < size.x - 0.05:
+		if i % 3 != 2:
+			var mid := x0 + float(i) * 0.42 + 0.21
+			var wave := sin(mid * 1.7) * 0.72
+			var mesh := BoxMesh.new()
+			mesh.size = Vector3(0.3, size.y, size.z * 0.62)
+			var node := MeshInstance3D.new()
+			node.mesh = mesh
+			node.position = Vector3(mid, at.y, at.z + wave)
+			node.material_override = material
+			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(node)
+		i += 1
 
 func _bridge_into(buckets: Array) -> void:
 	# ponytail: tighter blooms on the two strips; the worn center stays the gap.
@@ -5108,7 +5118,13 @@ func _bridge_into(buckets: Array) -> void:
 			while z <= band.position.y + band.size.y - 0.12:
 				if not GardenLayout.on_path(x, z) and not GardenLayout.on_track(x, z):
 					var spot := _bridge_spot(x, z, n, band)
-					var at := Vector3(spot.x, GardenLayout.height_at(spot.x, spot.y) + 0.05, spot.y)
+					var wave := sin(spot.x * 1.7) * 0.72
+					var zz := spot.y + wave
+					if GardenLayout.on_path(spot.x, zz) or GardenLayout.on_track(spot.x, zz):
+						zz = spot.y
+					if GardenLayout.pond_distance(spot.x, zz) < GardenLayout.POND_RADIUS:
+						zz = spot.y
+					var at := Vector3(spot.x, GardenLayout.height_at(spot.x, zz) + 0.05, zz)
 					var spin := float((n * 3) % 5) * 0.5
 					var leaf_scale := 0.95 + float(n % 3) * 0.12
 					var bloom_scale := 1.85 + float(n % 3) * 0.25
