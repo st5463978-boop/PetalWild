@@ -825,6 +825,14 @@ func _run_smoke() -> void:
 		push_error("smoke: bellhelp did not breed")
 		get_tree().quit(1)
 		return
+	var saw_pair := false
+	for row in _journal_rows(world_snapshot()):
+		if str(row.get("status", "")) == "breeding" and str(row.get("romance", "")).find("pair") != -1:
+			saw_pair = true
+	if not saw_pair:
+		push_error("smoke: journal hid the pair")
+		get_tree().quit(1)
+		return
 	if int(ecology.resident_counts().get("bellhelp", 0)) < 2:
 		push_error("smoke: bellhelp pair is short")
 		get_tree().quit(1)
@@ -873,6 +881,35 @@ func _run_smoke() -> void:
 		push_error("smoke: the reloaded pair stayed apart")
 		get_tree().quit(1)
 		return
+	var behind: Vector3 = camera.global_position + camera.global_transform.basis.z * 8.0
+	behind.y = 0.0
+	lead.global_position = behind + Vector3(-5.0, 0.0, 0.0)
+	mate.global_position = behind + Vector3(5.0, 0.0, 0.0)
+	var lead_kit := lead.global_position + Vector3(0.0, 0.0, 0.4)
+	var mate_kit := mate.global_position + Vector3(0.0, 0.0, 0.4)
+	home_points.append(lead_kit)
+	home_points.append(mate_kit)
+	var split := mate.global_position.distance_to(lead.global_position)
+	_update_creatures(0.016)
+	if not lead.use_berth or not mate.use_berth or lead.berth.distance_to(mate.berth) > 0.05:
+		push_error("smoke: the pair did not share a home")
+		get_tree().quit(1)
+		return
+	if lead.berth.distance_to(lead_kit) > 0.05:
+		push_error("smoke: the shared home left the first resident")
+		get_tree().quit(1)
+		return
+	mate._process(2.0)
+	if mate.global_position.distance_to(lead.global_position) > split - 0.8:
+		push_error("smoke: the pair did not walk home together")
+		get_tree().quit(1)
+		return
+	home_points.pop_back()
+	home_points.pop_back()
+	lead.use_berth = false
+	mate.use_berth = false
+	lead.global_position = Vector3(-3.2, 0.0, -1.6)
+	mate.global_position = Vector3(-3.2, 0.0, 1.6)
 	ecology.cooldowns["cirlark"] = 0.0
 	ecology.tick(0.2, world_snapshot())
 	if ecology.first("cirlark") == null:
@@ -1790,24 +1827,28 @@ func _update_creatures(delta: float) -> void:
 				tier = 3
 		jelly.use_berth = false
 		if tier >= 3 and resident and not jelly.leaving and not home_points.is_empty():
-			var berth: Vector3 = home_points[0]
-			var best := jelly.global_position.distance_squared_to(berth)
-			for point in home_points:
-				var dist := jelly.global_position.distance_squared_to(point)
-				if dist < best:
-					best = dist
-					berth = point
-			jelly.berth = berth
+			jelly.berth = _nearest_home(jelly.global_position)
 			jelly.use_berth = true
 		jelly.tier = tier
 	_keep_company()
 
+func _nearest_home(at: Vector3) -> Vector3:
+	var berth: Vector3 = home_points[0]
+	var best := at.distance_squared_to(berth)
+	for point in home_points:
+		var dist := at.distance_squared_to(point)
+		if dist < best:
+			best = dist
+			berth = point
+	return berth
+
 func _keep_company() -> void:
-	# ponytail: the later resident walks to the first; a ring if more than two settle.
+	# ponytail: one shared kit for a breeding pair; a ring of homes if a parish keeps more than two.
 	for id in ContentDB.species_order:
 		if ecology.rules.rank_of(str(ecology.states.get(id, ""))) < ecology.rules.rank_of("breeding"):
 			continue
 		var anchor: Jelly = null
+		var shared := Vector3.ZERO
 		for actor in ecology.actors:
 			var jelly: Jelly = actor
 			if not is_instance_valid(jelly) or jelly.species_id != id:
@@ -1818,6 +1859,11 @@ func _keep_company() -> void:
 				continue
 			if anchor == null:
 				anchor = jelly
+				if not home_points.is_empty():
+					shared = _nearest_home(anchor.global_position)
+				continue
+			if jelly.use_berth and not home_points.is_empty():
+				jelly.berth = shared
 				continue
 			if jelly.use_berth:
 				continue
@@ -1978,13 +2024,19 @@ func _journal_rows(world: Dictionary) -> Array:
 		if not known:
 			met = _without_hidden_names(met)
 			unmet = _without_hidden_names(unmet)
+		var status := ecology.status_line(id, world)
+		var romance := ""
+		if known:
+			romance = ecology.rules.romance_label(definition)
+		if status == "breeding":
+			romance = "A pair in the parish"
 		rows.append({
 			"name": definition.get("name", id) if known else "A rumour",
-			"status": ecology.status_line(id, world),
+			"status": status,
 			"met": met,
 			"unmet": unmet,
 			"blurb": definition.get("blurb", "") if known else "Not sighted yet.",
-			"romance": ecology.rules.romance_label(definition) if known else "",
+			"romance": romance,
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
 		})

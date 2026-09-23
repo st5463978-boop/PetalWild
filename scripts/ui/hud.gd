@@ -484,6 +484,8 @@ func _species_card(row: Dictionary) -> PanelContainer:
 		var ready: bool = row.get("romance_met", false)
 		var residents := int(row.get("residents", 0))
 		var text := "Romance  ·  %s" % romance if ready else "Romance conditions unmet  ·  %s" % romance
+		if str(row.get("status", "")) == "breeding":
+			text = romance
 		box.add_child(ThemeKit.label("%s   (%d residents)" % [text, residents], 13))
 	return card
 
