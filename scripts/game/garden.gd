@@ -17,6 +17,7 @@ var home_points: Array = []
 var shift := ""
 var bram_bed := Vector2i(-1, -1)
 var nessa_watch: Jelly = null
+var nessa_filing := false
 var scooped: Array[Vector3] = []
 var scoop_root: Node3D
 var home_root: Node3D
@@ -257,11 +258,24 @@ func accept_lumen() -> void:
 	_person("lumen").say("The tray is wrapped. The tin is lighter.")
 	refresh_panels()
 
-func accept_nessa() -> void:
+func _file_nessa() -> void:
 	Trust.file_notes("nessa", "Pollinator notes filed in the parish book. No external action.")
 	toast("Nessa filed the notes. Nothing left the garden.")
 	if _person("nessa").present:
 		_person("nessa").say("Filed. The book stays on the shelf.")
+	refresh_panels()
+
+func accept_nessa() -> void:
+	var nessa := _person("nessa")
+	if not nessa.present:
+		_file_nessa()
+		return
+	# ponytail: the walk is not in the save; the filed audit is. Bram's bed is the same.
+	nessa_filing = true
+	nessa_watch = null
+	nessa.chore = GardenLayout.HUT + Vector3(0, 0, -1.05)
+	nessa.has_chore = true
+	nessa.say("I will file these at the hut.")
 	refresh_panels()
 
 func quick_save() -> void:
@@ -804,6 +818,38 @@ func _run_smoke() -> void:
 	nessa._process(6.0)
 	if nessa.global_position.distance_to(porch) > tea_far - 0.8:
 		push_error("smoke: nessa did not walk to the tea house")
+		get_tree().quit(1)
+		return
+	if int(place.get("hut_demand", -1)) != 0 or Trust.level("nessa") != 0:
+		push_error("smoke: hut demand before the notes")
+		get_tree().quit(1)
+		return
+	accept_nessa()
+	var shelf := GardenLayout.HUT + Vector3(0, 0, -1.05)
+	if not nessa_filing or not nessa.has_chore or nessa.chore.distance_to(shelf) > 0.3:
+		push_error("smoke: nessa did not head for the hut")
+		get_tree().quit(1)
+		return
+	nessa.global_position = nessa.chore
+	_drift_people(0.1, world_snapshot())
+	var filed: Dictionary = Trust.audit[Trust.audit.size() - 1] if not Trust.audit.is_empty() else {}
+	if Trust.level("nessa") != 1 or nessa_filing or str(filed.get("action", "")) != "file_parish_notes" or bool(filed.get("external", false)):
+		push_error("smoke: the hut notes left the parish")
+		get_tree().quit(1)
+		return
+	place = _place_stats(world_snapshot())
+	if int(place.get("hut_demand", -1)) != 1:
+		push_error("smoke: hut demand mismatch")
+		get_tree().quit(1)
+		return
+	var saw_hut := false
+	for line in place.get("venues", []):
+		if str(line).find("Research Hut") != -1 and str(line).find("open") != -1:
+			saw_hut = true
+		if str(line).find("Research Hut") != -1 and str(line).find("not built") != -1:
+			saw_hut = false
+	if not saw_hut:
+		push_error("smoke: research hut was not open")
 		get_tree().quit(1)
 		return
 	print("PETAL_SMOKE_OK")
@@ -1465,16 +1511,23 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 	bram.purpose = move_toward(bram.purpose, clampf(float(world.get("garden_quality", 0.3)) + 0.2, 0.2, 0.9), delta * 0.03)
 	var nessa := _person("nessa")
 	if nessa.present and nessa.has_chore:
-		if nessa_watch != null and is_instance_valid(nessa_watch):
-			nessa.chore = nessa_watch.global_position
-		if nessa.global_position.distance_to(nessa.chore) < 0.55:
-			var noted := "someone"
+		if nessa_filing:
+			if nessa.global_position.distance_to(nessa.chore) < 0.55:
+				_file_nessa()
+				nessa_filing = false
+				nessa.has_chore = false
+				nessa_watch = null
+		else:
 			if nessa_watch != null and is_instance_valid(nessa_watch):
-				noted = nessa_watch.display_name
-			nessa.has_chore = false
-			nessa_watch = null
-			nessa.say("Noted. %s is in the parish book." % noted)
-			toast("Nessa wrote %s into the parish book." % noted)
+				nessa.chore = nessa_watch.global_position
+			if nessa.global_position.distance_to(nessa.chore) < 0.55:
+				var noted := "someone"
+				if nessa_watch != null and is_instance_valid(nessa_watch):
+					noted = nessa_watch.display_name
+				nessa.has_chore = false
+				nessa_watch = null
+				nessa.say("Noted. %s is in the parish book." % noted)
+				toast("Nessa wrote %s into the parish book." % noted)
 	if nessa.present:
 		nessa.belonging = move_toward(nessa.belonging, 0.75 if ecology.resident_total() > 0 else 0.4, delta * 0.03)
 		nessa.purpose = move_toward(nessa.purpose, 0.8, delta * 0.02)
@@ -1566,11 +1619,12 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["stall_demand"] = _present_people() + ecology.resident_total()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
+	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
 	var venue_lines: Array[String] = []
 	for id in ContentDB.venues.keys():
 		var venue: Dictionary = ContentDB.venues[id]
-		# ponytail: this garden has the tea house mesh; the shared file stays inactive so the sidelined grove does not claim it.
-		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" else "not built"
+		# ponytail: this garden has the tea house and the hut; the shared file stays inactive so the sidelined grove does not claim them.
+		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
