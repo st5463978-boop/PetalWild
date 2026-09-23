@@ -258,6 +258,19 @@ func _stall_open() -> bool:
 	var h := Clock.hour()
 	return h >= 5.0 and h < 19.5
 
+func _lane_passers() -> int:
+	# ponytail: ripe beds are the only reason to walk the lane; a crowd if the town keeps its own clock.
+	if not _stall_open():
+		return 0
+	if Clock.weather != "clear" and Clock.weather != "golden":
+		return 0
+	var ripe := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "" and plot.growth >= 1.0:
+			ripe += 1
+	return ripe
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -4804,6 +4817,55 @@ func _run_smoke() -> void:
 		push_error("smoke: the golden afternoon lit the path lanterns")
 		get_tree().quit(1)
 		return
+	var lane_bed: SoilCell = soil.get_cell(3, 3)
+	var lane_id := lane_bed.plant_id
+	var lane_growth := lane_bed.growth
+	var lane_taken := lane_bed.taken
+	lane_bed.plant_id = ""
+	lane_bed.growth = 0.0
+	lane_bed.taken = false
+	var lane_before := _lane_passers()
+	lane_bed.plant_id = "peach"
+	lane_bed.growth = 1.0
+	var lane_stats := _place_stats(world_snapshot())
+	var park: Dictionary = ContentDB.venues.get("grove_park", {})
+	if _lane_passers() != lane_before + 1 or int(lane_stats.get("lane_passers", -1)) != lane_before + 1 or bool(park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: a golden afternoon ignored a ripe bed on the lane")
+		get_tree().quit(1)
+		return
+	lane_bed.growth = 0.4
+	if _lane_passers() != lane_before:
+		push_error("smoke: a short bed counted on the lane")
+		get_tree().quit(1)
+		return
+	lane_bed.growth = 1.0
+	Clock.day = 2
+	Clock.set_hour(15.0)
+	_lamps()
+	if Clock.weather != "rain" or _lane_passers() != 0 or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the rain counted the lane or lit the lanterns")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(20.4)
+	if _lane_passers() != 0:
+		push_error("smoke: the night counted the lane")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	if Clock.weather != "clear" or _lane_passers() != lane_before + 1:
+		push_error("smoke: a clear hour ignored a ripe bed on the lane")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(17.2)
+	if Clock.weather != "mist" or _lane_passers() != 0:
+		push_error("smoke: the mist counted the lane")
+		get_tree().quit(1)
+		return
+	lane_bed.plant_id = lane_id
+	lane_bed.growth = lane_growth
+	lane_bed.taken = lane_taken
 	Clock.day = lamp_day
 	Clock.set_hour(lamp_hour)
 	_lamps()
@@ -7639,6 +7701,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
 	stats["stall_demand"] = _present_people() + ecology.resident_total()
+	stats["lane_passers"] = _lane_passers()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
