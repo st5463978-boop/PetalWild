@@ -736,6 +736,20 @@ func _run_smoke() -> void:
 		push_error("smoke: bram did not water the bed")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(15.3)
+	bram.has_chore = false
+	var thirsty := soil.get_cell(4, 2)
+	thirsty.tilled = true
+	thirsty.moisture = 0.05
+	_drift_people(0.1, world_snapshot())
+	if not bram.has_chore or bram_bed != Vector2i(4, 2):
+		push_error("smoke: bram waited to be asked")
+		get_tree().quit(1)
+		return
+	bram.has_chore = false
+	bram_bed = Vector2i(-1, -1)
+	thirsty.moisture = 0.74
+	Clock.set_hour(21.0)
 	var place := _place_stats(world_snapshot())
 	if int(place.get("shed_demand", -1)) != 1:
 		push_error("smoke: shed demand mismatch")
@@ -2111,7 +2125,30 @@ func _ask_bram() -> void:
 	bram_bed = Vector2i(driest.ix, driest.iz)
 	bram.say("That bed is thirsty. I will walk it.")
 
+func _notice_thirst() -> void:
+	# ponytail: the driest bed under the water line; a round of the frames if several dry at once.
+	var bram := _person("bram")
+	if bram == null or not bram.present or bram.has_chore:
+		return
+	var hour := Clock.hour()
+	if hour >= 19.5 or hour < 6.0:
+		return
+	var driest: SoilCell = null
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if not plot.tilled or plot.moisture >= 0.38:
+			continue
+		if driest == null or plot.moisture < driest.moisture:
+			driest = plot
+	if driest == null:
+		return
+	bram.chore = GardenLayout.cell_center(driest.ix, driest.iz)
+	bram.has_chore = true
+	bram_bed = Vector2i(driest.ix, driest.iz)
+	bram.say("That bed is thirsty. I will walk it.")
+
 func _drift_people(delta: float, world: Dictionary) -> void:
+	_notice_thirst()
 	var lumen := _person("lumen")
 	var bram := _person("bram")
 	if bram.has_chore and bram_bed.x >= 0 and bram.global_position.distance_to(bram.chore) < 0.35:
