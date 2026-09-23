@@ -18,6 +18,7 @@ var attract := Vector3.ZERO
 var berth := Vector3.ZERO
 var use_berth := false
 var site_time := 0.0
+var bite_wait := 2.0
 var leaving := false
 var squash := 1.0
 var ripple := 0.0
@@ -445,5 +446,6 @@ func to_state() -> Dictionary:
 		"bond": bond,
 		"mood": mood,
 		"site_time": site_time,
+		"bite_wait": bite_wait,
 		"position": [global_position.x, global_position.y, global_position.z],
 	}

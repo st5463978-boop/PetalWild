@@ -113,6 +113,7 @@ func _process(delta: float) -> void:
 	var minutes := delta * Clock.scale if Clock.running else 0.0
 	if minutes > 0.0:
 		soil.tick(minutes, Clock.weather)
+		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
 	_wire_jellies()
@@ -1238,6 +1239,27 @@ func _run_smoke() -> void:
 		push_error("smoke: the bond did not reload")
 		get_tree().quit(1)
 		return
+	_force_plant(1, 1, "meadowbell", 1.0)
+	var bite_plot := soil.get_cell(1, 1)
+	hand.global_position = GardenLayout.cell_center(1, 1)
+	hand.bite_wait = 0.0
+	var ripe := int(world_snapshot()["mature"].get("meadowbell", 0))
+	_browse(0.1)
+	if bite_plot.growth > 0.6 or hand.bite_wait < 3.0 or int(world_snapshot()["mature"].get("meadowbell", 0)) >= ripe:
+		push_error("smoke: the resident did not bite")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the bite did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	hand = ecology.first("bellhelp")
+	bite_plot = soil.get_cell(1, 1)
+	if hand == null or bite_plot.growth > 0.6 or hand.bite_wait < 3.0:
+		push_error("smoke: the bite did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -2152,6 +2174,49 @@ func _apply_soil_effect(effect: Dictionary) -> int:
 	var count := soil.apply_chem(str(effect.get("chem", "nightloam")), int(effect.get("count", 4)))
 	_refresh_soil_colors()
 	return count
+
+func _browse(hours: float) -> void:
+	# ponytail: one ripe plant per resident; a diet if a species keeps two crops.
+	if hours <= 0.0 or Clock.hour() >= 21.0 or Clock.hour() < 5.0:
+		return
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or jelly.held or jelly.leaving:
+			continue
+		if ecology.rules.rank_of(jelly.life) < ecology.rules.rank_of("resident"):
+			continue
+		jelly.bite_wait = maxf(0.0, jelly.bite_wait - hours)
+		if jelly.bite_wait > 0.0:
+			continue
+		var plant_id := _feed_plant(jelly.species_id)
+		if plant_id == "":
+			continue
+		var plot := _ripe_near(jelly.global_position, plant_id)
+		if plot == null:
+			continue
+		plot.growth = 0.55
+		jelly.bite_wait = 4.0
+		toast("%s takes a bite." % jelly.display_name)
+
+func _feed_plant(species_id: String) -> String:
+	for req in ContentDB.species_def(species_id).get("requirements", []):
+		if str(req.get("type", "")) == "mature_plant":
+			return str(req.get("plant", ""))
+	return ""
+
+func _ripe_near(at: Vector3, plant_id: String) -> SoilCell:
+	var best: SoilCell = null
+	var best_d := 1.6
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != plant_id or plot.growth < 1.0:
+			continue
+		var center := GardenLayout.cell_center(plot.ix, plot.iz)
+		var dist := Vector2(at.x - center.x, at.z - center.z).length()
+		if dist < best_d:
+			best_d = dist
+			best = plot
+	return best
 
 func _attractor_for(definition: Dictionary) -> Vector3:
 	for req in definition.get("requirements", []):

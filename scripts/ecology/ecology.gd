@@ -237,6 +237,7 @@ func apply_state(data: Dictionary) -> void:
 		jelly.bond = float(entry.get("bond", 0.1))
 		jelly.mood = str(entry.get("mood", "content"))
 		jelly.site_time = float(entry.get("site_time", 0.0))
+		jelly.bite_wait = float(entry.get("bite_wait", 2.0))
 		var pos = entry.get("position", [0, 0, 0])
 		jelly.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
 		jelly.attract = jelly.global_position
