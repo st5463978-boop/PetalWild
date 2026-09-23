@@ -4591,6 +4591,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	var lamp_hour := Clock.hour()
+	var lamp_day := Clock.day
 	var lamp_light := get_tree().get_first_node_in_group("parish_lantern") as OmniLight3D
 	var stall_lamp := get_tree().get_first_node_in_group("parish_stall_lamp") as OmniLight3D
 	if lamp_light == null:
@@ -4637,6 +4638,21 @@ func _run_smoke() -> void:
 		push_error("smoke: the shut stall left the awning warm")
 		get_tree().quit(1)
 		return
+	Clock.day = 2
+	Clock.set_hour(17.2)
+	_lamps()
+	if Clock.weather != "mist" or lamp_light.light_energy < 0.9 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the mist left the path lanterns dim")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	_lamps()
+	if Clock.weather != "golden" or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the golden afternoon lit the path lanterns")
+		get_tree().quit(1)
+		return
+	Clock.day = lamp_day
 	Clock.set_hour(lamp_hour)
 	_lamps()
 	print("PETAL_SMOKE_OK")
@@ -4687,10 +4703,11 @@ func _rooms_awake() -> bool:
 	return true
 
 func _lamps() -> void:
-	# ponytail: path lamps take the parish night; a mist glow if the fog should light them.
+	# ponytail: path lamps take the night and the mist; a second schedule if the rain should light them too.
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
-	var energy := 1.05 if night else 0.35
-	var glow := 1.05 if night else 0.4
+	var lit := night or Clock.weather == "mist"
+	var energy := 1.05 if lit else 0.35
+	var glow := 1.05 if lit else 0.4
 	for node in get_tree().get_nodes_in_group("parish_lantern"):
 		var lamp := node as OmniLight3D
 		if lamp:
