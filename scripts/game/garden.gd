@@ -701,7 +701,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	var lawn_node := get_node_or_null("LawnBlooms") as MultiMeshInstance3D
-	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 900:
+	if lawn_node == null or lawn_node.multimesh == null or lawn_node.multimesh.instance_count < 1200:
 		push_error("smoke: the parish lawn stayed a thin scatter")
 		get_tree().quit(1)
 		return

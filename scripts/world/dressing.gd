@@ -1233,6 +1233,36 @@ func _lawn_meadow(parent: Node3D) -> void:
 			var bscale := rng.randf_range(0.9, 1.35)
 			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
 			bloom_colors.append(tint)
+	# ponytail: tighter blooms on the west margin; a north grid if that apron still reads flat.
+	var gx := -11.2
+	while gx <= -7.75:
+		var gz := -5.6
+		while gz <= 5.0:
+			var jx := gx + rng.randf_range(-0.08, 0.08)
+			var jz := gz + rng.randf_range(-0.08, 0.08)
+			var gy := GardenLayout.height_at(jx, jz)
+			var west_room := false
+			if gy < -0.08 or gy > 0.4:
+				west_room = true
+			elif GardenLayout.in_plots(jx, jz, 0.15) or GardenLayout.on_path(jx, jz):
+				west_room = true
+			elif GardenLayout.pond_distance(jx, jz) < GardenLayout.POND_RADIUS + 0.45:
+				west_room = true
+			elif Vector2(jx - GardenLayout.SHED.x, jz - GardenLayout.SHED.z).length() < 1.5:
+				west_room = true
+			else:
+				for room in rooms:
+					if Vector2(jx - room.x, jz - room.z).length() < 1.2:
+						west_room = true
+						break
+			if not west_room:
+				var west_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
+				var west_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
+				var west_scale := rng.randf_range(0.95, 1.4)
+				blooms.append(Transform3D(west_basis.scaled(Vector3.ONE * west_scale), Vector3(jx, gy, jz)))
+				bloom_colors.append(west_tint)
+			gz += 0.38
+		gx += 0.38
 	_multimesh(parent, _blade(), points, colors, _foliage_material(), "LawnMeadow", false, customs)
 	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
