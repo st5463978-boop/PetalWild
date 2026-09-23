@@ -750,6 +750,26 @@ func _run_smoke() -> void:
 	bram.has_chore = false
 	bram_bed = Vector2i(-1, -1)
 	thirsty.moisture = 0.74
+	var held_water := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		held_water["%d,%d" % [plot.ix, plot.iz]] = plot.moisture
+		if plot.tilled:
+			plot.moisture = 0.8
+	thirsty.plant_id = "reed"
+	thirsty.moisture = 0.45
+	_drift_people(0.1, world_snapshot())
+	if not bram.has_chore or bram_bed != Vector2i(4, 2):
+		push_error("smoke: bram missed a wilting reed")
+		get_tree().quit(1)
+		return
+	bram.has_chore = false
+	bram_bed = Vector2i(-1, -1)
+	thirsty.plant_id = ""
+	thirsty.growth = 0.0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		plot.moisture = float(held_water["%d,%d" % [plot.ix, plot.iz]])
 	Clock.set_hour(21.0)
 	var place := _place_stats(world_snapshot())
 	if int(place.get("shed_demand", -1)) != 1:
@@ -2359,7 +2379,12 @@ func _notice_thirst() -> void:
 	var driest: SoilCell = null
 	for cell in soil.all():
 		var plot: SoilCell = cell
-		if not plot.tilled or plot.moisture >= 0.38:
+		if not plot.tilled:
+			continue
+		var line := 0.38
+		if plot.plant_id != "":
+			line = float(ContentDB.plant(plot.plant_id).get("water_need", 0.38))
+		if plot.moisture >= line:
 			continue
 		if driest == null or plot.moisture < driest.moisture:
 			driest = plot
