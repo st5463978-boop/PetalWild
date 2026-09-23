@@ -60,6 +60,8 @@ func tick(game_minutes: float, weather: String) -> Array:
 		if chem_need != "" and soil.chem != chem_need:
 			continue
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
+		# ponytail: a living crop tires the bed; a slower season if he should come less often.
+		soil.fertility = maxf(0.04, soil.fertility - hours * 0.03)
 	if raining:
 		seed_rain = minf(0.5, seed_rain + hours)
 		# ponytail: one ripe plant seeds one tilled neighbor per half-hour of rain; a scatter if a shower should fill the row.

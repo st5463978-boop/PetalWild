@@ -19,6 +19,7 @@ var structures := {"home_kit": 0}
 var home_points: Array = []
 var shift := ""
 var bram_bed := Vector2i(-1, -1)
+var bram_feeding := false
 var nessa_watch: Jelly = null
 var nessa_filing := false
 var nessa_drafting := false
@@ -473,6 +474,7 @@ func to_state() -> Dictionary:
 		"events": events.slice(0, 20),
 		"gossip_done": gossip_done,
 		"bram_bed": [bram_bed.x, bram_bed.y],
+		"bram_feeding": bram_feeding,
 		"nessa_filing": nessa_filing,
 		"nessa_drafting": nessa_drafting,
 		"nessa_farewell": nessa_farewell,
@@ -516,6 +518,7 @@ func apply_state(data: Dictionary) -> void:
 	var bed = data.get("bram_bed", [])
 	if typeof(bed) == TYPE_ARRAY and bed.size() == 2:
 		bram_bed = Vector2i(int(bed[0]), int(bed[1]))
+	bram_feeding = bool(data.get("bram_feeding", false))
 	nessa_filing = bool(data.get("nessa_filing", false))
 	nessa_drafting = bool(data.get("nessa_drafting", false))
 	nessa_farewell = bool(data.get("nessa_farewell", false))
@@ -997,6 +1000,84 @@ func _run_smoke() -> void:
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.moisture = float(held_water["%d,%d" % [plot.ix, plot.iz]])
+	var fed_snap := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		fed_snap["%d,%d" % [plot.ix, plot.iz]] = [plot.moisture, plot.fertility, plot.plant_id, plot.tilled, plot.growth]
+		if plot.tilled:
+			plot.moisture = 0.9
+	var hungry_bed := soil.get_cell(1, 1)
+	hungry_bed.plant_id = "meadowbell"
+	hungry_bed.tilled = true
+	hungry_bed.growth = 0.5
+	hungry_bed.fertility = 0.05
+	hungry_bed.moisture = 0.9
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
+	_drift_people(0.1, world_snapshot())
+	if not bram_feeding or bram_bed != Vector2i(1, 1):
+		push_error("smoke: bram missed a tired bed")
+		get_tree().quit(1)
+		return
+	hungry_bed.moisture = 0.05
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
+	_drift_people(0.1, world_snapshot())
+	if bram_feeding or bram_bed != Vector2i(1, 1):
+		push_error("smoke: a tired bed jumped the dry one")
+		get_tree().quit(1)
+		return
+	hungry_bed.moisture = 0.9
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
+	_drift_people(0.1, world_snapshot())
+	if not bram_feeding or bram_bed != Vector2i(1, 1):
+		push_error("smoke: bram did not return to the tired bed")
+		get_tree().quit(1)
+		return
+	var feed_coins := Economy.coins
+	var feed_pouch := Economy.count("fertilizer")
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the tired bed did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not bram_feeding or bram_bed != Vector2i(1, 1):
+		push_error("smoke: the tired bed did not reload")
+		get_tree().quit(1)
+		return
+	bram.global_position = bram.chore
+	var fed_before := soil.get_cell(1, 1).fertility
+	_drift_people(0.1, world_snapshot())
+	if soil.get_cell(1, 1).fertility < fed_before + 0.3 or bram_feeding or Economy.coins != feed_coins or Economy.count("fertilizer") != feed_pouch:
+		push_error("smoke: bram did not feed the bed")
+		get_tree().quit(1)
+		return
+	soil.get_cell(1, 1).fertility = 0.05
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
+	Clock.set_hour(21.0)
+	_drift_people(0.1, world_snapshot())
+	if bram.has_chore:
+		push_error("smoke: bram fed a bed at night")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(15.3)
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var fed_kept: Array = fed_snap["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(fed_kept[0])
+		plot.fertility = float(fed_kept[1])
+		plot.plant_id = str(fed_kept[2])
+		plot.tilled = bool(fed_kept[3])
+		plot.growth = float(fed_kept[4])
+	bram.has_chore = false
+	bram_feeding = false
+	bram_bed = Vector2i(-1, -1)
 	Clock.set_hour(21.0)
 	var place := _place_stats(world_snapshot())
 	if int(place.get("shed_demand", -1)) != 1:
@@ -2817,10 +2898,12 @@ func _ask_bram() -> void:
 			driest = plot
 	if driest == null:
 		bram.has_chore = false
+		bram_feeding = false
 		bram.say("The frames are empty. Till one and I will walk it.")
 		return
 	bram.chore = GardenLayout.cell_center(driest.ix, driest.iz)
 	bram.has_chore = true
+	bram_feeding = false
 	bram_bed = Vector2i(driest.ix, driest.iz)
 	bram.say("That bed is thirsty. I will walk it.")
 
@@ -2848,18 +2931,51 @@ func _notice_thirst() -> void:
 		return
 	bram.chore = GardenLayout.cell_center(driest.ix, driest.iz)
 	bram.has_chore = true
+	bram_feeding = false
 	bram_bed = Vector2i(driest.ix, driest.iz)
 	bram.say("That bed is thirsty. I will walk it.")
 
+func _notice_hunger() -> void:
+	# ponytail: the hungriest planted bed under its line; thirst still wins.
+	var bram := _person("bram")
+	if bram == null or not bram.present or bram.has_chore:
+		return
+	var hour := Clock.hour()
+	if hour >= 19.5 or hour < 6.0:
+		return
+	var hungry: SoilCell = null
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "":
+			continue
+		var line := float(ContentDB.plant(plot.plant_id).get("fertility_need", 0.2))
+		if plot.fertility >= line:
+			continue
+		if hungry == null or plot.fertility < hungry.fertility:
+			hungry = plot
+	if hungry == null:
+		return
+	bram.chore = GardenLayout.cell_center(hungry.ix, hungry.iz)
+	bram.has_chore = true
+	bram_feeding = true
+	bram_bed = Vector2i(hungry.ix, hungry.iz)
+	bram.say("That bed is tired. I will feed it.")
+
 func _drift_people(delta: float, world: Dictionary) -> void:
 	_notice_thirst()
+	_notice_hunger()
 	var lumen := _person("lumen")
 	var bram := _person("bram")
 	if bram.has_chore and bram_bed.x >= 0 and bram.global_position.distance_to(bram.chore) < 0.35:
 		var plot := soil.get_cell(bram_bed.x, bram_bed.y)
-		plot.moisture = minf(1.0, plot.moisture + 0.22)
+		if bram_feeding:
+			plot.fertility = minf(1.0, plot.fertility + 0.34)
+			bram_feeding = false
+			bram.say("That bed can grow again.")
+		else:
+			plot.moisture = minf(1.0, plot.moisture + 0.22)
+			bram.say("That one will hold till the next rain.")
 		bram.has_chore = false
-		bram.say("That one will hold till the next rain.")
 		_refresh_soil_colors()
 	lumen.purpose = move_toward(lumen.purpose, 0.82, delta * 0.02)
 	lumen.energy = move_toward(lumen.energy, 0.7, delta * 0.01)
