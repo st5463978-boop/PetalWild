@@ -10,7 +10,7 @@
     "radius": 0.34,
     "cap": 3,
     "wobble": 0.7,
-    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet.",
+    "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet, and that ring sets one seed in the next bed.",
     "requirements": [
       {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
     ],

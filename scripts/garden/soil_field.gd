@@ -73,11 +73,17 @@ func tick(game_minutes: float, weather: String) -> Array:
 		seed_rain = 0.0
 	return died
 
-func _seed_one() -> String:
+func seed_from(plant_id: String) -> String:
+	# ponytail: the bell ring reuses the rain neighbor; a scatter if one chime should fill the row.
+	return _seed_one(plant_id)
+
+func _seed_one(only: String = "") -> String:
 	for iz in GardenLayout.BED_H:
 		for ix in GardenLayout.BED_W:
 			var parent := get_cell(ix, iz)
 			if parent.plant_id == "" or parent.growth < 1.0:
+				continue
+			if only != "" and parent.plant_id != only:
 				continue
 			var spot := _seed_spot(ix, iz, parent.plant_id)
 			if spot == null:

@@ -418,7 +418,7 @@ func toast(text: String) -> void:
 		hud.toast(text)
 
 func _ring_bells(world: Dictionary) -> void:
-	# ponytail: one quiet chime a day; a peal if several bellhelps keep their own hours.
+	# ponytail: one quiet chime a day, and that chime carries one meadowbell seed.
 	var hour := Clock.hour()
 	if hour >= 21.0 or hour < 5.0:
 		return
@@ -438,6 +438,10 @@ func _ring_bells(world: Dictionary) -> void:
 		return
 	bell_day = Clock.day
 	audio.play_kind("ring", -22.0)
+	var sown := soil.seed_from("meadowbell")
+	if sown != "":
+		toast("Bellhelp rings, very quietly. %s took the next bed." % str(ContentDB.plant(sown).get("name", "A plant")))
+		return
 	toast("Bellhelp rings, very quietly.")
 
 func world_snapshot() -> Dictionary:
@@ -3292,6 +3296,21 @@ func _run_smoke() -> void:
 		var plot: SoilCell = cell
 		if plot.plant_id == "meadowbell":
 			plot.growth = 0.4
+	var first_bed := soil.get_cell(0, 1)
+	first_bed.plant_id = ""
+	first_bed.growth = 0.0
+	first_bed.wilt = 0.0
+	first_bed.tilled = true
+	first_bed.fertility = 0.4
+	first_bed.chem = "base"
+	var second_bed := soil.get_cell(1, 1)
+	second_bed.plant_id = ""
+	second_bed.growth = 0.0
+	second_bed.wilt = 0.0
+	second_bed.tilled = true
+	second_bed.fertility = 0.4
+	second_bed.chem = "base"
+	var kept_seed := soil.seeded
 	bell = ecology.first("bellhelp")
 	if bell == null:
 		push_error("smoke: bellhelp left before the ring")
@@ -3304,7 +3323,7 @@ func _run_smoke() -> void:
 			body.leaving = false
 	var ring_notes := events.size()
 	_ring_bells(world_snapshot())
-	if bell_day != -1 or events.size() != ring_notes or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != -1 or events.size() != ring_notes or first_bed.plant_id != "" or second_bed.plant_id != "" or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: a thin meadow rang")
 		get_tree().quit(1)
 		return
@@ -3317,7 +3336,7 @@ func _run_smoke() -> void:
 			body.life = "curious"
 			body.leaving = false
 	_ring_bells(world_snapshot())
-	if bell_day != -1 or events.size() != ring_notes:
+	if bell_day != -1 or events.size() != ring_notes or first_bed.plant_id != "" or second_bed.plant_id != "":
 		push_error("smoke: a curious bellhelp rang")
 		get_tree().quit(1)
 		return
@@ -3327,7 +3346,7 @@ func _run_smoke() -> void:
 			body.life = "visitor"
 			body.leaving = true
 	_ring_bells(world_snapshot())
-	if bell_day != -1 or events.size() != ring_notes:
+	if bell_day != -1 or events.size() != ring_notes or first_bed.plant_id != "" or second_bed.plant_id != "":
 		push_error("smoke: a departure rang")
 		get_tree().quit(1)
 		return
@@ -3335,26 +3354,26 @@ func _run_smoke() -> void:
 	bell.life = "visitor"
 	bell.leaving = false
 	_ring_bells(world_snapshot())
-	if bell_day != 1 or events.is_empty() or str(events[0]).find("rings") == -1 or events.size() != ring_notes + 1 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != 1 or events.is_empty() or str(events[0]).find("rings") == -1 or str(events[0]).find("took the next bed") == -1 or events.size() != ring_notes + 1 or first_bed.plant_id != "meadowbell" or first_bed.growth > 0.3 or second_bed.plant_id != "" or soil.seeded != kept_seed or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: bellhelp stayed silent")
 		get_tree().quit(1)
 		return
 	_ring_bells(world_snapshot())
-	if bell_day != 1 or events.size() != ring_notes + 1:
+	if bell_day != 1 or events.size() != ring_notes + 1 or second_bed.plant_id != "" or soil.seeded != kept_seed:
 		push_error("smoke: bellhelp rang twice in a day")
 		get_tree().quit(1)
 		return
 	Clock.set_hour(22.0)
 	bell_day = -1
 	_ring_bells(world_snapshot())
-	if bell_day != -1 or events.size() != ring_notes + 1:
+	if bell_day != -1 or events.size() != ring_notes + 1 or second_bed.plant_id != "" or first_bed.plant_id != "meadowbell":
 		push_error("smoke: bellhelp rang at night")
 		get_tree().quit(1)
 		return
 	Clock.day = 2
 	Clock.set_hour(10.0)
 	_ring_bells(world_snapshot())
-	if bell_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != 2 or second_bed.plant_id != "meadowbell" or second_bed.growth > 0.3 or first_bed.plant_id != "meadowbell" or soil.seeded != kept_seed or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: the next day stayed silent")
 		get_tree().quit(1)
 		return
@@ -3363,13 +3382,23 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	apply_state(SaveGame.read_slot(1))
-	if bell_day != 2 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if bell_day != 2 or first_bed.plant_id != "meadowbell" or second_bed.plant_id != "meadowbell" or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
 		push_error("smoke: the ring did not reload")
 		get_tree().quit(1)
 		return
 	ring_notes = events.size()
+	var sprout_n := 0
+	for cell in soil.all():
+		var sprout: SoilCell = cell
+		if sprout.plant_id == "meadowbell" and sprout.growth <= 0.3:
+			sprout_n += 1
 	_ring_bells(world_snapshot())
-	if bell_day != 2 or events.size() != ring_notes:
+	var sprout_after := 0
+	for cell in soil.all():
+		var sprout: SoilCell = cell
+		if sprout.plant_id == "meadowbell" and sprout.growth <= 0.3:
+			sprout_after += 1
+	if bell_day != 2 or events.size() != ring_notes or sprout_after != sprout_n or soil.seeded != kept_seed:
 		push_error("smoke: a reload rang again the same day")
 		get_tree().quit(1)
 		return
