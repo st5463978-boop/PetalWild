@@ -329,9 +329,10 @@ func _process(delta: float) -> void:
 	else:
 		visible = true
 		_full(delta)
-	# ponytail: one scale for a young; a growth curve if the parish keeps ages.
+	# ponytail: linear over the eight hours; a curve if age needs to read in the mesh.
 	if young:
-		scale = Vector3(0.55, 0.55, 0.55)
+		var fit := lerpf(0.55, 1.0, clampf(site_time / 8.0, 0.0, 1.0))
+		scale = Vector3(fit, fit, fit)
 
 func _full(delta: float) -> void:
 	if reduce_motion:

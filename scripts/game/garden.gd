@@ -1526,6 +1526,36 @@ func _run_smoke() -> void:
 		push_error("smoke: the young bellhelp stayed off the pair")
 		get_tree().quit(1)
 		return
+	young_bell.tier = 0
+	young_bell.reduce_motion = true
+	young_bell._process(0.016)
+	young_bell.reduce_motion = false
+	if young_bell.scale.x < 0.6 or young_bell.scale.x > 0.75:
+		push_error("smoke: the young bellhelp did not grow in place")
+		get_tree().quit(1)
+		return
+	var bell_growth := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id != "meadowbell":
+			continue
+		bell_growth["%d,%d" % [plot.ix, plot.iz]] = plot.growth
+		plot.growth = 0.2
+	var cool: Dictionary = ecology.cooldowns.duplicate()
+	for id in ContentDB.species_order:
+		ecology.cooldowns[id] = 5.0
+	var farewell_was := nessa_farewell
+	ecology.tick(0.2, world_snapshot())
+	ecology.cooldowns = cool
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: String = "%d,%d" % [plot.ix, plot.iz]
+		if bell_growth.has(kept):
+			plot.growth = float(bell_growth[kept])
+	if young_bell.leaving or nessa_farewell != farewell_was or events.is_empty() or str(events[0]).find("slips") != -1 or Economy.coins != young_tin or Trust.level("nessa") != young_trust:
+		push_error("smoke: the young bellhelp left the pair")
+		get_tree().quit(1)
+		return
 	if int(ecology.resident_counts().get("bellhelp", 0)) < 2:
 		push_error("smoke: bellhelp pair is short")
 		get_tree().quit(1)

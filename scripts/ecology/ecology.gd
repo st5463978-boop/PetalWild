@@ -27,6 +27,10 @@ func tick(delta: float, world: Dictionary) -> void:
 		var jelly: Jelly = actor
 		if not jelly.leaving or jelly.is_queued_for_deletion():
 			continue
+		if jelly.young and _resident_count(jelly.species_id) > 0:
+			# ponytail: the young keeps the pair; the hedge only if no resident remains.
+			jelly.leaving = false
+			continue
 		if jelly.global_position.distance_to(GardenLayout.GATE) < 0.8 or jelly.site_time > 40.0:
 			jelly.queue_free()
 			continue
@@ -65,6 +69,8 @@ func tick(delta: float, world: Dictionary) -> void:
 		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
 		var met := rules.all_met(definition, world)
 		if not met and rules.rank_of(jelly.life) < rules.rank_of("settler"):
+			if jelly.young and _resident_count(jelly.species_id) > 0:
+				continue
 			jelly.leaving = true
 			jelly.goal = GardenLayout.GATE
 			jelly.attract = GardenLayout.GATE
