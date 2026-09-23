@@ -116,6 +116,8 @@ func _process(delta: float) -> void:
 		var lost := soil.tick(minutes, Clock.weather)
 		if lost.size() > 0:
 			toast("A bed dried out.")
+		if soil.seeded != "":
+			toast("%s took the next bed." % str(ContentDB.plant(soil.seeded).get("name", "A plant")))
 		_browse(minutes / 60.0)
 	var world := world_snapshot()
 	ecology.tick(delta, world)
@@ -462,6 +464,7 @@ func to_state() -> Dictionary:
 		"economy": Economy.to_state(),
 		"trust": Trust.to_state(),
 		"soil": soil.to_state(),
+		"seed_rain": soil.seed_rain,
 		"ecology": ecology.to_state(),
 		"structures": structures.duplicate(),
 		"homes": homes,
@@ -481,6 +484,7 @@ func apply_state(data: Dictionary) -> void:
 	Economy.apply_state(data.get("economy", {}))
 	Trust.apply_state(data.get("trust", {}))
 	soil.apply_state(data.get("soil", []))
+	soil.seed_rain = float(data.get("seed_rain", 0.0))
 	ecology.apply_state(data.get("ecology", {}))
 	var saved_structures = data.get("structures", {})
 	if typeof(saved_structures) == TYPE_DICTIONARY:
@@ -787,6 +791,70 @@ func _run_smoke() -> void:
 		plot.growth = float(kept[1])
 		plot.wilt = float(kept[2])
 		plot.plant_id = str(kept[3])
+	var seed_snap := {}
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		seed_snap["%d,%d" % [plot.ix, plot.iz]] = [plot.moisture, plot.growth, plot.wilt, plot.plant_id, plot.tilled, plot.fertility, plot.chem]
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.growth >= 1.0:
+			plot.growth = 0.4
+	var seed_parent := soil.get_cell(0, 0)
+	var seed_child := soil.get_cell(1, 0)
+	seed_parent.tilled = true
+	seed_parent.plant_id = "meadowbell"
+	seed_parent.growth = 1.0
+	seed_parent.fertility = maxf(seed_parent.fertility, 0.4)
+	seed_parent.moisture = 0.8
+	seed_parent.chem = "base"
+	seed_child.tilled = true
+	seed_child.plant_id = ""
+	seed_child.growth = 0.0
+	seed_child.wilt = 0.0
+	seed_child.fertility = maxf(seed_child.fertility, 0.4)
+	seed_child.chem = "base"
+	var seed_block := soil.get_cell(0, 1)
+	seed_block.plant_id = "reed"
+	seed_block.growth = 0.2
+	seed_block.tilled = true
+	soil.seed_rain = 0.0
+	soil.tick(60.0, "rain")
+	if soil.seeded != "meadowbell" or seed_child.plant_id != "meadowbell" or seed_child.growth > 0.3:
+		push_error("smoke: the rain did not carry the seed")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the seedling did not save")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	seed_child = soil.get_cell(1, 0)
+	if seed_child.plant_id != "meadowbell" or absf(soil.seed_rain) > 0.05:
+		push_error("smoke: the seedling did not reload")
+		get_tree().quit(1)
+		return
+	var seed_other := soil.get_cell(0, 1)
+	seed_other.tilled = true
+	seed_other.plant_id = ""
+	seed_other.growth = 0.0
+	seed_other.fertility = 0.4
+	seed_other.chem = "base"
+	soil.tick(60.0, "clear")
+	if seed_other.plant_id != "" or soil.seeded != "":
+		push_error("smoke: a dry hour carried seed")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = seed_snap["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.tilled = bool(kept[4])
+		plot.fertility = float(kept[5])
+		plot.chem = str(kept[6])
+	soil.seed_rain = 0.0
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: the shower did not save")
 		get_tree().quit(1)

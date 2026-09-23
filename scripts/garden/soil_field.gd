@@ -2,6 +2,8 @@ class_name SoilField
 extends RefCounted
 
 var cells: Dictionary = {}
+var seed_rain := 0.0
+var seeded := ""
 
 func _init() -> void:
 	for ix in GardenLayout.BED_W:
@@ -21,6 +23,7 @@ func tick(game_minutes: float, weather: String) -> Array:
 	var hours := game_minutes / 60.0
 	var raining := weather == "rain"
 	var died: Array = []
+	seeded = ""
 	for cell in all():
 		var soil: SoilCell = cell
 		var before := soil.moisture
@@ -57,7 +60,63 @@ func tick(game_minutes: float, weather: String) -> Array:
 		if chem_need != "" and soil.chem != chem_need:
 			continue
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
+	if raining:
+		seed_rain = minf(0.5, seed_rain + hours)
+		# ponytail: one ripe plant seeds one tilled neighbor per half-hour of rain; a scatter if a shower should fill the row.
+		if seed_rain >= 0.5:
+			seeded = _seed_one()
+			if seeded != "":
+				seed_rain = 0.0
+	else:
+		seed_rain = 0.0
 	return died
+
+func _seed_one() -> String:
+	for iz in GardenLayout.BED_H:
+		for ix in GardenLayout.BED_W:
+			var parent := get_cell(ix, iz)
+			if parent.plant_id == "" or parent.growth < 1.0:
+				continue
+			var spot := _seed_spot(ix, iz, parent.plant_id)
+			if spot == null:
+				continue
+			spot.plant_id = parent.plant_id
+			spot.growth = 0.18
+			spot.wilt = 0.0
+			spot.moisture = maxf(spot.moisture, 0.74)
+			return parent.plant_id
+	return ""
+
+func _seed_spot(ix: int, iz: int, plant_id: String) -> SoilCell:
+	var best: SoilCell = null
+	var offsets: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for off in offsets:
+		var nx := ix + off.x
+		var nz := iz + off.y
+		if nx < 0 or nz < 0 or nx >= GardenLayout.BED_W or nz >= GardenLayout.BED_H:
+			continue
+		var plot := get_cell(nx, nz)
+		if plot == null or plot.plant_id != "" or not plot.tilled:
+			continue
+		var center := GardenLayout.cell_center(nx, nz)
+		if GardenLayout.on_path(center.x, center.z):
+			continue
+		if GardenLayout.pond_distance(center.x, center.z) < GardenLayout.POND_RADIUS:
+			continue
+		if not _can_hold(plot, plant_id):
+			continue
+		if best == null or nx < best.ix or (nx == best.ix and nz < best.iz):
+			best = plot
+	return best
+
+func _can_hold(plot: SoilCell, plant_id: String) -> bool:
+	var definition: Dictionary = ContentDB.plant(plant_id)
+	if definition.is_empty():
+		return false
+	if plot.fertility < float(definition.get("fertility_need", 0.2)):
+		return false
+	var chem_need := str(definition.get("chem", ""))
+	return chem_need == "" or plot.chem == chem_need
 
 func apply_chem(chem: String, count: int) -> int:
 	var empties: Array[SoilCell] = []
