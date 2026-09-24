@@ -1705,6 +1705,69 @@ func _run_smoke() -> void:
 		plot.fertility = float(kept[5])
 		plot.chem = str(kept[6])
 	soil.seed_rain = 0.0
+	var pear_coins := Economy.coins
+	var pear_trust := Trust.level("nessa")
+	for cell in soil.all():
+		var ripe: SoilCell = cell
+		if ripe.growth >= 1.0:
+			ripe.growth = 0.5
+	var pear_parent := soil.get_cell(6, 2)
+	var pear_child := soil.get_cell(7, 2)
+	pear_parent.tilled = true
+	pear_parent.plant_id = "mosspear"
+	pear_parent.growth = 1.0
+	pear_parent.fertility = 0.7
+	pear_parent.moisture = 0.9
+	pear_parent.wilt = 0.0
+	pear_parent.chem = "base"
+	pear_child.tilled = true
+	pear_child.plant_id = ""
+	pear_child.growth = 0.0
+	pear_child.wilt = 0.0
+	pear_child.fertility = 0.41
+	pear_child.moisture = 0.8
+	pear_child.chem = "base"
+	var pear_blocks: Array[Vector2i] = [Vector2i(5, 2), Vector2i(6, 1), Vector2i(6, 3)]
+	for off in pear_blocks:
+		var block := soil.get_cell(off.x, off.y)
+		block.tilled = true
+		block.plant_id = "reed"
+		block.growth = 0.2
+	soil.tick(30.0, "rain")
+	if pear_child.plant_id != "" or soil.seeded != "":
+		push_error("smoke: a thin bed took the mosspear")
+		get_tree().quit(1)
+		return
+	pear_child.fertility = 0.42
+	soil.tick(30.0, "rain")
+	if soil.seeded != "mosspear" or pear_child.plant_id != "mosspear" or pear_child.growth < 0.1 or pear_child.growth > 0.3:
+		push_error("smoke: the rain did not set the mosspear seedling")
+		get_tree().quit(1)
+		return
+	var pear_growth := pear_child.growth
+	soil.tick(60.0, "rain")
+	if pear_child.plant_id != "mosspear" or absf(pear_child.growth - pear_growth) > 0.001:
+		push_error("smoke: the seedling ripened on fallow feed")
+		get_tree().quit(1)
+		return
+	pear_child.fertility = 0.7
+	pear_child.moisture = 0.9
+	soil.tick(60.0, "clear")
+	if pear_child.plant_id != "mosspear" or pear_child.growth <= pear_growth + 0.2 or Economy.coins != pear_coins or Trust.level("nessa") != pear_trust:
+		push_error("smoke: a fed mosspear seedling stayed short")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = seed_snap["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.tilled = bool(kept[4])
+		plot.fertility = float(kept[5])
+		plot.chem = str(kept[6])
+	soil.seed_rain = 0.0
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: the shower did not save")
 		get_tree().quit(1)

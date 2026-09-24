@@ -46,6 +46,7 @@
     "grow_hours": 2.0,
     "water_need": 0.4,
     "fertility_need": 0.58,
+    "seed_fertility": 0.42,
     "sell_price": 11,
     "blurb": "A ground pear that only sweetens in rich soil."
   },

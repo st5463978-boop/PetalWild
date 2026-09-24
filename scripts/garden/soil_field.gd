@@ -142,7 +142,9 @@ func _can_hold(plot: SoilCell, plant_id: String) -> bool:
 	var definition: Dictionary = ContentDB.plant(plant_id)
 	if definition.is_empty():
 		return false
-	if plot.fertility < float(definition.get("fertility_need", 0.2)):
+	# ponytail: mosspear seeds at the fallow cap; ripening still uses fertility_need.
+	var need := float(definition.get("seed_fertility", definition.get("fertility_need", 0.2)))
+	if plot.fertility < need:
 		return false
 	var chem_need := str(definition.get("chem", ""))
 	return chem_need == "" or plot.chem == chem_need
