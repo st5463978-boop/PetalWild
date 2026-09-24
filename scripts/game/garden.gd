@@ -4866,6 +4866,17 @@ func _run_smoke() -> void:
 	lane_bed.plant_id = lane_id
 	lane_bed.growth = lane_growth
 	lane_bed.taken = lane_taken
+	var step_stones := get_tree().get_nodes_in_group("parish_stall_step")
+	if step_stones.size() != 3:
+		push_error("smoke: the stall step lost a stone")
+		get_tree().quit(1)
+		return
+	for node in step_stones:
+		var stone := node as Node3D
+		if GardenLayout.on_track(stone.global_position.x, stone.global_position.z):
+			push_error("smoke: a stall stone sat on the worn path")
+			get_tree().quit(1)
+			return
 	Clock.day = lamp_day
 	Clock.set_hour(lamp_hour)
 	_lamps()

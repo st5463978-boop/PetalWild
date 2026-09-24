@@ -34,6 +34,10 @@ func _stall(parent: Node3D) -> void:
 		stripe.add_to_group("parish_awning")
 	_crate(root, Vector3(-1.35, 0.16, 0.7))
 	_crate(root, Vector3(1.25, 0.16, 0.62))
+	# ponytail: three flats beside the spur; the worn center stays |x+4.55|<0.42.
+	for at in [Vector3(-0.72, 0.06, -0.72), Vector3(0.78, 0.06, -0.66), Vector3(-0.82, 0.06, -1.05)]:
+		var stone := _box(root, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
+		stone.add_to_group("parish_stall_step")
 	for i in 5:
 		_sphere(root, Vector3(-0.3 + float(i) * 0.14, 0.96, 0.15), 0.08, Color("#e39a52"))
 	var sign := Label3D.new()
