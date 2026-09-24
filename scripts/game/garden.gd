@@ -319,7 +319,7 @@ func _far_bell_line() -> String:
 
 func _bell_sale_line() -> String:
 	# ponytail: one page line the day a sale names the far-lawn bells.
-	if _bell_rumour_count() != 1 or Trust.bell_named_day != Clock.day:
+	if _far_bell_line() == "" or Trust.bell_named_day != Clock.day:
 		return ""
 	return "A sale named the far-lawn bells."
 
@@ -509,7 +509,7 @@ func _rumour_count(sentence: String) -> int:
 			count += 1
 		elif blurb == "Not sighted yet.":
 			continue
-		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line() or blurb == _dusk_line() or blurb == _leaf_line() or blurb == "The lane is busy past the bench." or blurb == "The lane has reached the south stone." or blurb == "The way ends past the bench." or blurb == "The way south ends at a stone." or blurb == "Three bells stand on the far lawn.":
+		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line() or blurb == _dusk_line() or blurb == _leaf_line() or blurb == "The lane is busy past the bench." or blurb == "The lane has reached the south stone." or blurb == "The way ends past the bench." or blurb == "The way south ends at a stone." or blurb == "Three bells stand on the far lawn." or blurb == "A sale named the far-lawn bells.":
 			continue
 		else:
 			return -1
@@ -544,6 +544,9 @@ func _south_rumour_count() -> int:
 
 func _bell_rumour_count() -> int:
 	return _rumour_count("Three bells stand on the far lawn.")
+
+func _sale_rumour_count() -> int:
+	return _rumour_count("A sale named the far-lawn bells.")
 
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
@@ -6604,14 +6607,14 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var bell_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or Trust.level("nessa") != loam_trust:
+	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or _sale_rumour_count() != 1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a sale hid the far-lawn bells")
 		get_tree().quit(1)
 		return
 	Economy.coins = bell_sale_coins
 	Trust.lane_sale_day = bell_sale_day
 	Trust.bell_named_day = -1
-	if _bell_sale_line() != "":
+	if _bell_sale_line() != "" or _sale_rumour_count() != 0:
 		push_error("smoke: the sale line stayed before the day")
 		get_tree().quit(1)
 		return
@@ -6700,7 +6703,7 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var quiet_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or _bell_sale_line() != "" or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
+	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or _bell_sale_line() != "" or _sale_rumour_count() != 0 or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a quiet sale named the far-lawn bells")
 		get_tree().quit(1)
 		return
@@ -9775,6 +9778,17 @@ func _journal_rows(world: Dictionary) -> Array:
 			"met": PackedStringArray(),
 			"unmet": PackedStringArray(),
 			"blurb": "Three bells stand on the far lawn.",
+			"romance": "",
+			"romance_met": false,
+			"residents": 0,
+		})
+	if _bell_sale_line() != "":
+		rows.append({
+			"name": "A rumour",
+			"status": "",
+			"met": PackedStringArray(),
+			"unmet": PackedStringArray(),
+			"blurb": "A sale named the far-lawn bells.",
 			"romance": "",
 			"romance_met": false,
 			"residents": 0,
