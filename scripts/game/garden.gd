@@ -6068,6 +6068,28 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	lamp_view.queue_free()
+	var cane_view := PlantView.new()
+	add_child(cane_view)
+	cane_view.show_plant("bramble", 0.78, 0.8, 0.5)
+	var cane_leaves := 0
+	var dark_berry := 0.0
+	var lit_berry := 0.0
+	for cane_node in cane_view.get_children():
+		var cane_mesh := cane_node as MeshInstance3D
+		if cane_mesh == null:
+			continue
+		var cane_albedo: Color = (cane_mesh.material_override as StandardMaterial3D).albedo_color
+		if cane_mesh.mesh is BoxMesh and cane_albedo.is_equal_approx(Color("#1e3a22")):
+			cane_leaves += 1
+		if cane_mesh.mesh is SphereMesh and cane_albedo.is_equal_approx(Color("#5a1834")):
+			dark_berry = (cane_mesh.mesh as SphereMesh).radius
+		if cane_mesh.mesh is SphereMesh and cane_albedo.is_equal_approx(Color("#6a2040")):
+			lit_berry = (cane_mesh.mesh as SphereMesh).radius
+	if cane_leaves != 2 or absf(dark_berry - 0.22) > 0.001 or absf(lit_berry - 0.2) > 0.001:
+		push_error("smoke: the bramble leaves changed the berries")
+		get_tree().quit(1)
+		return
+	cane_view.queue_free()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 

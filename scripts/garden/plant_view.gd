@@ -35,6 +35,9 @@ func _build(id: String) -> void:
 			# ponytail: berries under 0.05 did not read; darken if a larger fruit clips.
 			_ball(Vector3(-0.16, 0.55, -0.16), 0.22, Color("#5a1834"))
 			_ball(Vector3(0.16, 0.52, -0.16), 0.2, Color("#6a2040"))
+			# ponytail: one dark leaf beside each berry; the fruit stays this size and color.
+			_berry_leaf(Vector3(-0.28, 0.58, -0.08))
+			_berry_leaf(Vector3(0.28, 0.56, -0.08))
 		"mosspear":
 			_mosspear()
 		"nightlantern":
@@ -96,17 +99,25 @@ func _peach() -> void:
 	# ponytail: a brighter fruit clips to 255 under this sun.
 	_ball(Vector3(0.02, 0.46, 0.02), 0.16, Color("#8a4e22"))
 
+func _berry_leaf(at: Vector3) -> void:
+	var leaf := BoxMesh.new()
+	leaf.size = Vector3(0.14, 0.016, 0.07)
+	var card := _paint(leaf, Color("#1e3a22"))
+	card.position = at
+	card.rotation = Vector3(0.4, 0.3, 0.6)
+	add_child(card)
+
 func _mosspear() -> void:
 	# ponytail: one fruit on a short stem; a brighter pear clips under this sun.
 	_stem(0.22, 0.035, Color("#3d4a28"))
 	_ball(Vector3(0.0, 0.42, 0.0), 0.15, Color("#4e5c2e"), Vector3(0.82, 1.55, 0.82))
 	# ponytail: one dark leaf beside the fruit; a second leaf if it still reads as a bare pear.
-	var leaf := BoxMesh.new()
-	leaf.size = Vector3(0.18, 0.02, 0.09)
-	var card := _paint(leaf, Color("#2f4a28"))
-	card.position = Vector3(0.14, 0.5, 0.02)
-	card.rotation = Vector3(0.35, 0.4, 0.7)
-	add_child(card)
+	var pear_leaf := BoxMesh.new()
+	pear_leaf.size = Vector3(0.18, 0.02, 0.09)
+	var pear_card := _paint(pear_leaf, Color("#2f4a28"))
+	pear_card.position = Vector3(0.14, 0.5, 0.02)
+	pear_card.rotation = Vector3(0.35, 0.4, 0.7)
+	add_child(pear_card)
 
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
