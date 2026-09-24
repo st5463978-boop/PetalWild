@@ -608,7 +608,7 @@ func _build_road_stones() -> void:
 	path.add_to_group("parish_road_path")
 	add_child(path)
 	var inner := BoxMesh.new()
-	inner.size = Vector3(0.9, 0.03, 0.75)
+	inner.size = Vector3(1.05, 0.03, 0.75)
 	var inside := MeshInstance3D.new()
 	inside.mesh = inner
 	var inside_mat := StandardMaterial3D.new()
@@ -751,6 +751,8 @@ func _road_inside_count() -> int:
 		var north := inside.global_position.z + size.z * 0.5
 		var south := inside.global_position.z - size.z * 0.5
 		if north > -9.15 or north < -9.45 or south > -9.95 or south < -10.2:
+			return -1
+		if size.x < 1.0 or size.x > 1.15:
 			return -1
 		if absf(inside.global_position.x) > 0.2:
 			return -1
