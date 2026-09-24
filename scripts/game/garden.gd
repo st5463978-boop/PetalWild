@@ -594,7 +594,7 @@ func _build_road_stones() -> void:
 		stone.add_to_group("parish_road_stone")
 		add_child(stone)
 	var strip := BoxMesh.new()
-	strip.size = Vector3(0.9, 0.03, 3.55)
+	strip.size = Vector3(1.05, 0.03, 3.55)
 	var path := MeshInstance3D.new()
 	path.mesh = strip
 	var path_mat := StandardMaterial3D.new()
@@ -734,6 +734,8 @@ func _road_path_count() -> int:
 		var north := path.global_position.z + size.z * 0.5
 		var south := path.global_position.z - size.z * 0.5
 		if north > -9.85 or north < -10.15 or south > -13.35:
+			return -1
+		if size.x < 1.0 or size.x > 1.15:
 			return -1
 		var albedo := path.material_override as StandardMaterial3D
 		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
