@@ -812,6 +812,26 @@ func _run_smoke() -> void:
 		return
 	opening_peach.growth = 0.72
 	opening_reed.growth = 0.70
+	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
+	var bells_ready := true
+	for bell in opening_bells:
+		if bell.plant_id != "meadowbell" or bell.growth < 0.7 or bell.growth >= 1.0 or _plot_line(bell).find("Bells showing.") == -1:
+			bells_ready = false
+	if not bells_ready or ecology.first("bellhelp") != null or _lane_passers() != 0:
+		push_error("smoke: the opening bells brought Bellhelp")
+		get_tree().quit(1)
+		return
+	opening_bells[0].growth = 0.4
+	if _plot_line(opening_bells[0]).find("Bells showing.") != -1:
+		push_error("smoke: a short bell claimed the bells were showing")
+		get_tree().quit(1)
+		return
+	opening_bells[0].growth = 1.0
+	if _plot_line(opening_bells[0]).find("Bells showing.") != -1 or _lane_passers() < 1:
+		push_error("smoke: a ripe bell kept the young bell line")
+		get_tree().quit(1)
+		return
+	opening_bells[0].growth = 0.76
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -5373,6 +5393,8 @@ func _run_capture() -> void:
 	_force_plant(4, 2, "bramble", 0.78)
 	_force_plant(5, 2, "bramble", 0.74)
 	_force_plant(7, 5, "reed", 0.70)
+	_force_plant(1, 1, "meadowbell", 0.76)
+	_force_plant(1, 2, "meadowbell", 0.70)
 	_sync_plants()
 	Clock.set_hour(15.3)
 	ecology.tick(0.2, world_snapshot())
@@ -5427,9 +5449,10 @@ func _shot(path: String) -> void:
 	print("SHOT ", path, " ", err, " ", image.get_width(), "x", image.get_height())
 
 func _opening_plants() -> void:
-	_force_plant(1, 1, "meadowbell", 0.58)
-	_force_plant(2, 1, "meadowbell", 0.44)
-	_force_plant(1, 2, "meadowbell", 0.36)
+	# ponytail: tall enough for the bells to read; ripe bells if Bellhelp should visit on the first day.
+	_force_plant(1, 1, "meadowbell", 0.76)
+	_force_plant(2, 1, "meadowbell", 0.72)
+	_force_plant(1, 2, "meadowbell", 0.70)
 	# ponytail: tall enough for the one fruit to read; a ripe peach if the lane should count it.
 	_force_plant(3, 2, "peach", 0.72)
 	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
@@ -6820,6 +6843,9 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Bees hurrying."
 	if plot.plant_id == "meadowbell" and plot.growth < 1.0 and _bells_filling(plot):
 		return line + "  ·  Bells filling."
+	# ponytail: the tall young bell only; a short bell stays on the percent.
+	if plot.plant_id == "meadowbell" and plot.growth >= 0.7 and plot.growth < 1.0:
+		return line + "  ·  Bells showing."
 	if plot.plant_id == "reed" and _reed_kept(plot):
 		return line + "  ·  Reed kept."
 	var chem_need := str(definition.get("chem", ""))
