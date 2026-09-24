@@ -6282,7 +6282,7 @@ func _run_smoke() -> void:
 		return
 	var nessa_open := false
 	for row in _people_rows(world_snapshot()):
-		if str(row.get("name", "")) == "Nessa Pod" and bool(row.get("can_road", false)) and str(row.get("road_line", "x")) == "":
+		if str(row.get("name", "")) == "Nessa Pod" and bool(row.get("can_road", false)) and str(row.get("road_line", "x")) == "" and str(row.get("join_line", "x")) == "":
 			nessa_open = true
 	if not nessa_open:
 		push_error("smoke: the card hid the rumour before it was filed")
@@ -6312,7 +6312,7 @@ func _run_smoke() -> void:
 		return
 	var nessa_kept := false
 	for row in _people_rows(world_snapshot()):
-		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
+		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and str(row.get("join_line", "")) == "One stone marks the gate opening." and not bool(row.get("can_road", false)):
 			nessa_kept = true
 	if not nessa_kept:
 		push_error("smoke: the card hid the filed rumour")
@@ -6359,7 +6359,7 @@ func _run_smoke() -> void:
 	_sync_road_stones()
 	var nessa_reloaded := false
 	for row in _people_rows(world_snapshot()):
-		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
+		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and str(row.get("join_line", "")) == "One stone marks the gate opening." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
 	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
@@ -9455,6 +9455,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
 			"road_line": _road_card_line() if id == "nessa" else "",
+			"join_line": _join_line() if id == "nessa" else "",
 		})
 	return rows
 

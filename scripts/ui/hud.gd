@@ -578,6 +578,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	var kept := str(row.get("road_line", ""))
 	if kept != "":
 		box.add_child(ThemeKit.label(kept, 13))
+	var join_kept := str(row.get("join_line", ""))
+	if join_kept != "":
+		box.add_child(ThemeKit.label(join_kept, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"
