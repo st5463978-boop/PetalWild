@@ -1768,6 +1768,55 @@ func _run_smoke() -> void:
 		plot.fertility = float(kept[5])
 		plot.chem = str(kept[6])
 	soil.seed_rain = 0.0
+	var dry_pear := soil.get_cell(6, 2)
+	var ripe_pear := soil.get_cell(7, 2)
+	var dry_bell := soil.get_cell(8, 2)
+	var fed_pear := soil.get_cell(6, 3)
+	dry_pear.tilled = true
+	dry_pear.plant_id = "mosspear"
+	dry_pear.growth = 0.3
+	dry_pear.fertility = 0.42
+	dry_pear.moisture = 0.08
+	dry_pear.wilt = 5.2
+	dry_pear.chem = "base"
+	ripe_pear.tilled = true
+	ripe_pear.plant_id = "mosspear"
+	ripe_pear.growth = 1.0
+	ripe_pear.fertility = 0.7
+	ripe_pear.moisture = 0.08
+	ripe_pear.wilt = 5.2
+	ripe_pear.chem = "base"
+	dry_bell.tilled = true
+	dry_bell.plant_id = "meadowbell"
+	dry_bell.growth = 0.6
+	dry_bell.fertility = 0.5
+	dry_bell.moisture = 0.08
+	dry_bell.wilt = 5.2
+	dry_bell.chem = "base"
+	fed_pear.tilled = true
+	fed_pear.plant_id = "mosspear"
+	fed_pear.growth = 0.4
+	fed_pear.fertility = 0.7
+	fed_pear.moisture = 0.08
+	fed_pear.wilt = 5.2
+	fed_pear.chem = "base"
+	var dry_growth := dry_pear.growth
+	soil.tick(60.0, "clear")
+	if dry_pear.plant_id != "mosspear" or dry_pear.growth >= dry_growth or dry_pear.wilt < 6.0 or ripe_pear.plant_id != "" or dry_bell.plant_id != "" or fed_pear.plant_id != "" or Economy.coins != pear_coins or Trust.level("nessa") != pear_trust:
+		push_error("smoke: a dry hour cleared the waiting mosspear")
+		get_tree().quit(1)
+		return
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		var kept: Array = seed_snap["%d,%d" % [plot.ix, plot.iz]]
+		plot.moisture = float(kept[0])
+		plot.growth = float(kept[1])
+		plot.wilt = float(kept[2])
+		plot.plant_id = str(kept[3])
+		plot.tilled = bool(kept[4])
+		plot.fertility = float(kept[5])
+		plot.chem = str(kept[6])
+	soil.seed_rain = 0.0
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: the shower did not save")
 		get_tree().quit(1)

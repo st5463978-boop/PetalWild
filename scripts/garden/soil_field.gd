@@ -56,7 +56,9 @@ func tick(game_minutes: float, weather: String) -> Array:
 			soil.wilt += dry_hours
 			# ponytail: six dry hours clears the bed; a wilt curve if crops should linger.
 			soil.growth = maxf(0.04, soil.growth - hours / (grow_hours * 4.0))
-			if soil.wilt >= 6.0:
+			var feed_line := float(definition.get("fertility_need", 0.2))
+			var waiting := soil.plant_id == "mosspear" and soil.growth < 1.0 and soil.fertility < feed_line
+			if soil.wilt >= 6.0 and not waiting:
 				died.append(soil.plant_id)
 				soil.plant_id = ""
 				soil.growth = 0.0
