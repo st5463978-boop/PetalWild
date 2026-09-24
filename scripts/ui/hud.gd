@@ -617,6 +617,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	var parish_bell_kept := str(row.get("parish_bell_line", ""))
 	if parish_bell_kept != "":
 		box.add_child(ThemeKit.label(parish_bell_kept, 13))
+	var parish_sale_kept := str(row.get("parish_sale_line", ""))
+	if parish_sale_kept != "":
+		box.add_child(ThemeKit.label(parish_sale_kept, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"
