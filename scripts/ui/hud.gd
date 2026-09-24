@@ -530,6 +530,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		button.text = "Hear Nessa's notes proposal"
 		button.pressed.connect(show_nessa)
 		box.add_child(button)
+	var kept := str(row.get("road_line", ""))
+	if kept != "":
+		box.add_child(ThemeKit.label(kept, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"

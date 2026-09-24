@@ -304,6 +304,12 @@ func _road_line() -> String:
 		return "The road beyond the hedge is a rumour."
 	return "The road beyond the hedge is not yet a rumour."
 
+func _road_card_line() -> String:
+	# ponytail: one card line after the filing; the page sentence stays the longer one.
+	if Trust.has_action("parish_road_rumour"):
+		return "The road is only a rumour."
+	return ""
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -5010,8 +5016,16 @@ func _run_smoke() -> void:
 	_note_lane_afternoon()
 	_note_lane_afternoon()
 	var rumour_park: Dictionary = ContentDB.venues.get("grove_park", {})
-	if not _road_rumoured() or lane_afternoon_days.size() != 3 or _road_line() != "The road beyond the hedge is a rumour." or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	if not _road_rumoured() or lane_afternoon_days.size() != 3 or _road_line() != "The road beyond the hedge is a rumour." or _road_card_line() != "" or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: three afternoons left the road unknown")
+		get_tree().quit(1)
+		return
+	var nessa_open := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Nessa Pod" and bool(row.get("can_road", false)) and str(row.get("road_line", "x")) == "":
+			nessa_open = true
+	if not nessa_open:
+		push_error("smoke: the card hid the rumour before it was filed")
 		get_tree().quit(1)
 		return
 	accept_road()
@@ -5028,8 +5042,16 @@ func _run_smoke() -> void:
 	for entry in Trust.audit:
 		if str(entry.get("action", "")) == "parish_road_rumour":
 			road_notes += 1
-	if road_notes != 1 or _road_line() != "The book keeps the rumour of the road beyond the hedge.":
+	if road_notes != 1 or _road_line() != "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "The road is only a rumour.":
 		push_error("smoke: the rumour was filed twice")
+		get_tree().quit(1)
+		return
+	var nessa_kept := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
+			nessa_kept = true
+	if not nessa_kept:
+		push_error("smoke: the card hid the filed rumour")
 		get_tree().quit(1)
 		return
 	for notice in Trust.notices():
@@ -7894,6 +7916,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"can_file": person.present and id == "nessa",
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
+			"road_line": _road_card_line() if id == "nessa" else "",
 		})
 	return rows
 
