@@ -667,7 +667,7 @@ func _build_road_stones() -> void:
 		bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
 	var bench := Node3D.new()
 	bench.position = Vector3(0.62, 0.0, -14.4)
-	bench.rotation.y = 1.4
+	bench.rotation.y = atan2(-0.6167, -0.1167)
 	bench.visible = false
 	bench.add_to_group("parish_road_bench")
 	add_child(bench)
@@ -822,6 +822,8 @@ func _road_bench_count() -> int:
 		if bench == null or not bench.visible:
 			continue
 		if bench.global_position.z >= -14.0 or bench.global_position.x < 0.4:
+			return -1
+		if bench.rotation.y > -1.4 or bench.rotation.y < -2.1:
 			return -1
 		var planks := 0
 		for child in bench.get_children():
