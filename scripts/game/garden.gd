@@ -860,11 +860,39 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	opening_bells[0].growth = 0.76
+	var held_peach := opening_peach.growth
+	var held_cane := opening_cane.growth
+	var held_far := opening_far.growth
+	var held_reed := opening_reed.growth
+	var held_bell := opening_bells[0].growth
+	soil.tick(120.0, "golden")
+	if opening_peach.growth != held_peach or opening_cane.growth != held_cane or opening_far.growth != held_far or opening_reed.growth != held_reed or opening_bells[0].growth <= held_bell:
+		push_error("smoke: day 1 grew a held opening crop")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	soil.tick(30.0, "golden")
+	if opening_peach.growth <= held_peach or opening_bells[0].growth < 1.0:
+		push_error("smoke: day 2 left the peach held")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	opening_peach.growth = held_peach
+	opening_cane.growth = held_cane
+	opening_far.growth = held_far
+	opening_reed.growth = held_reed
+	opening_bells[0].growth = held_bell
+	opening_bells[0].fertility = 0.38
+	opening_bells[1].growth = 0.72
+	opening_bells[1].fertility = 0.38
+	opening_bells[2].growth = 0.70
+	opening_bells[2].fertility = 0.38
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
 		plot.growth = 0.0
 		plot.tilled = false
+		plot.grow_from_day = 1
 	for i in 3:
 		_force_plant(i, 1, "meadowbell", 1.0)
 	_refresh_soil_colors()
@@ -5482,13 +5510,13 @@ func _opening_plants() -> void:
 	_force_plant(2, 1, "meadowbell", 0.72)
 	_force_plant(1, 2, "meadowbell", 0.70)
 	# ponytail: tall enough for the one fruit to read; a ripe peach if the lane should count it.
-	_force_plant(3, 2, "peach", 0.72)
+	_force_plant(3, 2, "peach", 0.72, 2)
 	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
-	_force_plant(4, 2, "bramble", 0.78)
+	_force_plant(4, 2, "bramble", 0.78, 2)
 	# ponytail: the second cane is across the path; a tilled empty bed if rain should set it later.
-	_force_plant(5, 2, "bramble", 0.74)
+	_force_plant(5, 2, "bramble", 0.74, 2)
 	# ponytail: tall enough for the seed heads to read; a ripe reed if Bulrush should come on the first day.
-	_force_plant(7, 5, "reed", 0.70)
+	_force_plant(7, 5, "reed", 0.70, 2)
 
 func _feed_beds() -> void:
 	for cell in soil.all():
@@ -5503,7 +5531,7 @@ func _seed_open(seed_id: String) -> bool:
 			return not bool(item.get("locked", true))
 	return false
 
-func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
+func _force_plant(ix: int, iz: int, plant_id: String, growth: float, grow_day: int = 1) -> void:
 	var plot := soil.get_cell(ix, iz)
 	plot.tilled = true
 	plot.plant_id = plant_id
@@ -5512,6 +5540,7 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float) -> void:
 	plot.fertility = 0.38
 	plot.taken = false
 	plot.eaten_by = ""
+	plot.grow_from_day = grow_day
 
 func _build_patches() -> void:
 	soil_lid = BoxMesh.new()

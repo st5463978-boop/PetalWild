@@ -72,6 +72,9 @@ func tick(game_minutes: float, weather: String) -> Array:
 		var chem_need := str(definition.get("chem", ""))
 		if chem_need != "" and soil.chem != chem_need:
 			continue
+		# ponytail: a bed can wait for a later day; moisture and feed still move.
+		if soil.grow_from_day > Clock.day:
+			continue
 		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
 		if soil.growth >= 1.0:
 			soil.taken = false

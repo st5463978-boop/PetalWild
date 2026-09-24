@@ -12,6 +12,7 @@ var growth: float = 0.0
 var wilt: float = 0.0
 var taken: bool = false
 var eaten_by: String = ""
+var grow_from_day: int = 1
 
 func to_dict() -> Dictionary:
 	return {
@@ -26,6 +27,7 @@ func to_dict() -> Dictionary:
 		"wilt": wilt,
 		"taken": taken,
 		"eaten_by": eaten_by,
+		"grow_from_day": grow_from_day,
 	}
 
 func apply_dict(data: Dictionary) -> void:
@@ -38,3 +40,4 @@ func apply_dict(data: Dictionary) -> void:
 	wilt = float(data.get("wilt", 0.0))
 	taken = bool(data.get("taken", false))
 	eaten_by = str(data.get("eaten_by", ""))
+	grow_from_day = int(data.get("grow_from_day", 1))
