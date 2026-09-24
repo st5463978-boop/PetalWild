@@ -887,6 +887,33 @@ func _run_smoke() -> void:
 	opening_bells[1].fertility = 0.38
 	opening_bells[2].growth = 0.70
 	opening_bells[2].fertility = 0.38
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the day-1 hold did not save")
+		get_tree().quit(1)
+		return
+	opening_peach.grow_from_day = 1
+	opening_cane.grow_from_day = 1
+	opening_far.grow_from_day = 1
+	opening_reed.grow_from_day = 1
+	apply_state(SaveGame.read_slot(1))
+	opening_peach = soil.get_cell(3, 2)
+	opening_cane = soil.get_cell(4, 2)
+	opening_far = soil.get_cell(5, 2)
+	opening_reed = soil.get_cell(7, 5)
+	var reloaded_bell := soil.get_cell(1, 1)
+	if opening_peach.grow_from_day != 2 or opening_cane.grow_from_day != 2 or opening_far.grow_from_day != 2 or opening_reed.grow_from_day != 2 or reloaded_bell.grow_from_day != 1:
+		push_error("smoke: a reload dropped the day-1 hold")
+		get_tree().quit(1)
+		return
+	var reloaded_peach := opening_peach.growth
+	var reloaded_bell_growth := reloaded_bell.growth
+	soil.tick(60.0, "golden")
+	if opening_peach.growth != reloaded_peach or opening_cane.growth != held_cane or opening_reed.growth != held_reed or reloaded_bell.growth <= reloaded_bell_growth:
+		push_error("smoke: a reloaded day 1 grew a held crop")
+		get_tree().quit(1)
+		return
+	reloaded_bell.growth = 0.76
+	reloaded_bell.fertility = 0.38
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
