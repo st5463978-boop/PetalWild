@@ -1298,7 +1298,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	var demand := int(_place_stats(world_snapshot()).get("stall_demand", -1))
-	if demand != _present_people() + ecology.resident_total() or demand < 1:
+	if demand != _present_people() + ecology.resident_total() + _lane_passers() or demand < 1:
 		push_error("smoke: stall demand mismatch")
 		get_tree().quit(1)
 		return
@@ -4829,7 +4829,8 @@ func _run_smoke() -> void:
 	lane_bed.growth = 1.0
 	var lane_stats := _place_stats(world_snapshot())
 	var park: Dictionary = ContentDB.venues.get("grove_park", {})
-	if _lane_passers() != lane_before + 1 or int(lane_stats.get("lane_passers", -1)) != lane_before + 1 or bool(park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	var lane_bodies := _present_people() + ecology.resident_total()
+	if _lane_passers() != lane_before + 1 or int(lane_stats.get("lane_passers", -1)) != lane_before + 1 or int(lane_stats.get("stall_demand", -1)) != lane_bodies + lane_before + 1 or bool(park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a golden afternoon ignored a ripe bed on the lane")
 		get_tree().quit(1)
 		return
@@ -4842,7 +4843,7 @@ func _run_smoke() -> void:
 	Clock.day = 2
 	Clock.set_hour(15.0)
 	_lamps()
-	if Clock.weather != "rain" or _lane_passers() != 0 or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	if Clock.weather != "rain" or _lane_passers() != 0 or int(_place_stats(world_snapshot()).get("stall_demand", -1)) != lane_bodies or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: the rain counted the lane or lit the lanterns")
 		get_tree().quit(1)
 		return
@@ -7711,7 +7712,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
-	stats["stall_demand"] = _present_people() + ecology.resident_total()
+	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers()
 	stats["lane_passers"] = _lane_passers()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
