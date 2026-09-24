@@ -329,6 +329,20 @@ func _bell_line() -> String:
 			return ""
 	return "Three meadowbells are showing."
 
+func _peach_line() -> String:
+	# ponytail: one page line for the opening peach; it goes when that fruit ripens.
+	var plot := soil.get_cell(3, 2)
+	if plot.plant_id != "peach" or plot.growth >= 1.0:
+		return ""
+	return "A peach is showing."
+
+func _reed_line() -> String:
+	# ponytail: one page line for the opening reed; it goes when that reed ripens.
+	var plot := soil.get_cell(7, 5)
+	if plot.plant_id != "reed" or plot.growth >= 1.0:
+		return ""
+	return "A reed is showing."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -809,14 +823,19 @@ func _run_smoke() -> void:
 		return
 	opening_cane.growth = 0.78
 	var opening_reed := soil.get_cell(7, 5)
-	if opening_peach.growth < 0.7 or opening_peach.growth >= 1.0 or opening_reed.plant_id != "reed" or opening_reed.growth < 0.65 or opening_reed.growth >= 1.0 or _plot_line(opening_peach).find("Fruit showing.") == -1 or _plot_line(opening_reed).find("Heads showing.") == -1 or _lane_passers() != 0:
+	if opening_peach.growth < 0.7 or opening_peach.growth >= 1.0 or opening_reed.plant_id != "reed" or opening_reed.growth < 0.65 or opening_reed.growth >= 1.0 or _plot_line(opening_peach).find("Fruit showing.") == -1 or _plot_line(opening_reed).find("Heads showing.") == -1 or _lane_passers() != 0 or _peach_line() != "A peach is showing." or _reed_line() != "A reed is showing.":
 		push_error("smoke: the opening peach or reed ripened the lane")
 		get_tree().quit(1)
 		return
 	opening_peach.growth = 1.0
 	opening_reed.growth = 0.22
-	if _plot_line(opening_peach).find("Fruit showing.") != -1 or _plot_line(opening_reed).find("Heads showing.") != -1 or _lane_passers() < 1:
+	if _plot_line(opening_peach).find("Fruit showing.") != -1 or _plot_line(opening_reed).find("Heads showing.") != -1 or _lane_passers() < 1 or _peach_line() != "" or _reed_line() != "A reed is showing.":
 		push_error("smoke: a ripe peach kept the young fruit line")
+		get_tree().quit(1)
+		return
+	opening_reed.growth = 1.0
+	if _reed_line() != "":
+		push_error("smoke: a ripe reed kept the young reed line")
 		get_tree().quit(1)
 		return
 	opening_peach.growth = 0.72
@@ -8172,6 +8191,8 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["road_line"] = _road_line()
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
+	stats["peach_line"] = _peach_line()
+	stats["reed_line"] = _reed_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
