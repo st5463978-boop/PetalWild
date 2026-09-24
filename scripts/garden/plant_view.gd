@@ -28,9 +28,7 @@ func _build(id: String) -> void:
 			_ball(Vector3(0.16, 0.5, 0.08), 0.16, Color("#4e9a42"))
 			_ball(Vector3(0.02, 0.48, 0.16), 0.09, Color("#e39a52"))
 		"reed":
-			_stem(0.7, 0.02, Color("#6d7a3a"), Vector3(-0.06, 0, 0))
-			_stem(0.55, 0.018, Color("#8a9144"), Vector3(0.05, 0, 0.04))
-			_stem(0.62, 0.016, Color("#5c6a32"), Vector3(0.0, 0, -0.05))
+			_reed()
 		"bramble":
 			_ball(Vector3(0, 0.16, 0), 0.2, Color("#2f6a32"))
 			_ball(Vector3(0.12, 0.14, 0.06), 0.14, Color("#3d7a38"))
@@ -79,6 +77,19 @@ func _ball(at: Vector3, radius: float, color: Color, squash := Vector3.ONE) -> M
 	node.scale = squash
 	add_child(node)
 	return node
+
+func _reed() -> void:
+	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
+	var stems: Array = [
+		[0.7, 0.02, Color("#6d7a3a"), Vector3(-0.06, 0, 0)],
+		[0.55, 0.018, Color("#8a9144"), Vector3(0.05, 0, 0.04)],
+		[0.62, 0.016, Color("#5c6a32"), Vector3(0.0, 0, -0.05)],
+	]
+	for stem in stems:
+		var height: float = stem[0]
+		var at: Vector3 = stem[3]
+		_stem(height, stem[1], stem[2], at)
+		_ball(at + Vector3(0, height + 0.08, 0), 0.11, Color("#6a4a28"), Vector3(0.85, 2.1, 0.85))
 
 func _meadowbell() -> void:
 	# ponytail: three bells and a leaf pad; a flower mesh if the beds get authored plants.
