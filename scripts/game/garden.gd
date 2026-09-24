@@ -772,8 +772,9 @@ func _bind_watch(saved) -> void:
 func _run_smoke() -> void:
 	var opening_peach := soil.get_cell(3, 2)
 	var opening_cane := soil.get_cell(4, 2)
+	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
@@ -5393,6 +5394,8 @@ func _opening_plants() -> void:
 	_force_plant(3, 2, "peach", 0.28)
 	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
 	_force_plant(4, 2, "bramble", 0.32)
+	# ponytail: the second cane is across the path; a tilled empty bed if rain should set it later.
+	_force_plant(5, 2, "bramble", 0.3)
 	_force_plant(7, 5, "reed", 0.22)
 
 func _feed_beds() -> void:
