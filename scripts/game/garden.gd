@@ -92,6 +92,7 @@ func _build() -> void:
 
 	GardenDressing.new().build(self)
 	GardenProps.new().build(self)
+	_build_road_stones()
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -554,7 +555,50 @@ func accept_road() -> void:
 	Trust.file_road_rumour("nessa")
 	toast("Nessa filed the road rumour. Nothing left the parish.")
 	nessa.say("The road is only a rumour. The book keeps it.")
+	_sync_road_stones()
 	refresh_panels()
+
+func _build_road_stones() -> void:
+	# ponytail: three flats past the gate; a path mesh if the rumour should become a road.
+	var spots: Array[Vector3] = [
+		Vector3(0.18, 0.07, -12.05),
+		Vector3(-0.22, 0.06, -12.72),
+		Vector3(0.08, 0.07, -13.4),
+	]
+	for at in spots:
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.46, 0.07, 0.32)
+		var stone := MeshInstance3D.new()
+		stone.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color("#4a4038")
+		material.roughness = 0.92
+		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		stone.material_override = material
+		stone.position = at
+		stone.rotation.y = at.x * 2.0
+		stone.visible = false
+		stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		stone.add_to_group("parish_road_stone")
+		add_child(stone)
+
+func _sync_road_stones() -> void:
+	var show := Trust.has_action("parish_road_rumour")
+	for node in get_tree().get_nodes_in_group("parish_road_stone"):
+		var stone := node as Node3D
+		if stone:
+			stone.visible = show
+
+func _road_stone_count() -> int:
+	var count := 0
+	for node in get_tree().get_nodes_in_group("parish_road_stone"):
+		var stone := node as MeshInstance3D
+		if stone == null or not stone.visible:
+			continue
+		if stone.global_position.z >= GardenLayout.GATE.z:
+			return -1
+		count += 1
+	return count
 
 func _file_nessa() -> void:
 	Trust.file_notes("nessa", "Pollinator notes filed in the parish book. No external action.")
@@ -915,6 +959,7 @@ func apply_state(data: Dictionary) -> void:
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
+	_sync_road_stones()
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -5969,6 +6014,10 @@ func _run_smoke() -> void:
 		push_error("smoke: an unknown road was filed")
 		get_tree().quit(1)
 		return
+	if _road_stone_count() != 0:
+		push_error("smoke: stones marked a road that was not filed")
+		get_tree().quit(1)
+		return
 	var rumour_clock_day := Clock.day
 	var rumour_clock_hour := Clock.hour()
 	Clock.day = 1
@@ -6016,6 +6065,10 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
+	if _road_stone_count() != 3 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("smoke: the filed rumour left the gate bare")
+		get_tree().quit(1)
+		return
 	var nessa_kept := false
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
@@ -6051,7 +6104,8 @@ func _run_smoke() -> void:
 		if str(entry.get("action", "")) != "parish_road_rumour":
 			wiped.append(entry)
 	Trust.audit = wiped
-	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "":
+	_sync_road_stones()
+	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0:
 		push_error("smoke: the book line stayed after the filing was cleared")
 		get_tree().quit(1)
 		return
@@ -6061,11 +6115,12 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	Trust.apply_state(loaded_trust)
+	_sync_road_stones()
 	var nessa_reloaded := false
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
-	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
 		get_tree().quit(1)
 		return
