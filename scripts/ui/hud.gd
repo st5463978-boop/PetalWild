@@ -153,6 +153,9 @@ func show_place(stats: Dictionary) -> void:
 	var reed_line := str(stats.get("reed_line", ""))
 	if reed_line != "":
 		journal_box.add_child(ThemeKit.label(reed_line, 14))
+	var pear_line := str(stats.get("pear_line", ""))
+	if pear_line != "":
+		journal_box.add_child(ThemeKit.label(pear_line, 14))
 	var grow_line := str(stats.get("grow_line", ""))
 	if grow_line != "":
 		journal_box.add_child(ThemeKit.label(grow_line, 14))

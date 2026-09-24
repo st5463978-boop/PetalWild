@@ -343,6 +343,13 @@ func _reed_line() -> String:
 		return ""
 	return "A reed is showing."
 
+func _pear_line() -> String:
+	# ponytail: one page line for the opening pear; it goes when that pear ripens.
+	var plot := soil.get_cell(4, 1)
+	if plot.plant_id != "mosspear" or plot.growth >= 1.0:
+		return ""
+	return "A mosspear is showing."
+
 func _grow_line() -> String:
 	# ponytail: one dawn line on day 2; it lasts until the next morning.
 	var day := Clock.day
@@ -915,8 +922,18 @@ func _run_smoke() -> void:
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
+		get_tree().quit(1)
+		return
+	opening_pear.growth = 1.0
+	if _pear_line() != "" or _lane_passers() < 1:
+		push_error("smoke: a ripe mosspear kept the young pear page")
+		get_tree().quit(1)
+		return
+	opening_pear.growth = 0.72
+	if _pear_line() != "A mosspear is showing." or _lane_passers() != 0:
+		push_error("smoke: the young pear page stayed down")
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 1.0
@@ -8937,6 +8954,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()
 	stats["reed_line"] = _reed_line()
+	stats["pear_line"] = _pear_line()
 	stats["grow_line"] = _grow_line()
 	stats["sweet_line"] = _sweet_line()
 	stats["ripe_line"] = _ripe_cane_line()
