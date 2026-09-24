@@ -624,6 +624,8 @@ func sell(plant_id: String) -> void:
 	if _bell_rumour_count() == 1:
 		toast("Three bells stand on the far lawn.")
 		Trust.bell_named_day = Clock.day
+	if _east_closer_bell_rumour_count() == 1:
+		toast("A bell stands at the parish end.")
 	if _lane_passers() > 0:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
@@ -7057,7 +7059,7 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var bell_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or _sale_rumour_count() != 1 or Trust.level("nessa") != loam_trust:
+	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 3 or str(events[0]) != "A bell stands at the parish end." or str(events[1]) != "Three bells stand on the far lawn." or str(events[2]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or _sale_rumour_count() != 1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a sale hid the far-lawn bells")
 		get_tree().quit(1)
 		return
@@ -7070,6 +7072,7 @@ func _run_smoke() -> void:
 		return
 	while Trust.audit.size() > bell_sale_audit:
 		Trust.audit.pop_back()
+	events.pop_front()
 	events.pop_front()
 	events.pop_front()
 	var nessa_kept := false
@@ -7153,7 +7156,7 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var quiet_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or _bell_sale_line() != "" or _sale_rumour_count() != 0 or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
+	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or str(events[0]) == "A bell stands at the parish end." or _bell_sale_line() != "" or _sale_rumour_count() != 0 or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a quiet sale named the far-lawn bells")
 		get_tree().quit(1)
 		return
