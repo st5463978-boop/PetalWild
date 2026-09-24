@@ -378,12 +378,29 @@ func _ripe_cane_line() -> String:
 		return ""
 	return "The canes are ripe enough."
 
+func _wade_line() -> String:
+	# ponytail: one page line before the first sighting; it goes once Bulrush is sighted.
+	if GardenLayout.BASE_POND_CELLS + scooped.size() < 26:
+		return ""
+	var ripe := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "reed" and plot.growth >= 1.0:
+			ripe += 1
+	if ripe < 3:
+		return ""
+	if ecology.rules.rank_of(str(ecology.states.get("bulrush", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return ""
+	return "The reeds are ready to wade."
+
 func _rumour_blurb(id: String) -> String:
 	# ponytail: one rumour while that page line is up; other species stay unseen.
 	if id == "bellhelp" and _sweet_line() != "":
 		return "The meadow is sweet enough."
 	if id == "berrypatch" and _ripe_cane_line() != "":
 		return "The canes are ripe enough."
+	if id == "bulrush" and _wade_line() != "":
+		return "The reeds are ready to wade."
 	return "Not sighted yet."
 
 func _rumour_count(sentence: String) -> int:
@@ -393,13 +410,13 @@ func _rumour_count(sentence: String) -> int:
 		if str(entry.get("name", "")) != "A rumour":
 			continue
 		var blurb := str(entry.get("blurb", ""))
-		if blurb.find("Bellhelp") != -1 or blurb.find("Berrypatch") != -1:
+		if blurb.find("Bellhelp") != -1 or blurb.find("Berrypatch") != -1 or blurb.find("Bulrush") != -1:
 			return -1
 		if blurb == sentence:
 			count += 1
 		elif blurb == "Not sighted yet.":
 			continue
-		elif blurb == _sweet_line() or blurb == _ripe_cane_line():
+		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line():
 			continue
 		else:
 			return -1
@@ -410,6 +427,9 @@ func _sweet_rumour_count() -> int:
 
 func _cane_rumour_count() -> int:
 	return _rumour_count("The canes are ripe enough.")
+
+func _wade_rumour_count() -> int:
+	return _rumour_count("The reeds are ready to wade.")
 
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
@@ -923,10 +943,51 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	opening_reed.growth = 1.0
-	if _reed_line() != "":
+	if _reed_line() != "" or _wade_line() != "":
 		push_error("smoke: a ripe reed kept the young reed line")
 		get_tree().quit(1)
 		return
+	var scoop_n := scooped.size()
+	while GardenLayout.BASE_POND_CELLS + scooped.size() < 26:
+		scooped.append(Vector3(0, 0, float(scooped.size())))
+	_force_plant(6, 5, "reed", 1.0)
+	_force_plant(8, 5, "reed", 1.0)
+	if _wade_line() != "The reeds are ready to wade." or _wade_line().find("Bulrush") != -1 or _wade_rumour_count() != 1:
+		push_error("smoke: three ripe reeds stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["bulrush"] = "sighted"
+	var rush_blurb := ""
+	for row in _journal_rows(world_snapshot()):
+		var rush_row: Dictionary = row
+		if str(rush_row.get("name", "")) == "Bulrush":
+			rush_blurb = str(rush_row.get("blurb", ""))
+	if _wade_line() != "" or _wade_rumour_count() != 0 or rush_blurb != str(ContentDB.species_def("bulrush").get("blurb", "")):
+		push_error("smoke: a sighting kept the wade line")
+		get_tree().quit(1)
+		return
+	ecology.states["bulrush"] = "rumoured"
+	soil.get_cell(8, 5).growth = 0.4
+	if _wade_line() != "":
+		push_error("smoke: two ripe reeds called the stand ready")
+		get_tree().quit(1)
+		return
+	soil.get_cell(8, 5).growth = 1.0
+	while scooped.size() > scoop_n:
+		scooped.pop_back()
+	if _wade_line() != "":
+		push_error("smoke: a narrow pond called the reeds ready")
+		get_tree().quit(1)
+		return
+	while scooped.size() < scoop_n + 4:
+		scooped.append(Vector3(0, 0, float(scooped.size())))
+	for extra in [Vector2i(6, 5), Vector2i(8, 5)]:
+		var spare := soil.get_cell(extra.x, extra.y)
+		spare.plant_id = ""
+		spare.growth = 0.0
+		spare.tilled = false
+	while scooped.size() > scoop_n:
+		scooped.pop_back()
 	opening_peach.growth = 0.72
 	opening_reed.growth = 0.70
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
@@ -2311,7 +2372,7 @@ func _run_smoke() -> void:
 		if str(entry.get("name", "")) == "A rumour":
 			saw_rumour = true
 			var rumour_blurb := str(entry.get("blurb", ""))
-			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line()):
+			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or rumour_blurb.find("Bulrush") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line() and rumour_blurb != _wade_line()):
 				push_error("smoke: rumour blurb leaked")
 				get_tree().quit(1)
 				return
@@ -8402,6 +8463,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["grow_line"] = _grow_line()
 	stats["sweet_line"] = _sweet_line()
 	stats["ripe_line"] = _ripe_cane_line()
+	stats["wade_line"] = _wade_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
