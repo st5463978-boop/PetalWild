@@ -1,7 +1,7 @@
 """Pi Hailo decide client for system-1 routing.
 
 High-frequency choices go to the Pi `hailo-decision` service
-(`HAILO_DECIDE_URL`, default the Cloudflare quick tunnel). This module does
+(`HAILO_DECIDE_URL`, default the Pi on Tailscale). This module does
 not call MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
 It does not download or recompile HEFs.
 """
@@ -18,10 +18,9 @@ from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
 
-# Cloudflare quick tunnel on the Pi. The hostname can change if hailo-decide-tunnel.service restarts.
-DEFAULT_DECIDE_URL = "https://fibre-especially-theaters-aerospace.trycloudflare.com"
-# On-tailnet only. Set HAILO_DECIDE_URL to this when the host is on the tailnet.
-TAILSCALE_DECIDE_URL = "http://100.126.22.71:8766"
+# Pi Tailscale. MagicDNS http://piai-1:8766/v1/decide is the same service.
+DEFAULT_DECIDE_URL = "http://100.126.22.71:8766/v1/decide"
+MAGICDNS_DECIDE_URL = "http://piai-1:8766/v1/decide"
 DECIDE_MODEL = "Qwen3-1.7B.hef"
 DECIDE_TIMEOUT = 75.0
 
@@ -72,6 +71,15 @@ def list_models(base_url: str, timeout: float = 2.0) -> list[str]:
 def decide_url() -> str:
     raw = os.environ.get("HAILO_DECIDE_URL", DEFAULT_DECIDE_URL).strip()
     return (raw or DEFAULT_DECIDE_URL).rstrip("/")
+
+
+def decide_origin(url: str) -> str:
+    """Host root for /health and /decide. A URL may already end in /v1/decide."""
+    raw = url.strip().rstrip("/")
+    for suffix in ("/v1/decide", "/decide"):
+        if raw.endswith(suffix):
+            return raw[: -len(suffix)]
+    return raw
 
 
 def question_for(prompt: str) -> str:
@@ -133,7 +141,7 @@ def post_decide(base_url: str, question: str, options: list[str], timeout: float
     errors: list[str] = []
     for path in ("/decide", "/v1/decide"):
         try:
-            payload = _post_json(base_url.rstrip("/") + path, body, timeout)
+            payload = _post_json(decide_origin(base_url) + path, body, timeout)
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
                 errors.append(f"404 {path}")
@@ -146,7 +154,7 @@ def post_decide(base_url: str, question: str, options: list[str], timeout: float
 
 
 def get_health(base_url: str, timeout: float = 5.0) -> dict:
-    request = urllib.request.Request(base_url.rstrip("/") + "/health", method="GET")
+    request = urllib.request.Request(decide_origin(base_url) + "/health", method="GET")
     with urllib.request.urlopen(request, timeout=timeout) as response:
         payload = json.loads(response.read().decode())
     if not isinstance(payload, dict):

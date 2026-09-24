@@ -1,9 +1,9 @@
 # Hailo decide status
 
-System-1 routes call the Pi `hailo-decision` service through the Cloudflare quick tunnel.
+System-1 routes call the Pi `hailo-decision` service on Tailscale.
 
-- `HAILO_DECIDE_URL` default: `https://fibre-especially-theaters-aerospace.trycloudflare.com`
-- On-tailnet override only: `http://100.126.22.71:8766`
+- `HAILO_DECIDE_URL` default: `http://100.126.22.71:8766/v1/decide`
+- MagicDNS equivalent: `http://piai-1:8766/v1/decide`
 - Health: `GET /health`
 - Choice: `POST /decide` with `{"question","options"}` (at least two options), then `/v1/decide` if that path is missing
 - Client timeout on decide: 75s
@@ -11,11 +11,11 @@ System-1 routes call the Pi `hailo-decision` service through the Cloudflare quic
 - No auth
 - Not used: MinoJEV, 0.6B RLCD, local CPU Qwen, HEF recompile
 
-The quick-tunnel hostname can change if `hailo-decide-tunnel.service` restarts. If health fails, read `CLOUDFLARE-DECIDE-URL.txt` on the Pi and set `HAILO_DECIDE_URL` to that host.
+`HAILO_DECIDE_URL` still overrides the default. MagicDNS `http://piai-1:8766/v1/decide` is the same Pi.
 
-## Smoke from this cloud VM (2026-09-24)
+## Earlier smoke (2026-09-24)
 
-Not on the tailnet. Both calls hit the Cloudflare URL above and succeeded.
+Recorded against the previous quick-tunnel host, before the Tailscale default.
 
 | Call | Result | Latency |
 | --- | --- | --- |

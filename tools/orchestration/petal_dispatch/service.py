@@ -43,7 +43,7 @@ def enqueue(record: dict) -> None:
 def route_task(task: str, event: str = "") -> dict:
     if event not in EVENTS:
         event = ""
-    # ponytail: one Pi HEF call; no local Ollama fallback if the tunnel is down.
+    # ponytail: one Pi HEF call; no local Ollama fallback if the tailnet is down.
     backend = HailoDecideBackend(decide_url())
     decision = decide(task, backend, event=event, timeout=DECIDE_TIMEOUT)
     record = {

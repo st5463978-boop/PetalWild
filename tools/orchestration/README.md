@@ -2,7 +2,7 @@
 
 This directory is the PetalWild development foreman. It is not part of the Godot game. `scripts/`, `scenes/`, `data/`, and `shaders/` do not reference it. `.gdignore` keeps Godot from importing it.
 
-System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `https://fibre-especially-theaters-aerospace.trycloudflare.com` (Cloudflare quick tunnel). On the tailnet, set `HAILO_DECIDE_URL` to `http://100.126.22.71:8766`. `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` with at least two options. The client waits 75s. The wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. If health fails, the tunnel hostname may have changed; check `CLOUDFLARE-DECIDE-URL.txt` on the Pi.
+System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `http://100.126.22.71:8766/v1/decide`. MagicDNS `http://piai-1:8766/v1/decide` is the same service. `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` with at least two options. The client waits 75s. The wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. Set `HAILO_DECIDE_URL` to override the default.
 
 ## What this machine showed
 
