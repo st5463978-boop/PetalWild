@@ -343,6 +343,15 @@ func _reed_line() -> String:
 		return ""
 	return "A reed is showing."
 
+func _grow_line() -> String:
+	# ponytail: one dawn line on day 2; it lasts until the next morning.
+	var day := Clock.day
+	var hour := Clock.hour()
+	var showing := (day == 2 and hour >= 5.0) or (day == 3 and hour < 5.0)
+	if not showing:
+		return ""
+	return "The peach, the brambles, and the reed take up growing."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -914,6 +923,34 @@ func _run_smoke() -> void:
 		return
 	reloaded_bell.growth = 0.76
 	reloaded_bell.fertility = 0.38
+	if _grow_line() != "":
+		push_error("smoke: day 1 announced the held crops")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(4.0)
+	if _grow_line() != "":
+		push_error("smoke: the night before dawn announced the held crops")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	if _grow_line() != "The peach, the brambles, and the reed take up growing." or _grow_line().find("Bellhelp") != -1:
+		push_error("smoke: dawn on day 2 stayed quiet")
+		get_tree().quit(1)
+		return
+	Clock.day = 3
+	Clock.set_hour(4.5)
+	if _grow_line() == "":
+		push_error("smoke: the line left before the next morning")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(5.0)
+	if _grow_line() != "":
+		push_error("smoke: the next morning kept the growing line")
+		get_tree().quit(1)
+		return
+	Clock.day = 1
+	Clock.set_hour(15.2)
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -8249,6 +8286,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()
 	stats["reed_line"] = _reed_line()
+	stats["grow_line"] = _grow_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
