@@ -924,6 +924,51 @@ func _run_smoke() -> void:
 		push_error("smoke: the cane rumour stayed named")
 		get_tree().quit(1)
 		return
+	if _plot_line(opening_cane).find("Rich enough.") != -1:
+		push_error("smoke: poor soil called the canes rich")
+		get_tree().quit(1)
+		return
+	_force_plant(6, 2, "bramble", 1.0)
+	_force_plant(6, 3, "bramble", 0.78)
+	if _plot_line(opening_cane).find("Rich enough.") != -1 or _plot_line(soil.get_cell(6, 3)).find("Berries showing.") == -1:
+		push_error("smoke: three canes in poor soil looked rich")
+		get_tree().quit(1)
+		return
+	var saved_feed: Array = []
+	for cell in soil.all():
+		var fed: SoilCell = cell
+		if fed.tilled:
+			saved_feed.append([fed, fed.fertility])
+			fed.fertility = 0.7
+	var young_cane := soil.get_cell(6, 3)
+	if _plot_line(opening_cane).find("Rich enough.") == -1 or _plot_line(opening_far).find("Rich enough.") == -1 or _plot_line(soil.get_cell(6, 2)).find("Rich enough.") == -1 or _plot_line(young_cane).find("Rich enough.") != -1 or _plot_line(young_cane).find("Berries showing.") == -1 or _plot_line(opening_cane).find("Grapling") != -1:
+		push_error("smoke: rich canes stayed quiet")
+		get_tree().quit(1)
+		return
+	opening_far.growth = 0.74
+	if _plot_line(opening_cane).find("Rich enough.") != -1:
+		push_error("smoke: two ripe canes looked rich")
+		get_tree().quit(1)
+		return
+	opening_far.growth = 1.0
+	ecology.states["grapling"] = "sighted"
+	if _plot_line(opening_cane).find("Rich enough.") != -1:
+		push_error("smoke: a sighting kept the rich cane line")
+		get_tree().quit(1)
+		return
+	ecology.states["grapling"] = "rumoured"
+	for row in saved_feed:
+		var restored: SoilCell = row[0]
+		restored.fertility = row[1]
+	for extra in [Vector2i(6, 2), Vector2i(6, 3)]:
+		var spare := soil.get_cell(extra.x, extra.y)
+		spare.plant_id = ""
+		spare.growth = 0.0
+		spare.tilled = false
+	if _plot_line(opening_cane).find("Rich enough.") != -1:
+		push_error("smoke: the rich line stayed after the soil was restored")
+		get_tree().quit(1)
+		return
 	opening_far.growth = 0.74
 	opening_cane.growth = 0.32
 	if _plot_line(opening_cane).find("Berries showing.") != -1:
@@ -7149,7 +7194,21 @@ func _plot_line(plot: SoilCell) -> String:
 	# ponytail: the bed remembers who ate it until the fruit is ripe again.
 	if plot.taken and plot.growth < 1.0:
 		return line + "  ·  Growing back."
+	if _rich_cane(plot):
+		return line + "  ·  Rich enough."
 	return line
+
+func _rich_cane(plot: SoilCell) -> bool:
+	# ponytail: the ripe canes only, and only while three of them stand in rich soil.
+	if plot.plant_id != "bramble" or plot.growth < 1.0:
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("grapling", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return false
+	var world := world_snapshot()
+	if float(world.get("fertility", 0.0)) < 0.55:
+		return false
+	var mature: Dictionary = world.get("mature", {})
+	return int(mature.get("bramble", 0)) >= 3
 
 func _bees_hurrying(plot: SoilCell) -> bool:
 	# ponytail: the rung seedling only; the other ripe bell if that bed should say so too.
