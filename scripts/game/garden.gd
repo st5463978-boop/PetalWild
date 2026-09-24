@@ -601,6 +601,20 @@ func _build_road_stones() -> void:
 	path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	path.add_to_group("parish_road_path")
 	add_child(path)
+	var inner := BoxMesh.new()
+	inner.size = Vector3(0.9, 0.03, 0.75)
+	var inside := MeshInstance3D.new()
+	inside.mesh = inner
+	var inside_mat := StandardMaterial3D.new()
+	inside_mat.albedo_color = Color("#6a5e4c")
+	inside_mat.roughness = 0.96
+	inside_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	inside.material_override = inside_mat
+	inside.position = Vector3(0.0, 0.02, -9.675)
+	inside.visible = false
+	inside.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inside.add_to_group("parish_road_inside")
+	add_child(inside)
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.85
 	disc.bottom_radius = 0.85
@@ -666,6 +680,10 @@ func _sync_road_stones() -> void:
 		var path := node as Node3D
 		if path:
 			path.visible = show
+	for node in get_tree().get_nodes_in_group("parish_road_inside"):
+		var inside := node as Node3D
+		if inside:
+			inside.visible = show
 	for node in get_tree().get_nodes_in_group("parish_road_lawn"):
 		var lawn := node as Node3D
 		if lawn:
@@ -693,6 +711,27 @@ func _road_path_count() -> int:
 		if north > -9.85 or north < -10.15 or south > -13.35:
 			return -1
 		var albedo := path.material_override as StandardMaterial3D
+		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
+			return -1
+		count += 1
+	return count
+
+func _road_inside_count() -> int:
+	var count := 0
+	for node in get_tree().get_nodes_in_group("parish_road_inside"):
+		var inside := node as MeshInstance3D
+		if inside == null or not inside.visible:
+			continue
+		var size := (inside.mesh as BoxMesh).size
+		var north := inside.global_position.z + size.z * 0.5
+		var south := inside.global_position.z - size.z * 0.5
+		if north > -9.15 or north < -9.45 or south > -9.95 or south < -10.2:
+			return -1
+		if absf(inside.global_position.x) > 0.2:
+			return -1
+		if GardenLayout.world_to_cell(inside.global_position).x >= 0 or GardenLayout.in_plots(inside.global_position.x, inside.global_position.z):
+			return -1
+		var albedo := inside.material_override as StandardMaterial3D
 		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
 			return -1
 		count += 1
@@ -6175,7 +6214,7 @@ func _run_smoke() -> void:
 		push_error("smoke: an unknown road was filed")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "":
+	if _road_stone_count() != 0 or _road_path_count() != 0 or _road_inside_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "":
 		push_error("smoke: stones marked a road that was not filed")
 		get_tree().quit(1)
 		return
@@ -6226,7 +6265,7 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
@@ -6266,7 +6305,7 @@ func _run_smoke() -> void:
 			wiped.append(entry)
 	Trust.audit = wiped
 	_sync_road_stones()
-	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "":
+	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_inside_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "":
 		push_error("smoke: the book line stayed after the filing was cleared")
 		get_tree().quit(1)
 		return
@@ -6281,7 +6320,7 @@ func _run_smoke() -> void:
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
-	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
 		get_tree().quit(1)
 		return
