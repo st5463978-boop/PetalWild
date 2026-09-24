@@ -314,6 +314,8 @@ func sell(plant_id: String) -> void:
 	Economy.earn(price)
 	audio.play_kind("coin")
 	toast("Sold %s for %d petal." % [ContentDB.plant(plant_id).get("name", plant_id), price])
+	if _lane_passers() > 0:
+		Trust.file_lane_sale("lumen")
 	refresh_panels()
 
 func accept_lumen() -> void:
@@ -4843,11 +4845,42 @@ func _run_smoke() -> void:
 	var lane_bells := Economy.count("meadowbell")
 	Economy.add("meadowbell", 1)
 	sell("meadowbell")
-	if Economy.coins != kept_tin + 6 or Economy.count("meadowbell") != lane_bells or Trust.level("nessa") != loam_trust:
+	if Economy.coins != kept_tin + 6 or Economy.count("meadowbell") != lane_bells or Trust.level("nessa") != loam_trust or Trust.lane_sale_day != Clock.day:
 		push_error("smoke: a lane afternoon paid the book price")
 		get_tree().quit(1)
 		return
-	Economy.spend(6)
+	var lane_notes := 0
+	for entry in Trust.audit:
+		if str(entry.get("action", "")) == "parish_lane_sale":
+			lane_notes += 1
+			if bool(entry.get("external", true)) or int(entry.get("cost", -1)) != 0:
+				push_error("smoke: the lane line left the parish")
+				get_tree().quit(1)
+				return
+	if lane_notes != 1:
+		push_error("smoke: the lane sale missed the parish book")
+		get_tree().quit(1)
+		return
+	Economy.add("meadowbell", 1)
+	sell("meadowbell")
+	var lane_notes_again := 0
+	for entry in Trust.audit:
+		if str(entry.get("action", "")) == "parish_lane_sale":
+			lane_notes_again += 1
+	if Economy.coins != kept_tin + 12 or lane_notes_again != 1 or Trust.level("nessa") != loam_trust:
+		push_error("smoke: a second lane sale wrote another line")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the lane line did not save")
+		get_tree().quit(1)
+		return
+	var lane_loaded := SaveGame.read_slot(1)
+	if int(lane_loaded.get("trust", {}).get("lane_sale_day", -1)) != Clock.day:
+		push_error("smoke: the lane line did not reload")
+		get_tree().quit(1)
+		return
+	Economy.spend(12)
 	lane_bed.growth = 0.4
 	if _lane_passers() != lane_before:
 		push_error("smoke: a short bed counted on the lane")

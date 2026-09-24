@@ -3,11 +3,13 @@ extends Node
 var levels := {}
 var audit: Array = []
 var lumen_proposal_day := -1
+var lane_sale_day := -1
 
 func reset_new() -> void:
 	levels = {"lumen": 0, "bram": 0, "nessa": 0}
 	audit = []
 	lumen_proposal_day = -1
+	lane_sale_day = -1
 
 func level(person_id: String) -> int:
 	return int(levels.get(person_id, 0))
@@ -66,6 +68,22 @@ func file_draft(person_id: String) -> void:
 		"at": Time.get_datetime_string_from_system(),
 	})
 
+func file_lane_sale(person_id: String) -> void:
+	# ponytail: one line a day; file_notes if a lane sale should raise trust.
+	if lane_sale_day == Clock.day:
+		return
+	lane_sale_day = Clock.day
+	audit.append({
+		"person": person_id,
+		"action": "parish_lane_sale",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": "The lane paid one extra petal. Nothing left the parish.",
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_bee_note(person_id: String, note: String = "Bees on the bed. Nothing was spent.") -> void:
 	# ponytail: one bee line; file_notes if a note should raise trust.
 	audit.append({
@@ -111,6 +129,7 @@ func to_state() -> Dictionary:
 		"levels": levels.duplicate(),
 		"audit": audit.duplicate(true),
 		"lumen_proposal_day": lumen_proposal_day,
+		"lane_sale_day": lane_sale_day,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -120,3 +139,4 @@ func apply_state(data: Dictionary) -> void:
 	var saved_audit = data.get("audit", [])
 	audit = saved_audit.duplicate(true) if typeof(saved_audit) == TYPE_ARRAY else []
 	lumen_proposal_day = int(data.get("lumen_proposal_day", -1))
+	lane_sale_day = int(data.get("lane_sale_day", -1))
