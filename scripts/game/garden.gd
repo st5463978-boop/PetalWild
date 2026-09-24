@@ -5891,6 +5891,33 @@ func _run_smoke() -> void:
 	Clock.day = lamp_day
 	Clock.set_hour(lamp_hour)
 	_lamps()
+	var show_pear := soil.get_cell(9, 7)
+	var pear_saved := show_pear.to_dict()
+	_force_plant(9, 7, "mosspear", 0.72)
+	show_pear.moisture = 0.74
+	show_pear.fertility = 0.7
+	if _plot_line(show_pear).find("Pear showing.") == -1 or _plot_line(show_pear).find("Pear-sweet.") != -1:
+		push_error("smoke: a tall young mosspear stayed on its percent")
+		get_tree().quit(1)
+		return
+	show_pear.growth = 0.5
+	if _plot_line(show_pear).find("Pear showing.") != -1:
+		push_error("smoke: a short mosspear said the pear was showing")
+		get_tree().quit(1)
+		return
+	show_pear.growth = 0.72
+	show_pear.fertility = 0.4
+	if _plot_line(show_pear).find("Pear showing.") != -1 or _plot_line(show_pear).find("Needs feed.") == -1:
+		push_error("smoke: a hungry mosspear said the pear was showing")
+		get_tree().quit(1)
+		return
+	show_pear.fertility = 0.7
+	show_pear.growth = 1.0
+	if _plot_line(show_pear).find("Pear showing.") != -1:
+		push_error("smoke: a ripe mosspear kept the young pear line")
+		get_tree().quit(1)
+		return
+	show_pear.apply_dict(pear_saved)
 	var head_view := PlantView.new()
 	add_child(head_view)
 	head_view.show_plant("reed", 0.7, 0.8, 0.5)
@@ -7463,6 +7490,9 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Fruit showing."
 	if plot.plant_id == "reed" and plot.growth >= 0.7 and plot.growth < 1.0:
 		return line + "  ·  Heads showing."
+	# ponytail: the tall fed mosspear only; a short pear stays on the percent.
+	if plot.plant_id == "mosspear" and plot.growth >= 0.7 and plot.growth < 1.0:
+		return line + "  ·  Pear showing."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
 	if _bees_hurrying(plot):
