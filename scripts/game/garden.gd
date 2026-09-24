@@ -1007,6 +1007,26 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	grown_view.queue_free()
+	var hour_reed := soil.get_cell(7, 5)
+	var hour_view := PlantView.new()
+	add_child(hour_view)
+	hour_view.show_plant("reed", hour_reed.growth, hour_reed.moisture, hour_reed.fertility)
+	var hour_brown := 0
+	var hour_straw := 0
+	for hour_node in hour_view.get_children():
+		var hour_mesh := hour_node as MeshInstance3D
+		if hour_mesh == null or not (hour_mesh.mesh is SphereMesh):
+			continue
+		var hour_albedo: Color = (hour_mesh.material_override as StandardMaterial3D).albedo_color
+		if hour_albedo.is_equal_approx(Color("#6a4a28")):
+			hour_brown += 1
+		if hour_albedo.is_equal_approx(Color("#9a7040")):
+			hour_straw += 1
+	if hour_reed.plant_id != "reed" or absf(hour_reed.growth - 0.70) > 0.001 or hour_brown != 3 or hour_straw != 0:
+		push_error("smoke: a day-1 hour changed the reed heads")
+		get_tree().quit(1)
+		return
+	hour_view.queue_free()
 	var grow_i := 0
 	for cell in soil.all():
 		var grown_bed: SoilCell = cell
