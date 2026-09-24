@@ -46,11 +46,15 @@ func _build(id: String) -> void:
 	_rosette()
 
 func _rosette() -> void:
-	# ponytail: eight flat leaves under the crop; a bed mesh if the plots get ground cover.
+	# ponytail: eight short blades; a wider fan if they still read as discs.
 	for i in 8:
 		var angle := TAU * float(i) / 8.0
-		var leaf := _ball(Vector3(cos(angle) * 0.32, 0.035, sin(angle) * 0.32), 0.09, Color("#2c5a30"), Vector3(1.7, 0.25, 0.85))
-		leaf.rotation.y = angle
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.05, 0.22, 0.012)
+		var leaf := _paint(mesh, Color("#2c5a30"))
+		leaf.position = Vector3(cos(angle) * 0.26, 0.1, sin(angle) * 0.26)
+		leaf.rotation = Vector3(-0.65, -angle, 0.0)
+		add_child(leaf)
 
 func _stem(height: float, radius: float, color: Color, offset := Vector3.ZERO) -> MeshInstance3D:
 	var mesh := CylinderMesh.new()
