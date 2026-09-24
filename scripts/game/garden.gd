@@ -47,6 +47,7 @@ var last_land := 0
 var visual_timer := 0.0
 var loam_hours := 0.0
 var bell_day := -1
+var lane_afternoon_days: Array[int] = []
 var bird_day := -1
 var bee_day := -1
 var bee_note_day := -1
@@ -144,6 +145,8 @@ func _process(delta: float) -> void:
 		_ring_bells(world)
 		_note_bees()
 		_dawn_birds()
+	if Clock.running:
+		_note_lane_afternoon()
 	ecology.tick(delta, world)
 	_wire_jellies()
 	_update_creatures(delta)
@@ -276,6 +279,22 @@ func _sell_price(plant_id: String) -> int:
 	if _lane_passers() > 0:
 		price += 1
 	return price
+
+func _note_lane_afternoon() -> void:
+	# ponytail: three distinct afternoons; a clock if a partial afternoon should count.
+	if lane_afternoon_days.size() >= 3:
+		return
+	var hour := Clock.hour()
+	if hour < 12.0 or hour >= 17.0:
+		return
+	if _lane_passers() <= 0:
+		return
+	if lane_afternoon_days.has(Clock.day):
+		return
+	lane_afternoon_days.append(Clock.day)
+
+func _road_rumoured() -> bool:
+	return lane_afternoon_days.size() >= 3
 
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
@@ -625,6 +644,7 @@ func to_state() -> Dictionary:
 		"bird_day": bird_day,
 		"bee_day": bee_day,
 		"bee_note_day": bee_note_day,
+		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 	}
 
@@ -679,6 +699,9 @@ func apply_state(data: Dictionary) -> void:
 	bird_day = int(data.get("bird_day", -1))
 	bee_day = int(data.get("bee_day", -1))
 	bee_note_day = int(data.get("bee_note_day", -1))
+	lane_afternoon_days.clear()
+	for saved_day in data.get("lane_afternoon_days", []):
+		lane_afternoon_days.append(int(saved_day))
 	var flower = data.get("bee_flower", [])
 	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
 		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
@@ -4937,6 +4960,53 @@ func _run_smoke() -> void:
 		push_error("smoke: the mist counted the lane")
 		get_tree().quit(1)
 		return
+	var rumour_saved: Array[int] = []
+	for saved_day in lane_afternoon_days:
+		rumour_saved.append(saved_day)
+	lane_afternoon_days.clear()
+	var rumour_clock_day := Clock.day
+	var rumour_clock_hour := Clock.hour()
+	Clock.day = 1
+	Clock.set_hour(15.3)
+	_note_lane_afternoon()
+	Clock.day = 3
+	Clock.set_hour(15.3)
+	_note_lane_afternoon()
+	if _road_rumoured() or lane_afternoon_days.size() != 2:
+		push_error("smoke: two afternoons already rumoured the road")
+		get_tree().quit(1)
+		return
+	Clock.day = 5
+	Clock.set_hour(15.3)
+	_note_lane_afternoon()
+	_note_lane_afternoon()
+	var rumour_park: Dictionary = ContentDB.venues.get("grove_park", {})
+	if not _road_rumoured() or lane_afternoon_days.size() != 3 or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+		push_error("smoke: three afternoons left the road unknown")
+		get_tree().quit(1)
+		return
+	Clock.day = 2
+	Clock.set_hour(15.0)
+	_note_lane_afternoon()
+	if lane_afternoon_days.size() != 3 or Clock.weather != "rain" or _lane_passers() != 0:
+		push_error("smoke: the rain rumoured the road")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the road rumour did not save")
+		get_tree().quit(1)
+		return
+	var rumour_loaded := SaveGame.read_slot(1)
+	var rumour_saved_days = rumour_loaded.get("lane_afternoon_days", [])
+	if typeof(rumour_saved_days) != TYPE_ARRAY or rumour_saved_days.size() != 3:
+		push_error("smoke: the road rumour did not reload")
+		get_tree().quit(1)
+		return
+	lane_afternoon_days.clear()
+	for saved_day in rumour_saved:
+		lane_afternoon_days.append(saved_day)
+	Clock.day = rumour_clock_day
+	Clock.set_hour(rumour_clock_hour)
 	lane_bed.plant_id = lane_id
 	lane_bed.growth = lane_growth
 	lane_bed.taken = lane_taken
@@ -7792,6 +7862,8 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
 	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers()
 	stats["lane_passers"] = _lane_passers()
+	stats["road_rumour"] = _road_rumoured()
+	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
