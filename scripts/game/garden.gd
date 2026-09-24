@@ -976,6 +976,25 @@ func _run_smoke() -> void:
 		push_error("smoke: a reload dropped the berry leaves")
 		get_tree().quit(1)
 		return
+	var day_clock := Clock.day
+	var day_hour := Clock.hour()
+	var grow_saved: Array = []
+	for cell in soil.all():
+		var grow_bed: SoilCell = cell
+		grow_saved.append(grow_bed.to_dict())
+	Clock.day = 1
+	soil.tick(60.0, "golden")
+	if opening_pear.growth <= 0.72 or opening_lamp.growth <= 0.72 or opening_peach.growth != 0.72:
+		push_error("smoke: day 1 held the mosspear or the nightlantern")
+		get_tree().quit(1)
+		return
+	var grow_i := 0
+	for cell in soil.all():
+		var grown_bed: SoilCell = cell
+		grown_bed.apply_dict(grow_saved[grow_i])
+		grow_i += 1
+	Clock.day = day_clock
+	Clock.set_hour(day_hour)
 	opening_pear.growth = 1.0
 	if _pear_line() != "" or _lane_passers() < 1:
 		push_error("smoke: a ripe mosspear kept the young pear page")
