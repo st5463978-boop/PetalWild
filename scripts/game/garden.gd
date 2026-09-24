@@ -1109,6 +1109,73 @@ func _run_smoke() -> void:
 		push_error("smoke: the dusk line stayed after the weather turned")
 		get_tree().quit(1)
 		return
+	_force_plant(2, 3, "mosspear", 1.0)
+	_force_plant(2, 4, "mosspear", 1.0)
+	_force_plant(2, 5, "mosspear", 0.5)
+	if _plot_line(soil.get_cell(2, 3)).find("Pear-sweet.") != -1:
+		push_error("smoke: bare soil called the pears sweet")
+		get_tree().quit(1)
+		return
+	var moss_chem: Array = []
+	var night_n := 0
+	for cell in soil.all():
+		if night_n >= 4:
+			break
+		var chem_bed: SoilCell = cell
+		moss_chem.append([chem_bed, chem_bed.chem])
+		chem_bed.chem = "nightloam"
+		night_n += 1
+	if _plot_line(soil.get_cell(2, 3)).find("Pear-sweet.") != -1:
+		push_error("smoke: thin feed called the pears sweet")
+		get_tree().quit(1)
+		return
+	var moss_feed: Array = []
+	for cell in soil.all():
+		var fed_bed: SoilCell = cell
+		if fed_bed.tilled:
+			moss_feed.append([fed_bed, fed_bed.fertility])
+			fed_bed.fertility = 0.7
+	var sweet_pear := soil.get_cell(2, 3)
+	var second_pear := soil.get_cell(2, 4)
+	var short_pear := soil.get_cell(2, 5)
+	if _plot_line(sweet_pear).find("Pear-sweet.") == -1 or _plot_line(second_pear).find("Pear-sweet.") == -1 or _plot_line(short_pear).find("Pear-sweet.") != -1 or _plot_line(sweet_pear).find("Gushorn") != -1:
+		push_error("smoke: fed pears stayed quiet")
+		get_tree().quit(1)
+		return
+	second_pear.growth = 0.5
+	if _plot_line(sweet_pear).find("Pear-sweet.") != -1 or _plot_line(second_pear).find("Pear-sweet.") != -1:
+		push_error("smoke: one mosspear called the bed sweet")
+		get_tree().quit(1)
+		return
+	second_pear.growth = 1.0
+	moss_chem[0][0].chem = "base"
+	if _plot_line(sweet_pear).find("Pear-sweet.") != -1:
+		push_error("smoke: thin night-loam called the pears sweet")
+		get_tree().quit(1)
+		return
+	moss_chem[0][0].chem = "nightloam"
+	ecology.states["gushorn"] = "sighted"
+	if _plot_line(sweet_pear).find("Pear-sweet.") != -1:
+		push_error("smoke: a sighting kept the pear-sweet line")
+		get_tree().quit(1)
+		return
+	ecology.states["gushorn"] = "rumoured"
+	for chem_row in moss_chem:
+		var chem_plot: SoilCell = chem_row[0]
+		chem_plot.chem = chem_row[1]
+	for feed_row in moss_feed:
+		var feed_plot: SoilCell = feed_row[0]
+		feed_plot.fertility = feed_row[1]
+	for extra in [Vector2i(2, 3), Vector2i(2, 4), Vector2i(2, 5)]:
+		var spare_pear := soil.get_cell(extra.x, extra.y)
+		spare_pear.plant_id = ""
+		spare_pear.growth = 0.0
+		spare_pear.tilled = false
+		spare_pear.chem = "base"
+	if _plot_line(soil.get_cell(2, 3)).find("Pear-sweet.") != -1:
+		push_error("smoke: the pear-sweet line stayed after the beds were cleared")
+		get_tree().quit(1)
+		return
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
 	var bells_ready := true
 	for bell in opening_bells:
@@ -7270,7 +7337,24 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Growing back."
 	if _rich_cane(plot):
 		return line + "  ·  Rich enough."
+	if _pear_sweet(plot):
+		return line + "  ·  Pear-sweet."
 	return line
+
+func _pear_sweet(plot: SoilCell) -> bool:
+	# ponytail: ripe mosspears only, and only while the night-loam and the feed are both in.
+	if plot.plant_id != "mosspear" or plot.growth < 1.0:
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("gushorn", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return false
+	var world := world_snapshot()
+	if float(world.get("fertility", 0.0)) < 0.6:
+		return false
+	var chem: Dictionary = world.get("chem", {})
+	if int(chem.get("nightloam", 0)) < 4:
+		return false
+	var mature: Dictionary = world.get("mature", {})
+	return int(mature.get("mosspear", 0)) >= 2
 
 func _rich_cane(plot: SoilCell) -> bool:
 	# ponytail: the ripe canes only, and only while three of them stand in rich soil.
