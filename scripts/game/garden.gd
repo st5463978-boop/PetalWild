@@ -445,6 +445,8 @@ func _rumour_blurb(id: String) -> String:
 		return "The meadow is sweet enough."
 	if id == "berrypatch" and _ripe_cane_line() != "":
 		return "The canes are ripe enough."
+	if id == "berrypatch" and _leaf_line() != "":
+		return "The berries have leaves."
 	if id == "bulrush" and _wade_line() != "":
 		return "The reeds are ready to wade."
 	if id == "pegapear" and _dusk_line() != "":
@@ -464,7 +466,7 @@ func _rumour_count(sentence: String) -> int:
 			count += 1
 		elif blurb == "Not sighted yet.":
 			continue
-		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line() or blurb == _dusk_line():
+		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line() or blurb == _dusk_line() or blurb == _leaf_line():
 			continue
 		else:
 			return -1
@@ -475,6 +477,9 @@ func _sweet_rumour_count() -> int:
 
 func _cane_rumour_count() -> int:
 	return _rumour_count("The canes are ripe enough.")
+
+func _leaf_rumour_count() -> int:
+	return _rumour_count("The berries have leaves.")
 
 func _wade_rumour_count() -> int:
 	return _rumour_count("The reeds are ready to wade.")
@@ -947,7 +952,7 @@ func _run_smoke() -> void:
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
 	var opening_lamp := soil.get_cell(6, 4)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or opening_lamp.plant_id != "nightlantern" or opening_lamp.growth < 0.7 or opening_lamp.growth >= 1.0 or opening_lamp.chem != "nightloam" or _plot_line(opening_lamp).find("Light showing.") == -1 or _lantern_line() != "A nightlantern is showing." or _seed_line() != "The nightlantern seed is open." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _leaf_line() != "The berries have leaves." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or opening_lamp.plant_id != "nightlantern" or opening_lamp.growth < 0.7 or opening_lamp.growth >= 1.0 or opening_lamp.chem != "nightloam" or _plot_line(opening_lamp).find("Light showing.") == -1 or _lantern_line() != "A nightlantern is showing." or _seed_line() != "The nightlantern seed is open." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _leaf_line() != "The berries have leaves." or _leaf_rumour_count() != 1 or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
@@ -972,7 +977,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 1.0
-	if _cane_line() != "" or _leaf_line() != "" or _ripe_cane_line() != "" or _lane_passers() < 1 or _plot_line(opening_cane).find("Berries showing.") != -1:
+	if _cane_line() != "" or _leaf_line() != "" or _leaf_rumour_count() != 0 or _ripe_cane_line() != "" or _lane_passers() < 1 or _plot_line(opening_cane).find("Berries showing.") != -1:
 		push_error("smoke: a ripe opening cane kept the young line")
 		get_tree().quit(1)
 		return
@@ -2729,7 +2734,7 @@ func _run_smoke() -> void:
 		if str(entry.get("name", "")) == "A rumour":
 			saw_rumour = true
 			var rumour_blurb := str(entry.get("blurb", ""))
-			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or rumour_blurb.find("Bulrush") != -1 or rumour_blurb.find("Pegapear") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line() and rumour_blurb != _wade_line() and rumour_blurb != _dusk_line()):
+			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or rumour_blurb.find("Bulrush") != -1 or rumour_blurb.find("Pegapear") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line() and rumour_blurb != _wade_line() and rumour_blurb != _dusk_line() and rumour_blurb != _leaf_line()):
 				push_error("smoke: rumour blurb leaked")
 				get_tree().quit(1)
 				return
