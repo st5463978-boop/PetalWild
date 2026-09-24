@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from petal_dispatch.hailo_backend import choice_from_payload, question_for  # noqa: E402
 from petal_dispatch.router import Backend, decide, extract_json  # noqa: E402
 from petal_dispatch.schema import parse_decision, prompt_for  # noqa: E402
 
@@ -111,6 +112,19 @@ class RouterTests(unittest.TestCase):
         decision = decide("Paste the Jelly-Baby GPL spring solver into scripts/sim.", Backend())
         self.assertEqual(decision["reason"], "licence_block")
         self.assertEqual(decision["source"], "wrapper")
+
+    def test_decide_choice_uses_index_and_rejects_a_miss(self) -> None:
+        options = ["PETAL_03_JELLY", "PETAL_12_QA"]
+        self.assertEqual(choice_from_payload({"index": 1, "choice": "nope"}, options), "PETAL_12_QA")
+        self.assertEqual(choice_from_payload({"choice": "B)"}, options), "PETAL_12_QA")
+        with self.assertRaises(ValueError):
+            choice_from_payload({"choice": "neither"}, options)
+
+    def test_question_keeps_the_task_line(self) -> None:
+        text = question_for(prompt_for("Jelly does not squash.", "build_failed"))
+        self.assertIn("Jelly does not squash.", text)
+        self.assertIn("build_failed", text)
+        self.assertNotIn("PETAL_03_JELLY", text)
 
     def test_game_tree_does_not_reference_the_dispatcher(self) -> None:
         root = Path(__file__).resolve().parents[3]

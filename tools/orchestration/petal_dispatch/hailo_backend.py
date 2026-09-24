@@ -1,17 +1,26 @@
-"""OpenAI-compatible client for a Hailo genai server on this machine.
+"""Pi Hailo decide client for system-1 routing.
 
-The request carries no tools. The server is expected to be hailo-ollama or
-the Hailo genai runtime bound to localhost. This module does not download models.
+High-frequency choices go to the Pi `hailo-decision` service
+(`HAILO_DECIDE_URL`, default `http://100.126.22.71:8766`). This module does
+not call MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
+It does not download or recompile HEFs.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import time
 import urllib.error
 import urllib.request
 
 from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
+from petal_dispatch.schema import OWNER_ACTION, OWNERS
+
+# Tailscale address of piai-1. Override with HAILO_DECIDE_URL when the VM is not on the tailnet.
+DEFAULT_DECIDE_URL = "http://100.126.22.71:8766"
+DECIDE_MODEL = "Qwen3-1.7B.hef"
 
 
 class HailoGenAIBackend(Backend):
@@ -57,6 +66,152 @@ def list_models(base_url: str, timeout: float = 2.0) -> list[str]:
     return names
 
 
+def decide_url() -> str:
+    raw = os.environ.get("HAILO_DECIDE_URL", DEFAULT_DECIDE_URL).strip()
+    return (raw or DEFAULT_DECIDE_URL).rstrip("/")
+
+
+def question_for(prompt: str) -> str:
+    task = prompt
+    marker = "TASK:"
+    at = prompt.rfind(marker)
+    if at >= 0:
+        task = prompt[at + len(marker) :]
+    event = ""
+    for line in prompt.splitlines():
+        if line.startswith("EVENT:"):
+            event = line.replace("EVENT:", "", 1).strip()
+            break
+    text = " ".join(task.split())
+    if event:
+        text = f"{event}. {text}"
+    return text[:500]
+
+
+def choice_from_payload(payload: dict, options: list[str]) -> str:
+    """Map a decide response onto one of the options. Never defaults to options[0]."""
+    if not isinstance(payload, dict):
+        raise ValueError("decide response was not an object")
+    index = payload.get("index")
+    if isinstance(index, int) and not isinstance(index, bool) and 0 <= index < len(options):
+        return options[index]
+    choice = str(payload.get("choice", ""))
+    for token in ("<|im_end|>", "<|im_start|>"):
+        choice = choice.replace(token, "")
+    choice = choice.strip()
+    if choice in options:
+        return choice
+    letter = choice[:1].upper()
+    if letter.isalpha() and len(choice) <= 3:
+        idx = ord(letter) - ord("A")
+        if 0 <= idx < len(options):
+            return options[idx]
+    raise ValueError("decide choice did not match an option")
+
+
+def _post_json(url: str, body: dict, timeout: float) -> dict:
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode())
+    if not isinstance(payload, dict):
+        raise ValueError("decide response was not an object")
+    return payload
+
+
+def post_decide(base_url: str, question: str, options: list[str], timeout: float) -> dict:
+    if len(options) < 2:
+        raise ValueError("decide needs at least two options")
+    body = {"question": question, "options": options}
+    errors: list[str] = []
+    for path in ("/decide", "/v1/decide"):
+        try:
+            payload = _post_json(base_url.rstrip("/") + path, body, timeout)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                errors.append(f"404 {path}")
+                continue
+            raise
+        payload = dict(payload)
+        payload["_path"] = path
+        return payload
+    raise RuntimeError("decide endpoint missing: " + ", ".join(errors))
+
+
+def get_health(base_url: str, timeout: float = 5.0) -> dict:
+    request = urllib.request.Request(base_url.rstrip("/") + "/health", method="GET")
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode())
+    if not isinstance(payload, dict):
+        raise ValueError("health response was not an object")
+    return payload
+
+
+class HailoDecideBackend(Backend):
+    """System-1 owner choice via the Pi HEF. Chat completions are not used."""
+
+    def __init__(self, base_url: str | None = None):
+        self.base_url = (base_url or decide_url()).rstrip("/")
+        self.name = f"hailo-decision:{DECIDE_MODEL}"
+        self.last: dict = {}
+
+    def available(self) -> bool:
+        return bool(self.base_url)
+
+    def complete(self, prompt: str, timeout: float) -> str:
+        options = list(OWNERS)
+        payload = post_decide(self.base_url, question_for(prompt), options, timeout)
+        self.last = payload
+        owner = choice_from_payload(payload, options)
+        action = OWNER_ACTION.get(owner, "ROUTE_AGENT")
+        return json.dumps(
+            {
+                "owner": owner,
+                "secondary": "NONE",
+                "priority": "MEDIUM",
+                "parallel": False,
+                "action": action,
+                "escalate": owner == "ESCALATE_GROK",
+                "confidence": "HIGH",
+            }
+        )
+
+
+def smoke(timeout: float = 12.0) -> dict:
+    url = decide_url()
+    report: dict = {"decide_url": url, "model": DECIDE_MODEL}
+    started = time.perf_counter()
+    try:
+        report["health"] = get_health(url, min(timeout, 8.0))
+        report["health_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
+        report["health_ok"] = True
+    except Exception as exc:  # noqa: BLE001 — recorded for the status note
+        report["health_ok"] = False
+        report["health_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
+        report["health_error"] = f"{type(exc).__name__}: {exc}"
+    started = time.perf_counter()
+    try:
+        payload = post_decide(
+            url,
+            "Which lane owns a jelly squash bug?",
+            ["PETAL_03_JELLY", "PETAL_12_QA"],
+            timeout,
+        )
+        report["decide_ok"] = True
+        report["decide_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
+        report["decide"] = payload
+        report["choice"] = choice_from_payload(payload, ["PETAL_03_JELLY", "PETAL_12_QA"])
+    except Exception as exc:  # noqa: BLE001
+        report["decide_ok"] = False
+        report["decide_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
+        report["decide_error"] = f"{type(exc).__name__}: {exc}"
+    return report
+
+
 def backends_for_probe(probe: dict) -> list[HailoGenAIBackend]:
     if not probe.get("available"):
         return []
@@ -66,3 +221,7 @@ def backends_for_probe(probe: dict) -> list[HailoGenAIBackend]:
         for name in names:
             found.append(HailoGenAIBackend(url, name, probe))
     return found
+
+
+if __name__ == "__main__":
+    print(json.dumps(smoke(), indent=2))

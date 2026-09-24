@@ -4,16 +4,12 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from petal_dispatch.discover import discover  # noqa: E402
-from petal_dispatch.hailo_backend import backends_for_probe  # noqa: E402
-from petal_dispatch.router import extract_json  # noqa: E402
-from petal_dispatch.schema import parse_decision, prompt_for  # noqa: E402
+from petal_dispatch.hailo_backend import DECIDE_MODEL, decide_url  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 TASKS = HERE / "tasks.jsonl"
@@ -28,95 +24,22 @@ def load_tasks() -> list[dict]:
     return rows
 
 
-def score_model(backend, rows: list[dict]) -> dict:
-    owner_hits = 0
-    action_hits = 0
-    valid = 0
-    escalations = 0
-    latencies = []
-    failures = []
-    for row in rows:
-        started = time.perf_counter()
-        try:
-            raw = backend.complete(prompt_for(row["task"]), 8.0)
-            parsed = parse_decision(extract_json(raw or "") or {})
-        except Exception as exc:  # noqa: BLE001
-            parsed = None
-            raw = f"{type(exc).__name__}"
-        elapsed = time.perf_counter() - started
-        latencies.append(elapsed)
-        if parsed is None:
-            failures.append({"id": row["id"], "reason": "malformed"})
-            continue
-        valid += 1
-        if parsed["owner"] == row["gold_owner"]:
-            owner_hits += 1
-        else:
-            failures.append({"id": row["id"], "got": parsed["owner"], "gold": row["gold_owner"]})
-        if parsed["action"] == row["gold_action"]:
-            action_hits += 1
-        if parsed["escalate"] or parsed["owner"] == "ESCALATE_GROK":
-            escalations += 1
-    count = len(rows) or 1
-    return {
-        "model": backend.name,
-        "tasks": len(rows),
-        "structured_output_validity": valid / count,
-        "owner_accuracy": owner_hits / count,
-        "action_accuracy": action_hits / count,
-        "escalation_rate": escalations / count,
-        "failure_rate": (count - valid) / count,
-        "latency_ms_mean": round(1000.0 * (sum(latencies) / count), 2),
-        "sample_failures": failures[:12],
-    }
-
-
-def choose(scores: list[dict]) -> str | None:
-    if not scores:
-        return None
-    ranked = sorted(
-        scores,
-        key=lambda row: (
-            row["owner_accuracy"],
-            row["structured_output_validity"],
-            -row["latency_ms_mean"],
-        ),
-        reverse=True,
-    )
-    best = ranked[0]
-    if best["structured_output_validity"] < 0.9 or best["owner_accuracy"] <= 0:
-        return None
-    return best["model"]
-
-
 def run() -> dict:
     if not TASKS.is_file():
         from gold_tasks import main as write_tasks
 
         write_tasks()
     rows = load_tasks()
-    probe = discover()
-    if not probe.get("available"):
-        payload = {
-            "status": "not_run",
-            "reason": probe.get("reason") or "no_hailo_device",
-            "selected_model": None,
-            "note": "No accuracy is reported. Confidence labels were not calibrated. This is not a Jev model and not an RLCD policy.",
-            "task_count": len(rows),
-            "probe": probe,
-            "models": [],
-        }
-    else:
-        scores = [score_model(backend, rows) for backend in backends_for_probe(probe)]
-        payload = {
-            "status": "scored",
-            "reason": "",
-            "selected_model": choose(scores),
-            "note": "Selection uses owner accuracy, then JSON validity, then latency. Labels are not calibrated probabilities.",
-            "task_count": len(rows),
-            "probe": probe,
-            "models": scores,
-        }
+    # ponytail: the Pi HEF is the system-1 model; this script does not rank local Ollama tags.
+    payload = {
+        "status": "fixed_endpoint",
+        "reason": "pi_hef_decide",
+        "selected_model": DECIDE_MODEL,
+        "decide_url": decide_url(),
+        "note": "System-1 calls POST /decide on the Pi Hailo-10H. This bake-off does not score MinoJEV, RLCD, or a local CPU Qwen. Confidence labels are not calibrated.",
+        "task_count": len(rows),
+        "models": [],
+    }
     RESULTS.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return payload
 

@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from petal_dispatch.discover import discover  # noqa: E402
-from petal_dispatch.hailo_backend import backends_for_probe  # noqa: E402
+from petal_dispatch.hailo_backend import HailoDecideBackend, decide_url, get_health  # noqa: E402
 from petal_dispatch.router import decide  # noqa: E402
 
 RUNTIME = ROOT / "runtime"
@@ -43,26 +43,18 @@ def enqueue(record: dict) -> None:
 def route_task(task: str, event: str = "") -> dict:
     if event not in EVENTS:
         event = ""
-    probe = discover()
-    backends = backends_for_probe(probe)
-    backend = backends[0] if backends else _Missing(probe)
-    decision = decide(task, backend, event=event)
-    record = {"task": task, "event": event, "decision": decision, "probe_reason": probe.get("reason", "")}
+    # ponytail: one Pi HEF call; no local Ollama fallback if the tailnet is down.
+    backend = HailoDecideBackend(decide_url())
+    decision = decide(task, backend, event=event, timeout=12.0)
+    record = {
+        "task": task,
+        "event": event,
+        "decision": decision,
+        "decide_url": backend.base_url,
+        "remote": backend.last,
+    }
     enqueue(record)
     return record
-
-
-class _Missing:
-    name = "none"
-
-    def __init__(self, probe: dict):
-        self.probe = probe
-
-    def available(self) -> bool:
-        return False
-
-    def complete(self, prompt: str, timeout: float) -> str:
-        raise RuntimeError("no hailo backend")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -81,8 +73,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path.startswith("/health"):
-            probe = discover()
-            self._send(200, {"ok": True, "hailo": probe})
+            url = decide_url()
+            remote: dict = {"ok": False}
+            try:
+                remote = get_health(url, 5.0)
+                remote["ok"] = True
+            except Exception as exc:  # noqa: BLE001 — the foreman stays up when the tailnet is down
+                remote = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+            self._send(200, {"ok": True, "decide_url": url, "remote": remote, "hailo": discover()})
             return
         if self.path.startswith("/queue"):
             lines = []
