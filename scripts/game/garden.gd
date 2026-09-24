@@ -365,6 +365,27 @@ func _sweet_line() -> String:
 		return ""
 	return "The meadow is sweet enough."
 
+func _rumour_blurb(id: String) -> String:
+	# ponytail: one rumour while the sweet line is up; other species stay unseen.
+	if id == "bellhelp" and _sweet_line() != "":
+		return "The meadow is sweet enough."
+	return "Not sighted yet."
+
+func _sweet_rumour_count() -> int:
+	var count := 0
+	for row in _journal_rows(world_snapshot()):
+		var entry: Dictionary = row
+		if str(entry.get("name", "")) != "A rumour":
+			continue
+		var blurb := str(entry.get("blurb", ""))
+		if blurb.find("Bellhelp") != -1:
+			return -1
+		if blurb == "The meadow is sweet enough.":
+			count += 1
+		elif blurb != "Not sighted yet.":
+			return -1
+	return count
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -964,25 +985,38 @@ func _run_smoke() -> void:
 		return
 	Clock.day = 1
 	Clock.set_hour(15.2)
-	if _sweet_line() != "":
+	if _sweet_line() != "" or _sweet_rumour_count() != 0:
 		push_error("smoke: young bells called the meadow sweet")
 		get_tree().quit(1)
 		return
 	var sweet_growth: Array[float] = [opening_bells[0].growth, opening_bells[1].growth, opening_bells[2].growth]
 	for bell in opening_bells:
 		bell.growth = 1.0
-	if _sweet_line() != "The meadow is sweet enough." or _sweet_line().find("Bellhelp") != -1:
+	if _sweet_line() != "The meadow is sweet enough." or _sweet_line().find("Bellhelp") != -1 or _sweet_rumour_count() != 1:
 		push_error("smoke: three ripe bells stayed quiet")
 		get_tree().quit(1)
 		return
 	ecology.states["bellhelp"] = "sighted"
-	if _sweet_line() != "":
+	var sighted_blurb := ""
+	for row in _journal_rows(world_snapshot()):
+		var entry: Dictionary = row
+		if str(entry.get("name", "")) == "Bellhelp":
+			sighted_blurb = str(entry.get("blurb", ""))
+	if _sweet_line() != "" or _sweet_rumour_count() != 0 or sighted_blurb != str(ContentDB.species_def("bellhelp").get("blurb", "")):
 		push_error("smoke: a sighting kept the sweet line")
 		get_tree().quit(1)
 		return
 	ecology.states["bellhelp"] = "rumoured"
+	if _sweet_rumour_count() != 1:
+		push_error("smoke: the rumour stayed named")
+		get_tree().quit(1)
+		return
 	for i in opening_bells.size():
 		opening_bells[i].growth = sweet_growth[i]
+	if _sweet_rumour_count() != 0:
+		push_error("smoke: young bells kept the sweet rumour")
+		get_tree().quit(1)
+		return
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -8236,7 +8270,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"status": status,
 			"met": met,
 			"unmet": unmet,
-			"blurb": definition.get("blurb", "") if known else "Not sighted yet.",
+			"blurb": definition.get("blurb", "") if known else _rumour_blurb(id),
 			"romance": romance,
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
