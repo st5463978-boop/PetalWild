@@ -310,6 +310,16 @@ func _road_card_line() -> String:
 		return "The road is only a rumour."
 	return ""
 
+func _cane_line() -> String:
+	# ponytail: one page line while both opening canes are short; it goes when either ripens.
+	var near := soil.get_cell(4, 2)
+	var far := soil.get_cell(5, 2)
+	if near.plant_id != "bramble" or far.plant_id != "bramble":
+		return ""
+	if near.growth >= 1.0 or far.growth >= 1.0:
+		return ""
+	return "Two young brambles stand short of ripe."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -774,10 +784,16 @@ func _run_smoke() -> void:
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe.":
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
+	opening_cane.growth = 1.0
+	if _cane_line() != "" or _lane_passers() < 1:
+		push_error("smoke: a ripe opening cane kept the young line")
+		get_tree().quit(1)
+		return
+	opening_cane.growth = 0.78
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -8091,6 +8107,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_passers"] = _lane_passers()
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
+	stats["cane_line"] = _cane_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
