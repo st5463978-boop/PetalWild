@@ -140,8 +140,7 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Lane beyond the hedge  %s" % str(stats.get("lane_passers", 0)), 16))
-	var road := "The road beyond the hedge is a rumour." if bool(stats.get("road_rumour", false)) else "The road beyond the hedge is not yet a rumour."
-	journal_box.add_child(ThemeKit.label(road, 14))
+	journal_box.add_child(ThemeKit.label(str(stats.get("road_line", "The road beyond the hedge is not yet a rumour.")), 14))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])

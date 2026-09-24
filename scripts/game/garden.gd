@@ -296,6 +296,14 @@ func _note_lane_afternoon() -> void:
 func _road_rumoured() -> bool:
 	return lane_afternoon_days.size() >= 3
 
+func _road_line() -> String:
+	# ponytail: one sentence; a count if the page should list the afternoons.
+	if Trust.has_action("parish_road_rumour"):
+		return "The book keeps the rumour of the road beyond the hedge."
+	if _road_rumoured():
+		return "The road beyond the hedge is a rumour."
+	return "The road beyond the hedge is not yet a rumour."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -4993,7 +5001,7 @@ func _run_smoke() -> void:
 	Clock.day = 3
 	Clock.set_hour(15.3)
 	_note_lane_afternoon()
-	if _road_rumoured() or lane_afternoon_days.size() != 2:
+	if _road_rumoured() or lane_afternoon_days.size() != 2 or _road_line() != "The road beyond the hedge is not yet a rumour.":
 		push_error("smoke: two afternoons already rumoured the road")
 		get_tree().quit(1)
 		return
@@ -5002,7 +5010,7 @@ func _run_smoke() -> void:
 	_note_lane_afternoon()
 	_note_lane_afternoon()
 	var rumour_park: Dictionary = ContentDB.venues.get("grove_park", {})
-	if not _road_rumoured() or lane_afternoon_days.size() != 3 or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	if not _road_rumoured() or lane_afternoon_days.size() != 3 or _road_line() != "The road beyond the hedge is a rumour." or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: three afternoons left the road unknown")
 		get_tree().quit(1)
 		return
@@ -5020,10 +5028,15 @@ func _run_smoke() -> void:
 	for entry in Trust.audit:
 		if str(entry.get("action", "")) == "parish_road_rumour":
 			road_notes += 1
-	if road_notes != 1:
+	if road_notes != 1 or _road_line() != "The book keeps the rumour of the road beyond the hedge.":
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
+	for notice in Trust.notices():
+		if str(notice).find("road") != -1 or str(notice).find("book keeps") != -1:
+			push_error("smoke: the board gained the road rumour")
+			get_tree().quit(1)
+			return
 	Clock.day = 2
 	Clock.set_hour(15.0)
 	_note_lane_afternoon()
@@ -7903,6 +7916,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers()
 	stats["lane_passers"] = _lane_passers()
 	stats["road_rumour"] = _road_rumoured()
+	stats["road_line"] = _road_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
