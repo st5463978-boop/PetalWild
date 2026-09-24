@@ -4,12 +4,14 @@ var levels := {}
 var audit: Array = []
 var lumen_proposal_day := -1
 var lane_sale_day := -1
+var bell_named_day := -1
 
 func reset_new() -> void:
 	levels = {"lumen": 0, "bram": 0, "nessa": 0}
 	audit = []
 	lumen_proposal_day = -1
 	lane_sale_day = -1
+	bell_named_day = -1
 
 func level(person_id: String) -> int:
 	return int(levels.get(person_id, 0))
@@ -145,6 +147,7 @@ func to_state() -> Dictionary:
 		"audit": audit.duplicate(true),
 		"lumen_proposal_day": lumen_proposal_day,
 		"lane_sale_day": lane_sale_day,
+		"bell_named_day": bell_named_day,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -155,3 +158,4 @@ func apply_state(data: Dictionary) -> void:
 	audit = saved_audit.duplicate(true) if typeof(saved_audit) == TYPE_ARRAY else []
 	lumen_proposal_day = int(data.get("lumen_proposal_day", -1))
 	lane_sale_day = int(data.get("lane_sale_day", -1))
+	bell_named_day = int(data.get("bell_named_day", -1))

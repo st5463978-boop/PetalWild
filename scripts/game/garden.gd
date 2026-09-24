@@ -317,6 +317,12 @@ func _far_bell_line() -> String:
 		return ""
 	return "Three bells stand on the far lawn."
 
+func _bell_sale_line() -> String:
+	# ponytail: one page line the day a sale names the far-lawn bells.
+	if _bell_rumour_count() != 1 or Trust.bell_named_day != Clock.day:
+		return ""
+	return "A sale named the far-lawn bells."
+
 func _join_line() -> String:
 	# ponytail: one page line while the gate-opening stone is showing.
 	if _road_join_count() != 1:
@@ -578,6 +584,7 @@ func sell(plant_id: String) -> void:
 	toast("Sold %s for %d petal." % [ContentDB.plant(plant_id).get("name", plant_id), price])
 	if _bell_rumour_count() == 1:
 		toast("Three bells stand on the far lawn.")
+		Trust.bell_named_day = Clock.day
 	if _lane_passers() > 0:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
@@ -6586,7 +6593,7 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _bell_sale_line() != "" or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
@@ -6597,12 +6604,17 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var bell_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1:
+	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a sale hid the far-lawn bells")
 		get_tree().quit(1)
 		return
 	Economy.coins = bell_sale_coins
 	Trust.lane_sale_day = bell_sale_day
+	Trust.bell_named_day = -1
+	if _bell_sale_line() != "":
+		push_error("smoke: the sale line stayed before the day")
+		get_tree().quit(1)
+		return
 	while Trust.audit.size() > bell_sale_audit:
 		Trust.audit.pop_back()
 	events.pop_front()
@@ -6688,7 +6700,7 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var quiet_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn.":
+	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or _bell_sale_line() != "" or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a quiet sale named the far-lawn bells")
 		get_tree().quit(1)
 		return
@@ -9886,6 +9898,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
 	stats["far_bell_line"] = _far_bell_line()
+	stats["bell_sale_line"] = _bell_sale_line()
 	stats["join_line"] = _join_line()
 	stats["south_line"] = _south_line()
 	stats["lane_south_line"] = _lane_south_line()

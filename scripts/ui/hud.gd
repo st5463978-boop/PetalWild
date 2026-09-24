@@ -144,6 +144,9 @@ func show_place(stats: Dictionary) -> void:
 	var far_bell_line := str(stats.get("far_bell_line", ""))
 	if far_bell_line != "":
 		journal_box.add_child(ThemeKit.label(far_bell_line, 14))
+	var bell_sale_line := str(stats.get("bell_sale_line", ""))
+	if bell_sale_line != "":
+		journal_box.add_child(ThemeKit.label(bell_sale_line, 14))
 	var join_line := str(stats.get("join_line", ""))
 	if join_line != "":
 		journal_box.add_child(ThemeKit.label(join_line, 14))
