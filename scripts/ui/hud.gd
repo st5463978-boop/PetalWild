@@ -162,6 +162,9 @@ func show_place(stats: Dictionary) -> void:
 	var seed_line := str(stats.get("seed_line", ""))
 	if seed_line != "":
 		journal_box.add_child(ThemeKit.label(seed_line, 14))
+	var leaf_line := str(stats.get("leaf_line", ""))
+	if leaf_line != "":
+		journal_box.add_child(ThemeKit.label(leaf_line, 14))
 	var grow_line := str(stats.get("grow_line", ""))
 	if grow_line != "":
 		journal_box.add_child(ThemeKit.label(grow_line, 14))
