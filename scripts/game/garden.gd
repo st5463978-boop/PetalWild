@@ -6096,7 +6096,7 @@ func _run_smoke() -> void:
 		var pear_albedo: Color = (pear_mesh.material_override as StandardMaterial3D).albedo_color
 		if pear_albedo.is_equal_approx(Color("#2f4a28")):
 			pear_leaves += 1
-	if pear_leaves != 1:
+	if pear_leaves != 2:
 		push_error("smoke: the mosspear fruit had no leaf")
 		get_tree().quit(1)
 		return

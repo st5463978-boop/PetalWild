@@ -111,13 +111,19 @@ func _mosspear() -> void:
 	# ponytail: one fruit on a short stem; a brighter pear clips under this sun.
 	_stem(0.22, 0.035, Color("#3d4a28"))
 	_ball(Vector3(0.0, 0.42, 0.0), 0.15, Color("#4e5c2e"), Vector3(0.82, 1.55, 0.82))
-	# ponytail: one dark leaf beside the fruit; a second leaf if it still reads as a bare pear.
+	# ponytail: a leaf on each side of the fruit; the pear stays one fruit.
 	var pear_leaf := BoxMesh.new()
 	pear_leaf.size = Vector3(0.18, 0.02, 0.09)
 	var pear_card := _paint(pear_leaf, Color("#2f4a28"))
 	pear_card.position = Vector3(0.14, 0.5, 0.02)
 	pear_card.rotation = Vector3(0.35, 0.4, 0.7)
 	add_child(pear_card)
+	var pear_leaf_far := BoxMesh.new()
+	pear_leaf_far.size = Vector3(0.18, 0.02, 0.09)
+	var pear_card_far := _paint(pear_leaf_far, Color("#2f4a28"))
+	pear_card_far.position = Vector3(-0.14, 0.48, -0.02)
+	pear_card_far.rotation = Vector3(-0.35, -0.4, -0.7)
+	add_child(pear_card_far)
 
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
