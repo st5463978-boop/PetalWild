@@ -162,6 +162,9 @@ func show_place(stats: Dictionary) -> void:
 	var lane_busy_line := str(stats.get("lane_busy_line", ""))
 	if lane_busy_line != "":
 		journal_box.add_child(ThemeKit.label(lane_busy_line, 14))
+	var east_line := str(stats.get("east_line", ""))
+	if east_line != "":
+		journal_box.add_child(ThemeKit.label(east_line, 14))
 	var cane_line := str(stats.get("cane_line", ""))
 	if cane_line != "":
 		journal_box.add_child(ThemeKit.label(cane_line, 14))
