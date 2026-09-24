@@ -320,6 +320,15 @@ func _cane_line() -> String:
 		return ""
 	return "Two young brambles stand short of ripe."
 
+func _bell_line() -> String:
+	# ponytail: one page line while all three opening bells are short; it goes when any ripens.
+	var cells: Array[Vector2i] = [Vector2i(1, 1), Vector2i(2, 1), Vector2i(1, 2)]
+	for cell in cells:
+		var plot := soil.get_cell(cell.x, cell.y)
+		if plot.plant_id != "meadowbell" or plot.growth >= 1.0:
+			return ""
+	return "Three meadowbells are showing."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -817,17 +826,17 @@ func _run_smoke() -> void:
 	for bell in opening_bells:
 		if bell.plant_id != "meadowbell" or bell.growth < 0.7 or bell.growth >= 1.0 or _plot_line(bell).find("Bells showing.") == -1:
 			bells_ready = false
-	if not bells_ready or ecology.first("bellhelp") != null or _lane_passers() != 0:
+	if not bells_ready or ecology.first("bellhelp") != null or _lane_passers() != 0 or _bell_line() != "Three meadowbells are showing." or _bell_line().find("Bellhelp") != -1:
 		push_error("smoke: the opening bells brought Bellhelp")
 		get_tree().quit(1)
 		return
 	opening_bells[0].growth = 0.4
-	if _plot_line(opening_bells[0]).find("Bells showing.") != -1:
+	if _plot_line(opening_bells[0]).find("Bells showing.") != -1 or _bell_line() != "Three meadowbells are showing.":
 		push_error("smoke: a short bell claimed the bells were showing")
 		get_tree().quit(1)
 		return
 	opening_bells[0].growth = 1.0
-	if _plot_line(opening_bells[0]).find("Bells showing.") != -1 or _lane_passers() < 1:
+	if _plot_line(opening_bells[0]).find("Bells showing.") != -1 or _lane_passers() < 1 or _bell_line() != "":
 		push_error("smoke: a ripe bell kept the young bell line")
 		get_tree().quit(1)
 		return
@@ -8162,6 +8171,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
 	stats["cane_line"] = _cane_line()
+	stats["bell_line"] = _bell_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0

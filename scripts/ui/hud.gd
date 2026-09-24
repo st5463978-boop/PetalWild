@@ -144,6 +144,9 @@ func show_place(stats: Dictionary) -> void:
 	var cane_line := str(stats.get("cane_line", ""))
 	if cane_line != "":
 		journal_box.add_child(ThemeKit.label(cane_line, 14))
+	var bell_line := str(stats.get("bell_line", ""))
+	if bell_line != "":
+		journal_box.add_child(ThemeKit.label(bell_line, 14))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])
