@@ -168,6 +168,9 @@ func show_place(stats: Dictionary) -> void:
 	var east_past_line := str(stats.get("east_past_line", ""))
 	if east_past_line != "":
 		journal_box.add_child(ThemeKit.label(east_past_line, 14))
+	var east_far_line := str(stats.get("east_far_line", ""))
+	if east_far_line != "":
+		journal_box.add_child(ThemeKit.label(east_far_line, 14))
 	var cane_line := str(stats.get("cane_line", ""))
 	if cane_line != "":
 		journal_box.add_child(ThemeKit.label(cane_line, 14))
