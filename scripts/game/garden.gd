@@ -1206,6 +1206,48 @@ func _run_smoke() -> void:
 		push_error("smoke: the follower line stayed on a young bell")
 		get_tree().quit(1)
 		return
+	var bank_reed := soil.get_cell(7, 5)
+	var bank_growth := bank_reed.growth
+	bank_reed.growth = 1.0
+	if _plot_line(bank_reed).find("The bank is wet enough.") != -1:
+		push_error("smoke: a dry bed called the bank wet")
+		get_tree().quit(1)
+		return
+	ecology.states["bulrush"] = "visitor"
+	if _plot_line(bank_reed).find("The bank is wet enough.") != -1:
+		push_error("smoke: a dry visit called the bank wet")
+		get_tree().quit(1)
+		return
+	var bank_water: Array = []
+	for cell in soil.all():
+		var wet_bed: SoilCell = cell
+		bank_water.append([wet_bed, wet_bed.moisture])
+		wet_bed.moisture = 0.62
+	bank_reed.growth = 0.70
+	if _plot_line(bank_reed).find("The bank is wet enough.") != -1 or _plot_line(bank_reed).find("Heads showing.") == -1:
+		push_error("smoke: a young reed claimed the bank")
+		get_tree().quit(1)
+		return
+	bank_reed.growth = 1.0
+	if _plot_line(bank_reed).find("The bank is wet enough.") == -1 or _plot_line(bank_reed).find("Reedic") != -1 or _plot_line(bank_reed).find("Bulrush") != -1:
+		push_error("smoke: a wet visit stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["reedic"] = "sighted"
+	if _plot_line(bank_reed).find("The bank is wet enough.") != -1:
+		push_error("smoke: a sighting kept the bank line")
+		get_tree().quit(1)
+		return
+	ecology.states["reedic"] = "rumoured"
+	ecology.states["bulrush"] = "rumoured"
+	for water_row in bank_water:
+		var water_plot: SoilCell = water_row[0]
+		water_plot.moisture = water_row[1]
+	bank_reed.growth = bank_growth
+	if _plot_line(bank_reed).find("The bank is wet enough.") != -1:
+		push_error("smoke: the bank line stayed after the beds dried")
+		get_tree().quit(1)
+		return
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
 	var bells_ready := true
 	for bell in opening_bells:
@@ -7371,7 +7413,19 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Pear-sweet."
 	if _follower_bell(plot):
 		return line + "  ·  A follower is close."
+	if _wet_bank(plot):
+		return line + "  ·  The bank is wet enough."
 	return line
+
+func _wet_bank(plot: SoilCell) -> bool:
+	# ponytail: ripe reeds only, and only after Bulrush has visited into wet beds.
+	if plot.plant_id != "reed" or plot.growth < 1.0:
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("bulrush", "rumoured"))) < ecology.rules.rank_of("visitor"):
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("reedic", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return false
+	return float(world_snapshot().get("moisture", 0.0)) >= 0.5
 
 func _follower_bell(plot: SoilCell) -> bool:
 	# ponytail: ripe bells only, and only after Bellhelp has visited.
