@@ -1248,6 +1248,50 @@ func _run_smoke() -> void:
 		push_error("smoke: the bank line stayed after the beds dried")
 		get_tree().quit(1)
 		return
+	var parish_bell := soil.get_cell(1, 1)
+	var parish_young := soil.get_cell(2, 1)
+	var parish_third := soil.get_cell(1, 2)
+	var parish_growths: Array[float] = [parish_bell.growth, parish_young.growth, parish_third.growth]
+	parish_bell.growth = 1.0
+	ecology.states["bellhelp"] = "resident"
+	if _plot_line(parish_bell).find("The parish is looked after.") != -1:
+		push_error("smoke: a thin garden looked after")
+		get_tree().quit(1)
+		return
+	var parish_water: Array = []
+	for cell in soil.all():
+		var soaked: SoilCell = cell
+		parish_water.append([soaked, soaked.moisture])
+		soaked.moisture = 1.0
+	parish_young.growth = 1.0
+	parish_third.growth = 1.0
+	_force_plant(0, 0, "meadowbell", 1.0)
+	parish_young.growth = 0.72
+	if _plot_line(parish_bell).find("The parish is looked after.") == -1 or _plot_line(parish_third).find("The parish is looked after.") == -1 or _plot_line(parish_young).find("The parish is looked after.") != -1 or _plot_line(parish_young).find("Bells showing.") == -1 or _plot_line(parish_bell).find("Cirlark") != -1 or _plot_line(parish_bell).find("Bellhelp") != -1:
+		push_error("smoke: a looked-after parish stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["cirlark"] = "sighted"
+	if _plot_line(parish_bell).find("The parish is looked after.") != -1:
+		push_error("smoke: a sighting kept the parish line")
+		get_tree().quit(1)
+		return
+	ecology.states["cirlark"] = "rumoured"
+	ecology.states["bellhelp"] = "rumoured"
+	for soak_row in parish_water:
+		var soak_plot: SoilCell = soak_row[0]
+		soak_plot.moisture = soak_row[1]
+	parish_bell.growth = parish_growths[0]
+	parish_young.growth = parish_growths[1]
+	parish_third.growth = parish_growths[2]
+	var parish_extra := soil.get_cell(0, 0)
+	parish_extra.plant_id = ""
+	parish_extra.growth = 0.0
+	parish_extra.tilled = false
+	if _plot_line(parish_bell).find("The parish is looked after.") != -1:
+		push_error("smoke: the parish line stayed on a thin garden")
+		get_tree().quit(1)
+		return
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
 	var bells_ready := true
 	for bell in opening_bells:
@@ -7411,11 +7455,23 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Rich enough."
 	if _pear_sweet(plot):
 		return line + "  ·  Pear-sweet."
+	if _looked_after(plot):
+		return line + "  ·  The parish is looked after."
 	if _follower_bell(plot):
 		return line + "  ·  A follower is close."
 	if _wet_bank(plot):
 		return line + "  ·  The bank is wet enough."
 	return line
+
+func _looked_after(plot: SoilCell) -> bool:
+	# ponytail: ripe bells only, and only once a resident Bellhelp has a looked-after garden.
+	if plot.plant_id != "meadowbell" or plot.growth < 1.0:
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("bellhelp", "rumoured"))) < ecology.rules.rank_of("resident"):
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("cirlark", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return false
+	return float(world_snapshot().get("garden_quality", 0.0)) >= 0.42
 
 func _wet_bank(plot: SoilCell) -> bool:
 	# ponytail: ripe reeds only, and only after Bulrush has visited into wet beds.
