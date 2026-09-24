@@ -5918,6 +5918,33 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	show_pear.apply_dict(pear_saved)
+	var show_bulb := soil.get_cell(8, 7)
+	var bulb_saved := show_bulb.to_dict()
+	_force_plant(8, 7, "nightlantern", 0.72)
+	show_bulb.moisture = 0.74
+	show_bulb.fertility = 0.5
+	show_bulb.chem = "nightloam"
+	if _plot_line(show_bulb).find("Light showing.") == -1 or _plot_line(show_bulb).find("Pegapear") != -1:
+		push_error("smoke: a tall young nightlantern stayed on its percent")
+		get_tree().quit(1)
+		return
+	show_bulb.chem = "base"
+	if _plot_line(show_bulb).find("Light showing.") != -1 or _plot_line(show_bulb).find("Needs night-loam.") == -1:
+		push_error("smoke: a lantern without loam said the light was showing")
+		get_tree().quit(1)
+		return
+	show_bulb.chem = "nightloam"
+	show_bulb.growth = 0.5
+	if _plot_line(show_bulb).find("Light showing.") != -1:
+		push_error("smoke: a short nightlantern said the light was showing")
+		get_tree().quit(1)
+		return
+	show_bulb.growth = 1.0
+	if _plot_line(show_bulb).find("Light showing.") != -1:
+		push_error("smoke: a ripe nightlantern kept the young light line")
+		get_tree().quit(1)
+		return
+	show_bulb.apply_dict(bulb_saved)
 	var head_view := PlantView.new()
 	add_child(head_view)
 	head_view.show_plant("reed", 0.7, 0.8, 0.5)
@@ -7493,6 +7520,9 @@ func _plot_line(plot: SoilCell) -> String:
 	# ponytail: the tall fed mosspear only; a short pear stays on the percent.
 	if plot.plant_id == "mosspear" and plot.growth >= 0.7 and plot.growth < 1.0:
 		return line + "  ·  Pear showing."
+	# ponytail: the tall lantern on night-loam only; bare soil still asks for loam.
+	if plot.plant_id == "nightlantern" and plot.growth >= 0.7 and plot.growth < 1.0 and plot.chem == "nightloam":
+		return line + "  ·  Light showing."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
 	if _bees_hurrying(plot):
