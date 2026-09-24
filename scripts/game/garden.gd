@@ -1116,6 +1116,25 @@ func _run_smoke() -> void:
 		push_error("smoke: the opening peach or reed ripened the lane")
 		get_tree().quit(1)
 		return
+	var reed_view := PlantView.new()
+	add_child(reed_view)
+	reed_view.show_plant("reed", opening_reed.growth, opening_reed.moisture, opening_reed.fertility)
+	var reed_brown := 0
+	var reed_straw := 0
+	for reed_node in reed_view.get_children():
+		var reed_mesh := reed_node as MeshInstance3D
+		if reed_mesh == null or not (reed_mesh.mesh is SphereMesh):
+			continue
+		var reed_albedo: Color = (reed_mesh.material_override as StandardMaterial3D).albedo_color
+		if reed_albedo.is_equal_approx(Color("#6a4a28")):
+			reed_brown += 1
+		if reed_albedo.is_equal_approx(Color("#9a7040")):
+			reed_straw += 1
+	if absf(opening_reed.growth - 0.70) > 0.001 or reed_brown != 3 or reed_straw != 0:
+		push_error("smoke: the opening reed head was straw")
+		get_tree().quit(1)
+		return
+	reed_view.queue_free()
 	opening_peach.growth = 1.0
 	opening_reed.growth = 0.22
 	if _plot_line(opening_peach).find("Fruit showing.") != -1 or _plot_line(opening_reed).find("Heads showing.") != -1 or _lane_passers() < 1 or _peach_line() != "" or _reed_line() != "A reed is showing.":
