@@ -5891,6 +5891,35 @@ func _run_smoke() -> void:
 	Clock.day = lamp_day
 	Clock.set_hour(lamp_hour)
 	_lamps()
+	var head_view := PlantView.new()
+	add_child(head_view)
+	head_view.show_plant("reed", 0.7, 0.8, 0.5)
+	var young_heads := 0
+	var young_warm := 0
+	for head_node in head_view.get_children():
+		var head_mesh := head_node as MeshInstance3D
+		if head_mesh == null or not (head_mesh.mesh is SphereMesh):
+			continue
+		young_heads += 1
+		var young_albedo: Color = (head_mesh.material_override as StandardMaterial3D).albedo_color
+		if young_albedo.is_equal_approx(Color("#9a7040")):
+			young_warm += 1
+	head_view.show_plant("reed", 1.0, 0.8, 0.5)
+	var ripe_heads := 0
+	var ripe_warm := 0
+	for ripe_node in head_view.get_children():
+		var ripe_mesh := ripe_node as MeshInstance3D
+		if ripe_mesh == null or not (ripe_mesh.mesh is SphereMesh):
+			continue
+		ripe_heads += 1
+		var ripe_albedo: Color = (ripe_mesh.material_override as StandardMaterial3D).albedo_color
+		if ripe_albedo.is_equal_approx(Color("#9a7040")):
+			ripe_warm += 1
+	if young_heads != 3 or young_warm != 0 or ripe_heads != 3 or ripe_warm != 3:
+		push_error("smoke: a ripe reed head stayed brown")
+		get_tree().quit(1)
+		return
+	head_view.queue_free()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 

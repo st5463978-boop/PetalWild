@@ -2,10 +2,13 @@ class_name PlantView
 extends Node3D
 
 var plant_id := ""
+var built_ripe := false
 
 func show_plant(id: String, growth: float, water: float, fertility: float) -> void:
-	if id != plant_id:
+	var want_ripe := id == "reed" and growth >= 1.0
+	if id != plant_id or want_ripe != built_ripe:
 		plant_id = id
+		built_ripe = want_ripe
 		for child in get_children():
 			child.free()
 		_build(id)
@@ -101,7 +104,9 @@ func _reed() -> void:
 		var height: float = stem[0]
 		var at: Vector3 = stem[3]
 		_stem(height, stem[1], stem[2], at)
-		_ball(at + Vector3(0, height + 0.08, 0), 0.11, Color("#6a4a28"), Vector3(0.85, 2.1, 0.85))
+		# ponytail: straw on a ripe head; the young brown if a brighter gold clips under this sun.
+		var head := Color("#9a7040") if built_ripe else Color("#6a4a28")
+		_ball(at + Vector3(0, height + 0.08, 0), 0.11, head, Vector3(0.85, 2.1, 0.85))
 
 func _meadowbell() -> void:
 	# ponytail: three bells and a leaf pad; a flower mesh if the beds get authored plants.
