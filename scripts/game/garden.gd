@@ -784,13 +784,18 @@ func _run_smoke() -> void:
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe.":
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 1.0
-	if _cane_line() != "" or _lane_passers() < 1:
+	if _cane_line() != "" or _lane_passers() < 1 or _plot_line(opening_cane).find("Berries showing.") != -1:
 		push_error("smoke: a ripe opening cane kept the young line")
+		get_tree().quit(1)
+		return
+	opening_cane.growth = 0.32
+	if _plot_line(opening_cane).find("Berries showing.") != -1:
+		push_error("smoke: a short cane claimed the berries were showing")
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 0.78
@@ -6786,6 +6791,9 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Needs feed."
 	if plot.plant_id == "bramble" and plot.growth < 1.0 and _fruit_returning(plot):
 		return line + "  ·  Fruit returning."
+	# ponytail: the tall young cane only; a short cane stays on the percent.
+	if plot.plant_id == "bramble" and plot.growth >= 0.7 and plot.growth < 1.0:
+		return line + "  ·  Berries showing."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
 	if _bees_hurrying(plot):
