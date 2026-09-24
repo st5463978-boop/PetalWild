@@ -271,6 +271,12 @@ func _lane_passers() -> int:
 			ripe += 1
 	return ripe
 
+func _sell_price(plant_id: String) -> int:
+	var price := int(ContentDB.plant(plant_id).get("sell_price", 1))
+	if _lane_passers() > 0:
+		price += 1
+	return price
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -303,7 +309,7 @@ func sell(plant_id: String) -> void:
 		return
 	if Economy.count(plant_id) <= 0:
 		return
-	var price := int(ContentDB.plant(plant_id).get("sell_price", 1))
+	var price := _sell_price(plant_id)
 	Economy.take(plant_id, 1)
 	Economy.earn(price)
 	audio.play_kind("coin")
@@ -4834,6 +4840,14 @@ func _run_smoke() -> void:
 		push_error("smoke: a golden afternoon ignored a ripe bed on the lane")
 		get_tree().quit(1)
 		return
+	var lane_bells := Economy.count("meadowbell")
+	Economy.add("meadowbell", 1)
+	sell("meadowbell")
+	if Economy.coins != kept_tin + 6 or Economy.count("meadowbell") != lane_bells or Trust.level("nessa") != loam_trust:
+		push_error("smoke: a lane afternoon paid the book price")
+		get_tree().quit(1)
+		return
+	Economy.spend(6)
 	lane_bed.growth = 0.4
 	if _lane_passers() != lane_before:
 		push_error("smoke: a short bed counted on the lane")
@@ -4847,6 +4861,13 @@ func _run_smoke() -> void:
 		push_error("smoke: the rain counted the lane or lit the lanterns")
 		get_tree().quit(1)
 		return
+	Economy.add("meadowbell", 1)
+	sell("meadowbell")
+	if Economy.coins != kept_tin + 5 or Economy.count("meadowbell") != lane_bells or Trust.level("nessa") != loam_trust:
+		push_error("smoke: the rain paid the lane price")
+		get_tree().quit(1)
+		return
+	Economy.spend(5)
 	Clock.day = 1
 	Clock.set_hour(20.4)
 	if _lane_passers() != 0:
@@ -7754,7 +7775,7 @@ func _produce() -> Array:
 		rows.append({
 			"id": id,
 			"name": ContentDB.plant(id).get("name", id),
-			"price": ContentDB.plant(id).get("sell_price", 1),
+			"price": _sell_price(id),
 			"count": count,
 		})
 	return rows
