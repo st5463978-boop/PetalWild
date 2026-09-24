@@ -177,6 +177,9 @@ func show_place(stats: Dictionary) -> void:
 	var east_closer_bell_line := str(stats.get("east_closer_bell_line", ""))
 	if east_closer_bell_line != "":
 		journal_box.add_child(ThemeKit.label(east_closer_bell_line, 14))
+	var west_gate_bell_line := str(stats.get("west_gate_bell_line", ""))
+	if west_gate_bell_line != "":
+		journal_box.add_child(ThemeKit.label(west_gate_bell_line, 14))
 	var parish_sale_line := str(stats.get("parish_sale_line", ""))
 	if parish_sale_line != "":
 		journal_box.add_child(ThemeKit.label(parish_sale_line, 14))
