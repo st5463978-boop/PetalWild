@@ -6007,6 +6007,27 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	pear_view.queue_free()
+	var lamp_view := PlantView.new()
+	add_child(lamp_view)
+	lamp_view.show_plant("nightlantern", 1.0, 0.8, 0.5)
+	var lamp_leaves := 0
+	var lamp_bulb := Color(0, 0, 0)
+	var lamp_radius := 0.0
+	for lamp_node in lamp_view.get_children():
+		var lamp_mesh := lamp_node as MeshInstance3D
+		if lamp_mesh == null:
+			continue
+		var lamp_albedo: Color = (lamp_mesh.material_override as StandardMaterial3D).albedo_color
+		if lamp_mesh.mesh is BoxMesh and lamp_albedo.is_equal_approx(Color("#243628")):
+			lamp_leaves += 1
+		if lamp_mesh.mesh is SphereMesh and lamp_albedo.is_equal_approx(Color("#ffd27a")):
+			lamp_bulb = lamp_albedo
+			lamp_radius = (lamp_mesh.mesh as SphereMesh).radius
+	if lamp_leaves != 2 or not lamp_bulb.is_equal_approx(Color("#ffd27a")) or absf(lamp_radius - 0.09) > 0.001:
+		push_error("smoke: the nightlantern leaves changed the bulb")
+		get_tree().quit(1)
+		return
+	lamp_view.queue_free()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 

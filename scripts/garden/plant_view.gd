@@ -44,6 +44,14 @@ func _build(id: String) -> void:
 			material.emission_enabled = true
 			material.emission = Color("#ffc14a")
 			material.emission_energy_multiplier = 1.4
+			# ponytail: two dark leaves under the bulb; the bulb stays this size and color.
+			for side in [-1.0, 1.0]:
+				var leaf := BoxMesh.new()
+				leaf.size = Vector3(0.16, 0.018, 0.07)
+				var card := _paint(leaf, Color("#243628"))
+				card.position = Vector3(side * 0.1, 0.4, 0.0)
+				card.rotation = Vector3(0.2, 0.0, side * 0.8)
+				add_child(card)
 		_:
 			_ball(Vector3(0, 0.2, 0), 0.12, Color("#7eac4c"))
 	_rosette()
