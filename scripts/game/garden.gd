@@ -4988,7 +4988,7 @@ func _lamps() -> void:
 func _run_capture() -> void:
 	Settings.reduce_motion = true
 	camera.snap_home()
-	for spec in [[0, 0, "meadowbell"], [1, 0, "meadowbell"], [2, 1, "peach"], [3, 2, "bramble"], [6, 5, "reed"], [7, 6, "reed"], [8, 5, "reed"]]:
+	for spec in [[0, 0, "meadowbell"], [1, 0, "meadowbell"], [2, 1, "peach"], [3, 2, "bramble"], [4, 1, "mosspear"], [6, 5, "reed"], [7, 6, "reed"], [8, 5, "reed"]]:
 		_force_plant(spec[0], spec[1], spec[2], 1.0)
 	debug_grow()
 	Clock.set_hour(15.3)

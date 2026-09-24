@@ -32,8 +32,7 @@ func _build(id: String) -> void:
 			_ball(Vector3(-0.04, 0.18, 0.1), 0.045, Color("#8a3068"))
 			_ball(Vector3(0.1, 0.2, -0.04), 0.04, Color("#a84478"))
 		"mosspear":
-			_ball(Vector3(0, 0.1, 0), 0.16, Color("#4f8a3e"))
-			_ball(Vector3(0, 0.2, 0.02), 0.1, Color("#d7b15a"), Vector3(0.8, 1.2, 0.8))
+			_mosspear()
 		"nightlantern":
 			_stem(0.48, 0.02, Color("#2c2430"))
 			var bulb := _ball(Vector3(0, 0.55, 0), 0.09, Color("#ffd27a"))
@@ -84,6 +83,11 @@ func _peach() -> void:
 	_stem(0.28, 0.04, Color("#6b4a32"))
 	# ponytail: a brighter fruit clips to 255 under this sun.
 	_ball(Vector3(0.02, 0.46, 0.02), 0.16, Color("#8a4e22"))
+
+func _mosspear() -> void:
+	# ponytail: one fruit on a short stem; a brighter pear clips under this sun.
+	_stem(0.22, 0.035, Color("#3d4a28"))
+	_ball(Vector3(0.0, 0.42, 0.0), 0.15, Color("#4e5c2e"), Vector3(0.82, 1.55, 0.82))
 
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
