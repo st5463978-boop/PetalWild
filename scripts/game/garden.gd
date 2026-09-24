@@ -311,6 +311,12 @@ func _road_card_line() -> String:
 		return "The road is only a rumour."
 	return ""
 
+func _far_bell_line() -> String:
+	# ponytail: one page line while the three far-lawn bells are showing.
+	if _road_bell_count() != 3:
+		return ""
+	return "Three bells stand on the far lawn."
+
 func _cane_line() -> String:
 	# ponytail: one page line while both opening canes are short; it goes when either ripens.
 	var near := soil.get_cell(4, 2)
@@ -6121,7 +6127,7 @@ func _run_smoke() -> void:
 		push_error("smoke: an unknown road was filed")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0:
+	if _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _far_bell_line() != "":
 		push_error("smoke: stones marked a road that was not filed")
 		get_tree().quit(1)
 		return
@@ -6172,7 +6178,7 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
@@ -6212,7 +6218,7 @@ func _run_smoke() -> void:
 			wiped.append(entry)
 	Trust.audit = wiped
 	_sync_road_stones()
-	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0:
+	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _far_bell_line() != "":
 		push_error("smoke: the book line stayed after the filing was cleared")
 		get_tree().quit(1)
 		return
@@ -6227,7 +6233,7 @@ func _run_smoke() -> void:
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
-	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_lawn_count() != 1 or _road_bell_count() != 3 or _far_bell_line() != "Three bells stand on the far lawn." or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
 		get_tree().quit(1)
 		return
@@ -9344,6 +9350,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_passers"] = _lane_passers()
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
+	stats["far_bell_line"] = _far_bell_line()
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()
