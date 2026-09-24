@@ -377,6 +377,12 @@ func _east_closer_bell_line() -> String:
 		return ""
 	return "A bell stands at the parish end."
 
+func _parish_sale_line() -> String:
+	# ponytail: one page line the day a sale names the parish-end bell.
+	if _east_closer_bell_line() == "" or Trust.parish_bell_named_day != Clock.day:
+		return ""
+	return "A sale named the parish-end bell."
+
 func _lane_busy_line() -> String:
 	# ponytail: one page line at three passers; no body walks past the bench.
 	if not Trust.has_action("parish_road_rumour") or _lane_passers() < 3:
@@ -626,6 +632,7 @@ func sell(plant_id: String) -> void:
 		Trust.bell_named_day = Clock.day
 	if _east_closer_bell_rumour_count() == 1:
 		toast("A bell stands at the parish end.")
+		Trust.parish_bell_named_day = Clock.day
 	if _lane_passers() > 0:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
@@ -7048,7 +7055,7 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _bell_sale_line() != "" or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _bell_sale_line() != "" or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
@@ -7059,14 +7066,15 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var bell_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 3 or str(events[0]) != "A bell stands at the parish end." or str(events[1]) != "Three bells stand on the far lawn." or str(events[2]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or _sale_rumour_count() != 1 or Trust.level("nessa") != loam_trust:
+	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 3 or str(events[0]) != "A bell stands at the parish end." or str(events[1]) != "Three bells stand on the far lawn." or str(events[2]).find("Sold") == -1 or _bell_sale_line() != "A sale named the far-lawn bells." or _parish_sale_line() != "A sale named the parish-end bell." or _sale_rumour_count() != 1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a sale hid the far-lawn bells")
 		get_tree().quit(1)
 		return
 	Economy.coins = bell_sale_coins
 	Trust.lane_sale_day = bell_sale_day
 	Trust.bell_named_day = -1
-	if _bell_sale_line() != "" or _sale_rumour_count() != 0:
+	Trust.parish_bell_named_day = -1
+	if _bell_sale_line() != "" or _sale_rumour_count() != 0 or _parish_sale_line() != "":
 		push_error("smoke: the sale line stayed before the day")
 		get_tree().quit(1)
 		return
@@ -7156,7 +7164,7 @@ func _run_smoke() -> void:
 	Economy.add("peach", 1)
 	var quiet_sale_price := _sell_price("peach")
 	sell("peach")
-	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or str(events[0]) == "A bell stands at the parish end." or _bell_sale_line() != "" or _sale_rumour_count() != 0 or Trust.bell_named_day != -1 or Trust.level("nessa") != loam_trust:
+	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn." or str(events[0]) == "A bell stands at the parish end." or _bell_sale_line() != "" or _parish_sale_line() != "" or _sale_rumour_count() != 0 or Trust.bell_named_day != -1 or Trust.parish_bell_named_day != -1 or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a quiet sale named the far-lawn bells")
 		get_tree().quit(1)
 		return
@@ -7180,7 +7188,7 @@ func _run_smoke() -> void:
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and str(row.get("join_line", "")) == "One stone marks the gate opening." and str(row.get("parish_bell_line", "")) == "A bell stands at the parish end." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
-	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or _lane_south_line() != "" or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or _lane_south_line() != "" or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
 		get_tree().quit(1)
 		return
@@ -10399,6 +10407,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["east_far_line"] = _east_far_line()
 	stats["east_near_line"] = _east_near_line()
 	stats["east_closer_bell_line"] = _east_closer_bell_line()
+	stats["parish_sale_line"] = _parish_sale_line()
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

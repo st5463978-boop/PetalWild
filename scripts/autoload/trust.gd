@@ -5,6 +5,7 @@ var audit: Array = []
 var lumen_proposal_day := -1
 var lane_sale_day := -1
 var bell_named_day := -1
+var parish_bell_named_day := -1
 
 func reset_new() -> void:
 	levels = {"lumen": 0, "bram": 0, "nessa": 0}
@@ -12,6 +13,7 @@ func reset_new() -> void:
 	lumen_proposal_day = -1
 	lane_sale_day = -1
 	bell_named_day = -1
+	parish_bell_named_day = -1
 
 func level(person_id: String) -> int:
 	return int(levels.get(person_id, 0))
@@ -148,6 +150,7 @@ func to_state() -> Dictionary:
 		"lumen_proposal_day": lumen_proposal_day,
 		"lane_sale_day": lane_sale_day,
 		"bell_named_day": bell_named_day,
+		"parish_bell_named_day": parish_bell_named_day,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -159,3 +162,4 @@ func apply_state(data: Dictionary) -> void:
 	lumen_proposal_day = int(data.get("lumen_proposal_day", -1))
 	lane_sale_day = int(data.get("lane_sale_day", -1))
 	bell_named_day = int(data.get("bell_named_day", -1))
+	parish_bell_named_day = int(data.get("parish_bell_named_day", -1))
