@@ -23,10 +23,7 @@ func _build(id: String) -> void:
 		"meadowbell":
 			_meadowbell()
 		"peach":
-			_stem(0.42, 0.05, Color("#6b4a32"))
-			_ball(Vector3(0, 0.62, 0), 0.22, Color("#3f8a3a"))
-			_ball(Vector3(0.16, 0.5, 0.08), 0.16, Color("#4e9a42"))
-			_ball(Vector3(0.02, 0.48, 0.16), 0.09, Color("#e39a52"))
+			_peach()
 		"reed":
 			_reed()
 		"bramble":
@@ -77,6 +74,12 @@ func _ball(at: Vector3, radius: float, color: Color, squash := Vector3.ONE) -> M
 	node.scale = squash
 	add_child(node)
 	return node
+
+func _peach() -> void:
+	# ponytail: one warm fruit on a short stem; a leaf if the fruit still reads as a ball in the air.
+	_stem(0.28, 0.04, Color("#6b4a32"))
+	# ponytail: a brighter fruit clips to 255 under this sun.
+	_ball(Vector3(0.02, 0.46, 0.02), 0.16, Color("#8a4e22"))
 
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
