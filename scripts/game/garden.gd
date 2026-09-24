@@ -357,6 +357,13 @@ func _lantern_line() -> String:
 		return ""
 	return "A nightlantern is showing."
 
+func _seed_line() -> String:
+	# ponytail: one page line while the opening bed holds night-loam.
+	var plot := soil.get_cell(6, 4)
+	if plot.chem != "nightloam" or not _seed_open("nightlantern_seed"):
+		return ""
+	return "The nightlantern seed is open."
+
 func _grow_line() -> String:
 	# ponytail: one dawn line on day 2; it lasts until the next morning.
 	var day := Clock.day
@@ -930,7 +937,7 @@ func _run_smoke() -> void:
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
 	var opening_lamp := soil.get_cell(6, 4)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or opening_lamp.plant_id != "nightlantern" or opening_lamp.growth < 0.7 or opening_lamp.growth >= 1.0 or opening_lamp.chem != "nightloam" or _plot_line(opening_lamp).find("Light showing.") == -1 or _lantern_line() != "A nightlantern is showing." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or opening_lamp.plant_id != "nightlantern" or opening_lamp.growth < 0.7 or opening_lamp.growth >= 1.0 or opening_lamp.chem != "nightloam" or _plot_line(opening_lamp).find("Light showing.") == -1 or _lantern_line() != "A nightlantern is showing." or _seed_line() != "The nightlantern seed is open." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
@@ -3261,11 +3268,15 @@ func _run_smoke() -> void:
 	var shop_lamp := soil.get_cell(6, 4)
 	var shop_chem := shop_lamp.chem
 	shop_lamp.chem = "base"
-	if _seed_open("nightlantern_seed"):
+	if _seed_open("nightlantern_seed") or _seed_line() != "":
 		push_error("smoke: nightlantern was for sale before night-loam")
 		get_tree().quit(1)
 		return
 	shop_lamp.chem = shop_chem
+	if _seed_line() != "The nightlantern seed is open.":
+		push_error("smoke: the opening loam hid the seed line")
+		get_tree().quit(1)
+		return
 	var nip := ecology.first("dusknip")
 	if nip == null:
 		push_error("smoke: dusknip did not follow bellhelp")
@@ -9012,6 +9023,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["reed_line"] = _reed_line()
 	stats["pear_line"] = _pear_line()
 	stats["lantern_line"] = _lantern_line()
+	stats["seed_line"] = _seed_line()
 	stats["grow_line"] = _grow_line()
 	stats["sweet_line"] = _sweet_line()
 	stats["ripe_line"] = _ripe_cane_line()
