@@ -1176,6 +1176,36 @@ func _run_smoke() -> void:
 		push_error("smoke: the pear-sweet line stayed after the beds were cleared")
 		get_tree().quit(1)
 		return
+	var follow_bell := soil.get_cell(1, 1)
+	var follow_young := soil.get_cell(2, 1)
+	var follow_growth := follow_bell.growth
+	follow_bell.growth = 1.0
+	if _plot_line(follow_bell).find("A follower is close.") != -1:
+		push_error("smoke: a rumour called a follower close")
+		get_tree().quit(1)
+		return
+	ecology.states["bellhelp"] = "sighted"
+	if _plot_line(follow_bell).find("A follower is close.") != -1:
+		push_error("smoke: a sighting called a follower close")
+		get_tree().quit(1)
+		return
+	ecology.states["bellhelp"] = "visitor"
+	if _plot_line(follow_bell).find("A follower is close.") == -1 or _plot_line(follow_young).find("A follower is close.") != -1 or _plot_line(follow_young).find("Bells showing.") == -1 or _plot_line(follow_bell).find("Dusknip") != -1 or _plot_line(follow_bell).find("Bellhelp") != -1:
+		push_error("smoke: a visited bell stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["dusknip"] = "sighted"
+	if _plot_line(follow_bell).find("A follower is close.") != -1:
+		push_error("smoke: a sighting kept the follower line")
+		get_tree().quit(1)
+		return
+	ecology.states["dusknip"] = "rumoured"
+	ecology.states["bellhelp"] = "rumoured"
+	follow_bell.growth = follow_growth
+	if _plot_line(follow_bell).find("A follower is close.") != -1:
+		push_error("smoke: the follower line stayed on a young bell")
+		get_tree().quit(1)
+		return
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
 	var bells_ready := true
 	for bell in opening_bells:
@@ -7339,7 +7369,19 @@ func _plot_line(plot: SoilCell) -> String:
 		return line + "  ·  Rich enough."
 	if _pear_sweet(plot):
 		return line + "  ·  Pear-sweet."
+	if _follower_bell(plot):
+		return line + "  ·  A follower is close."
 	return line
+
+func _follower_bell(plot: SoilCell) -> bool:
+	# ponytail: ripe bells only, and only after Bellhelp has visited.
+	if plot.plant_id != "meadowbell" or plot.growth < 1.0:
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("bellhelp", "rumoured"))) < ecology.rules.rank_of("visitor"):
+		return false
+	if ecology.rules.rank_of(str(ecology.states.get("dusknip", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return false
+	return true
 
 func _pear_sweet(plot: SoilCell) -> bool:
 	# ponytail: ripe mosspears only, and only while the night-loam and the feed are both in.
