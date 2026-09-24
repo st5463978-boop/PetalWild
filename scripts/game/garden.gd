@@ -349,6 +349,22 @@ func accept_lumen() -> void:
 	_person("lumen").say("The tray is wrapped. The tin is lighter.")
 	refresh_panels()
 
+func accept_road() -> void:
+	if not _road_rumoured():
+		toast("The road is not a rumour yet. Nothing was filed.")
+		return
+	if Trust.has_action("parish_road_rumour"):
+		toast("The rumour is already in the book.")
+		return
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present:
+		toast("Nessa is not here. Nothing was filed.")
+		return
+	Trust.file_road_rumour("nessa")
+	toast("Nessa filed the road rumour. Nothing left the parish.")
+	nessa.say("The road is only a rumour. The book keeps it.")
+	refresh_panels()
+
 func _file_nessa() -> void:
 	Trust.file_notes("nessa", "Pollinator notes filed in the parish book. No external action.")
 	toast("Nessa filed the notes. Nothing left the garden.")
@@ -4964,6 +4980,11 @@ func _run_smoke() -> void:
 	for saved_day in lane_afternoon_days:
 		rumour_saved.append(saved_day)
 	lane_afternoon_days.clear()
+	accept_road()
+	if Trust.has_action("parish_road_rumour"):
+		push_error("smoke: an unknown road was filed")
+		get_tree().quit(1)
+		return
 	var rumour_clock_day := Clock.day
 	var rumour_clock_hour := Clock.hour()
 	Clock.day = 1
@@ -4983,6 +5004,24 @@ func _run_smoke() -> void:
 	var rumour_park: Dictionary = ContentDB.venues.get("grove_park", {})
 	if not _road_rumoured() or lane_afternoon_days.size() != 3 or bool(rumour_park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: three afternoons left the road unknown")
+		get_tree().quit(1)
+		return
+	accept_road()
+	var road_row: Dictionary = {}
+	for entry in Trust.audit:
+		if str(entry.get("action", "")) == "parish_road_rumour":
+			road_row = entry
+	if road_row.is_empty() or bool(road_row.get("external", true)) or int(road_row.get("cost", -1)) != 0 or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or bool(rumour_park.get("active", true)):
+		push_error("smoke: the approved rumour left the parish")
+		get_tree().quit(1)
+		return
+	accept_road()
+	var road_notes := 0
+	for entry in Trust.audit:
+		if str(entry.get("action", "")) == "parish_road_rumour":
+			road_notes += 1
+	if road_notes != 1:
+		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
 	Clock.day = 2
@@ -7841,6 +7880,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"unmet": unmet,
 			"can_file": person.present and id == "nessa",
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
+			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
 		})
 	return rows
 

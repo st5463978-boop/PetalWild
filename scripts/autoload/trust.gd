@@ -84,6 +84,21 @@ func file_lane_sale(person_id: String) -> void:
 		"at": Time.get_datetime_string_from_system(),
 	})
 
+func file_road_rumour(person_id: String) -> void:
+	# ponytail: one approved line; file_notes if a rumour should raise trust.
+	if has_action("parish_road_rumour"):
+		return
+	audit.append({
+		"person": person_id,
+		"action": "parish_road_rumour",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": "The road beyond the hedge is a rumour. Nothing left the parish.",
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_bee_note(person_id: String, note: String = "Bees on the bed. Nothing was spent.") -> void:
 	# ponytail: one bee line; file_notes if a note should raise trust.
 	audit.append({

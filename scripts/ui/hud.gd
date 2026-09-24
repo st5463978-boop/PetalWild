@@ -447,6 +447,14 @@ func show_draft() -> void:
 		func(): host.accept_draft()
 	)
 
+func show_road() -> void:
+	_fill_proposal(
+		"Nessa Pod",
+		"The road beyond the hedge is only a rumour.\n\nI can write that in the parish book.\n\nNo coins. Nothing is sent. I will not write it unless you say so.",
+		"File the rumour",
+		func(): host.accept_road()
+	)
+
 func show_nessa() -> void:
 	_fill_proposal(
 		"Nessa Pod",
@@ -523,6 +531,11 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		button.text = "Hear Nessa's notes proposal"
 		button.pressed.connect(show_nessa)
 		box.add_child(button)
+	if bool(row.get("can_road", false)):
+		var road := Button.new()
+		road.text = "Hear the road rumour"
+		road.pressed.connect(show_road)
+		box.add_child(road)
 	if bool(row.get("can_draft", false)):
 		var draft := Button.new()
 		draft.text = "Hear the parish draft"
