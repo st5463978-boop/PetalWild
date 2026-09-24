@@ -365,26 +365,51 @@ func _sweet_line() -> String:
 		return ""
 	return "The meadow is sweet enough."
 
+func _ripe_cane_line() -> String:
+	# ponytail: one page line before the first sighting; it goes once Berrypatch is sighted.
+	var ripe := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "bramble" and plot.growth >= 1.0:
+			ripe += 1
+	if ripe < 2:
+		return ""
+	if ecology.rules.rank_of(str(ecology.states.get("berrypatch", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return ""
+	return "The canes are ripe enough."
+
 func _rumour_blurb(id: String) -> String:
-	# ponytail: one rumour while the sweet line is up; other species stay unseen.
+	# ponytail: one rumour while that page line is up; other species stay unseen.
 	if id == "bellhelp" and _sweet_line() != "":
 		return "The meadow is sweet enough."
+	if id == "berrypatch" and _ripe_cane_line() != "":
+		return "The canes are ripe enough."
 	return "Not sighted yet."
 
-func _sweet_rumour_count() -> int:
+func _rumour_count(sentence: String) -> int:
 	var count := 0
 	for row in _journal_rows(world_snapshot()):
 		var entry: Dictionary = row
 		if str(entry.get("name", "")) != "A rumour":
 			continue
 		var blurb := str(entry.get("blurb", ""))
-		if blurb.find("Bellhelp") != -1:
+		if blurb.find("Bellhelp") != -1 or blurb.find("Berrypatch") != -1:
 			return -1
-		if blurb == "The meadow is sweet enough.":
+		if blurb == sentence:
 			count += 1
-		elif blurb != "Not sighted yet.":
+		elif blurb == "Not sighted yet.":
+			continue
+		elif blurb == _sweet_line() or blurb == _ripe_cane_line():
+			continue
+		else:
 			return -1
 	return count
+
+func _sweet_rumour_count() -> int:
+	return _rumour_count("The meadow is sweet enough.")
+
+func _cane_rumour_count() -> int:
+	return _rumour_count("The canes are ripe enough.")
 
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
@@ -855,10 +880,31 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 1.0
-	if _cane_line() != "" or _lane_passers() < 1 or _plot_line(opening_cane).find("Berries showing.") != -1:
+	if _cane_line() != "" or _ripe_cane_line() != "" or _lane_passers() < 1 or _plot_line(opening_cane).find("Berries showing.") != -1:
 		push_error("smoke: a ripe opening cane kept the young line")
 		get_tree().quit(1)
 		return
+	opening_far.growth = 1.0
+	if _ripe_cane_line() != "The canes are ripe enough." or _ripe_cane_line().find("Berrypatch") != -1 or _cane_rumour_count() != 1:
+		push_error("smoke: two ripe canes stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["berrypatch"] = "sighted"
+	var berry_blurb := ""
+	for row in _journal_rows(world_snapshot()):
+		var berry_row: Dictionary = row
+		if str(berry_row.get("name", "")) == "Berrypatch":
+			berry_blurb = str(berry_row.get("blurb", ""))
+	if _ripe_cane_line() != "" or _cane_rumour_count() != 0 or berry_blurb != str(ContentDB.species_def("berrypatch").get("blurb", "")):
+		push_error("smoke: a sighting kept the ripe cane line")
+		get_tree().quit(1)
+		return
+	ecology.states["berrypatch"] = "rumoured"
+	if _cane_rumour_count() != 1:
+		push_error("smoke: the cane rumour stayed named")
+		get_tree().quit(1)
+		return
+	opening_far.growth = 0.74
 	opening_cane.growth = 0.32
 	if _plot_line(opening_cane).find("Berries showing.") != -1:
 		push_error("smoke: a short cane claimed the berries were showing")
@@ -2264,7 +2310,8 @@ func _run_smoke() -> void:
 		var entry: Dictionary = row
 		if str(entry.get("name", "")) == "A rumour":
 			saw_rumour = true
-			if str(entry.get("blurb", "")) != "Not sighted yet.":
+			var rumour_blurb := str(entry.get("blurb", ""))
+			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line()):
 				push_error("smoke: rumour blurb leaked")
 				get_tree().quit(1)
 				return
@@ -8354,6 +8401,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["reed_line"] = _reed_line()
 	stats["grow_line"] = _grow_line()
 	stats["sweet_line"] = _sweet_line()
+	stats["ripe_line"] = _ripe_cane_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
