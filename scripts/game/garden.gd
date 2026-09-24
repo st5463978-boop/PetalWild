@@ -1027,6 +1027,28 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	hour_view.queue_free()
+	var fruit_view := PlantView.new()
+	add_child(fruit_view)
+	fruit_view.show_plant("peach", opening_peach.growth, opening_peach.moisture, opening_peach.fertility)
+	var fruit_count := 0
+	var fruit_spheres := 0
+	var stem_count := 0
+	for fruit_node in fruit_view.get_children():
+		var fruit_mesh := fruit_node as MeshInstance3D
+		if fruit_mesh == null:
+			continue
+		var fruit_albedo: Color = (fruit_mesh.material_override as StandardMaterial3D).albedo_color
+		if fruit_mesh.mesh is SphereMesh:
+			fruit_spheres += 1
+			if fruit_albedo.is_equal_approx(Color("#8a4e22")):
+				fruit_count += 1
+		if fruit_mesh.mesh is CylinderMesh and fruit_albedo.is_equal_approx(Color("#6b4a32")):
+			stem_count += 1
+	if absf(opening_peach.growth - 0.72) > 0.001 or fruit_count != 1 or fruit_spheres != 1 or stem_count != 1:
+		push_error("smoke: a day-1 hour changed the peach fruit")
+		get_tree().quit(1)
+		return
+	fruit_view.queue_free()
 	var grow_i := 0
 	for cell in soil.all():
 		var grown_bed: SoilCell = cell
