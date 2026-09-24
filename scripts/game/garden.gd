@@ -352,6 +352,19 @@ func _grow_line() -> String:
 		return ""
 	return "The peach, the brambles, and the reed take up growing."
 
+func _sweet_line() -> String:
+	# ponytail: one page line before the first sighting; it goes once Bellhelp is sighted.
+	var ripe := 0
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "meadowbell" and plot.growth >= 1.0:
+			ripe += 1
+	if ripe < 3:
+		return ""
+	if ecology.rules.rank_of(str(ecology.states.get("bellhelp", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return ""
+	return "The meadow is sweet enough."
+
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
 	var lumen := _person("lumen")
@@ -951,6 +964,25 @@ func _run_smoke() -> void:
 		return
 	Clock.day = 1
 	Clock.set_hour(15.2)
+	if _sweet_line() != "":
+		push_error("smoke: young bells called the meadow sweet")
+		get_tree().quit(1)
+		return
+	var sweet_growth: Array[float] = [opening_bells[0].growth, opening_bells[1].growth, opening_bells[2].growth]
+	for bell in opening_bells:
+		bell.growth = 1.0
+	if _sweet_line() != "The meadow is sweet enough." or _sweet_line().find("Bellhelp") != -1:
+		push_error("smoke: three ripe bells stayed quiet")
+		get_tree().quit(1)
+		return
+	ecology.states["bellhelp"] = "sighted"
+	if _sweet_line() != "":
+		push_error("smoke: a sighting kept the sweet line")
+		get_tree().quit(1)
+		return
+	ecology.states["bellhelp"] = "rumoured"
+	for i in opening_bells.size():
+		opening_bells[i].growth = sweet_growth[i]
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -8287,6 +8319,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["peach_line"] = _peach_line()
 	stats["reed_line"] = _reed_line()
 	stats["grow_line"] = _grow_line()
+	stats["sweet_line"] = _sweet_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0

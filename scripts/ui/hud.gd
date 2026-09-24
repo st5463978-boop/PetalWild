@@ -156,6 +156,9 @@ func show_place(stats: Dictionary) -> void:
 	var grow_line := str(stats.get("grow_line", ""))
 	if grow_line != "":
 		journal_box.add_child(ThemeKit.label(grow_line, 14))
+	var sweet_line := str(stats.get("sweet_line", ""))
+	if sweet_line != "":
+		journal_box.add_child(ThemeKit.label(sweet_line, 14))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])
