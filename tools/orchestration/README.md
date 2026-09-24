@@ -2,7 +2,7 @@
 
 This directory is the PetalWild development foreman. It is not part of the Godot game. `scripts/`, `scenes/`, `data/`, and `shaders/` do not reference it. `.gdignore` keeps Godot from importing it.
 
-System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `http://100.126.22.71:8766` (Tailscale address of piai-1). `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` and the wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. HIGH / MEDIUM / LOW labels are not calibrated probabilities.
+System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `https://fibre-especially-theaters-aerospace.trycloudflare.com` (Cloudflare quick tunnel). On the tailnet, set `HAILO_DECIDE_URL` to `http://100.126.22.71:8766`. `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` with at least two options. The client waits 75s. The wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. If health fails, the tunnel hostname may have changed; check `CLOUDFLARE-DECIDE-URL.txt` on the Pi.
 
 ## What this machine showed
 
@@ -16,7 +16,7 @@ Probed on 2026-09-22 from this cloud VM:
 
 `hailo_router_benchmark/latest_results.json` records `not_run` / `no_hailo_device`. No model was selected. No routing accuracy is claimed.
 
-`python3 -m petal_dispatch.hailo_backend` from this directory probes `GET /health` and one `POST /decide`. A cloud VM that is not on the tailnet cannot open `100.126.22.71`. The code still defaults to that URL so Scott can point `HAILO_DECIDE_URL` at a reachable tunnel. The benchmark does not rank local models.
+`python3 -m petal_dispatch.hailo_backend` from this directory probes `GET /health` and one `POST /decide` against the default tunnel. The benchmark does not rank local models.
 
 ## Run
 

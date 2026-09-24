@@ -1,7 +1,7 @@
 """Pi Hailo decide client for system-1 routing.
 
 High-frequency choices go to the Pi `hailo-decision` service
-(`HAILO_DECIDE_URL`, default `http://100.126.22.71:8766`). This module does
+(`HAILO_DECIDE_URL`, default the Cloudflare quick tunnel). This module does
 not call MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
 It does not download or recompile HEFs.
 """
@@ -18,9 +18,12 @@ from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
 
-# Tailscale address of piai-1. Override with HAILO_DECIDE_URL when the VM is not on the tailnet.
-DEFAULT_DECIDE_URL = "http://100.126.22.71:8766"
+# Cloudflare quick tunnel on the Pi. The hostname can change if hailo-decide-tunnel.service restarts.
+DEFAULT_DECIDE_URL = "https://fibre-especially-theaters-aerospace.trycloudflare.com"
+# On-tailnet only. Set HAILO_DECIDE_URL to this when the host is on the tailnet.
+TAILSCALE_DECIDE_URL = "http://100.126.22.71:8766"
 DECIDE_MODEL = "Qwen3-1.7B.hef"
+DECIDE_TIMEOUT = 75.0
 
 
 class HailoGenAIBackend(Backend):
@@ -181,12 +184,12 @@ class HailoDecideBackend(Backend):
         )
 
 
-def smoke(timeout: float = 12.0) -> dict:
+def smoke(timeout: float = DECIDE_TIMEOUT) -> dict:
     url = decide_url()
     report: dict = {"decide_url": url, "model": DECIDE_MODEL}
     started = time.perf_counter()
     try:
-        report["health"] = get_health(url, min(timeout, 8.0))
+        report["health"] = get_health(url, 15.0)
         report["health_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
         report["health_ok"] = True
     except Exception as exc:  # noqa: BLE001 — recorded for the status note

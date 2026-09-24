@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from petal_dispatch.discover import discover  # noqa: E402
-from petal_dispatch.hailo_backend import HailoDecideBackend, decide_url, get_health  # noqa: E402
+from petal_dispatch.hailo_backend import DECIDE_TIMEOUT, HailoDecideBackend, decide_url, get_health  # noqa: E402
 from petal_dispatch.router import decide  # noqa: E402
 
 RUNTIME = ROOT / "runtime"
@@ -43,9 +43,9 @@ def enqueue(record: dict) -> None:
 def route_task(task: str, event: str = "") -> dict:
     if event not in EVENTS:
         event = ""
-    # ponytail: one Pi HEF call; no local Ollama fallback if the tailnet is down.
+    # ponytail: one Pi HEF call; no local Ollama fallback if the tunnel is down.
     backend = HailoDecideBackend(decide_url())
-    decision = decide(task, backend, event=event, timeout=12.0)
+    decision = decide(task, backend, event=event, timeout=DECIDE_TIMEOUT)
     record = {
         "task": task,
         "event": event,
