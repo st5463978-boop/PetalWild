@@ -29,8 +29,9 @@ func _build(id: String) -> void:
 		"bramble":
 			_ball(Vector3(0, 0.16, 0), 0.2, Color("#2f6a32"))
 			_ball(Vector3(0.12, 0.14, 0.06), 0.14, Color("#3d7a38"))
-			_ball(Vector3(-0.04, 0.18, 0.1), 0.045, Color("#8a3068"))
-			_ball(Vector3(0.1, 0.2, -0.04), 0.04, Color("#a84478"))
+			# ponytail: berries under 0.05 did not read; darken if a larger fruit clips.
+			_ball(Vector3(-0.16, 0.55, -0.16), 0.22, Color("#5a1834"))
+			_ball(Vector3(0.16, 0.52, -0.16), 0.2, Color("#6a2040"))
 		"mosspear":
 			_mosspear()
 		"nightlantern":
