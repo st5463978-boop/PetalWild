@@ -5076,6 +5076,29 @@ func _run_smoke() -> void:
 		push_error("smoke: the road rumour did not reload")
 		get_tree().quit(1)
 		return
+	var wiped: Array = []
+	for entry in Trust.audit:
+		if str(entry.get("action", "")) != "parish_road_rumour":
+			wiped.append(entry)
+	Trust.audit = wiped
+	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "":
+		push_error("smoke: the book line stayed after the filing was cleared")
+		get_tree().quit(1)
+		return
+	var loaded_trust = rumour_loaded.get("trust", {})
+	if typeof(loaded_trust) != TYPE_DICTIONARY:
+		push_error("smoke: the road rumour save lost the book")
+		get_tree().quit(1)
+		return
+	Trust.apply_state(loaded_trust)
+	var nessa_reloaded := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and not bool(row.get("can_road", false)):
+			nessa_reloaded = true
+	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin:
+		push_error("smoke: a reload lost the filed rumour")
+		get_tree().quit(1)
+		return
 	lane_afternoon_days.clear()
 	for saved_day in rumour_saved:
 		lane_afternoon_days.append(saved_day)
