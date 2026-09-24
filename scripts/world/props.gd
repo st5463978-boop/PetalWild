@@ -49,6 +49,7 @@ func _stall(parent: Node3D) -> void:
 	sign.modulate = Color("#8d6a45")
 	sign.outline_modulate = Color("2a2118")
 	sign.outline_size = 12
+	sign.add_to_group("parish_stall_sign")
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	root.add_child(sign)

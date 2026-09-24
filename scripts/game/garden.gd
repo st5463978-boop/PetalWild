@@ -4838,7 +4838,20 @@ func _run_smoke() -> void:
 	var lane_stats := _place_stats(world_snapshot())
 	var park: Dictionary = ContentDB.venues.get("grove_park", {})
 	var lane_bodies := _present_people() + ecology.resident_total()
-	if _lane_passers() != lane_before + 1 or int(lane_stats.get("lane_passers", -1)) != lane_before + 1 or int(lane_stats.get("stall_demand", -1)) != lane_bodies + lane_before + 1 or bool(park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	_lamps()
+	var lane_sign := ""
+	for node in get_tree().get_nodes_in_group("parish_stall_sign"):
+		var sign := node as Label3D
+		if sign:
+			lane_sign = sign.text
+	var cloth_held := true
+	for node in get_tree().get_nodes_in_group("parish_awning"):
+		var stripe := node as MeshInstance3D
+		if stripe and stripe.material_override is StandardMaterial3D:
+			var got := (stripe.material_override as StandardMaterial3D).albedo_color
+			if got != stripe.get_meta("open_color"):
+				cloth_held = false
+	if _lane_passers() != lane_before + 1 or int(lane_stats.get("lane_passers", -1)) != lane_before + 1 or int(lane_stats.get("stall_demand", -1)) != lane_bodies + lane_before + 1 or lane_sign != "Petal Stall  +1" or not cloth_held or bool(park.get("active", true)) or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: a golden afternoon ignored a ripe bed on the lane")
 		get_tree().quit(1)
 		return
@@ -4890,7 +4903,13 @@ func _run_smoke() -> void:
 	Clock.day = 2
 	Clock.set_hour(15.0)
 	_lamps()
-	if Clock.weather != "rain" or _lane_passers() != 0 or int(_place_stats(world_snapshot()).get("stall_demand", -1)) != lane_bodies or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
+	_lamps()
+	lane_sign = ""
+	for node in get_tree().get_nodes_in_group("parish_stall_sign"):
+		var rain_sign := node as Label3D
+		if rain_sign:
+			lane_sign = rain_sign.text
+	if Clock.weather != "rain" or _lane_passers() != 0 or int(_place_stats(world_snapshot()).get("stall_demand", -1)) != lane_bodies or lane_sign != "Petal Stall" or lamp_light.light_energy > 0.4 or Economy.coins != kept_tin or Trust.level("nessa") != loam_trust:
 		push_error("smoke: the rain counted the lane or lit the lanterns")
 		get_tree().quit(1)
 		return
@@ -5008,6 +5027,11 @@ func _lamps() -> void:
 		if stripe and stripe.material_override is StandardMaterial3D:
 			var cloth: Color = stripe.get_meta("open_color") if stall_open else stripe.get_meta("shut_color")
 			(stripe.material_override as StandardMaterial3D).albedo_color = cloth
+	var sign_text := "Petal Stall  +1" if _lane_passers() > 0 else "Petal Stall"
+	for node in get_tree().get_nodes_in_group("parish_stall_sign"):
+		var sign := node as Label3D
+		if sign:
+			sign.text = sign_text
 	var room_glow := 1.15 if night else 0.0
 	for node in get_tree().get_nodes_in_group("parish_room"):
 		var house_lamp := node as OmniLight3D
