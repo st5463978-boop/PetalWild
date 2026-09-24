@@ -988,6 +988,25 @@ func _run_smoke() -> void:
 		push_error("smoke: day 1 held the mosspear or the nightlantern")
 		get_tree().quit(1)
 		return
+	var grown_view := PlantView.new()
+	add_child(grown_view)
+	grown_view.show_plant("nightlantern", opening_lamp.growth, opening_lamp.moisture, opening_lamp.fertility)
+	var grown_leaves := 0
+	var grown_radius := 0.0
+	for grown_node in grown_view.get_children():
+		var grown_mesh := grown_node as MeshInstance3D
+		if grown_mesh == null:
+			continue
+		var grown_albedo: Color = (grown_mesh.material_override as StandardMaterial3D).albedo_color
+		if grown_mesh.mesh is BoxMesh and grown_albedo.is_equal_approx(Color("#243628")):
+			grown_leaves += 1
+		if grown_mesh.mesh is SphereMesh and grown_albedo.is_equal_approx(Color("#ffd27a")):
+			grown_radius = (grown_mesh.mesh as SphereMesh).radius
+	if grown_leaves != 2 or absf(grown_radius - 0.09) > 0.001:
+		push_error("smoke: a day-1 hour changed the nightlantern leaves")
+		get_tree().quit(1)
+		return
+	grown_view.queue_free()
 	var grow_i := 0
 	for cell in soil.all():
 		var grown_bed: SoilCell = cell
