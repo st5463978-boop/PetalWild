@@ -5974,6 +5974,22 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	head_view.queue_free()
+	var pear_view := PlantView.new()
+	add_child(pear_view)
+	pear_view.show_plant("mosspear", 1.0, 0.8, 0.7)
+	var pear_leaves := 0
+	for pear_node in pear_view.get_children():
+		var pear_mesh := pear_node as MeshInstance3D
+		if pear_mesh == null or not (pear_mesh.mesh is BoxMesh):
+			continue
+		var pear_albedo: Color = (pear_mesh.material_override as StandardMaterial3D).albedo_color
+		if pear_albedo.is_equal_approx(Color("#2f4a28")):
+			pear_leaves += 1
+	if pear_leaves != 1:
+		push_error("smoke: the mosspear fruit had no leaf")
+		get_tree().quit(1)
+		return
+	pear_view.queue_free()
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
