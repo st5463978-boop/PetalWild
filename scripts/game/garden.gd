@@ -582,7 +582,7 @@ func _build_road_stones() -> void:
 		stone.add_to_group("parish_road_stone")
 		add_child(stone)
 	var strip := BoxMesh.new()
-	strip.size = Vector3(0.9, 0.03, 2.2)
+	strip.size = Vector3(0.9, 0.03, 3.55)
 	var path := MeshInstance3D.new()
 	path.mesh = strip
 	var path_mat := StandardMaterial3D.new()
@@ -590,7 +590,7 @@ func _build_road_stones() -> void:
 	path_mat.roughness = 0.96
 	path_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	path.material_override = path_mat
-	path.position = Vector3(0.0, 0.02, -12.5)
+	path.position = Vector3(0.0, 0.02, -11.775)
 	path.visible = false
 	path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	path.add_to_group("parish_road_path")
@@ -614,6 +614,11 @@ func _road_path_count() -> int:
 		if path == null or not path.visible:
 			continue
 		if path.global_position.z >= GardenLayout.GATE.z:
+			return -1
+		var size := (path.mesh as BoxMesh).size
+		var north := path.global_position.z + size.z * 0.5
+		var south := path.global_position.z - size.z * 0.5
+		if north > -9.85 or north < -10.15 or south > -13.35:
 			return -1
 		var albedo := path.material_override as StandardMaterial3D
 		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
