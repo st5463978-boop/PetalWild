@@ -984,7 +984,7 @@ func _run_smoke() -> void:
 		grow_saved.append(grow_bed.to_dict())
 	Clock.day = 1
 	soil.tick(60.0, "golden")
-	if opening_pear.growth <= 0.72 or opening_lamp.growth <= 0.72 or opening_peach.growth != 0.72:
+	if opening_pear.growth < 1.0 or opening_lamp.growth < 1.0 or opening_peach.growth != 0.72 or _pear_line() != "" or _lantern_line() != "":
 		push_error("smoke: day 1 held the mosspear or the nightlantern")
 		get_tree().quit(1)
 		return
