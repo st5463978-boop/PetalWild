@@ -956,6 +956,26 @@ func _run_smoke() -> void:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the berry leaves did not save")
+		get_tree().quit(1)
+		return
+	opening_cane.growth = 1.0
+	opening_far.plant_id = ""
+	if _leaf_line() != "" or _leaf_rumour_count() != 0:
+		push_error("smoke: a cleared cane kept the berry rumour")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	opening_peach = soil.get_cell(3, 2)
+	opening_cane = soil.get_cell(4, 2)
+	opening_far = soil.get_cell(5, 2)
+	opening_pear = soil.get_cell(4, 1)
+	opening_lamp = soil.get_cell(6, 4)
+	if opening_cane.plant_id != "bramble" or opening_far.plant_id != "bramble" or opening_cane.growth >= 1.0 or opening_far.growth >= 1.0 or _leaf_line() != "The berries have leaves." or _leaf_rumour_count() != 1:
+		push_error("smoke: a reload dropped the berry leaves")
+		get_tree().quit(1)
+		return
 	opening_pear.growth = 1.0
 	if _pear_line() != "" or _lane_passers() < 1:
 		push_error("smoke: a ripe mosspear kept the young pear page")
