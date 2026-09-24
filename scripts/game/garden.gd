@@ -799,6 +799,19 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	opening_cane.growth = 0.78
+	var opening_reed := soil.get_cell(7, 5)
+	if opening_peach.growth < 0.7 or opening_peach.growth >= 1.0 or opening_reed.plant_id != "reed" or opening_reed.growth < 0.65 or opening_reed.growth >= 1.0 or _plot_line(opening_peach).find("Fruit showing.") == -1 or _plot_line(opening_reed).find("Heads showing.") == -1 or _lane_passers() != 0:
+		push_error("smoke: the opening peach or reed ripened the lane")
+		get_tree().quit(1)
+		return
+	opening_peach.growth = 1.0
+	opening_reed.growth = 0.22
+	if _plot_line(opening_peach).find("Fruit showing.") != -1 or _plot_line(opening_reed).find("Heads showing.") != -1 or _lane_passers() < 1:
+		push_error("smoke: a ripe peach kept the young fruit line")
+		get_tree().quit(1)
+		return
+	opening_peach.growth = 0.72
+	opening_reed.growth = 0.70
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -5359,6 +5372,7 @@ func _run_capture() -> void:
 	# ponytail: debug_grow ripens every bed; put the opening canes back so the shot shows berries that read and stay short of ripe.
 	_force_plant(4, 2, "bramble", 0.78)
 	_force_plant(5, 2, "bramble", 0.74)
+	_force_plant(7, 5, "reed", 0.70)
 	_sync_plants()
 	Clock.set_hour(15.3)
 	ecology.tick(0.2, world_snapshot())
@@ -5416,12 +5430,14 @@ func _opening_plants() -> void:
 	_force_plant(1, 1, "meadowbell", 0.58)
 	_force_plant(2, 1, "meadowbell", 0.44)
 	_force_plant(1, 2, "meadowbell", 0.36)
-	_force_plant(3, 2, "peach", 0.28)
+	# ponytail: tall enough for the one fruit to read; a ripe peach if the lane should count it.
+	_force_plant(3, 2, "peach", 0.72)
 	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
 	_force_plant(4, 2, "bramble", 0.78)
 	# ponytail: the second cane is across the path; a tilled empty bed if rain should set it later.
 	_force_plant(5, 2, "bramble", 0.74)
-	_force_plant(7, 5, "reed", 0.22)
+	# ponytail: tall enough for the seed heads to read; a ripe reed if Bulrush should come on the first day.
+	_force_plant(7, 5, "reed", 0.70)
 
 func _feed_beds() -> void:
 	for cell in soil.all():
@@ -6794,6 +6810,10 @@ func _plot_line(plot: SoilCell) -> String:
 	# ponytail: the tall young cane only; a short cane stays on the percent.
 	if plot.plant_id == "bramble" and plot.growth >= 0.7 and plot.growth < 1.0:
 		return line + "  ·  Berries showing."
+	if plot.plant_id == "peach" and plot.growth >= 0.7 and plot.growth < 1.0:
+		return line + "  ·  Fruit showing."
+	if plot.plant_id == "reed" and plot.growth >= 0.7 and plot.growth < 1.0:
+		return line + "  ·  Heads showing."
 	if _cane_kept(plot):
 		return line + "  ·  Cane kept."
 	if _bees_hurrying(plot):
