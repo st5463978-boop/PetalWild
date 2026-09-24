@@ -393,6 +393,21 @@ func _wade_line() -> String:
 		return ""
 	return "The reeds are ready to wade."
 
+func _dusk_line() -> String:
+	# ponytail: one page line before the first sighting; it goes once Pegapear is sighted.
+	var weather := Clock.weather
+	if weather != "mist" and weather != "rain":
+		return ""
+	var hour := Clock.hour()
+	if hour < 16.0 or hour > 22.0:
+		return ""
+	if ecology.rules.rank_of(str(ecology.states.get("pegapear", "rumoured"))) >= ecology.rules.rank_of("sighted"):
+		return ""
+	var mature: Dictionary = world_snapshot().get("mature", {})
+	if int(mature.get("peach", 0)) < 1 or int(mature.get("nightlantern", 0)) < 1:
+		return ""
+	return "The dusk is wet enough."
+
 func _rumour_blurb(id: String) -> String:
 	# ponytail: one rumour while that page line is up; other species stay unseen.
 	if id == "bellhelp" and _sweet_line() != "":
@@ -401,6 +416,8 @@ func _rumour_blurb(id: String) -> String:
 		return "The canes are ripe enough."
 	if id == "bulrush" and _wade_line() != "":
 		return "The reeds are ready to wade."
+	if id == "pegapear" and _dusk_line() != "":
+		return "The dusk is wet enough."
 	return "Not sighted yet."
 
 func _rumour_count(sentence: String) -> int:
@@ -410,13 +427,13 @@ func _rumour_count(sentence: String) -> int:
 		if str(entry.get("name", "")) != "A rumour":
 			continue
 		var blurb := str(entry.get("blurb", ""))
-		if blurb.find("Bellhelp") != -1 or blurb.find("Berrypatch") != -1 or blurb.find("Bulrush") != -1:
+		if blurb.find("Bellhelp") != -1 or blurb.find("Berrypatch") != -1 or blurb.find("Bulrush") != -1 or blurb.find("Pegapear") != -1:
 			return -1
 		if blurb == sentence:
 			count += 1
 		elif blurb == "Not sighted yet.":
 			continue
-		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line():
+		elif blurb == _sweet_line() or blurb == _ripe_cane_line() or blurb == _wade_line() or blurb == _dusk_line():
 			continue
 		else:
 			return -1
@@ -430,6 +447,9 @@ func _cane_rumour_count() -> int:
 
 func _wade_rumour_count() -> int:
 	return _rumour_count("The reeds are ready to wade.")
+
+func _dusk_rumour_count() -> int:
+	return _rumour_count("The dusk is wet enough.")
 
 func _stall_shut() -> void:
 	toast("The stall is shut until morning.")
@@ -1035,6 +1055,60 @@ func _run_smoke() -> void:
 		scooped.pop_back()
 	opening_peach.growth = 0.72
 	opening_reed.growth = 0.70
+	if _dusk_line() != "":
+		push_error("smoke: a dry afternoon called the dusk wet")
+		get_tree().quit(1)
+		return
+	var dusk_hour := Clock.hour()
+	var dusk_weather := Clock.weather
+	opening_peach.growth = 1.0
+	_force_plant(1, 3, "nightlantern", 1.0)
+	Clock.weather = "mist"
+	Clock.set_hour(18.0)
+	if _dusk_line() != "The dusk is wet enough." or _dusk_line().find("Pegapear") != -1 or _dusk_rumour_count() != 1:
+		push_error("smoke: a wet dusk stayed quiet")
+		get_tree().quit(1)
+		return
+	Clock.weather = "golden"
+	if _dusk_line() != "":
+		push_error("smoke: a dry dusk stayed wet")
+		get_tree().quit(1)
+		return
+	Clock.weather = "rain"
+	Clock.set_hour(14.0)
+	if _dusk_line() != "":
+		push_error("smoke: an afternoon rain called the dusk wet")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(18.0)
+	soil.get_cell(1, 3).growth = 0.4
+	if _dusk_line() != "":
+		push_error("smoke: a young lantern called the dusk wet")
+		get_tree().quit(1)
+		return
+	soil.get_cell(1, 3).growth = 1.0
+	ecology.states["pegapear"] = "sighted"
+	var pear_blurb := ""
+	for row in _journal_rows(world_snapshot()):
+		var pear_row: Dictionary = row
+		if str(pear_row.get("name", "")) == "Pegapear":
+			pear_blurb = str(pear_row.get("blurb", ""))
+	if _dusk_line() != "" or _dusk_rumour_count() != 0 or pear_blurb != str(ContentDB.species_def("pegapear").get("blurb", "")):
+		push_error("smoke: a sighting kept the dusk line")
+		get_tree().quit(1)
+		return
+	ecology.states["pegapear"] = "rumoured"
+	var dusk_bed := soil.get_cell(1, 3)
+	dusk_bed.plant_id = ""
+	dusk_bed.growth = 0.0
+	dusk_bed.tilled = false
+	opening_peach.growth = 0.72
+	Clock.weather = dusk_weather
+	Clock.set_hour(dusk_hour)
+	if _dusk_line() != "":
+		push_error("smoke: the dusk line stayed after the weather turned")
+		get_tree().quit(1)
+		return
 	var opening_bells: Array[SoilCell] = [soil.get_cell(1, 1), soil.get_cell(2, 1), soil.get_cell(1, 2)]
 	var bells_ready := true
 	for bell in opening_bells:
@@ -2417,7 +2491,7 @@ func _run_smoke() -> void:
 		if str(entry.get("name", "")) == "A rumour":
 			saw_rumour = true
 			var rumour_blurb := str(entry.get("blurb", ""))
-			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or rumour_blurb.find("Bulrush") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line() and rumour_blurb != _wade_line()):
+			if rumour_blurb.find("Bellhelp") != -1 or rumour_blurb.find("Berrypatch") != -1 or rumour_blurb.find("Bulrush") != -1 or rumour_blurb.find("Pegapear") != -1 or (rumour_blurb != "Not sighted yet." and rumour_blurb != _sweet_line() and rumour_blurb != _ripe_cane_line() and rumour_blurb != _wade_line() and rumour_blurb != _dusk_line()):
 				push_error("smoke: rumour blurb leaked")
 				get_tree().quit(1)
 				return
@@ -8523,6 +8597,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["sweet_line"] = _sweet_line()
 	stats["ripe_line"] = _ripe_cane_line()
 	stats["wade_line"] = _wade_line()
+	stats["dusk_line"] = _dusk_line()
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0

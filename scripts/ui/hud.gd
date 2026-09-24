@@ -165,6 +165,9 @@ func show_place(stats: Dictionary) -> void:
 	var wade_line := str(stats.get("wade_line", ""))
 	if wade_line != "":
 		journal_box.add_child(ThemeKit.label(wade_line, 14))
+	var dusk_line := str(stats.get("dusk_line", ""))
+	if dusk_line != "":
+		journal_box.add_child(ThemeKit.label(dusk_line, 14))
 	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])
