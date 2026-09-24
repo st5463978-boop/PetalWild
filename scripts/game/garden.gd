@@ -774,7 +774,7 @@ func _run_smoke() -> void:
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
@@ -5335,6 +5335,10 @@ func _run_capture() -> void:
 	for spec in [[0, 0, "meadowbell"], [1, 0, "meadowbell"], [2, 1, "peach"], [3, 2, "bramble"], [4, 1, "mosspear"], [6, 5, "reed"], [7, 6, "reed"], [8, 5, "reed"]]:
 		_force_plant(spec[0], spec[1], spec[2], 1.0)
 	debug_grow()
+	# ponytail: debug_grow ripens every bed; put the opening canes back so the shot shows berries that read and stay short of ripe.
+	_force_plant(4, 2, "bramble", 0.78)
+	_force_plant(5, 2, "bramble", 0.74)
+	_sync_plants()
 	Clock.set_hour(15.3)
 	ecology.tick(0.2, world_snapshot())
 	var jelly := ecology.first("bellhelp")
@@ -5393,9 +5397,9 @@ func _opening_plants() -> void:
 	_force_plant(1, 2, "meadowbell", 0.36)
 	_force_plant(3, 2, "peach", 0.28)
 	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
-	_force_plant(4, 2, "bramble", 0.32)
+	_force_plant(4, 2, "bramble", 0.78)
 	# ponytail: the second cane is across the path; a tilled empty bed if rain should set it later.
-	_force_plant(5, 2, "bramble", 0.3)
+	_force_plant(5, 2, "bramble", 0.74)
 	_force_plant(7, 5, "reed", 0.22)
 
 func _feed_beds() -> void:
