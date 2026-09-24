@@ -1049,6 +1049,15 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	fruit_view.queue_free()
+	var hour_bells_ripe := true
+	for hour_at in [Vector2i(1, 1), Vector2i(2, 1), Vector2i(1, 2)]:
+		var hour_bell: SoilCell = soil.get_cell(hour_at.x, hour_at.y)
+		if hour_bell.plant_id != "meadowbell" or hour_bell.growth < 1.0:
+			hour_bells_ripe = false
+	if not hour_bells_ripe or _bell_line() != "":
+		push_error("smoke: a day-1 hour left the meadowbells showing")
+		get_tree().quit(1)
+		return
 	var grow_i := 0
 	for cell in soil.all():
 		var grown_bed: SoilCell = cell
