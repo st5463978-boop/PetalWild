@@ -915,7 +915,7 @@ func _run_smoke() -> void:
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
 	var opening_pear := soil.get_cell(4, 1)
-	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
@@ -6156,6 +6156,9 @@ func _opening_plants() -> void:
 	_force_plant(5, 2, "bramble", 0.74, 2)
 	# ponytail: tall enough for the seed heads to read; a ripe reed if Bulrush should come on the first day.
 	_force_plant(7, 5, "reed", 0.70, 2)
+	# ponytail: one fed young pear so the leaf and the line are in the first garden.
+	_force_plant(4, 1, "mosspear", 0.72)
+	soil.get_cell(4, 1).fertility = 0.7
 
 func _feed_beds() -> void:
 	for cell in soil.all():
