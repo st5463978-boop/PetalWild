@@ -576,6 +576,8 @@ func sell(plant_id: String) -> void:
 	Economy.earn(price)
 	audio.play_kind("coin")
 	toast("Sold %s for %d petal." % [ContentDB.plant(plant_id).get("name", plant_id), price])
+	if _bell_rumour_count() == 1:
+		toast("Three bells stand on the far lawn.")
 	if _lane_passers() > 0:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
@@ -6588,6 +6590,23 @@ func _run_smoke() -> void:
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
+	var bell_sale_coins := Economy.coins
+	var bell_sale_peach := Economy.count("peach")
+	var bell_sale_day := Trust.lane_sale_day
+	var bell_sale_audit := Trust.audit.size()
+	Economy.add("peach", 1)
+	var bell_sale_price := _sell_price("peach")
+	sell("peach")
+	if Economy.coins != bell_sale_coins + bell_sale_price or Economy.count("peach") != bell_sale_peach or events.size() < 2 or str(events[0]) != "Three bells stand on the far lawn." or str(events[1]).find("Sold") == -1:
+		push_error("smoke: a sale hid the far-lawn bells")
+		get_tree().quit(1)
+		return
+	Economy.coins = bell_sale_coins
+	Trust.lane_sale_day = bell_sale_day
+	while Trust.audit.size() > bell_sale_audit:
+		Trust.audit.pop_back()
+	events.pop_front()
+	events.pop_front()
 	var nessa_kept := false
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and str(row.get("join_line", "")) == "One stone marks the gate opening." and not bool(row.get("can_road", false)):
@@ -6662,6 +6681,22 @@ func _run_smoke() -> void:
 			wiped.append(entry)
 	Trust.audit = wiped
 	_sync_road_stones()
+	var quiet_sale_coins := Economy.coins
+	var quiet_sale_peach := Economy.count("peach")
+	var quiet_sale_day := Trust.lane_sale_day
+	var quiet_sale_audit := Trust.audit.size()
+	Economy.add("peach", 1)
+	var quiet_sale_price := _sell_price("peach")
+	sell("peach")
+	if Economy.coins != quiet_sale_coins + quiet_sale_price or Economy.count("peach") != quiet_sale_peach or events.is_empty() or str(events[0]).find("Sold") == -1 or str(events[0]) == "Three bells stand on the far lawn.":
+		push_error("smoke: a quiet sale named the far-lawn bells")
+		get_tree().quit(1)
+		return
+	Economy.coins = quiet_sale_coins
+	Trust.lane_sale_day = quiet_sale_day
+	while Trust.audit.size() > quiet_sale_audit:
+		Trust.audit.pop_back()
+	events.pop_front()
 	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_inside_count() != 0 or _road_join_count() != 0 or _road_far_stone_count() != 0 or _road_far_path_count() != 0 or _road_south_stone_count() != 0 or _road_south_bench_count() != 0 or _road_past_bench_count() != 0 or _road_end_stone_count() != 0 or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "" or _join_line() != "" or _south_line() != "" or _lane_south_line() != "" or _end_line() != "" or _end_rumour_count() != 0 or _south_rumour_count() != 0 or _bell_rumour_count() != 0 or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0:
 		push_error("smoke: the book line stayed after the filing was cleared")
 		get_tree().quit(1)
