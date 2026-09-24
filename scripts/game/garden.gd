@@ -770,6 +770,13 @@ func _bind_watch(saved) -> void:
 	nessa_watch = best
 
 func _run_smoke() -> void:
+	var opening_peach := soil.get_cell(3, 2)
+	var opening_cane := soil.get_cell(4, 2)
+	var opening_pear := soil.get_cell(4, 1)
+	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth >= 1.0 or opening_pear.plant_id != "" or _lane_passers() != 0:
+		push_error("smoke: the opening bramble ripened the lane")
+		get_tree().quit(1)
+		return
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		plot.plant_id = ""
@@ -5384,6 +5391,8 @@ func _opening_plants() -> void:
 	_force_plant(2, 1, "meadowbell", 0.44)
 	_force_plant(1, 2, "meadowbell", 0.36)
 	_force_plant(3, 2, "peach", 0.28)
+	# ponytail: one young cane beside the peach; a ripe pear if the lane should count on the first day.
+	_force_plant(4, 2, "bramble", 0.32)
 	_force_plant(7, 5, "reed", 0.22)
 
 func _feed_beds() -> void:
