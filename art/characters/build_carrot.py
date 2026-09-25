@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Build the first PetalWild veg villager: a jelly-bodied carrot.
+"""Build a knee-high veggie-folk villager (carrot, tomato, or leek).
 
-Run from the repo root:
+    blender -b -P art/characters/build_carrot.py -- carrot
+    blender -b -P art/characters/build_carrot.py -- tomato
+    blender -b -P art/characters/build_carrot.py -- leek
 
-    ~/.local/blender/blender-4.2.9-linux-x64/blender -b -P art/characters/build_carrot.py
-
-Writes:
-    assets/characters/carrot.glb
-    art/characters/carrot.blend
-    art/characters/textures/carrot/*
-    art/characters/previews/carrot_*.png
-    art/characters/build_stats.json
+Writes assets/characters/<id>.glb, a blend, albedos, and a Cycles still.
 """
 
 from __future__ import annotations
@@ -24,7 +19,7 @@ import zlib
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -41,21 +36,11 @@ STATS_PATH = SCRIPT_DIR / "build_stats.json"
 # 1 Blender unit = 1 metre. Matches existing veg people (~1.1–1.2 m).
 # Face sits on +Y (Blender front view).
 
-SPECIES = {
-    "id": "carrot",
-    "body_color": (1.0, 0.52, 0.12, 1.0),
-    "body_deep": (0.96, 0.38, 0.07, 1.0),
-    "body_light": (1.0, 0.74, 0.38, 1.0),
-    "leaf_color": (0.48, 0.86, 0.30, 1.0),
-    "leaf_deep": (0.28, 0.62, 0.16, 1.0),
-    "cheek_color": (0.98, 0.45, 0.32, 1.0),
-    "mouth_color": (0.42, 0.14, 0.14, 1.0),
-    "eye_white": (0.98, 0.96, 0.92, 1.0),
-    "eye_iris": (0.22, 0.12, 0.08, 1.0),
-}
+# Sculpted near 1.18 m, then scaled to knee height. See Cast > Veggie folk.
+SCULPT_HEIGHT = 1.18
+KNEE_HEIGHT = 0.45
 
-# Chubby carrot profile: (radius, z). Legs sit under the lowest ring.
-BODY_PROFILE = [
+CARROT_PROFILE = [
     (0.048, 0.155),
     (0.082, 0.210),
     (0.125, 0.300),
@@ -69,6 +54,91 @@ BODY_PROFILE = [
     (0.058, 0.970),
     (0.020, 0.995),
 ]
+TOMATO_PROFILE = [
+    (0.05, 0.16),
+    (0.11, 0.24),
+    (0.17, 0.34),
+    (0.21, 0.46),
+    (0.225, 0.58),
+    (0.21, 0.70),
+    (0.16, 0.80),
+    (0.09, 0.90),
+    (0.03, 0.97),
+]
+LEEK_PROFILE = [
+    (0.075, 0.14),
+    (0.078, 0.30),
+    (0.070, 0.48),
+    (0.055, 0.64),
+    (0.040, 0.78),
+    (0.028, 0.90),
+    (0.016, 1.02),
+]
+
+FOLK = {
+    "carrot": {
+        "prop": "can",
+        "profile": CARROT_PROFILE,
+        "colors": {
+            "body_color": (1.0, 0.52, 0.12, 1.0),
+            "body_deep": (0.82, 0.32, 0.05, 1.0),
+            "body_light": (1.0, 0.72, 0.32, 1.0),
+            "leaf_color": (0.45, 0.72, 0.22, 1.0),
+            "leaf_deep": (0.20, 0.42, 0.10, 1.0),
+            "cheek_color": (0.92, 0.38, 0.22, 1.0),
+            "mouth_color": (0.42, 0.14, 0.10, 1.0),
+            "eye_white": (0.96, 0.94, 0.88, 1.0),
+            "eye_iris": (0.18, 0.10, 0.06, 1.0),
+            "speckle": 0.0,
+        },
+    },
+    "tomato": {
+        "prop": "hat",
+        "profile": TOMATO_PROFILE,
+        "colors": {
+            "body_color": (0.86, 0.16, 0.12, 1.0),
+            "body_deep": (0.62, 0.08, 0.08, 1.0),
+            "body_light": (0.98, 0.32, 0.22, 1.0),
+            "leaf_color": (0.36, 0.62, 0.18, 1.0),
+            "leaf_deep": (0.16, 0.36, 0.08, 1.0),
+            "cheek_color": (0.95, 0.45, 0.40, 1.0),
+            "mouth_color": (0.40, 0.08, 0.08, 1.0),
+            "eye_white": (0.96, 0.94, 0.88, 1.0),
+            "eye_iris": (0.12, 0.18, 0.08, 1.0),
+            "speckle": 0.55,
+        },
+    },
+    "leek": {
+        "prop": "rake",
+        "profile": LEEK_PROFILE,
+        "colors": {
+            "body_color": (0.90, 0.88, 0.62, 1.0),
+            "body_deep": (0.93, 0.90, 0.78, 1.0),
+            "body_light": (0.55, 0.72, 0.28, 1.0),
+            "leaf_color": (0.40, 0.68, 0.22, 1.0),
+            "leaf_deep": (0.18, 0.40, 0.10, 1.0),
+            "cheek_color": (0.86, 0.70, 0.45, 1.0),
+            "mouth_color": (0.45, 0.28, 0.18, 1.0),
+            "eye_white": (0.96, 0.94, 0.88, 1.0),
+            "eye_iris": (0.16, 0.22, 0.10, 1.0),
+            "speckle": 0.0,
+        },
+    },
+}
+
+SPECIES = dict(FOLK["carrot"]["colors"])
+SPECIES["id"] = "carrot"
+SPECIES["prop"] = "can"
+BODY_PROFILE = CARROT_PROFILE
+# Filled by fit_layout(). Carrot reference face radius is 0.245.
+LAYOUT = {
+    "face_z": 0.72,
+    "face_r": 0.245,
+    "k": 1.0,
+    "arm_x": 0.24,
+    "hand_x": 0.32,
+    "leg_x": 0.07,
+}
 
 SEGS = 22
 MAX_TRIS = 5000
@@ -137,7 +207,9 @@ def bake_body_albedo(path: Path, size: int) -> None:
     pixels = bytearray()
     for y in range(size):
         v = y / max(size - 1, 1)
-        band = mix3(deep, light, v * 0.55 + 0.28)
+        # Leek runs cream at the root to green at the crown. Others stay carrot-tuned.
+        span = v if SPECIES["id"] == "leek" else v * 0.55 + 0.28
+        band = mix3(deep, light, span)
         for x in range(size):
             u = x / max(size - 1, 1)
             ridge = 0.5 + 0.5 * math.cos(u * math.tau * 5.0)
@@ -145,6 +217,11 @@ def bake_body_albedo(path: Path, size: int) -> None:
             # Soft belly highlight in the upper-middle third.
             highlight = math.exp(-((v - 0.62) ** 2) / 0.045) * math.exp(-((u - 0.5) ** 2) / 0.08)
             col = mix3(tuple(c * shade for c in band), light, highlight * 0.35)
+            # ponytail: cheap speckle; a photo albedo if Grokbot textures land.
+            if SPECIES.get("speckle", 0.0) > 0.0:
+                grain = math.sin(u * 90.0) * math.sin(v * 70.0 + u * 12.0)
+                if grain > 0.62:
+                    col = mix3(col, (0.25, 0.08, 0.05), SPECIES["speckle"] * 0.45)
             pixels.extend(to_u8(col))
     write_png(path, size, size, bytes(pixels))
 
@@ -441,10 +518,27 @@ def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
 # Armature
 # ---------------------------------------------------------------------------
 
+def fit_layout() -> None:
+    """Place face and limbs on the body radius so a thin leek does not grow carrot arms."""
+    global LAYOUT
+    face_z = 0.56 if SPECIES["id"] == "leek" else 0.72
+    face_r = radius_at(face_z)
+    k = face_r / 0.245
+    LAYOUT = {
+        "face_z": face_z,
+        "face_r": face_r,
+        "k": k,
+        "arm_x": 0.24 * k,
+        "hand_x": 0.32 * k,
+        "leg_x": max(0.07 * k, 0.04),
+    }
+
+
 def make_armature() -> bpy.types.Object:
-    data = bpy.data.armatures.new("CarrotArmature")
+    prefix = SPECIES["id"].capitalize()
+    data = bpy.data.armatures.new(f"{prefix}Armature")
     data.display_type = "OCTAHEDRAL"
-    arm = bpy.data.objects.new("CarrotArmature", data)
+    arm = bpy.data.objects.new(f"{prefix}Armature", data)
     bpy.context.collection.objects.link(arm)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode="EDIT")
@@ -464,10 +558,13 @@ def make_armature() -> bpy.types.Object:
     bone("Body", (0, 0, 0.16), (0, 0, 0.58), "Root")
     bone("Head", (0, 0, 0.62), (0, 0, 0.88), "Body")
     bone("LeafTop", (0, 0, 0.92), (0, 0, 1.12), "Head")
-    bone("Arm_L", (0.20, 0.04, 0.62), (0.32, 0.10, 0.52), "Body")
-    bone("Arm_R", (-0.20, 0.04, 0.62), (-0.32, 0.10, 0.52), "Body")
-    bone("Leg_L", (0.07, 0.02, 0.15), (0.075, 0.05, 0.02), "Root")
-    bone("Leg_R", (-0.07, 0.02, 0.15), (-0.075, 0.05, 0.02), "Root")
+    ax = LAYOUT["arm_x"]
+    hx = LAYOUT["hand_x"]
+    lx = LAYOUT["leg_x"]
+    bone("Arm_L", (ax * 0.82, 0.04, 0.62), (hx, 0.10, 0.52), "Body")
+    bone("Arm_R", (-ax * 0.82, 0.04, 0.62), (-hx, 0.10, 0.52), "Body")
+    bone("Leg_L", (lx, 0.02, 0.15), (lx, 0.05, 0.02), "Root")
+    bone("Leg_R", (-lx, 0.02, 0.15), (-lx, 0.05, 0.02), "Root")
     bpy.ops.object.mode_set(mode="OBJECT")
     return arm
 
@@ -498,13 +595,13 @@ def jelly_weights(co: Vector) -> dict:
     if z > 0.92:
         w["LeafTop"] = min(1.0, (z - 0.92) / 0.12)
         w["Head"] = max(0.15, w["Head"] - w["LeafTop"] * 0.5)
-    if z < 0.18 and abs(x) > 0.025:
+    if z < 0.18 and abs(x) > LAYOUT["leg_x"] * 0.45:
         side = "Leg_L" if x > 0 else "Leg_R"
         w[side] = 1.0
         w["Body"] = 0.0
         w["Root"] = 0.0
         w["Head"] = 0.0
-    if z > 0.46 and z < 0.70 and abs(x) > 0.19:
+    if z > 0.46 and z < 0.72 and abs(x) > LAYOUT["arm_x"] * 0.72:
         side = "Arm_L" if x > 0 else "Arm_R"
         w[side] = 1.0
         w["Body"] = 0.0
@@ -526,92 +623,153 @@ def parent_bone(obj: bpy.types.Object, arm: bpy.types.Object, bone: str) -> None
 
 def build_meshes(arm, body_tex, leaf_tex):
     jelly_mat = principled(
-        "carrot_jelly",
+        f"{SPECIES['id']}_skin",
         SPECIES["body_color"],
-        roughness=0.16,
-        transmission=0.10,
-        sss=0.18,
+        roughness=0.38,
+        transmission=0.0,
+        sss=0.22,
         tex=body_tex,
     )
-    leaf_mat = principled("carrot_leaf", SPECIES["leaf_color"], roughness=0.42, sss=0.08, tex=leaf_tex)
-    white_mat = principled("carrot_eye_white", SPECIES["eye_white"], roughness=0.08)
-    iris_mat = principled("carrot_eye_iris", SPECIES["eye_iris"], roughness=0.35)
-    highlight_mat = principled("carrot_eye_highlight", (1, 1, 1, 1), roughness=0.02)
-    mouth_mat = principled("carrot_mouth", SPECIES["mouth_color"], roughness=0.45)
-    cheek_mat = principled("carrot_cheek", SPECIES["cheek_color"], roughness=0.32, sss=0.2)
+    sid = SPECIES["id"]
+    leaf_mat = principled(f"{sid}_leaf", SPECIES["leaf_color"], roughness=0.42, sss=0.08, tex=leaf_tex)
+    white_mat = principled(f"{sid}_eye_white", SPECIES["eye_white"], roughness=0.08)
+    iris_mat = principled(f"{sid}_eye_iris", SPECIES["eye_iris"], roughness=0.35)
+    highlight_mat = principled(f"{sid}_eye_highlight", (1, 1, 1, 1), roughness=0.02)
+    mouth_mat = principled(f"{sid}_mouth", SPECIES["mouth_color"], roughness=0.45)
+    cheek_mat = principled(f"{sid}_cheek", SPECIES["cheek_color"], roughness=0.32, sss=0.2)
 
-    body = lathe("CarrotBody", BODY_PROFILE, SEGS)
-    face_z = 0.72
-    face_r = radius_at(face_z)
+    body = lathe(f"{sid.capitalize()}Body", BODY_PROFILE, SEGS)
+    face_z = LAYOUT["face_z"]
+    face_r = LAYOUT["face_r"]
+    k = max(LAYOUT["k"], 0.42)
+    ax = LAYOUT["arm_x"]
+    hx = LAYOUT["hand_x"]
+    lx = LAYOUT["leg_x"]
+    arm_r = max(0.022, 0.050 * min(k, 1.0))
+    hand_r = max(0.026, 0.052 * min(k, 1.0))
+    leg_r = max(0.020, 0.052 * min(k, 1.0))
 
-    # Stubby nubs, not stick arms.
-    arm_l = capsule("CarrotArm_L", 0.050, 0.14, segs=10, rings=8)
-    transform(arm_l, loc=(0.24, 0.05, 0.60), rot=(0.85, 0.0, -1.15))
-    arm_r = capsule("CarrotArm_R", 0.050, 0.14, segs=10, rings=8)
-    transform(arm_r, loc=(-0.24, 0.05, 0.60), rot=(0.85, 0.0, 1.15))
-    hand_l = sphere("CarrotHand_L", 0.052, segs=10, rings=6)
-    transform(hand_l, loc=(0.32, 0.11, 0.52))
-    hand_r = sphere("CarrotHand_R", 0.052, segs=10, rings=6)
-    transform(hand_r, loc=(-0.32, 0.11, 0.52))
+    # Stubby nubs, not stick arms. Positions track the body radius.
+    arm_l = capsule(f"{sid}Arm_L", arm_r, 0.14 * min(k + 0.35, 1.0), segs=10, rings=8)
+    transform(arm_l, loc=(ax, 0.05 * k, 0.60), rot=(0.85, 0.0, -1.15))
+    arm_rgt = capsule(f"{sid}Arm_R", arm_r, 0.14 * min(k + 0.35, 1.0), segs=10, rings=8)
+    transform(arm_rgt, loc=(-ax, 0.05 * k, 0.60), rot=(0.85, 0.0, 1.15))
+    hand_l = sphere(f"{sid}Hand_L", hand_r, segs=10, rings=6)
+    transform(hand_l, loc=(hx, 0.11 * k, 0.52))
+    hand_rgt = sphere(f"{sid}Hand_R", hand_r, segs=10, rings=6)
+    transform(hand_rgt, loc=(-hx, 0.11 * k, 0.52))
 
-    leg_l = capsule("CarrotLeg_L", 0.052, 0.12, segs=10, rings=7)
-    transform(leg_l, loc=(0.07, 0.02, 0.09))
-    leg_r = capsule("CarrotLeg_R", 0.052, 0.12, segs=10, rings=7)
-    transform(leg_r, loc=(-0.07, 0.02, 0.09))
-    foot_l = sphere("CarrotFoot_L", 0.058, segs=10, rings=6)
-    transform(foot_l, loc=(0.075, 0.05, 0.035), scale=(1.2, 1.4, 0.72))
-    foot_r = sphere("CarrotFoot_R", 0.058, segs=10, rings=6)
-    transform(foot_r, loc=(-0.075, 0.05, 0.035), scale=(1.2, 1.4, 0.72))
+    leg_l = capsule(f"{sid}Leg_L", leg_r, 0.12 * min(k + 0.4, 1.0), segs=10, rings=7)
+    transform(leg_l, loc=(lx, 0.02, 0.09))
+    leg_rgt = capsule(f"{sid}Leg_R", leg_r, 0.12 * min(k + 0.4, 1.0), segs=10, rings=7)
+    transform(leg_rgt, loc=(-lx, 0.02, 0.09))
+    foot_l = sphere(f"{sid}Foot_L", leg_r * 1.1, segs=10, rings=6)
+    transform(foot_l, loc=(lx, 0.05 * k, 0.035), scale=(1.2, 1.4, 0.72))
+    foot_r = sphere(f"{sid}Foot_R", leg_r * 1.1, segs=10, rings=6)
+    transform(foot_r, loc=(-lx, 0.05 * k, 0.035), scale=(1.2, 1.4, 0.72))
 
+    prefix = SPECIES["id"].capitalize()
     jelly = join_objects(
-        "CarrotJelly",
-        [body, arm_l, arm_r, hand_l, hand_r, leg_l, leg_r, foot_l, foot_r],
+        f"{prefix}Body",
+        [body, arm_l, arm_rgt, hand_l, hand_rgt, leg_l, leg_rgt, foot_l, foot_r],
     )
     assign(jelly, jelly_mat)
     skin(jelly, arm, jelly_weights)
 
     # Two chunky fronds like the garden close-up, plus a small third sprout.
-    stem_l = capsule("CarrotStem_L", 0.022, 0.20, segs=8, rings=5)
-    transform(stem_l, loc=(0.04, 0.01, 1.08), rot=(0.12, 0.0, 0.28))
-    stem_r = capsule("CarrotStem_R", 0.020, 0.18, segs=8, rings=5)
-    transform(stem_r, loc=(-0.035, 0.015, 1.06), rot=(0.08, 0.0, -0.34))
-    blade_l = sphere("CarrotBlade_L", 0.09, segs=10, rings=6)
-    transform(blade_l, loc=(0.10, 0.03, 1.24), rot=(0.2, 0.1, 0.4), scale=(0.85, 0.28, 1.55))
-    blade_r = sphere("CarrotBlade_R", 0.08, segs=10, rings=6)
-    transform(blade_r, loc=(-0.09, 0.04, 1.20), rot=(0.18, -0.08, -0.45), scale=(0.8, 0.26, 1.45))
-    blade_c = sphere("CarrotBlade_C", 0.055, segs=8, rings=5)
-    transform(blade_c, loc=(0.01, -0.02, 1.16), rot=(0.4, 0.0, 0.1), scale=(0.7, 0.24, 1.2))
-    leaves = join_objects("CarrotLeaf", [stem_l, stem_r, blade_l, blade_r, blade_c])
+    # A hat needs the crown clear, so those leaves sit higher.
+    lift = 0.12 if SPECIES["prop"] == "hat" else 0.0
+    leaf_k = min(max(k, 0.55), 1.0)
+    stem_l = capsule(f"{sid}Stem_L", 0.022 * leaf_k, 0.20 * leaf_k, segs=8, rings=5)
+    transform(stem_l, loc=(0.04 * leaf_k, 0.01, 1.08 + lift), rot=(0.12, 0.0, 0.28))
+    stem_r = capsule(f"{sid}Stem_R", 0.020 * leaf_k, 0.18 * leaf_k, segs=8, rings=5)
+    transform(stem_r, loc=(-0.035 * leaf_k, 0.015, 1.06 + lift), rot=(0.08, 0.0, -0.34))
+    blade_l = sphere(f"{sid}Blade_L", 0.09 * leaf_k, segs=10, rings=6)
+    transform(blade_l, loc=(0.10 * leaf_k, 0.03, 1.24 + lift), rot=(0.2, 0.1, 0.4), scale=(0.85, 0.28, 1.55))
+    blade_r = sphere(f"{sid}Blade_R", 0.08 * leaf_k, segs=10, rings=6)
+    transform(blade_r, loc=(-0.09 * leaf_k, 0.04, 1.20 + lift), rot=(0.18, -0.08, -0.45), scale=(0.8, 0.26, 1.45))
+    blade_c = sphere(f"{sid}Blade_C", 0.055 * leaf_k, segs=8, rings=5)
+    transform(blade_c, loc=(0.01, -0.02, 1.16 + lift), rot=(0.4, 0.0, 0.1), scale=(0.7, 0.24, 1.2))
+    leaves = join_objects(f"{sid.capitalize()}Leaf", [stem_l, stem_r, blade_l, blade_r, blade_c])
     assign(leaves, leaf_mat)
     skin(leaves, arm, lambda _co: {"LeafTop": 1.0})
 
-    # Face on +Y.
+    # Face on +Y. Feature spacing tracks face radius; eyes stay big on thin bodies.
     fy = face_r * 0.90
+    eye_r = 0.068 * min(k, 1.0)
+    eye_x = face_r * 0.34
     parts = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        white = sphere(f"CarrotEyeWhite_{side}", 0.068, segs=12, rings=8)
-        transform(white, loc=(0.078 * sx, fy + 0.016, face_z + 0.01), scale=(1.08, 0.78, 1.18))
+        white = sphere(f"{sid}EyeWhite_{side}", eye_r, segs=12, rings=8)
+        transform(white, loc=(eye_x * sx, fy + 0.016 * k, face_z + 0.01), scale=(1.08, 0.78, 1.18))
         assign(white, white_mat)
-        iris = sphere(f"CarrotEyeIris_{side}", 0.048, segs=10, rings=6)
-        transform(iris, loc=(0.080 * sx, fy + 0.046, face_z - 0.002), scale=(1.05, 0.62, 1.1))
+        iris = sphere(f"{sid}EyeIris_{side}", eye_r * 0.70, segs=10, rings=6)
+        transform(iris, loc=(eye_x * sx, fy + 0.046 * k, face_z - 0.002), scale=(1.05, 0.62, 1.1))
         assign(iris, iris_mat)
-        shine = sphere(f"CarrotEyeShine_{side}", 0.016, segs=8, rings=5)
-        transform(shine, loc=(0.098 * sx, fy + 0.062, face_z + 0.018))
+        shine = sphere(f"{sid}EyeShine_{side}", eye_r * 0.24, segs=8, rings=5)
+        transform(shine, loc=((eye_x + eye_r * 0.28) * sx, fy + 0.062 * k, face_z + 0.018))
         assign(shine, highlight_mat)
-        cheek = sphere(f"CarrotCheek_{side}", 0.032, segs=8, rings=5)
-        transform(cheek, loc=(0.135 * sx, fy - 0.008, face_z - 0.09), scale=(1.25, 0.55, 0.78))
+        cheek = sphere(f"{sid}Cheek_{side}", eye_r * 0.48, segs=8, rings=5)
+        transform(cheek, loc=(face_r * 0.58 * sx, fy - 0.008, face_z - 0.09 * k), scale=(1.25, 0.55, 0.78))
         assign(cheek, cheek_mat)
         parts.extend([white, iris, shine, cheek])
 
-    mouth = smile("CarrotMouth")
-    transform(mouth, loc=(0.0, fy + 0.022, face_z - 0.085), rot=(0.18, 0.0, 0.0))
+    mouth = smile(f"{sid}Mouth")
+    transform(mouth, loc=(0.0, fy + 0.022 * k, face_z - 0.085 * k), rot=(0.18, 0.0, 0.0), scale=(k, k, k))
     assign(mouth, mouth_mat)
     parts.append(mouth)
 
-    face = join_objects("CarrotFace", parts)
+    face = join_objects(f"{prefix}Face", parts)
     skin(face, arm, lambda _co: {"Head": 1.0})
+    _prop(arm, prefix)
 
     return jelly, leaves, face
+
+
+def _prop(arm, prefix: str) -> None:
+    kind = SPECIES.get("prop", "")
+    straw = principled(f"{prefix}Straw", (0.72, 0.55, 0.28, 1.0), roughness=0.72)
+    metal = principled(f"{prefix}Metal", (0.45, 0.48, 0.42, 1.0), roughness=0.35)
+    k = max(LAYOUT["k"], 0.55)
+    hx = LAYOUT["hand_x"]
+    if kind == "hat":
+        top = BODY_PROFILE[-1][1]
+        brim = max(radius_at(top - 0.04) + 0.09, 0.14)
+        hat = lathe(
+            f"{prefix}Hat",
+            [
+                (0.02, top - 0.05),
+                (brim, top - 0.01),
+                (brim * 0.92, top + 0.02),
+                (0.065, top + 0.05),
+                (0.05, top + 0.13),
+                (0.018, top + 0.17),
+            ],
+            14,
+        )
+        assign(hat, straw)
+        skin(hat, arm, lambda _co: {"Head": 1.0})
+    elif kind == "can":
+        body = sphere(f"{prefix}CanBody", 0.055 * k, segs=10, rings=6)
+        transform(body, loc=(hx + 0.02, 0.12 * k, 0.50), scale=(0.85, 1.15, 0.9))
+        spout = capsule(f"{prefix}CanSpout", 0.012 * k, 0.08 * k, segs=6, rings=4)
+        transform(spout, loc=(hx + 0.08, 0.18 * k, 0.54), rot=(0.9, 0.2, -0.6))
+        handle = capsule(f"{prefix}CanHandle", 0.008 * k, 0.07 * k, segs=6, rings=4)
+        transform(handle, loc=(hx - 0.02, 0.10 * k, 0.56), rot=(0.2, 0.0, 1.2))
+        can = join_objects(f"{prefix}Can", [body, spout, handle])
+        assign(can, metal)
+        skin(can, arm, lambda _co: {"Arm_L": 1.0})
+    elif kind == "rake":
+        handle = capsule(f"{prefix}RakeHandle", 0.008 * k, 0.16, segs=6, rings=4)
+        transform(handle, loc=(-(hx + 0.02), 0.16 * k, 0.42), rot=(0.4, 0.0, 0.8))
+        tines = []
+        for i in range(3):
+            tine = capsule(f"{prefix}Tine{i}", 0.004 * k, 0.05, segs=5, rings=3)
+            transform(tine, loc=(-(hx + 0.06 + i * 0.012), 0.22 * k, 0.36), rot=(1.1, 0.0, 0.3))
+            tines.append(tine)
+        rake = join_objects(f"{prefix}Rake", [handle, *tines])
+        assign(rake, straw)
+        skin(rake, arm, lambda _co: {"Arm_R": 1.0})
 
 
 # ---------------------------------------------------------------------------
@@ -844,25 +1002,32 @@ def render_still(path: Path) -> None:
         bpy.ops.render.render(write_still=True)
 
 
+def scale_character(factor: float) -> None:
+    """Fit the 1.18 m sculpt to knee height. Rotations in the actions stay valid."""
+    for obj in list(bpy.context.scene.objects):
+        if obj.type == "MESH":
+            obj.data.transform(Matrix.Scale(factor, 4))
+            obj.data.update()
+        elif obj.type == "ARMATURE":
+            bpy.ops.object.select_all(action="DESELECT")
+            obj.select_set(True)
+            bpy.context.view_layer.objects.active = obj
+            bpy.ops.object.mode_set(mode="EDIT")
+            for bone in obj.data.edit_bones:
+                bone.head *= factor
+                bone.tail *= factor
+            bpy.ops.object.mode_set(mode="OBJECT")
+
+
 def render_previews(arm: bpy.types.Object) -> None:
     setup_preview_world()
-    # Front
-    aim_camera((0.0, 2.15, 0.72), (0.0, 0.0, 0.55))
-    render_still(PREVIEW_DIR / "carrot_front.png")
-    # Three-quarter, the money angle from the garden close-up.
-    aim_camera((1.35, 1.75, 0.85), (0.0, 0.02, 0.52))
-    render_still(PREVIEW_DIR / "carrot_threequarter.png")
-    # Walk pose.
-    walk = bpy.data.actions.get("walk")
-    if walk is not None:
-        arm.animation_data.action = walk
-        bpy.context.scene.frame_set(7)
-        bpy.context.view_layer.update()
-        aim_camera((1.45, 1.55, 0.7), (0.0, 0.04, 0.48))
-        render_still(PREVIEW_DIR / "carrot_walk.png")
-        arm.animation_data.action = None
-        bpy.context.scene.frame_set(1)
-        _clear_pose(arm)
+    sid = SPECIES["id"]
+    # Knee-high subject. One three-quarter still; Godot shoots the lineup.
+    aim_camera((0.28, 0.40, 0.24), (0.0, 0.02, 0.16))
+    render_still(PREVIEW_DIR / f"{sid}_threequarter.png")
+    if sid == "carrot":
+        aim_camera((0.0, 0.46, 0.20), (0.0, 0.0, 0.16))
+        render_still(PREVIEW_DIR / "carrot_front.png")
 
 
 def save_blend() -> None:
@@ -870,8 +1035,29 @@ def save_blend() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
 
 
+def configure(species_id: str) -> None:
+    global SPECIES, BODY_PROFILE, GLB_PATH, BLEND_PATH, TEX_DIR, STATS_PATH
+    if species_id not in FOLK:
+        raise SystemExit(f"unknown villager {species_id}; choose {', '.join(FOLK)}")
+    spec = FOLK[species_id]
+    SPECIES = dict(spec["colors"])
+    SPECIES["id"] = species_id
+    SPECIES["prop"] = spec["prop"]
+    BODY_PROFILE = spec["profile"]
+    GLB_PATH = REPO / "assets" / "characters" / f"{species_id}.glb"
+    BLEND_PATH = SCRIPT_DIR / f"{species_id}.blend"
+    TEX_DIR = SCRIPT_DIR / "textures" / species_id
+    STATS_PATH = SCRIPT_DIR / f"build_stats_{species_id}.json"
+
+
 def main() -> None:
     os.chdir(REPO)
+    species_id = "carrot"
+    if "--" in sys.argv:
+        tail = sys.argv[sys.argv.index("--") + 1 :]
+        if tail:
+            species_id = tail[0]
+    configure(species_id)
     reset_scene()
     TEX_DIR.mkdir(parents=True, exist_ok=True)
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
@@ -885,11 +1071,13 @@ def main() -> None:
     bake_leaf_albedo(leaf_hi, 256)
     bake_leaf_albedo(leaf_lo, 64)
 
-    body_tex = image_from_png("carrot_body_albedo", body_hi)
-    leaf_tex = image_from_png("carrot_leaf_albedo", leaf_hi)
+    body_tex = image_from_png(f"{species_id}_body_albedo", body_hi)
+    leaf_tex = image_from_png(f"{species_id}_leaf_albedo", leaf_hi)
 
+    fit_layout()
     arm = make_armature()
     build_meshes(arm, body_tex, leaf_tex)
+    scale_character(KNEE_HEIGHT / SCULPT_HEIGHT)
     animate(arm)
 
     counts = count_tris()
@@ -901,25 +1089,23 @@ def main() -> None:
     save_blend()
 
     stats = {
-        "species": SPECIES["id"],
+        "species": species_id,
+        "cast": "veggie folk",
         "tris": counts,
-        "height_m": 1.18,
+        "height_m": KNEE_HEIGHT,
+        "prop": SPECIES["prop"],
         "scale": "1 blender unit = 1 metre",
         "armature": ["Root", "Body", "Head", "Arm_L", "Arm_R", "Leg_L", "Leg_R", "LeafTop"],
         "actions": ["idle", "walk"],
         "glb": str(GLB_PATH.relative_to(REPO)),
-        "textures": {
-            "high": ["art/characters/textures/carrot/body_albedo_512.png", "art/characters/textures/carrot/leaf_albedo_256.png"],
-            "low": ["art/characters/textures/carrot/body_albedo_128.png", "art/characters/textures/carrot/leaf_albedo_64.png"],
-        },
     }
     STATS_PATH.write_text(json.dumps(stats, indent=2) + "\n")
-    print("CARROT_BUILD_OK", json.dumps(counts))
+    if species_id == "carrot":
+        (SCRIPT_DIR / "build_stats.json").write_text(json.dumps(stats, indent=2) + "\n")
+    print("FOLK_BUILD_OK", species_id, json.dumps(counts))
     print("glb", GLB_PATH, "bytes", GLB_PATH.stat().st_size)
 
 
 if __name__ == "__main__":
-    # Blender -P executes the file as a script; argv after `--` is ours.
     main()
-    # Keep Blender from treating leftover CLI flags as errors.
     sys.argv = [sys.argv[0]]

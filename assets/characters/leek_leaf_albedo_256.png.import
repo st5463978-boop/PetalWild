@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b7vh5v54emr3q"
-path="res://.godot/imported/carrot_leaf_albedo_256.png-3b91620746cd6f75b74e402ed57b73b8.ctex"
+uid="uid://dbeunjy78x2nn"
+path="res://.godot/imported/leek_leaf_albedo_256.png-70198a2cea65f362abe4329e9e76f5c7.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "e39270fc76906fae1a9f3c4fdf08d273"
+"md5": "e3ceb79d0bc0886001e73c749055f744"
 }
 
 [deps]
 
-source_file="res://assets/characters/carrot_leaf_albedo_256.png"
-dest_files=["res://.godot/imported/carrot_leaf_albedo_256.png-3b91620746cd6f75b74e402ed57b73b8.ctex"]
+source_file="res://assets/characters/leek_leaf_albedo_256.png"
+dest_files=["res://.godot/imported/leek_leaf_albedo_256.png-70198a2cea65f362abe4329e9e76f5c7.ctex"]
 
 [params]
 

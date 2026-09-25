@@ -8,4 +8,10 @@ if [ ! -x "$BIN" ]; then
   exit 1
 fi
 SCRIPT="${1:-$ROOT/art/characters/build_carrot.py}"
-exec "$BIN" -b -P "$SCRIPT"
+if [ "$SCRIPT" = "$ROOT/art/characters/build_carrot.py" ] && [ -z "${2:-}" ]; then
+  for folk in carrot tomato leek; do
+    "$BIN" -b -P "$SCRIPT" -- "$folk"
+  done
+  exec "$BIN" -b -P "$ROOT/art/characters/build_human.py"
+fi
+exec "$BIN" -b -P "$SCRIPT" -- "${2:-}"

@@ -1,15 +1,15 @@
 {
-  "species": "carrot",
+  "species": "leek",
   "cast": "veggie folk",
   "tris": {
-    "CarrotBody": 1448,
-    "CarrotLeaf": 392,
-    "CarrotFace": 812,
-    "CarrotCan": 172,
-    "total": 2824
+    "LeekBody": 1228,
+    "LeekLeaf": 392,
+    "LeekFace": 812,
+    "LeekRake": 96,
+    "total": 2528
   },
   "height_m": 0.45,
-  "prop": "can",
+  "prop": "rake",
   "scale": "1 blender unit = 1 metre",
   "armature": [
     "Root",
@@ -25,5 +25,5 @@
     "idle",
     "walk"
   ],
-  "glb": "assets/characters/carrot.glb"
+  "glb": "assets/characters/leek.glb"
 }

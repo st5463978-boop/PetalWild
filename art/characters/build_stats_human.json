@@ -1,0 +1,10 @@
+{
+  "species": "human",
+  "cast": "humans",
+  "tris": {
+    "HumanBody": 1400,
+    "total": 1400
+  },
+  "height_m": 1.7,
+  "glb": "assets/characters/human.glb"
+}

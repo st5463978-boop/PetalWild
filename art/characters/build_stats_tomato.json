@@ -1,15 +1,15 @@
 {
-  "species": "carrot",
+  "species": "tomato",
   "cast": "veggie folk",
   "tris": {
-    "CarrotBody": 1448,
-    "CarrotLeaf": 392,
-    "CarrotFace": 812,
-    "CarrotCan": 172,
-    "total": 2824
+    "TomatoBody": 1316,
+    "TomatoLeaf": 392,
+    "TomatoFace": 812,
+    "TomatoHat": 168,
+    "total": 2688
   },
   "height_m": 0.45,
-  "prop": "can",
+  "prop": "hat",
   "scale": "1 blender unit = 1 metre",
   "armature": [
     "Root",
@@ -25,5 +25,5 @@
     "idle",
     "walk"
   ],
-  "glb": "assets/characters/carrot.glb"
+  "glb": "assets/characters/tomato.glb"
 }

@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b7vh5v54emr3q"
-path="res://.godot/imported/carrot_leaf_albedo_256.png-3b91620746cd6f75b74e402ed57b73b8.ctex"
+uid="uid://b2iyyq862lapc"
+path="res://.godot/imported/tomato_leaf_albedo_256.png-de842bdc32a00ebeb3244be47c0bde8e.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "e39270fc76906fae1a9f3c4fdf08d273"
+"md5": "3c14cd8a25597f24230e6f2dc2aa9d40"
 }
 
 [deps]
 
-source_file="res://assets/characters/carrot_leaf_albedo_256.png"
-dest_files=["res://.godot/imported/carrot_leaf_albedo_256.png-3b91620746cd6f75b74e402ed57b73b8.ctex"]
+source_file="res://assets/characters/tomato_leaf_albedo_256.png"
+dest_files=["res://.godot/imported/tomato_leaf_albedo_256.png-de842bdc32a00ebeb3244be47c0bde8e.ctex"]
 
 [params]
 
