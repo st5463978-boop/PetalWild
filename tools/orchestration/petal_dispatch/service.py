@@ -110,6 +110,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    decide_url()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"petal dispatch http://{HOST}:{PORT}", flush=True)
     server.serve_forever()

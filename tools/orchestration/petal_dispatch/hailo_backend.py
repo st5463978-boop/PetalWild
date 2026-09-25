@@ -1,19 +1,27 @@
 """Pi Hailo decide client for system-1 routing.
 
-High-frequency choices go to the Pi `hailo-decision` service
-(`HAILO_DECIDE_URL`, default the Pi on Tailscale). This module does
-not call MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
+High-frequency choices go to the Pi `hailo-decision` service.
+`HAILO_DECIDE_URL` is resolved at startup from the ntfy discovery topic
+(health-checked tunnel), then the existing env value, then the Pi on
+Tailscale. A decide failure resolves again. This module does not call
+MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
 It does not download or recompile HEFs.
 """
 
 from __future__ import annotations
 
 import json
-import os
+import sys
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
+_TOOLS = Path(__file__).resolve().parents[2]
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+
+from hailo_decide_url import resolve_decide_url  # noqa: E402
 from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
@@ -69,8 +77,13 @@ def list_models(base_url: str, timeout: float = 2.0) -> list[str]:
 
 
 def decide_url() -> str:
-    raw = os.environ.get("HAILO_DECIDE_URL", DEFAULT_DECIDE_URL).strip()
-    return (raw or DEFAULT_DECIDE_URL).rstrip("/")
+    """Startup resolve: discovery, then existing HAILO_DECIDE_URL, then Tailscale."""
+    return resolve_decide_url().rstrip("/")
+
+
+def refresh_decide_url() -> str:
+    """After a decide failure, fetch the discovery topic again."""
+    return resolve_decide_url(force=True).rstrip("/")
 
 
 def decide_origin(url: str) -> str:
@@ -134,9 +147,7 @@ def _post_json(url: str, body: dict, timeout: float) -> dict:
     return payload
 
 
-def post_decide(base_url: str, question: str, options: list[str], timeout: float) -> dict:
-    if len(options) < 2:
-        raise ValueError("decide needs at least two options")
+def _post_decide_once(base_url: str, question: str, options: list[str], timeout: float) -> dict:
     body = {"question": question, "options": options}
     errors: list[str] = []
     for path in ("/decide", "/v1/decide"):
@@ -151,6 +162,18 @@ def post_decide(base_url: str, question: str, options: list[str], timeout: float
         payload["_path"] = path
         return payload
     raise RuntimeError("decide endpoint missing: " + ", ".join(errors))
+
+
+def post_decide(base_url: str, question: str, options: list[str], timeout: float) -> dict:
+    if len(options) < 2:
+        raise ValueError("decide needs at least two options")
+    try:
+        return _post_decide_once(base_url, question, options, timeout)
+    except Exception:
+        fresh = refresh_decide_url()
+        if decide_origin(fresh) == decide_origin(base_url):
+            raise
+        return _post_decide_once(fresh, question, options, timeout)
 
 
 def get_health(base_url: str, timeout: float = 5.0) -> dict:
