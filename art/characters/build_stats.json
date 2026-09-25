@@ -1,0 +1,36 @@
+{
+  "species": "carrot",
+  "tris": {
+    "CarrotJelly": 1448,
+    "CarrotLeaf": 392,
+    "CarrotFace": 812,
+    "total": 2652
+  },
+  "height_m": 1.18,
+  "scale": "1 blender unit = 1 metre",
+  "armature": [
+    "Root",
+    "Body",
+    "Head",
+    "Arm_L",
+    "Arm_R",
+    "Leg_L",
+    "Leg_R",
+    "LeafTop"
+  ],
+  "actions": [
+    "idle",
+    "walk"
+  ],
+  "glb": "assets/characters/carrot.glb",
+  "textures": {
+    "high": [
+      "art/characters/textures/carrot/body_albedo_512.png",
+      "art/characters/textures/carrot/leaf_albedo_256.png"
+    ],
+    "low": [
+      "art/characters/textures/carrot/body_albedo_128.png",
+      "art/characters/textures/carrot/leaf_albedo_64.png"
+    ]
+  }
+}
