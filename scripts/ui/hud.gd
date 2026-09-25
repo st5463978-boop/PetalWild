@@ -192,6 +192,9 @@ func show_place(stats: Dictionary) -> void:
 	var outer_east_line := str(stats.get("outer_east_line", ""))
 	if outer_east_line != "":
 		journal_box.add_child(ThemeKit.label(outer_east_line, 14))
+	var further_east_line := str(stats.get("further_east_line", ""))
+	if further_east_line != "":
+		journal_box.add_child(ThemeKit.label(further_east_line, 14))
 	var gate_sale_line := str(stats.get("gate_sale_line", ""))
 	if gate_sale_line != "":
 		journal_box.add_child(ThemeKit.label(gate_sale_line, 14))
