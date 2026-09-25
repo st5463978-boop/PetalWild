@@ -24,12 +24,11 @@ func setup(path: String, next_action: String, do_pace: bool) -> void:
 
 
 func _ready() -> void:
-	if get_child_count() == 0:
-		_build()
+	pass
 
 
 func _build() -> void:
-	if not ResourceLoader.exists(glb_path):
+	if not FileAccess.file_exists(glb_path):
 		push_error("Missing character glb at %s" % glb_path)
 		return
 	var packed: PackedScene = load(glb_path) as PackedScene
@@ -51,13 +50,12 @@ func _build() -> void:
 func _process(delta: float) -> void:
 	if pace:
 		_clock += delta
-		var x: float = _home.x + sin(_clock * 1.15) * 0.42
-		var z: float = _home.z + cos(_clock * 1.15) * 0.18 - 0.18
-		var next: Vector3 = Vector3(x, global_position.y, z)
+		var x: float = _home.x + sin(_clock * 1.15) * 0.55
+		var next: Vector3 = Vector3(x, global_position.y, _home.z)
 		var heading: Vector3 = next - global_position
 		global_position = next
 		heading.y = 0.0
-		if heading.length() > 0.001:
+		if heading.length() > 0.002:
 			look_at(global_position + heading, Vector3.UP)
 	var vel: Vector3 = (global_position - _prev) / maxf(delta, 0.0001)
 	_prev = global_position
@@ -74,7 +72,7 @@ func _apply_jelly(node: Node) -> void:
 			mat.set_shader_parameter("deep_color", deep_color)
 			mat.set_shader_parameter("shallow_color", shallow_color)
 			mat.set_shader_parameter("rim_color", rim_color)
-			mat.set_shader_parameter("wobble_amount", 0.032)
+			mat.set_shader_parameter("wobble_amount", 0.012)
 			var imported: Material = mesh_node.get_active_material(0)
 			if imported is StandardMaterial3D:
 				var std: StandardMaterial3D = imported

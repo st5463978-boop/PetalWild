@@ -7,7 +7,7 @@ CPU-only Blender script → glTF → Godot jelly shader. No GPU, no paid APIs.
 - Godot **4.8-dev6**. Do not bump it.
 - **1 Blender unit = 1 metre.** Veg people in the running garden are about 1.1–1.2 m tall. Keep new villagers in that band so they sit next to Cara and the procedural placeholders.
 - Face the character **+Y in Blender** (front view). The glTF exporter writes Y-up; the preview scene aims a camera at the imported face.
-- Sources live in `art/characters/`. Exported `.glb` lives in `assets/characters/`. Preview-only Godot files live in `art_preview/`. Do not edit `scenes/main.tscn`, `scenes/garden.tscn`, or gameplay scripts to preview a mesh.
+- Sources live in `art/characters/` (that folder has a `.gdignore` so Godot does not try to import the `.blend`). Exported `.glb` lives in `assets/characters/`. Preview-only Godot files live in `art_preview/`. Do not edit `scenes/main.tscn`, `scenes/garden.tscn`, or gameplay scripts to preview a mesh.
 - Jelly deformation is a **Godot shader**, not a Blender soft-body bake. The mesh stays firm. The shader wobbles vertices from `move_velocity`.
 
 ## Build the carrot

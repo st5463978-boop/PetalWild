@@ -8,19 +8,18 @@ uniform sampler2D albedo_tex : source_color, hint_default_white;
 uniform float rim_power = 2.1;
 uniform float transmission = 0.32;
 uniform float glow = 0.22;
-uniform float wobble_amount = 0.035;
+uniform float wobble_amount = 0.012;
 uniform vec3 move_velocity = vec3(0.0);
-uniform float jiggle_scale = 0.045;
+uniform float jiggle_scale = 0.012;
 
 void vertex() {
-	float speed = length(move_velocity);
-	float idle = sin(TIME * 3.1 + VERTEX.y * 8.5 + VERTEX.x * 4.0);
-	float jiggle = sin(TIME * 9.0 + VERTEX.y * 11.0 + VERTEX.z * 5.0);
-	vec3 lag = vec3(-move_velocity.x, speed * 0.15, -move_velocity.z) * jiggle_scale;
-	float height = clamp(VERTEX.y, 0.0, 1.2);
-	VERTEX += NORMAL * idle * wobble_amount * (0.35 + height);
-	VERTEX += lag * jiggle * (0.25 + height * 0.8);
-	VERTEX.y += sin(TIME * 6.4 + VERTEX.x * 7.0) * speed * 0.008;
+	float speed = min(length(move_velocity), 2.4);
+	float idle = sin(TIME * 2.6 + VERTEX.y * 6.0 + VERTEX.x * 3.0);
+	float jiggle = sin(TIME * 7.0 + VERTEX.y * 8.0);
+	vec3 lag = vec3(-move_velocity.x, speed * 0.08, -move_velocity.z) * jiggle_scale;
+	float height = clamp(VERTEX.y * 0.55, 0.0, 0.7);
+	VERTEX += NORMAL * idle * wobble_amount * (0.25 + height);
+	VERTEX += lag * jiggle * height;
 }
 
 void fragment() {

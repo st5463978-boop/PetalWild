@@ -54,12 +54,13 @@ func _world() -> void:
 	add_child(ground)
 
 	var cam := Camera3D.new()
-	cam.position = Vector3(1.55, 1.05, 2.35)
-	cam.look_at(Vector3(0.05, 0.52, 0.0), Vector3.UP)
+	cam.name = "PreviewCam"
+	# glTF lands with the face on -Z (Godot camera forward).
+	cam.position = Vector3(-1.45, 1.02, -2.25)
 	cam.fov = 42.0
 	cam.current = true
-	cam.name = "PreviewCam"
 	add_child(cam)
+	cam.look_at(Vector3(0.05, 0.52, 0.0), Vector3.UP)
 
 
 func _spawn(at: Vector3, action: String, pace: bool) -> void:
@@ -97,15 +98,15 @@ func _capture() -> void:
 	_shot("/workspace/art/characters/previews/godot_pair.png")
 	var cam := get_node_or_null("PreviewCam") as Camera3D
 	if cam != null:
-		cam.position = Vector3(0.15, 0.78, 1.15)
-		cam.look_at(Vector3(-0.7, 0.68, 0.0), Vector3.UP)
+		cam.position = Vector3(-0.95, 0.72, -1.15)
+		cam.look_at(Vector3(-0.7, 0.62, 0.0), Vector3.UP)
 		await get_tree().process_frame
 		await get_tree().create_timer(0.25).timeout
 		_shot("/workspace/art/characters/previews/godot_idle.png")
-		cam.position = Vector3(1.55, 0.72, 1.35)
-		cam.look_at(Vector3(0.75, 0.55, 0.0), Vector3.UP)
+		cam.position = Vector3(0.35, 0.68, -1.35)
+		cam.look_at(Vector3(0.75, 0.52, 0.0), Vector3.UP)
 		await get_tree().process_frame
-		await get_tree().create_timer(0.35).timeout
+		await get_tree().create_timer(0.45).timeout
 		_shot("/workspace/art/characters/previews/godot_walk.png")
 	print("ART_PREVIEW_SHOT_OK %s" % dir)
 
