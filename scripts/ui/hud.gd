@@ -704,6 +704,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	var hem_stone_out_bell_card_kept := str(row.get("hem_stone_out_bell_card_line", ""))
 	if hem_stone_out_bell_card_kept != "":
 		box.add_child(ThemeKit.label(hem_stone_out_bell_card_kept, 13))
+	var meadow_stone_strip_card_kept := str(row.get("meadow_stone_strip_card_line", ""))
+	if meadow_stone_strip_card_kept != "":
+		box.add_child(ThemeKit.label(meadow_stone_strip_card_kept, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"
