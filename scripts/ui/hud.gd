@@ -252,6 +252,9 @@ func show_place(stats: Dictionary) -> void:
 	var end_strip_stone_line := str(stats.get("end_strip_stone_line", ""))
 	if end_strip_stone_line != "":
 		journal_box.add_child(ThemeKit.label(end_strip_stone_line, 14))
+	var far_bell_stone_line := str(stats.get("far_bell_stone_line", ""))
+	if far_bell_stone_line != "":
+		journal_box.add_child(ThemeKit.label(far_bell_stone_line, 14))
 	var gate_sale_line := str(stats.get("gate_sale_line", ""))
 	if gate_sale_line != "":
 		journal_box.add_child(ThemeKit.label(gate_sale_line, 14))
