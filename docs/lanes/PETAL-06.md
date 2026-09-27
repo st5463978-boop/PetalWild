@@ -1,6 +1,6 @@
 # PETAL-06 · SimCity / Cities-scale town
 
-Updated 2026-09-27.
+Updated 2026-09-28.
 
 ## Task
 
@@ -46,14 +46,15 @@ Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14).
 ## Playable
 
 - Parish page (J → Parish, or C / M) shows town folk, lane houses, Grove Park, service cover, a gate-to-park path, and LOD layers.
-- After the road rumour is filed, South Lane occupies named households. Far away they sit at aggregate; a near camera promotes two to individual records. Nobody is spawned.
-- Nessa then offers Grove Park. Filing it shows a lawn south of the gate. Visitors promote the same way.
+- After the road rumour is filed, South Lane occupies named households. Vale carts bound for Hollow add to those counts. Far away they sit at aggregate; a near camera promotes two to individual records. Nobody is spawned.
+- Hedge tea on the crate or pot seats lane households at the porch as property records. A near porch promotes two sitters. Nobody is poured.
+- Nessa then offers Grove Park. Filing it shows a lawn, a path, and a live visitor count south of the gate. Visitors promote the same way.
 
 ## Interface
 
-- `TownSim.tick({people, residents, quality, road, park, passers, hour, weather, near_park, near_lane, lane_fill})`
-- Folk records with layers `household` / `district` / `individual`. Hierarchy in `data/town.json`: world → creature.
-- `TownSim.aggregate()`, `individuals()`, `folk_ids()`
+- `TownSim.tick({people, residents, quality, road, park, passers, traffic, tea, hour, weather, near_park, near_lane, near_tea, lane_fill})`
+- Folk records with layers `household` / `district` / `property` / `individual`. Hierarchy in `data/town.json`: world → creature.
+- `TownSim.aggregate()`, `individuals()`, `folk_ids()`, `occupancy("lane"|"grove_park"|"tea")`
 - `Trust.file_park(person_id)` action `parish_park`
 - `SimLod.note_town(individuals, distant)`
 - Save key `town` includes folk ids so promote/demote round-trips
@@ -61,7 +62,7 @@ Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14).
 
 ## Tests
 
-- `tests/test_town.gd` → `TOWN_OK` (includes promote/demote id stability)
+- `tests/test_town.gd` → `TOWN_OK` (promote/demote ids, vale carts, tea porch)
 - `tests/test_systems.gd` → `SYSTEMS_OK`
 - `tools/smoke.gd` → `PETAL_RULES_OK`
 - `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_SMOKE_OK`
@@ -72,6 +73,18 @@ Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14).
 ## Blockers
 
 None yet.
+
+## Pass 2
+
+Merged `petal/08-integration` (`3402530` / campaign `29e278b`) into `petal/06-town` first.
+
+Play-feel on the town rung:
+
+1. **Vale carts fill the lane and lawn.** `RegionSim.traffic("hollow")` adds counted folk to South Lane and Grove Park. Parish page: `Vale carts  N bound here · they fill the lane as counts`.
+2. **Hedge tea seats lane folk.** Cups on the kettle pot or stall crate pull households to the tea porch as `property` records. A near camera promotes two to `individual`. Nobody is poured. Parish page: `Tea porch  N with a cup` and `Lane cups at the porch`.
+3. **Grove Park reads as a park.** Path to the gate, a third bench, and a live `ParkCount` billboard (`N on the lawn` / `the lawn is quiet`).
+
+Still no distant bodies. Catalog `grove_park.active` stays false. C = town, M = vale.
 
 ## Requests
 

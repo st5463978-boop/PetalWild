@@ -1199,10 +1199,13 @@ func _tick_town(world: Dictionary) -> void:
 		"road": Trust.has_action("parish_road_rumour"),
 		"park": Trust.has_action("parish_park"),
 		"passers": _lane_passers(),
+		"traffic": region.traffic("hollow"),
+		"tea": Economy.mill.crate_count() + Economy.mill.pot_count(),
 		"hour": Clock.hour(),
 		"weather": Clock.weather,
 		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
 		"near_lane": cam_at.distance_to(GardenLayout.GATE) < 14.0,
+		"near_tea": cam_at.distance_to(GardenLayout.TEA) < 10.0,
 	}
 	if bool(ctx["road"]) and not town.chose_lane:
 		ctx["lane_fill"] = PetalDecide.choose(
@@ -1215,10 +1218,21 @@ func _tick_town(world: Dictionary) -> void:
 
 func _sync_park() -> void:
 	var show := Trust.has_action("parish_park")
+	var n := town.occupancy("grove_park")
 	for node in get_tree().get_nodes_in_group("grove_park"):
 		var body := node as Node3D
-		if body:
-			body.visible = show
+		if body == null:
+			continue
+		body.visible = show
+		var sign := body.get_node_or_null("ParkSign") as Label3D
+		if sign:
+			sign.text = "Grove Park"
+		var count := body.get_node_or_null("ParkCount") as Label3D
+		if count:
+			if n > 0:
+				count.text = "%s on the lawn" % str(n)
+			else:
+				count.text = "the lawn is quiet"
 
 func _park_card_line() -> String:
 	if Trust.has_action("parish_park"):
@@ -8153,10 +8167,16 @@ func _run_town_shot() -> void:
 	Clock.set_hour(15.3)
 	Trust.file_road_rumour("nessa")
 	Trust.file_park("nessa")
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if Economy.stock_kettle():
+		Economy.mill.tick(18.0)
+		Economy.carry_tea()
+	region.send_cart("reedbank", "hollow", "reed", 1)
 	_tick_town(world_snapshot())
 	_sync_park()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.4, 0), 7.2)
+	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.55, 0.4), 7.6)
 	await get_tree().create_timer(0.4).timeout
 	await _shot("/workspace/docs/screenshots/town_park.png")
 	show_directory("place")
@@ -11643,6 +11663,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["town_riders"] = int(town.stats.get("riders", 0))
 	stats["park_demand"] = town.occupancy("grove_park")
 	stats["lane_houses"] = town.occupancy("lane")
+	stats["town_tea"] = town.occupancy("tea")
 	stats["town_cover"] = town.coverage()
 	stats["town_lines"] = town.page_lines()
 	stats["tiers"] = SimLod.tiers.duplicate()

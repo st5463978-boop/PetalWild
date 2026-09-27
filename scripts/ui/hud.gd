@@ -185,6 +185,9 @@ func show_place(stats: Dictionary) -> void:
 	var kettle_line := str(stats.get("kettle_line", ""))
 	if kettle_line != "":
 		journal_box.add_child(ThemeKit.label(kettle_line, 16))
+	var town_tea := int(stats.get("town_tea", 0))
+	if town_tea > 0:
+		journal_box.add_child(ThemeKit.label("Lane cups at the porch  %s" % str(town_tea), 16))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))

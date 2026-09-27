@@ -66,8 +66,52 @@ func _init() -> void:
 	_expect(other.aggregate() == town.aggregate(), "town save roundtrip")
 	_expect(other.folk_ids() == town.folk_ids(), "folk ids survive save")
 	_expect(str(other.stats.get("headline", "")).find("Grove Park") != -1, "the page names the park")
+	var carts := TownSim.new()
+	carts.boot()
+	var quiet := {
+		"people": 0,
+		"residents": 0,
+		"quality": 0.4,
+		"road": true,
+		"park": true,
+		"passers": 0,
+		"traffic": 0,
+		"tea": 0,
+		"hour": 10.0,
+		"weather": "clear",
+		"near_park": false,
+		"near_lane": false,
+		"near_tea": false,
+	}
+	carts.tick(quiet)
+	var quiet_lane := carts.occupancy("lane")
+	var quiet_park := carts.occupancy("grove_park")
+	quiet["traffic"] = 3
+	carts.tick(quiet)
+	_expect(carts.occupancy("lane") > quiet_lane, "vale carts fill South Lane")
+	_expect(carts.occupancy("grove_park") > quiet_park, "vale carts visit the lawn")
+	_expect(_page_has(carts, "Vale carts"), "the page names vale carts")
+	_expect(int(carts.stats.get("bodies", -1)) == 0, "cart folk stay counts")
+	quiet["tea"] = 2
+	carts.tick(quiet)
+	_expect(carts.occupancy("tea") == 2, "hedge tea seats lane folk")
+	_expect(_page_has(carts, "Tea porch"), "the page names the tea porch")
+	_expect(int(carts.stats.get("bodies", -1)) == 0, "tea sitters are not actors")
+	quiet["near_tea"] = true
+	carts.tick(quiet)
+	_expect(carts.individuals() > 0, "a near porch promotes a sitter")
+	_expect(_page_has(carts, "tea porch"), "a promoted sitter names the porch")
+	quiet["near_tea"] = false
+	carts.tick(quiet)
+	_expect(carts.individuals() == 0, "leaving the porch demotes the sitter")
 	print("TOWN_OK")
 	quit(0)
+
+func _page_has(town: TownSim, bit: String) -> bool:
+	for line in town.page_lines():
+		if str(line).find(bit) != -1:
+			return true
+	return false
 
 func _expect(ok: bool, label: String) -> void:
 	if ok:
