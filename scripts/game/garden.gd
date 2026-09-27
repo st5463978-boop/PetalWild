@@ -8368,6 +8368,7 @@ func _run_kettle_shot() -> void:
 		return
 	_sync_mill()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.yaw = 176.0
 	camera.pitch = 28.0
 	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.2, -0.95), 3.6)
 	await get_tree().create_timer(0.55).timeout
@@ -8383,8 +8384,9 @@ func _run_kettle_shot() -> void:
 		get_tree().quit(1)
 		return
 	_sync_mill()
-	camera.pitch = 22.0
-	camera.focus_on(GardenLayout.SHED + Vector3(0.0, 0.35, 1.0), 4.4)
+	camera.yaw = 176.0
+	camera.pitch = 20.0
+	camera.focus_on(GardenLayout.SHED + Vector3(0.0, 0.35, 0.55), 6.6)
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/jam_pan.png")
 	Economy.mill.tick(12.0)
@@ -8392,6 +8394,8 @@ func _run_kettle_shot() -> void:
 	_sync_mill()
 	hud.shop.visible = true
 	refresh_panels()
+	camera.yaw = 176.0
+	camera.pitch = 18.0
 	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 5.8)
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/kettle_crate.png")
