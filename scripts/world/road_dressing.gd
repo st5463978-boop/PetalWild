@@ -28,6 +28,7 @@ func build(host: Node3D) -> void:
 	load_data()
 	for entry in pieces:
 		_spawn(entry)
+	sync(false)
 
 func sync(show: bool) -> void:
 	if parent == null:
