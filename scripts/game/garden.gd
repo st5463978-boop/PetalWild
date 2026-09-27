@@ -7345,8 +7345,8 @@ func _run_smoke() -> void:
 	var mill_peach := Economy.count("peach")
 	var mill_bell := Economy.count("meadowbell")
 	var mill_tin := Economy.coins
-	if Economy.mill_line(true, false) != "The kettle is quiet.":
-		push_error("smoke: a quiet kettle talked")
+	if Economy.mill_line(true, false) != "Kettle waits for peach.":
+		push_error("smoke: an empty kettle hid the missing peach")
 		get_tree().quit(1)
 		return
 	Economy.add("peach", 1)
