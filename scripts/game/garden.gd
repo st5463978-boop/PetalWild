@@ -8747,8 +8747,8 @@ func _run_garden_look_shot() -> void:
 	await get_tree().create_timer(0.7).timeout
 	await _shot("/workspace/docs/screenshots/garden_overview.png")
 	camera.yaw = 176.0
-	camera.pitch = 34.0
-	camera.focus_on(GardenLayout.cell_center(3, 2) + Vector3(0.0, 0.05, 0.2), 4.4)
+	camera.pitch = 42.0
+	camera.focus_on(GardenLayout.cell_center(3, 2) + Vector3(0.35, 0.02, 0.45), 3.8)
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/garden_beds.png")
 	camera.yaw = 176.0
