@@ -22,7 +22,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | 03 | `petal/03-jelly` | `c3f55dd` | ported | grab, stretch, throw, bounce |
 | 04 | `petal/04-residents` | `6b48d2e` | ported | needs, tea, memories, no porch overshoot |
 | 05 | `petal/05-economy` | `b5b90a6` | ported | kettle tea chain (peach+bell, cap 3, stop/restart) |
-| 06 | `petal/06-town` | `f4c63d3` | ported | South Lane, Grove Park, near households |
+| 06 | `petal/06-town` | `f4c63d3` | ported | South Lane, Grove Park, promote/demote, no spawned bodies |
 | 07 | `petal/07-region` | `cd45eb4` | ported | Petal Vale carts, world fidelity |
 | 08 | `petal/08-integration` | `29e278b` | — | coherent Hedge Hollow |
 
@@ -34,11 +34,13 @@ Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`
 
 05 kettle (`b5b90a6`, PR #7): mill APIs already on 08. `SYSTEMS_OK` mill cap-3 recover on this tree. `PETAL_KETTLE_SHOT_OK` recaptured here: `docs/screenshots/kettle_brew.png` (porch steam) and `kettle_crate.png` (stall: Hedge tea sits on the crate, Sell 22 (1)). Qwen3-VL unused.
 
+06 town (`f4c63d3`, PR #9): `town.json` / `town_sim.gd` / `test_town.gd` match the tip. `TOWN_OK` (promote/demote ids), `SYSTEMS_OK`, `PETAL_RULES_OK`. `PETAL_TOWN_SHOT_OK` recaptured here: `town_park.png` (Grove Park sign, lawn, benches, no bodies) and `town_parish.png` (Town folk 7, Lane 3/6, Park open · 2, Layers household 1 · individual 4 · district 0, Near Reed/Moss/Lawn still no body). Catalog Grove Park stays `active: false`.
+
 03 land frame: one new overhead pin (`_pin_overhead`, pitch 62) after the air shot. Follow-cam land was already 3-strike abandoned on 03. `JELLY_PLAY_OK` (`land_y` finite, feel `air` at 0.49). `docs/screenshots/jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants.
 
 ## Tests (`29e278b`, Godot 4.8-dev6 llvmpipe, dummy ALSA)
 
-`PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK`
+`PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK`
 
 Qwen3-VL is not operational. Frames under `docs/screenshots/`. Baseline leak warnings remain.
 
