@@ -4,8 +4,11 @@ var person_id := ""
 var game = null
 var waypoints: Array = []
 var phase := ""
+var route_tag := ""
 var bob := 0.0
 var arms: Node3D
+var act_label: Label3D
+var tier := 1
 
 
 func setup(id: String, definition: Dictionary, director) -> void:
@@ -13,6 +16,14 @@ func setup(id: String, definition: Dictionary, director) -> void:
 	game = director
 	name = "Person_%s" % id
 	_build(definition)
+	act_label = Label3D.new()
+	act_label.font_size = 22
+	act_label.pixel_size = 0.005
+	act_label.position = Vector3(0, 0.82, 0)
+	act_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	act_label.modulate = Color("d9e6c8")
+	act_label.outline_size = 6
+	add_child(act_label)
 	var area := Area3D.new()
 	area.collision_layer = 2
 	area.collision_mask = 0
@@ -33,10 +44,47 @@ func setup(id: String, definition: Dictionary, director) -> void:
 func _process(delta: float) -> void:
 	if game == null:
 		return
-	var now := PetalRules.phase_for(int(game.state().get("minute", 0)))
-	if now != phase or waypoints.is_empty():
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		tier = _lod(global_position.distance_to(cam.global_position))
+	var st: Dictionary = {}
+	if game.has_method("state"):
+		var raw = game.state()
+		if typeof(raw) == TYPE_DICTIONARY:
+			st = raw
+	var rec: Dictionary = {}
+	var raw_rec = st.get("people", {}).get(person_id, {})
+	if typeof(raw_rec) == TYPE_DICTIONARY:
+		rec = raw_rec
+	var now := PetalRules.phase_for(int(st.get("minute", 0)))
+	var tag := String(game.resident_def(person_id).get("schedule", {}).get(now, "path"))
+	var needs = rec.get("needs", {})
+	if typeof(needs) == TYPE_DICTIONARY and not needs.is_empty():
+		var minute := int(st.get("minute", 0))
+		var hour := float(minute) / 60.0
+		var weather := String(st.get("weather", "clear"))
+		var night := now == "night"
+		var shower := weather == "rain" or weather == "mist"
+		var picked := str(ParishLife.ranked_options(needs, hour, weather, night, shower)[0])
+		match picked:
+			"eat":
+				tag = "stall"
+			"social", "leisure":
+				tag = "path"
+			"home", "rest":
+				tag = "home"
+			"shelter":
+				tag = "stall"
+			_:
+				tag = String(game.resident_def(person_id).get("schedule", {}).get(now, "path"))
+		rec["activity"] = picked
+		if act_label:
+			act_label.text = str(ParishLife.LABELS.get(picked, tag))
+	elif act_label:
+		act_label.text = tag
+	if now != phase or waypoints.is_empty() or tag != route_tag:
 		phase = now
-		var tag := String(game.resident_def(person_id).get("schedule", {}).get(now, "path"))
+		route_tag = tag
 		_plan(game.anchor_for(person_id, tag))
 	if waypoints.is_empty():
 		_bob(delta, false)
@@ -56,7 +104,20 @@ func _process(delta: float) -> void:
 	_bob(delta, true)
 
 
+func _lod(distance: float) -> int:
+	return SimLod.classify(distance, false, false)
+
+
 func _bob(delta: float, moving: bool) -> void:
+	if tier >= 4:
+		visible = false
+		return
+	visible = true
+	if tier >= 3:
+		position.y = 0.0
+		if arms != null:
+			arms.rotation.x = 0.0
+		return
 	bob += delta * (6.0 if moving else 1.6)
 	position.y = absf(sin(bob)) * (0.04 if moving else 0.015)
 	if arms != null and not PetalWorld.reduce_motion:

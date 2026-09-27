@@ -2,6 +2,7 @@ extends Node3D
 
 var soil := SoilField.new()
 var road := RoadDressing.new()
+var town := TownSim.new()
 var ecology: Ecology
 var camera: GardenCamera
 var hud: Hud
@@ -11,6 +12,7 @@ var audio: GardenAudio
 var bees: GardenBees
 var birds: GardenBirds
 var people := {}
+var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
 var bed_inside: Array[MultiMeshInstance3D] = []
@@ -55,6 +57,9 @@ var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 var crate_yields := {}
 var last_shop_hour := -1.0
+var bus := GardenBus.new()
+var region := RegionSim.new()
+var region_stamp := -1
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -69,8 +74,32 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_SMOKE") == "1":
 		_run_smoke()
 		return
+	if OS.get_environment("PETAL_INTEGRATE") == "1":
+		PlayDirector.run_integrate(self)
+		return
+	if OS.get_environment("PETAL_SELFPLAY") == "1":
+		PlayDirector.run_selfplay(self)
+		return
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
+		return
+	if OS.get_environment("PETAL_KETTLE_SHOT") == "1":
+		await _run_kettle_shot()
+		return
+	if OS.get_environment("PETAL_FACE_SHOT") == "1":
+		await _run_face_shot()
+		return
+	if OS.get_environment("PETAL_JELLY_PLAY") == "1":
+		await _run_jelly_play()
+		return
+	if OS.get_environment("PETAL_TOWN_SHOT") == "1":
+		await _run_town_shot()
+		return
+	if OS.get_environment("PETAL_VALE_SHOT") == "1":
+		await _run_vale_shot()
+		return
+	if OS.get_environment("PETAL_RESIDENT_SHOT") == "1":
+		await _run_resident_shot()
 		return
 	Clock.running = true
 	if Settings.reduce_motion:
@@ -96,6 +125,7 @@ func _build() -> void:
 	GardenDressing.new().build(self)
 	GardenProps.new().build(self)
 	road.build(self)
+	town.boot()
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -121,9 +151,12 @@ func _build() -> void:
 	add_child(hud)
 	hud.build(self)
 	hud.set_tool(tool)
+	region.boot()
+	region.decide_cb = Callable(self, "_vale_decide")
 	debug_overlay = DebugOverlay.new()
 	add_child(debug_overlay)
 	debug_overlay.build(self)
+	_tick_town(world_snapshot())
 
 func _process(delta: float) -> void:
 	if photo:
@@ -144,6 +177,7 @@ func _process(delta: float) -> void:
 		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
 		_bee_growth(minutes / 60.0)
+		_tick_mill(minutes)
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
@@ -151,9 +185,10 @@ func _process(delta: float) -> void:
 		_dawn_birds()
 	if Clock.running:
 		_note_lane_afternoon()
-	ecology.tick(delta, world)
+	ecology.tick(delta, world, minutes / 60.0)
 	_wire_jellies()
 	_update_creatures(delta)
+	ecology.bump()
 	_check_nessa(world)
 	_apply_shift(false)
 	_drift_people(delta, world)
@@ -172,6 +207,7 @@ func _process(delta: float) -> void:
 	_lamps()
 	audio.set_weather(Clock.weather)
 	_tick_shop()
+	_tick_region()
 	_update_status()
 	panel_timer += delta
 	if panel_timer > 0.45 and (hud.journal.visible or hud.shop.visible):
@@ -184,8 +220,10 @@ func _process(delta: float) -> void:
 		if gossip_timer <= 0.0:
 			gossip_done = true
 			_person("bram").say("The stall is loud. The beds were quieter.")
-	SimLod.recount(ecology.actors)
+	SimLod.recount(_lod_actors())
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	SimLod.note_vale(region.fidelity())
+	_tick_town(world)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -208,6 +246,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_tool("hands")
 			KEY_J:
 				hud.toggle_journal()
+			KEY_M:
+				show_directory("vale")
+			KEY_C:
+				show_directory("place")
 			KEY_B:
 				hud.toggle_shop()
 			KEY_F:
@@ -220,12 +262,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				debug_overlay.toggle()
 			KEY_F5:
 				quick_save()
+			KEY_F8:
+				self_play_beat()
 			KEY_F9:
 				quick_load()
 			KEY_BRACKETLEFT:
 				_cycle_seed(-1)
 			KEY_BRACKETRIGHT:
 				_cycle_seed(1)
+			KEY_SPACE:
+				_toggle_time()
 		return
 	if photo:
 		return
@@ -257,10 +303,12 @@ func refresh_panels() -> void:
 		hud.show_trust(_trust_lines(), Trust.audit)
 	elif directory_page == "place":
 		hud.show_place(_place_stats(world))
+	elif directory_page == "vale":
+		hud.show_vale(region.page())
 	else:
 		hud.show_journal(_journal_rows(world), events, ecology.resident_total(), _bite_lines())
 	if hud.shop.visible:
-		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open())
+		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open(), _mill_row())
 
 func _stall_open() -> bool:
 	var h := Clock.hour()
@@ -311,6 +359,8 @@ func _tick_shop() -> void:
 		return
 	last_shop_hour = hour
 	for id in ["nessa", "bram"]:
+		if str(parish.lives.get(id, {}).get("activity", "")) == "eat":
+			continue
 		var person := _person(id)
 		VillageShop.wish(person)
 		var deal := VillageShop.trade(person)
@@ -321,6 +371,75 @@ func _tick_shop() -> void:
 		toast("%s bought %s for %d petal." % [person.display_name, ContentDB.plant(crop).get("name", crop), int(deal.get("price", 0))])
 		person.say("I'll take that.")
 		refresh_panels()
+
+func _vale_decide(question: String, options: Array) -> String:
+	var choice := PetalDecide.choose(question, options)
+	region.last_pick_confidence = PetalDecide.last_confidence
+	return choice
+
+func _tick_region() -> void:
+	if not Clock.running:
+		return
+	var stamp := Clock.day * 24 + int(Clock.hour())
+	if stamp == region_stamp:
+		return
+	region_stamp = stamp
+	var notes: Array = region.pulse(Clock.day, Clock.hour(), _vale_garden())
+	for note in notes:
+		if typeof(note) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = note
+		if str(row.get("type", "")) == "deliver" and str(row.get("to", "")) == "hollow":
+			Economy.add(str(row.get("crop", "")), int(row.get("qty", 1)))
+		var text := str(row.get("text", ""))
+		if text != "":
+			toast(text)
+
+func _vale_garden() -> Dictionary:
+	var bag := {}
+	for crop in ["meadowbell", "peach", "reed", "bramble", "mosspear", "nightlantern"]:
+		bag[crop] = Economy.count(crop)
+	var world := world_snapshot()
+	return {
+		"bag": bag,
+		"ripe": world.get("mature", {}),
+		"quality": float(world.get("garden_quality", 0.0)),
+		"hands": _present_people() + ecology.resident_total(),
+	}
+
+func send_vale_cart(to_id: String, crop: String) -> void:
+	if Economy.count(crop) < 1:
+		toast("The pouch has no %s to send." % crop)
+		refresh_panels()
+		return
+	var result: Dictionary = region.send_cart("hollow", to_id, crop, 1)
+	if not bool(result.get("ok", false)):
+		toast(str(result.get("text", "The cart did not leave.")))
+		refresh_panels()
+		return
+	Economy.take(crop, 1)
+	toast(str(result.get("text", "")))
+	refresh_panels()
+
+func welcome_vale() -> void:
+	var result: Dictionary = region.welcome()
+	toast(str(result.get("text", "")))
+	refresh_panels()
+
+func share_vale_seed(to_id: String, crop: String) -> void:
+	var seed_id := "%s_seed" % crop
+	if Economy.count(seed_id) < 1:
+		toast("The pouch has no %s seed to share." % crop)
+		refresh_panels()
+		return
+	var result: Dictionary = region.share_seed("hollow", to_id, crop)
+	if not bool(result.get("ok", false)):
+		toast(str(result.get("text", "")))
+		refresh_panels()
+		return
+	Economy.take(seed_id, 1)
+	toast(str(result.get("text", "")))
+	refresh_panels()
 
 func _note_lane_afternoon() -> void:
 	# ponytail: three distinct afternoons; a clock if a partial afternoon should count.
@@ -902,6 +1021,130 @@ func sell(plant_id: String) -> void:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
 
+func stock_kettle() -> void:
+	if not Economy.stock_kettle():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Peach and meadowbell went into the kettle.")
+	var nessa := _person("nessa")
+	if nessa != null and nessa.present:
+		nessa.say("I will watch the kettle.")
+	_sync_mill()
+	refresh_panels()
+
+func carry_tea() -> void:
+	if not Economy.carry_tea():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Hedge tea sat down on the crate.")
+	_person("lumen").say("The crate has a cup.")
+	_sync_mill()
+	refresh_panels()
+
+func sell_tea() -> void:
+	if not _stall_open():
+		_stall_shut()
+		return
+	var extra := 1 if _lane_passers() > 0 else 0
+	var price := Economy.sell_tea()
+	if price <= 0:
+		toast("The crate has no tea.")
+		return
+	if extra > 0:
+		Economy.earn(extra)
+		Trust.file_lane_sale("lumen")
+	audio.play_kind("coin")
+	toast("Sold hedge tea for %d petal." % (price + extra))
+	_person("lumen").say("A cup for the lane.")
+	_sync_mill()
+	refresh_panels()
+
+func _tick_mill(minutes: float) -> void:
+	if Economy.mill.tick(minutes):
+		toast("The kettle finished a cup.")
+		_person("lumen").say("I can smell the tea.")
+	_try_carry()
+	_sync_mill()
+
+func _try_carry() -> void:
+	if Economy.mill.pot_count() < 1:
+		return
+	if Economy.mill.crate_count() >= int(Economy.mill.recipe().get("crate_cap", 3)):
+		return
+	if not _tea_worker():
+		return
+	var choice := PetalDecide.choose(
+		"Nessa has steeped hedge tea. Carry it to the stall crate, or let it sit?",
+		["carry", "wait"]
+	)
+	if choice != "carry":
+		return
+	if not Economy.carry_tea():
+		return
+	toast("Nessa carried hedge tea to the crate.")
+	var nessa := _person("nessa")
+	nessa.say("The tea is on the crate.")
+	if not nessa.has_chore:
+		nessa.chore = GardenLayout.STALL
+		nessa.has_chore = true
+
+func _tea_worker() -> bool:
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present:
+		return false
+	if nessa_filing or nessa_drafting or nessa_farewell or nessa_bees:
+		return false
+	return _stall_open()
+
+func _near_tea(hit: Vector3) -> bool:
+	return Vector2(hit.x - GardenLayout.TEA.x, hit.z - GardenLayout.TEA.z).length() < 1.45
+
+func _near_stall(hit: Vector3) -> bool:
+	return Vector2(hit.x - GardenLayout.STALL.x, hit.z - GardenLayout.STALL.z).length() < 1.55
+
+func _use_kettle() -> void:
+	if Economy.mill.brewing() or Economy.mill.pot_count() > 0:
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	stock_kettle()
+
+func _use_crate() -> void:
+	if Economy.mill.pot_count() > 0:
+		carry_tea()
+		return
+	if Economy.mill.crate_count() > 0:
+		sell_tea()
+		return
+	toast(Economy.mill_line(_stall_open(), _tea_worker()))
+
+func _sync_mill() -> void:
+	var steaming := Economy.mill.brewing()
+	for node in get_tree().get_nodes_in_group("parish_steam"):
+		node.visible = steaming
+	var cups := Economy.mill.crate_count() > 0
+	for node in get_tree().get_nodes_in_group("parish_cup"):
+		node.visible = cups
+
+func _mill_row() -> Dictionary:
+	return {
+		"line": Economy.mill_line(_stall_open(), _tea_worker()),
+		"can_stock": Economy.mill.can_stock(Economy.bag),
+		"can_carry": Economy.mill.pot_count() > 0 and Economy.mill.crate_count() < int(Economy.mill.recipe().get("crate_cap", 3)),
+		"crate": Economy.mill.crate_count(),
+		"price": Economy.mill.price() + (1 if _lane_passers() > 0 else 0),
+	}
+
+func _job_line(id: String, definition: Dictionary) -> String:
+	if id == "nessa" and Economy.mill.brewing():
+		return "Watches the kettle"
+	if id == "nessa" and Economy.mill.pot_count() > 0:
+		return "Carries tea to the crate"
+	if id == "lumen" and Economy.mill.crate_count() > 0:
+		return "Keeps the tea crate"
+	return str(definition.get("job", ""))
+
 func accept_lumen() -> void:
 	if Trust.lumen_proposal_day == Clock.day:
 		toast("The tray was already set aside today.")
@@ -929,7 +1172,66 @@ func accept_road() -> void:
 	toast("Nessa filed the road rumour. Nothing left the parish.")
 	nessa.say("The road is only a rumour. The book keeps it.")
 	road.sync(Trust.has_action("parish_road_rumour"))
+	_tick_town(world_snapshot())
 	refresh_panels()
+
+func accept_park() -> void:
+	if not Trust.has_action("parish_road_rumour"):
+		toast("The road is not in the book. Nothing was filed.")
+		return
+	if Trust.has_action("parish_park"):
+		toast("Grove Park is already in the book.")
+		return
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present:
+		toast("Nessa is not here. Nothing was filed.")
+		return
+	Trust.file_park("nessa")
+	toast("Nessa filed Grove Park. The lawn is public. Nobody was spawned.")
+	nessa.say("The park is a lawn beyond the hedge. The book keeps it.")
+	parish.open_park()
+	_sync_park()
+	_tick_town(world_snapshot())
+	refresh_panels()
+
+func _tick_town(world: Dictionary) -> void:
+	if town.plots.is_empty():
+		town.boot()
+	var cam_at := camera.global_position if camera else Vector3.ZERO
+	var ctx := {
+		"people": _present_people(),
+		"residents": ecology.resident_total() if ecology else 0,
+		"quality": float(world.get("garden_quality", 0.0)),
+		"road": Trust.has_action("parish_road_rumour"),
+		"park": Trust.has_action("parish_park"),
+		"passers": _lane_passers(),
+		"hour": Clock.hour(),
+		"weather": Clock.weather,
+		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
+		"near_lane": cam_at.distance_to(GardenLayout.GATE) < 14.0,
+	}
+	if bool(ctx["road"]) and not town.chose_lane:
+		ctx["lane_fill"] = PetalDecide.choose(
+			"South Lane has empty houses beyond the hedge. Fill them or keep them sparse?",
+			["fill", "sparse"]
+		)
+	town.tick(ctx)
+	SimLod.note_town(town.individuals(), town.aggregate())
+	_sync_park()
+
+func _sync_park() -> void:
+	var show := Trust.has_action("parish_park")
+	if show:
+		parish.open_park()
+	for node in get_tree().get_nodes_in_group("grove_park"):
+		var body := node as Node3D
+		if body:
+			body.visible = show
+
+func _park_card_line() -> String:
+	if Trust.has_action("parish_park"):
+		return "Grove Park is a public lawn."
+	return ""
 
 # Road pieces live in data/road_pieces.json. Counts stay named for smoke.
 func _road_path_count() -> int:
@@ -1348,8 +1650,12 @@ func accept_nessa() -> void:
 	nessa.say("I will file these at the hut.")
 	refresh_panels()
 
+func self_play_beat() -> void:
+	toast(PlayDirector.beat(self))
+
 func quick_save() -> void:
 	if SaveGame.write_slot(SaveGame.active_slot, to_state()):
+		bus.note("save", "Saved slot %d." % SaveGame.active_slot)
 		toast("Saved slot %d." % SaveGame.active_slot)
 		audio.play_kind("ui", -12)
 	else:
@@ -1361,6 +1667,7 @@ func quick_load() -> void:
 		toast("Slot %d is empty." % SaveGame.active_slot)
 		return
 	apply_state(data)
+	bus.note("load", "Garden restored.")
 	toast("Garden restored.")
 
 func resume() -> void:
@@ -1433,8 +1740,16 @@ func toast(text: String) -> void:
 	events.push_front(text)
 	if events.size() > 24:
 		events.resize(24)
+	bus.note("toast", text)
 	if hud:
 		hud.toast(text)
+
+func _toggle_time() -> void:
+	if photo or get_tree().paused:
+		return
+	Clock.running = not Clock.running
+	bus.note("time", "rest" if not Clock.running else "move")
+	toast("Time rests." if not Clock.running else "Time moves.")
 
 func _ring_bells(world: Dictionary) -> void:
 	# ponytail: one quiet chime a day, and that chime carries one meadowbell seed.
@@ -1516,6 +1831,7 @@ func _dawn_birds() -> void:
 
 func world_snapshot() -> Dictionary:
 	var mature := {}
+	var plant_counts := {}
 	var chem := {}
 	var moisture := 0.0
 	var fertility_all := 0.0
@@ -1531,6 +1847,8 @@ func world_snapshot() -> Dictionary:
 			fertility_worked += plot.fertility
 			worked += 1
 		chem[plot.chem] = int(chem.get(plot.chem, 0)) + 1
+		if plot.plant_id != "":
+			plant_counts[plot.plant_id] = int(plant_counts.get(plot.plant_id, 0)) + 1
 		if plot.plant_id != "" and plot.growth >= 1.0:
 			mature[plot.plant_id] = int(mature.get(plot.plant_id, 0)) + 1
 	var mature_total := 0
@@ -1548,6 +1866,7 @@ func world_snapshot() -> Dictionary:
 		"moisture": moisture / maxf(float(count), 1.0),
 		"fertility": fertility,
 		"chem": chem,
+		"plant_counts": plant_counts,
 		"weather": Clock.weather,
 		"hour": Clock.hour(),
 		"species_state": ecology.states.duplicate(),
@@ -1595,6 +1914,11 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
+		"crate_yields": crate_yields.duplicate(true),
+		"parish": parish.to_state(),
+		"town": town.to_dict(),
+		"region": region.to_dict(),
+		"region_stamp": region_stamp,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1654,10 +1978,38 @@ func apply_state(data: Dictionary) -> void:
 	var flower = data.get("bee_flower", [])
 	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
 		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
+	crate_yields = {}
+	var saved_yields = data.get("crate_yields", {})
+	if typeof(saved_yields) == TYPE_DICTIONARY:
+		for key in saved_yields.keys():
+			var row = saved_yields[key]
+			var copied: Array = []
+			if typeof(row) == TYPE_ARRAY:
+				for value in row:
+					copied.append(float(value))
+			crate_yields[str(key)] = copied
+	_clear_inspect()
+	var parish_saved = data.get("parish", {})
+	if typeof(parish_saved) == TYPE_DICTIONARY:
+		parish.apply_state(parish_saved)
+	for id in people.keys():
+		parish.apply_to(people[id])
+		if _person(id).present:
+			_person(id).set_activity(parish.label_for(id))
+	var saved_region = data.get("region", {})
+	if typeof(saved_region) == TYPE_DICTIONARY:
+		region.boot(saved_region)
+	region_stamp = int(data.get("region_stamp", -1))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
 	road.sync(Trust.has_action("parish_road_rumour"))
+	_sync_mill()
+	var saved_town: Variant = data.get("town", {})
+	if typeof(saved_town) == TYPE_DICTIONARY:
+		town.from_dict(saved_town as Dictionary)
+	_tick_town(world_snapshot())
+	_sync_park()
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -1689,7 +2041,38 @@ func _bind_watch(saved) -> void:
 			best = jelly
 	nessa_watch = best
 
+func _smoke_parish_day() -> bool:
+	_tick_parish(0.0)
+	var lumen_ok := false
+	var bram_ok := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Lumen Peel":
+			lumen_ok = bool(row.get("present", false)) and str(row.get("household", "")) == "stall house" and str(row.get("state", "")) == "at their job" and str(row.get("motive", "")) != "" and float(row.get("hunger", 0.0)) > 0.4
+		if str(row.get("name", "")) == "Bram Cobble":
+			bram_ok = bool(row.get("present", false)) and str(row.get("household", "")) == "shed house" and str(row.get("state", "")) == "at their job"
+	if not lumen_ok or not bram_ok:
+		push_error("smoke: the directory hid the day's parish")
+		get_tree().quit(1)
+		return false
+	var spoken := parish.greet("lumen", Clock.day)
+	if spoken.find("trays") < 0 or parish.last_memory("lumen").find("Spoke with you") < 0:
+		push_error("smoke: a greeting left no memory")
+		get_tree().quit(1)
+		return false
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the greeting did not save")
+		get_tree().quit(1)
+		return false
+	apply_state(SaveGame.read_slot(1))
+	if parish.last_memory("lumen").find("Spoke with you") < 0:
+		push_error("smoke: a greeting did not reload")
+		get_tree().quit(1)
+		return false
+	return true
+
 func _run_smoke() -> void:
+	if not _smoke_parish_day():
+		return
 	var opening_peach := soil.get_cell(3, 2)
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
@@ -1697,6 +2080,11 @@ func _run_smoke() -> void:
 	var opening_lamp := soil.get_cell(6, 4)
 	if opening_peach.plant_id != "peach" or opening_cane.plant_id != "bramble" or opening_cane.growth < 0.7 or opening_cane.growth >= 1.0 or opening_far.plant_id != "bramble" or opening_far.growth < 0.7 or opening_far.growth >= 1.0 or opening_pear.plant_id != "mosspear" or opening_pear.growth < 0.7 or opening_pear.growth >= 1.0 or opening_pear.fertility < 0.58 or _plot_line(opening_pear).find("Pear showing.") == -1 or _pear_line() != "A mosspear is showing." or opening_lamp.plant_id != "nightlantern" or opening_lamp.growth < 0.7 or opening_lamp.growth >= 1.0 or opening_lamp.chem != "nightloam" or _plot_line(opening_lamp).find("Light showing.") == -1 or _lantern_line() != "A nightlantern is showing." or _seed_line() != "The nightlantern seed is open." or _lane_passers() != 0 or ecology.first("berrypatch") != null or _cane_line() != "Two young brambles stand short of ripe." or _leaf_line() != "The berries have leaves." or _leaf_rumour_count() != 1 or _plot_line(opening_cane).find("Berries showing.") == -1 or _plot_line(opening_far).find("Berries showing.") == -1:
 		push_error("smoke: the opening bramble ripened the lane")
+		get_tree().quit(1)
+		return
+	var open_habitats: String = ecology.rules.habitat_line(soil.beds(), ContentDB.plants)
+	if open_habitats.find("Meadow 3") == -1 or open_habitats.find("Cane 2") == -1:
+		push_error("smoke: the opening parish hid the habitats")
 		get_tree().quit(1)
 		return
 	if not SaveGame.write_slot(1, to_state()):
@@ -4226,6 +4614,9 @@ func _run_smoke() -> void:
 		push_error("smoke: nessa's day round missed the tea house")
 		get_tree().quit(1)
 		return
+	nessa.index = 0
+	nessa.pause = 0.0
+	nessa.tier = 1
 	nessa.global_position = porch + Vector3(0, 0, -2.4)
 	var tea_far := nessa.global_position.distance_to(porch)
 	nessa._process(6.0)
@@ -7210,8 +7601,305 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+	crate_yields = {"peach": [1.5]}
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: a harvest yield did not save")
+		get_tree().quit(1)
+		return
+	crate_yields = {}
+	apply_state(SaveGame.read_slot(1))
+	var kept_yield = crate_yields.get("peach", [])
+	if typeof(kept_yield) != TYPE_ARRAY or kept_yield.is_empty() or absf(float(kept_yield[0]) - 1.5) > 0.001:
+		push_error("smoke: a harvest yield did not survive a reload")
+		get_tree().quit(1)
+		return
+	crate_yields = {}
+	var look := ecology.force_spawn("bellhelp")
+	look.global_position = GardenLayout.cell_center(2, 2)
+	_inspect_face(look)
+	if not look.inspected or look.mood != "happy" or str(events[0]).find("looks back") == -1 or bus.last_text("inspect") != "Bellhelp":
+		push_error("smoke: a face click did not look back")
+		get_tree().quit(1)
+		return
+	_clear_inspect()
+	if look.inspected:
+		push_error("smoke: a face stayed inspected")
+		get_tree().quit(1)
+		return
+	Clock.running = true
+	_toggle_time()
+	if Clock.running or bus.last_text("time") != "rest":
+		push_error("smoke: time would not rest")
+		get_tree().quit(1)
+		return
+	_toggle_time()
+	if not Clock.running:
+		push_error("smoke: time would not move")
+		get_tree().quit(1)
+		return
+	var mix_bell := soil.get_cell(8, 6)
+	var mix_reed := soil.get_cell(8, 7)
+	var mix_lone := soil.get_cell(9, 0)
+	mix_bell.tilled = true
+	mix_bell.plant_id = "meadowbell"
+	mix_bell.growth = 0.2
+	mix_bell.moisture = 0.9
+	mix_bell.fertility = 0.5
+	mix_bell.wilt = 0.0
+	mix_bell.grow_from_day = 1
+	mix_reed.tilled = true
+	mix_reed.plant_id = "reed"
+	mix_reed.growth = 0.4
+	mix_reed.moisture = 0.9
+	mix_reed.fertility = 0.5
+	mix_reed.wilt = 0.0
+	mix_reed.grow_from_day = 1
+	mix_lone.tilled = true
+	mix_lone.plant_id = "meadowbell"
+	mix_lone.growth = 0.2
+	mix_lone.moisture = 0.9
+	mix_lone.fertility = 0.5
+	mix_lone.wilt = 0.0
+	mix_lone.grow_from_day = 1
+	var mix_clear: Array[Vector2i] = [Vector2i(9, 1), Vector2i(8, 0), Vector2i(8, 5), Vector2i(7, 6), Vector2i(9, 6)]
+	for mix_at in mix_clear:
+		var mix_side := soil.get_cell(mix_at.x, mix_at.y)
+		if mix_side:
+			mix_side.plant_id = ""
+	if _plot_line(mix_bell).find("Reed nearby.") == -1:
+		push_error("smoke: a reed beside a meadowbell stayed quiet")
+		get_tree().quit(1)
+		return
+	var mix_pair: Array = [
+		{"plant_id": "meadowbell", "ix": 8, "iz": 6},
+		{"plant_id": "reed", "ix": 8, "iz": 7},
+	]
+	if ecology.rules.garden_line(mix_pair, ContentDB.plants) != "The meadow leans on the bank.":
+		push_error("smoke: the parish missed the bank neighbour")
+		get_tree().quit(1)
+		return
+	soil.tick(60.0, "clear")
+	if mix_bell.growth <= mix_lone.growth:
+		push_error("smoke: a reed neighbour did not hurry the bell")
+		get_tree().quit(1)
+		return
+	var mix_packed: Array = []
+	for mix_ix in 5:
+		var mix_crowd := soil.get_cell(mix_ix, 7)
+		mix_crowd.tilled = true
+		mix_crowd.plant_id = "meadowbell"
+		mix_crowd.growth = 0.5
+		mix_crowd.moisture = 0.9
+		mix_crowd.fertility = 0.5
+		mix_crowd.grow_from_day = 1
+		mix_packed.append({"plant_id": "meadowbell", "ix": mix_ix, "iz": 7})
+	if _plot_line(soil.get_cell(0, 7)).find("Crowded.") == -1:
+		push_error("smoke: five meadowbells did not crowd")
+		get_tree().quit(1)
+		return
+	if ecology.rules.garden_line(mix_packed, ContentDB.plants) != "The meadow is crowded.":
+		push_error("smoke: a crowded meadow hid the bank neighbour")
+		get_tree().quit(1)
+		return
+	var mix_jelly := ecology.force_spawn("bellhelp")
+	mix_jelly.hunger = 0.2
+	ecology.tick(0.2, world_snapshot(), 0.0)
+	if mix_jelly.mood != "hungry":
+		push_error("smoke: a hungry bellhelp stayed content")
+		get_tree().quit(1)
+		return
+	var mix_need := false
+	ecology.states["bellhelp"] = "sighted"
+	for mix_row in _journal_rows(world_snapshot()):
+		var mix_card: Dictionary = mix_row
+		if str(mix_card.get("name", "")) != "Bellhelp":
+			continue
+		if str(mix_card.get("need", "")).find("Hungry") != -1:
+			mix_need = true
+	if not mix_need:
+		push_error("smoke: the journal hid a hungry bellhelp")
+		get_tree().quit(1)
+		return
+	if ecology.rules.habitat_line(mix_packed, ContentDB.plants) != "Habitats  ·  Meadow 5":
+		push_error("smoke: five meadowbells did not tally as meadow")
+		get_tree().quit(1)
+		return
+	if not _smoke_jelly_feel():
+		return
+	Economy.mill.reset()
+	while Economy.count("peach") > 0:
+		Economy.take("peach", 1)
+	while Economy.count("meadowbell") > 0:
+		Economy.take("meadowbell", 1)
+	_sync_mill()
+	var mill_peach := Economy.count("peach")
+	var mill_bell := Economy.count("meadowbell")
+	var mill_tin := Economy.coins
+	if Economy.mill_line(true, false) != "Kettle waits for peach.":
+		push_error("smoke: an empty kettle hid the missing peach")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	if Economy.mill_line(true, false) != "Kettle waits for meadowbell.":
+		push_error("smoke: the kettle did not wait for a bell")
+		get_tree().quit(1)
+		return
+	Economy.add("meadowbell", 1)
+	if Economy.mill_line(true, false) != "The kettle is quiet.":
+		push_error("smoke: a ready kettle still waited")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	if not Economy.stock_kettle() or Economy.mill.brew != "hedge_tea" or Economy.count("peach") != mill_peach or Economy.count("meadowbell") != mill_bell:
+		push_error("smoke: the kettle did not take the fruit")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var steam_on := 0
+	for node in get_tree().get_nodes_in_group("parish_steam"):
+		if node.visible:
+			steam_on += 1
+	if steam_on < 1 or Economy.mill_line(true, false) != "The kettle is brewing hedge tea.":
+		push_error("smoke: the kettle did not steam")
+		get_tree().quit(1)
+		return
+	if not Economy.mill.tick(18.0) or Economy.mill.pot_count() != 1:
+		push_error("smoke: the kettle did not finish a cup")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	if Economy.mill_line(true, false) != "Tea is waiting on the porch.":
+		push_error("smoke: the cup did not wait on the porch")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() != 1:
+		push_error("smoke: tea did not reach the crate")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var cups_on := 0
+	for node in get_tree().get_nodes_in_group("parish_cup"):
+		if node.visible:
+			cups_on += 1
+	if cups_on < 1:
+		push_error("smoke: the crate hid the cup")
+		get_tree().quit(1)
+		return
+	for _cup in 2:
+		Economy.add("peach", 1)
+		Economy.add("meadowbell", 1)
+		if not Economy.stock_kettle():
+			push_error("smoke: the kettle refused a later cup")
+			get_tree().quit(1)
+			return
+		Economy.mill.tick(18.0)
+		if not Economy.carry_tea():
+			push_error("smoke: the crate refused a later cup")
+			get_tree().quit(1)
+			return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	Economy.stock_kettle()
+	Economy.mill.tick(18.0)
+	if Economy.mill_line(true, true) != "The crate is full." or Economy.carry_tea():
+		push_error("smoke: a full crate still took tea")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var shut_tea := Economy.coins
+	var shut_crate := Economy.mill.crate_count()
+	sell_tea()
+	if Economy.coins != shut_tea or Economy.mill.crate_count() != shut_crate:
+		push_error("smoke: tea sold after dusk")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	sell_tea()
+	if Economy.coins < mill_tin + 22 or Economy.mill.crate_count() != 2:
+		push_error("smoke: morning tea did not pay")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() != 3 or Economy.mill.pot_count() != 0:
+		push_error("smoke: selling a cup did not free the crate")
+		get_tree().quit(1)
+		return
+	if str(_place_stats(world_snapshot()).get("kettle_line", "")) != "Hedge tea sits on the crate.":
+		push_error("smoke: the parish page hid the crate")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the kettle did not save")
+		get_tree().quit(1)
+		return
+	Economy.mill.reset()
+	apply_state(SaveGame.read_slot(1))
+	if Economy.mill.crate_count() != 3 or Economy.mill.brew != "":
+		push_error("smoke: the kettle did not reload")
+		get_tree().quit(1)
+		return
+	if region.ids().size() != 5:
+		push_error("smoke: the vale is missing")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
+
+func _smoke_jelly_feel() -> bool:
+	var jelly := ecology.force_spawn("bellhelp")
+	jelly.global_position = Vector3(0.0, 0.2, 0.0)
+	jelly.vel = Vector3.ZERO
+	jelly.reduce_motion = false
+	jelly.grab(Vector3(3.2, 1.7, 0.0))
+	jelly._full(0.05)
+	var grab_scale: Vector3 = jelly.body_root.scale if jelly.body_root else Vector3.ONE
+	if grab_scale.y >= grab_scale.x:
+		push_error("smoke: held jelly did not stretch")
+		get_tree().quit(1)
+		return false
+	for _hold in 10:
+		jelly._full(0.016)
+	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.35:
+		push_error("smoke: jelly grab did not lift")
+		get_tree().quit(1)
+		return false
+	jelly.sample_pos.clear()
+	jelly.sample_ms.clear()
+	jelly.sample_pos.append(Vector3(0.0, 1.15, 0.4))
+	jelly.sample_pos.append(Vector3(2.4, 1.6, 0.4))
+	jelly.sample_ms.append(0)
+	jelly.sample_ms.append(80)
+	jelly.release()
+	if jelly.held or JellyFeel.release_kind(jelly.vel.length()) != "throw":
+		push_error("smoke: jelly throw did not leave the hand")
+		get_tree().quit(1)
+		return false
+	jelly.vel = Vector3(8.0, -18.0, 0.0)
+	jelly.global_position = Vector3(0.0, 0.6, 0.0)
+	for _fly in 24:
+		jelly._full(0.016)
+	if jelly.global_position.y < -0.02 or jelly.global_position.y > 3.2 or not jelly.vel.is_finite():
+		push_error("smoke: jelly throw tunnelled or exploded")
+		get_tree().quit(1)
+		return false
+	var other := ecology.force_spawn("dusknip")
+	other.global_position = jelly.global_position
+	other.vel = Vector3.ZERO
+	ecology.bump()
+	if jelly.global_position.distance_to(other.global_position) < 0.28:
+		push_error("smoke: overlapping jellies did not separate")
+		get_tree().quit(1)
+		return false
+	var into_stall := Vector3(GardenLayout.STALL.x, 0.4, GardenLayout.STALL.z)
+	var bounced: Dictionary = JellyFeel.bounce_prop(into_stall, Vector3(2.0, 0.0, 0.0), 0.3, false)
+	var out_pos: Vector3 = bounced["pos"]
+	if out_pos.distance_to(into_stall) < 0.2:
+		push_error("smoke: stall did not bounce a jelly")
+		get_tree().quit(1)
+		return false
+	jelly.queue_free()
+	other.queue_free()
+	ecology._prune()
+	return true
 
 func _awning_matches(open_hours: bool) -> bool:
 	var stripes := get_tree().get_nodes_in_group("parish_awning")
@@ -7288,6 +7976,7 @@ func _lamps() -> void:
 		var sign := node as Label3D
 		if sign:
 			sign.text = sign_text
+	_sync_mill()
 	var room_glow := 1.15 if night else 0.0
 	for node in get_tree().get_nodes_in_group("parish_room"):
 		var house_lamp := node as OmniLight3D
@@ -7314,6 +8003,8 @@ func _run_capture() -> void:
 	Clock.set_hour(15.3)
 	ecology.tick(0.2, world_snapshot())
 	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
 	if jelly:
 		jelly.reduce_motion = true
 		jelly.global_position = GardenLayout.cell_center(1, 1) + Vector3(0.55, 0.15, 0.2)
@@ -7324,6 +8015,14 @@ func _run_capture() -> void:
 	await _shot("/workspace/docs/screenshots/wave1_overview.png")
 	if jelly:
 		jelly.reduce_motion = true
+		jelly.leaving = false
+		jelly.global_position = GardenLayout.STALL + Vector3(1.6, 0.15, 1.35)
+		jelly.rotation.y = PI
+		jelly.vel = Vector3.ZERO
+		_inspect_face(jelly)
+		await get_tree().create_timer(0.55).timeout
+		await _shot("/workspace/docs/screenshots/wave1_face.png")
+		_clear_inspect()
 		jelly.global_position = Vector3(-10.6, 0.2, -1.4)
 		jelly.rotation.y = PI
 		jelly.vel = Vector3.ZERO
@@ -7331,8 +8030,14 @@ func _run_capture() -> void:
 		await get_tree().create_timer(0.45).timeout
 		await _shot("/workspace/docs/screenshots/wave1_jelly.png")
 	camera.focus_on(_person("lumen").global_position + Vector3(0, 0.62, 0), 5.4)
+	_person("lumen").set_activity(parish.label_for("lumen"))
+	_person("lumen").say(parish.greeting("lumen"))
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_lumen.png")
+	show_directory("people")
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/wave1_residents.png")
+	hud.journal.visible = false
 	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 6.2)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_stall.png")
@@ -7353,7 +8058,208 @@ func _run_capture() -> void:
 	camera.focus_on(GardenLayout.POND_CENTER, 8.5)
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
+	_force_plant(2, 0, "reed", 0.85)
+	_sync_plants()
+	hud.journal.visible = true
+	show_directory("place")
+	camera.snap_home()
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/ecology_parish.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_face_shot() -> void:
+	Settings.reduce_motion = true
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+	jelly.reduce_motion = true
+	jelly.leaving = false
+	jelly.global_position = GardenLayout.STALL + Vector3(1.6, 0.15, 1.35)
+	jelly.rotation.y = PI
+	jelly.vel = Vector3.ZERO
+	_inspect_face(jelly)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.7).timeout
+	await _shot("/workspace/docs/screenshots/wave1_face.png")
+	print("PETAL_FACE_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_jelly_play() -> void:
+	Settings.reduce_motion = false
+	Clock.running = false
+	camera.snap_home()
+	var id := PetalDecide.choose(
+		"A player is about to pick up a jelly to feel squash, stretch, and bounce. Which species should they handle first?",
+		["bellhelp", "berrypatch", "cirlark"]
+	)
+	print("jelly_play species=%s tier=%s confidence=%s" % [id, PetalDecide.last_tier, PetalDecide.last_confidence])
+	var jelly := ecology.first(id)
+	if jelly == null:
+		jelly = ecology.force_spawn(id)
+	jelly.life = "settler"
+	jelly.leaving = false
+	jelly.reduce_motion = false
+	jelly.tier = 0
+	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
+	jelly.vel = Vector3.ZERO
+	jelly.rotation.y = PI
+	set_tool("hands")
+	held = jelly
+	focus = jelly
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.35).timeout
+	jelly.grab(jelly.global_position + Vector3(1.2, 1.15, 0.1))
+	for _i in 16:
+		jelly._full(0.016)
+	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.28:
+		push_error("jelly play: grab did not lift")
+		get_tree().quit(1)
+		return
+	jelly.set_select(true, true)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/jelly_held.png")
+	jelly.sample_pos.clear()
+	jelly.sample_ms.clear()
+	jelly.sample_pos.append(jelly.global_position)
+	jelly.sample_pos.append(jelly.global_position + Vector3(1.15, 0.85, 0.2))
+	jelly.sample_ms.append(0)
+	jelly.sample_ms.append(140)
+	jelly.release()
+	held = null
+	if jelly.held:
+		push_error("jelly play: release left a held body")
+		get_tree().quit(1)
+		return
+	for _fly in 8:
+		jelly._full(0.016)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 2.6)
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/jelly_air.png")
+	# Fixed overhead pad, not a follow cam: 03's three follow attempts hid the land in crest foliage.
+	var pad := Vector3(-9.4, 0.18, -1.1)
+	_pin_overhead(pad)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	for _land in 36:
+		jelly._full(0.016)
+		if jelly.global_position.y <= 0.12 and jelly.vel.y <= 0.45:
+			break
+	if jelly.held or not jelly.vel.is_finite() or jelly.global_position.y < -0.04 or jelly.global_position.y > 4.0:
+		push_error("jelly play: throw left a broken body")
+		get_tree().quit(1)
+		return
+	print("jelly_play land_y=%s feel=%s" % [jelly.global_position.y, jelly.feel])
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/jelly_land.png")
+	print("JELLY_PLAY_OK")
+	get_tree().quit(0)
+
+func _run_town_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(15.3)
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_tick_town(world_snapshot())
+	_sync_park()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.4, 0), 7.2)
+	await get_tree().create_timer(0.4).timeout
+	await _shot("/workspace/docs/screenshots/town_park.png")
+	show_directory("place")
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/town_parish.png")
+	print("PETAL_TOWN_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_vale_shot() -> void:
+	Settings.reduce_motion = true
+	camera.snap_home()
+	region.pulse(Clock.day, Clock.hour(), _vale_garden())
+	region.send_cart("reedbank", "hollow", "reed", 1)
+	show_directory("vale")
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.5).timeout
+	await _shot("/workspace/docs/screenshots/vale_tab.png")
+	print("PETAL_VALE_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_resident_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = true
+	Clock.set_hour(15.3)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.snap_home()
+	show_directory("people")
+	await get_tree().create_timer(0.4).timeout
+	await _shot("/workspace/docs/screenshots/wave1_residents.png")
+	hud.journal.visible = false
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_sync_park()
+	Clock.set_hour(17.2)
+	Clock.weather = "mist"
+	for id in ["lumen", "bram"]:
+		var person: VegPerson = _person(id)
+		person.has_chore = false
+		person.pause = 0.0
+		var life: Dictionary = parish.lives[id]
+		life["needs"]["hunger"] = 0.7
+		life["needs"]["energy"] = 0.7
+		life["needs"]["social"] = 0.7
+		life["pick_hour"] = -1
+		parish.lives[id] = life
+	Clock.running = false
+	_tick_parish(0.2)
+	Clock.running = true
+	for id in ["lumen", "bram"]:
+		var dest: Vector3 = parish.destination(id)
+		if dest.x == INF:
+			continue
+		dest += _life_offset(id)
+		_person(id).global_position = dest
+		var stay: Array[Vector3] = [dest]
+		_person(id).set_route(stay, true)
+		_person(id).set_activity(parish.label_for(id))
+	_person("bram").say(parish._line("bram", "leisure"))
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.PARK + Vector3(0.4, 0.5, 0.6), 6.4)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/residents_park.png")
+	show_directory("people")
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/residents_directory.png")
+	print("PETAL_RESIDENT_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_kettle_shot() -> void:
+	Settings.reduce_motion = true
+	camera.snap_home()
+	Clock.set_hour(10.0)
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("kettle-shot: stock failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.TEA + Vector3(0, 0.7, -0.6), 4.2)
+	await get_tree().create_timer(0.55).timeout
+	await _shot("/workspace/docs/screenshots/kettle_brew.png")
+	Economy.mill.tick(18.0)
+	if not Economy.carry_tea():
+		push_error("kettle-shot: carry failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	hud.shop.visible = true
+	refresh_panels()
+	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 5.8)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/kettle_crate.png")
+	print("PETAL_KETTLE_SHOT_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:
@@ -7362,6 +8268,16 @@ func _shot(path: String) -> void:
 	DirAccess.make_dir_recursive_absolute("/workspace/docs/screenshots")
 	var err := image.save_png(path)
 	print("SHOT ", path, " ", err, " ", image.get_width(), "x", image.get_height())
+
+func _pin_overhead(point: Vector3) -> void:
+	if camera == null:
+		return
+	camera.pitch = 62.0
+	camera.yaw = 180.0
+	camera.distance = 5.4
+	camera.target = point
+	camera.user_moved = true
+	camera.intro = 1.0
 
 func _opening_plants() -> void:
 	# ponytail: tall enough for the bells to read; ripe bells if Bellhelp should visit on the first day.
@@ -8387,7 +9303,31 @@ func _spawn_people() -> void:
 		add_child(person)
 		person.setup(ContentDB.person(id))
 		people[id] = person
+	_boot_parish()
 	_apply_shift(true)
+
+func _boot_parish() -> void:
+	var defs: Array = []
+	for id in ContentDB.people_order:
+		var row: Dictionary = ContentDB.person(id)
+		row["id"] = id
+		defs.append(row)
+	var lines = JSON.parse_string(FileAccess.get_file_as_string("res://data/dialogue.json"))
+	if typeof(lines) != TYPE_DICTIONARY:
+		lines = {}
+	parish.boot(defs, {
+		"stall": GardenLayout.STALL + Vector3(0, 0, 0.95),
+		"shed": GardenLayout.SHED + Vector3(1.1, 0, -0.6),
+		"tea": GardenLayout.TEA + Vector3(0, 0, -1.15),
+		"hut": GardenLayout.HUT + Vector3(0, 0, -1.05),
+		"foundry": GardenLayout.FOUNDRY + Vector3(0, 0, -0.95),
+		"gate": GardenLayout.GATE,
+		"pond": GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
+		"plots": GardenLayout.cell_center(2, 2),
+		"park": GardenLayout.PARK + Vector3(0.8, 0, 1.15),
+	}, lines)
+	if Trust.has_action("parish_park"):
+		parish.open_park()
 
 func _apply_shift(snap: bool) -> void:
 	# ponytail: mist uses the rain routes; a separate mist round if the rooms should differ.
@@ -8449,17 +9389,21 @@ func _person(id: String) -> VegPerson:
 	return people.get(id)
 
 func _primary_down() -> void:
-	if _over_ui():
+	if _over_ui() or held:
+		return
+	var face := _pick_face()
+	if face:
+		_inspect_face(face)
 		return
 	var hit = _ground_hit()
 	if tool == "hands":
 		var jelly := _pick_jelly()
 		if jelly:
-			var point: Vector3 = hit if hit != null else jelly.global_position
-			point.y = 0.85
+			var point: Vector3 = _hold_point(jelly)
 			jelly.grab(point)
 			held = jelly
 			focus = jelly
+			toast("%s is in your hands." % jelly.display_name)
 			return
 		var person := _pick_person()
 		if person:
@@ -8468,7 +9412,7 @@ func _primary_down() -> void:
 				return
 			person.relation = minf(1.0, person.relation + 0.04)
 			person.belonging = minf(1.0, person.belonging + 0.03)
-			person.say(_greet(person.person_id))
+			person.say(parish.greet(person.person_id, Clock.day))
 			return
 		return
 	if hit == null:
@@ -8478,6 +9422,12 @@ func _primary_down() -> void:
 		return
 	if tool == "home":
 		_place_kit(hit)
+		return
+	if _near_tea(hit):
+		_use_kettle()
+		return
+	if _near_stall(hit):
+		_use_crate()
 		return
 	var cell_id := GardenLayout.world_to_cell(hit)
 	if cell_id.x < 0:
@@ -8666,7 +9616,7 @@ func _pick_jelly() -> Jelly:
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
-	var best_distance := 0.72
+	var best_distance := 8.0
 	for actor in ecology.actors:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly) or not jelly.visible:
@@ -8675,11 +9625,64 @@ func _pick_jelly() -> Jelly:
 		var along := (center - origin).dot(direction)
 		if along < 0.0:
 			continue
-		var distance := origin.distance_to(center) if false else (origin + direction * along).distance_to(center)
+		var distance := (origin + direction * along).distance_to(center)
+		if distance < jelly.hit_radius() and distance < best_distance:
+			best = jelly
+			best_distance = distance
+	return best
+
+func _pick_face() -> Jelly:
+	if camera == null or ecology == null:
+		return null
+	var mouse := get_viewport().get_mouse_position()
+	var origin := camera.project_ray_origin(mouse)
+	var direction := camera.project_ray_normal(mouse)
+	var best: Jelly
+	var best_distance := 0.28
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or not jelly.visible:
+			continue
+		var center := jelly.face_point()
+		var along := (center - origin).dot(direction)
+		if along < 0.0:
+			continue
+		var distance := (origin + direction * along).distance_to(center)
 		if distance < best_distance:
 			best = jelly
 			best_distance = distance
 	return best
+
+func _inspect_face(jelly: Jelly) -> void:
+	if jelly == null or not is_instance_valid(jelly):
+		return
+	if focus != null and focus != jelly and is_instance_valid(focus):
+		focus.clear_inspect()
+	focus = jelly
+	jelly.inspect_face()
+	if camera:
+		camera.pitch = 34.0
+		camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 7.4)
+	bus.note("inspect", jelly.display_name)
+	toast("%s looks back." % jelly.display_name)
+	if hud:
+		hud.show_inspect(_inspect_card(jelly))
+	if audio:
+		audio.play_kind("squish", -18)
+
+func _inspect_card(jelly: Jelly) -> Dictionary:
+	return {
+		"name": jelly.display_name,
+		"mood": jelly.mood,
+		"life": jelly.life,
+		"bond": jelly.bond,
+	}
+
+func _clear_inspect() -> void:
+	if focus != null and is_instance_valid(focus):
+		focus.clear_inspect()
+	if hud:
+		hud.hide_inspect()
 
 func _pick_person() -> VegPerson:
 	var mouse := get_viewport().get_mouse_position()
@@ -8704,14 +9707,32 @@ func _pick_person() -> VegPerson:
 func _over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
+func _hold_point(jelly: Jelly) -> Vector3:
+	var mouse := get_viewport().get_mouse_position()
+	var size := get_viewport().get_visible_rect().size
+	var lift := clampf((1.0 - mouse.y / maxf(size.y, 1.0)) * 2.35, 0.48, 2.05)
+	var hit = _ground_hit()
+	if hit == null:
+		return jelly.global_position + Vector3(0.0, lift, 0.0)
+	var point: Vector3 = hit
+	point.y = lift
+	return point
+
 func _update_highlight() -> void:
 	if held:
-		var hit = _ground_hit()
-		if hit != null:
-			var point: Vector3 = hit
-			point.y = 0.9
-			held.hold_target = point
+		held.hold_target = _hold_point(held)
+	var hover: Jelly = null
+	if tool == "hands" and held == null:
+		hover = _pick_jelly()
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly):
+			continue
+		jelly.set_select(jelly == hover or jelly == held or jelly == focus, jelly == held)
 	if _over_ui():
+		highlight.visible = false
+		return
+	if _pick_face() != null:
 		highlight.visible = false
 		return
 	var hit = _ground_hit()
@@ -8734,9 +9755,20 @@ func _update_status() -> void:
 	hud.set_status(Clock.clock_label(), Clock.weather, Economy.coins, _hover_text(), seed_name)
 
 func _hover_text() -> String:
+	var face := _pick_face()
+	if face:
+		return "%s's face  ·  click" % face.display_name
+	if tool == "hands" or held != null:
+		var jelly: Jelly = held if held != null else _pick_jelly()
+		if jelly:
+			return "%s  ·  %s  ·  %s" % [jelly.display_name, jelly.mood, jelly.feel]
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
+	if _near_tea(hit):
+		return Economy.mill_line(_stall_open(), _tea_worker())
+	if _near_stall(hit) and (Economy.mill.crate_count() > 0 or Economy.mill.pot_count() > 0):
+		return Economy.mill_line(_stall_open(), _tea_worker())
 	var cell_id := GardenLayout.world_to_cell(hit)
 	if cell_id.x < 0:
 		if GardenLayout.pond_distance(hit.x, hit.z) < GardenLayout.POND_RADIUS + 1.2:
@@ -8756,6 +9788,11 @@ func _plot_line(plot: SoilCell) -> String:
 	var line := "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
 	if absf(plot.hue - 0.5) > 0.05 or absf(plot.stature - 1.0) > 0.05 or absf(plot.crop_yield - 1.0) > 0.05:
 		line += "  ·  Mixed."
+	var liked := ecology.rules.likes_label(definition, soil.neighbor_ids(plot))
+	if liked != "":
+		line += "  ·  " + liked
+	if ecology.rules.crowded(definition, soil.count_plant(plot.plant_id)):
+		line += "  ·  Crowded."
 	if plot.moisture < float(definition.get("water_need", 0.3)):
 		return line + "  ·  Needs water."
 	if plot.fertility < float(definition.get("fertility_need", 0.2)):
@@ -8982,6 +10019,9 @@ func _update_creatures(delta: float) -> void:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly):
 			continue
+		if jelly.inspected:
+			jelly.leaving = false
+			jelly.wants_sleep = false
 		var resident := ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident")
 		jelly.wants_sleep = night and resident and not jelly.held
 		if jelly.wants_sleep and jelly.mood != "dizzy" and jelly.mood != "panic":
@@ -9202,6 +10242,8 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 	elif kind == "pet":
 		toast("%s bounces." % jelly.display_name)
 		audio.play_kind("squish", -18)
+	elif kind == "poke":
+		audio.play_kind("squish", -18)
 
 func _farewell_name(text: String) -> String:
 	var slip := " slips back toward the hedge."
@@ -9213,6 +10255,8 @@ func _farewell_name(text: String) -> String:
 	return ""
 
 func _on_ecology(text: String) -> void:
+	if ("hedge" in text) and focus != null and is_instance_valid(focus) and focus.inspected:
+		return
 	toast(text)
 	var nessa := _person("nessa")
 	if "turns back" in text:
@@ -9345,6 +10389,9 @@ func _browse(hours: float) -> void:
 		plot.taken = true
 		plot.eaten_by = jelly.display_name
 		jelly.bite_wait = 4.0
+		jelly.hunger = 1.0
+		if jelly.mood == "hungry":
+			jelly.mood = "content"
 		toast("%s takes a bite." % jelly.display_name)
 
 func _seek_dusk() -> void:
@@ -9776,6 +10823,9 @@ func _feed_plant(species_id: String) -> String:
 		if hour >= 16.0 and hour < 22.0:
 			return "nightlantern"
 		return "peach"
+	var food := ecology.rules.food_of(ContentDB.species_def(species_id))
+	if food != "":
+		return food
 	for req in ContentDB.species_def(species_id).get("requirements", []):
 		if str(req.get("type", "")) == "mature_plant":
 			return str(req.get("plant", ""))
@@ -9883,6 +10933,7 @@ func _check_nessa(world: Dictionary) -> void:
 		nessa.global_position = GardenLayout.GATE
 		nessa.say("A Bellhelp lives here. I brought a notebook and nothing else.")
 		toast("Nessa Pod walked in from the lane.")
+		parish.remember("nessa", "Walked in from the lane.")
 
 func _ask_bram() -> void:
 	var bram := _person("bram")
@@ -10047,6 +11098,127 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 	if nessa.present:
 		nessa.belonging = move_toward(nessa.belonging, 0.75 if ecology.resident_total() > 0 else 0.4, delta * 0.03)
 		nessa.purpose = move_toward(nessa.purpose, 0.8, delta * 0.02)
+	_tick_parish(delta)
+
+func _tick_parish(delta: float) -> void:
+	var hours := (delta * Clock.scale) / 60.0
+	var present := {}
+	var busy := {}
+	var near := {}
+	var spots := {}
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		present[id] = person.present
+		busy[id] = person.has_chore
+		if person.present:
+			spots[id] = person.global_position
+	for id in spots.keys():
+		var best := ""
+		var best_d := 2.2
+		var here: Vector3 = spots[id]
+		for other in spots.keys():
+			if other == id:
+				continue
+			var there: Vector3 = spots[other]
+			var dist := Vector2(here.x - there.x, here.z - there.z).length()
+			if dist < best_d:
+				best_d = dist
+				best = other
+		near[id] = best
+	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
+	var shower := Clock.weather == "rain" and not night
+	var ctx := {
+		"hour": Clock.hour(),
+		"day": Clock.day,
+		"weather": Clock.weather,
+		"night": night,
+		"shower": shower,
+		"present": present,
+		"busy": busy,
+		"near": near,
+		"decide_tier": PetalDecide.last_tier,
+		"decide_confidence": PetalDecide.last_confidence,
+	}
+	var changed: Array = parish.tick(hours, ctx, Callable(self, "_choose_activity"))
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		parish.apply_to(person)
+		if person.present:
+			person.set_activity(parish.label_for(id))
+		else:
+			person.set_activity("")
+		if person.has_chore or not person.present:
+			continue
+		var dest: Vector3 = parish.destination(id)
+		if dest.x == INF:
+			continue
+		dest += _life_offset(str(id))
+		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
+			var route: Array[Vector3] = [dest]
+			person.set_route(route, false)
+	_serve_eat()
+	if Clock.running:
+		for row in changed:
+			var speaker := _person(str(row.get("id", "")))
+			if speaker and speaker.present:
+				speaker.say(str(row.get("text", "")))
+
+func _life_offset(id: String) -> Vector3:
+	match id:
+		"lumen":
+			return Vector3(-1.05, 0, 0.25)
+		"bram":
+			return Vector3(1.1, 0, 0.4)
+		"nessa":
+			return Vector3(0.15, 0, 1.15)
+		_:
+			return Vector3.ZERO
+
+func _serve_eat() -> void:
+	if not Clock.running:
+		return
+	var stall: Vector3 = parish.places.get("stall", Vector3.INF)
+	if stall.x == INF:
+		return
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		if not person.present or str(parish.lives.get(id, {}).get("activity", "")) != "eat":
+			continue
+		if person.global_position.distance_to(stall) > 1.4:
+			continue
+		var crop := ""
+		if str(id) == "lumen":
+			crop = "a peach slice"
+		else:
+			var crop_id := str(person.want)
+			if crop_id == "" or Economy.count(crop_id) < 1:
+				var held: Array[String] = VillageShop.stock()
+				crop_id = held[0] if held.size() > 0 else ""
+			if crop_id != "" and Economy.take(crop_id, 1):
+				Economy.earn(int(ContentDB.plant(crop_id).get("sell_price", 1)))
+				crop = str(ContentDB.plant(crop_id).get("name", crop_id))
+				person.want = ""
+		var line := parish.snack(str(id), crop)
+		if line == "":
+			continue
+		parish.apply_to(person)
+		person.say(line)
+		if crop != "":
+			toast("%s ate %s at the stall." % [person.display_name, crop])
+
+func _choose_activity(question: String, options: Array) -> String:
+	# ponytail: smoke and forced shop/settle choices must not be stolen by a day's pick.
+	if OS.get_environment("PETAL_SMOKE") == "1" or PetalDecide.forced != "":
+		return str(options[0]) if options.size() > 0 else ""
+	return PetalDecide.choose(question, options)
+
+func _lod_actors() -> Array:
+	var actors: Array = []
+	for id in people.keys():
+		actors.append(people[id])
+	for actor in ecology.actors:
+		actors.append(actor)
+	return actors
 
 func _has_young(id: String) -> bool:
 	for actor in ecology.actors:
@@ -10083,6 +11255,14 @@ func _journal_rows(world: Dictionary) -> Array:
 			romance = "Trusts your hands."
 		if status == "breeding" and _has_young(id):
 			romance += " A young one is with them."
+		var hunger := 1.0
+		for actor in ecology.actors:
+			var guest: Jelly = actor
+			if is_instance_valid(guest) and guest.species_id == id:
+				hunger = minf(hunger, guest.hunger)
+		var need := ""
+		if known:
+			need = ecology.rules.need_line(definition, hunger, world, ContentDB.plants)
 		rows.append({
 			"name": definition.get("name", id) if known else "A rumour",
 			"status": status,
@@ -10092,6 +11272,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance": romance,
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
+			"need": need,
 		})
 	if _far_bell_line() != "":
 		rows.append({
@@ -10411,12 +11592,18 @@ func _people_rows(world: Dictionary) -> Array:
 			home = "The research hut"
 		elif id == "nessa" and person.present and int(structures.get("home_kit", 0)) >= 1:
 			home = "A placed home kit"
+		var life: Dictionary = parish.card(id)
+		var state := "not arrived"
+		if person.present:
+			state = str(life.get("state", "at their job"))
 		rows.append({
 			"name": person.display_name,
 			"role": person.role,
 			"home": home,
-			"job": definition.get("job", ""),
-			"state": "not arrived" if not person.present else ("home for the night" if shift.begins_with("night") else "at their job"),
+			"job": _job_line(id, definition),
+			"state": state,
+			"household": str(life.get("household", "")),
+			"motive": str(life.get("motive", "")),
 			"blurb": definition.get("blurb", ""),
 			"present": person.present,
 			"mood": person.mood,
@@ -10424,11 +11611,17 @@ func _people_rows(world: Dictionary) -> Array:
 			"belonging": person.belonging,
 			"purpose": person.purpose,
 			"relation": person.relation,
+			"hunger": float(life.get("hunger", person.hunger)),
+			"social": float(life.get("social", person.social)),
+			"memory": str(life.get("memory", "")),
+			"ties": str(life.get("ties", "")),
 			"unmet": unmet,
 			"can_file": person.present and id == "nessa",
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
+			"can_park": person.present and id == "nessa" and Trust.has_action("parish_road_rumour") and not Trust.has_action("parish_park"),
 			"road_line": _road_card_line() if id == "nessa" else "",
+			"park_line": _park_card_line() if id == "nessa" else "",
 			"join_line": _join_line() if id == "nessa" else "",
 			"parish_bell_line": _east_closer_bell_line() if id == "nessa" else "",
 			"parish_sale_line": _parish_sale_line() if id == "nessa" else "",
@@ -10453,14 +11646,18 @@ func _trust_lines() -> Array:
 
 func _place_stats(world: Dictionary) -> Dictionary:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	SimLod.note_vale(region.fidelity())
 	var stats := SimLod.district_stats.duplicate()
+	stats["households"] = _household_count()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	stats["phase"] = ContentDB.district.get("phase", "A")
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
-	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers()
+	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow")
 	stats["lane_passers"] = _lane_passers()
+	stats["vale_line"] = region.headline()
+	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
 	stats["far_bell_line"] = _far_bell_line()
@@ -10506,6 +11703,10 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["parish_sale_line"] = _parish_sale_line()
 	stats["cross_line"] = _cross_line()
 	stats["want_line"] = _want_line()
+	stats["ecology_line"] = ecology.rules.garden_line(soil.beds(), ContentDB.plants)
+	var habitat_line: String = ecology.rules.habitat_line(soil.beds(), ContentDB.plants)
+	stats["habitat_line"] = habitat_line
+	SimLod.district_stats["habitats"] = habitat_line
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()
@@ -10522,6 +11723,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
+	stats["kettle_line"] = Economy.mill_line(_stall_open(), _tea_worker())
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
 	stats["foundry_demand"] = 1 if Trust.has_action("parish_draft") else 0
 	var notices := Trust.notices()
@@ -10535,6 +11737,25 @@ func _place_stats(world: Dictionary) -> Dictionary:
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
+	_tick_town(world)
+	stats["town_line"] = str(town.stats.get("headline", ""))
+	stats["town_pop"] = int(town.stats.get("town_pop", 0))
+	stats["town_aggregate"] = town.aggregate()
+	stats["town_jobs"] = int(town.stats.get("jobs", 0))
+	stats["town_riders"] = int(town.stats.get("riders", 0))
+	stats["park_demand"] = town.occupancy("grove_park")
+	stats["lane_houses"] = town.occupancy("lane")
+	stats["town_cover"] = town.coverage()
+	stats["town_lines"] = town.page_lines()
+	stats["tiers"] = SimLod.tiers.duplicate()
+	var vale_rows: Array = []
+	var vale_page: Dictionary = region.page()
+	for entry in vale_page.get("settlements", []):
+		var hamlet: Dictionary = entry
+		if bool(hamlet.get("player", false)):
+			continue
+		vale_rows.append("%s · %s · lod %d" % [str(hamlet.get("name", "")), str(hamlet.get("stance", "")), int(hamlet.get("lod", 4))])
+	stats["vale_rows"] = vale_rows
 	return stats
 
 func _stock(world: Dictionary) -> Array:
@@ -10578,6 +11799,18 @@ func _present_people() -> int:
 		if _person(id).present:
 			count += 1
 	return count
+
+func _household_count() -> int:
+	var houses := {}
+	for id in people.keys():
+		var person := _person(id)
+		if person == null or not person.present:
+			continue
+		var house := str(parish.lives.get(id, {}).get("household", id))
+		if house == "":
+			house = str(id)
+		houses[house] = true
+	return houses.size()
 
 func _cycle_seed(step: int) -> void:
 	var ids := Economy.seed_ids()
@@ -10633,6 +11866,9 @@ func _esc() -> void:
 	if photo:
 		_toggle_photo()
 		return
+	if focus != null and is_instance_valid(focus) and focus.inspected:
+		_clear_inspect()
+		return
 	if get_tree().paused:
 		resume()
 	else:
@@ -10646,7 +11882,15 @@ func _debug_text() -> String:
 	var memory := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
 	var frame := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var vram := Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s" % [
+	var look_name := "-"
+	if focus != null and is_instance_valid(focus) and focus.inspected:
+		look_name = focus.display_name
+	var feel_line := tool
+	if held:
+		feel_line = "%s  %s %s" % [tool, held.display_name, held.feel]
+	elif focus:
+		feel_line = "%s  %s %s" % [tool, focus.display_name, focus.feel]
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\n%s\nface %s\nvale %s\n%s\n%s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10656,5 +11900,18 @@ func _debug_text() -> String:
 		str(SimLod.tiers),
 		Clock.clock_label(),
 		Clock.weather,
-		tool,
+		feel_line,
+		look_name,
+		region.headline(),
+		PlayDirector.debug_block(),
+		_parish_debug(),
 	]
+
+func _parish_debug() -> String:
+	var bits: PackedStringArray = PackedStringArray()
+	for id in ContentDB.people_order:
+		var person := _person(id)
+		if person == null or not person.present:
+			continue
+		bits.append("%s %s t%d" % [person.display_name, parish.label_for(id), person.tier])
+	return "\n".join(bits)

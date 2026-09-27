@@ -14,4 +14,4 @@ The software renderer caps non-resident jellies at 4 (8 otherwise). Residents ar
 
 When a jelly becomes relevant again, `grove_view` builds an actor from the species record and places it on a walkable plot. The sim does not depend on the actor existing.
 
-Phase A is the garden. Districts, venues beyond the Petal Stall, and the agent trust ladder are data so later phases can reuse them. They are not a city.
+Phase A is the garden. Petal Vale ticks neighbouring parishes as a persistent macro layer (`data/regions.json`, `scripts/sim/region_sim.gd`). Carts, walkers, and faction choices run at L3/L4. Grove Park is still unbuilt.

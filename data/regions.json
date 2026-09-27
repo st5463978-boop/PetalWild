@@ -1,0 +1,85 @@
+{
+  "id": "petal_vale",
+  "name": "Petal Vale",
+  "note": "Parishes beyond the hedge. They grow, trade carts, share seed, and sometimes hold a crop. This is not a war map.",
+  "crops": ["meadowbell", "peach", "reed", "bramble", "mosspear", "nightlantern"],
+  "home": "hollow",
+  "settlements": [
+    {
+      "id": "hollow",
+      "name": "Hedge Hollow",
+      "faction": "gardeners",
+      "player": true,
+      "q": 0,
+      "r": 0,
+      "specialty": "peach",
+      "need": "reed",
+      "stock": {"peach": 2, "meadowbell": 3, "reed": 1, "bramble": 1, "mosspear": 0, "nightlantern": 0},
+      "hands": 4,
+      "mood": "open"
+    },
+    {
+      "id": "reedbank",
+      "name": "Reedbank",
+      "faction": "weavers",
+      "q": 1,
+      "r": 0,
+      "specialty": "reed",
+      "need": "peach",
+      "stock": {"reed": 6, "peach": 0, "meadowbell": 1, "bramble": 0, "mosspear": 1, "nightlantern": 0},
+      "hands": 5,
+      "mood": "open"
+    },
+    {
+      "id": "mossford",
+      "name": "Mossford",
+      "faction": "loamers",
+      "q": 0,
+      "r": 1,
+      "specialty": "mosspear",
+      "need": "bramble",
+      "stock": {"mosspear": 5, "nightlantern": 3, "peach": 0, "reed": 1, "bramble": 0, "meadowbell": 1},
+      "hands": 4,
+      "mood": "wary"
+    },
+    {
+      "id": "lea",
+      "name": "Bramble Lea",
+      "faction": "caners",
+      "q": -1,
+      "r": 1,
+      "specialty": "bramble",
+      "need": "mosspear",
+      "stock": {"bramble": 6, "peach": 1, "reed": 0, "meadowbell": 2, "mosspear": 0, "nightlantern": 0},
+      "hands": 5,
+      "mood": "open"
+    },
+    {
+      "id": "thatch",
+      "name": "Thatchmere",
+      "faction": "bells",
+      "q": 2,
+      "r": -1,
+      "specialty": "meadowbell",
+      "need": "peach",
+      "stock": {"meadowbell": 7, "peach": 0, "reed": 1, "bramble": 0, "mosspear": 0, "nightlantern": 1},
+      "hands": 3,
+      "mood": "quiet"
+    }
+  ],
+  "factions": [
+    {"id": "gardeners", "name": "Hollow Gardeners", "home": "hollow", "stance": "kin"},
+    {"id": "weavers", "name": "Reedbank Weavers", "home": "reedbank", "stance": "neighbor"},
+    {"id": "loamers", "name": "Mossford Loamers", "home": "mossford", "stance": "wary"},
+    {"id": "caners", "name": "Bramble Lea Caners", "home": "lea", "stance": "neighbor"},
+    {"id": "bells", "name": "Thatchmere Bells", "home": "thatch", "stance": "cool"}
+  ],
+  "routes": [
+    {"a": "hollow", "b": "reedbank", "hours": 8},
+    {"a": "hollow", "b": "mossford", "hours": 10},
+    {"a": "hollow", "b": "lea", "hours": 9},
+    {"a": "reedbank", "b": "mossford", "hours": 12},
+    {"a": "mossford", "b": "lea", "hours": 11},
+    {"a": "reedbank", "b": "thatch", "hours": 14}
+  ]
+}

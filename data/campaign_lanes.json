@@ -1,0 +1,49 @@
+{
+  "baseline": "cursor/dpo-cpu-decide-9cb0",
+  "tag": "petal-campaign-baseline-20260927",
+  "integrate_branch": "petal/08-integration",
+  "lanes": [
+    {
+      "id": "01",
+      "name": "foundation",
+      "branch": "petal/01-foundation",
+      "owns": "soil, plants, growth"
+    },
+    {
+      "id": "02",
+      "name": "ecology",
+      "branch": "petal/02-ecology",
+      "owns": "species, visits, ecology rules"
+    },
+    {
+      "id": "03",
+      "name": "jelly",
+      "branch": "petal/03-jelly",
+      "owns": "jelly body, grab, L0"
+    },
+    {
+      "id": "04",
+      "name": "residents",
+      "branch": "petal/04-residents",
+      "owns": "veg people, rounds, dialogue"
+    },
+    {
+      "id": "05",
+      "name": "economy",
+      "branch": "petal/05-economy",
+      "owns": "stall, prices, coins"
+    },
+    {
+      "id": "06",
+      "name": "town",
+      "branch": "petal/06-town",
+      "owns": "venues, parish rooms, Grove Park"
+    },
+    {
+      "id": "07",
+      "name": "region",
+      "branch": "petal/07-region",
+      "owns": "district, road, land beyond the hedge"
+    }
+  ]
+}
