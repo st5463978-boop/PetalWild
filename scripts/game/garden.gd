@@ -312,10 +312,12 @@ func _tick_shop() -> void:
 	last_shop_hour = hour
 	for id in ["nessa", "bram"]:
 		var person := _person(id)
+		VillageShop.wish(person)
 		var deal := VillageShop.trade(person)
 		if str(deal.get("choice", "")) != "buy":
 			continue
 		var crop := str(deal.get("id", ""))
+		person.want = ""
 		toast("%s bought %s for %d petal." % [person.display_name, ContentDB.plant(crop).get("name", crop), int(deal.get("price", 0))])
 		person.say("I'll take that.")
 		refresh_panels()
@@ -565,6 +567,14 @@ func _lane_busy_line() -> String:
 	if not Trust.has_action("parish_road_rumour") or _lane_passers() < 3:
 		return ""
 	return "The lane is busy past the bench."
+
+func _want_line() -> String:
+	for id in ["nessa", "bram", "lumen"]:
+		var person := _person(id)
+		if person == null or not person.present or person.want == "":
+			continue
+		return "%s is looking for %s." % [person.display_name, ContentDB.plant(person.want).get("name", person.want)]
+	return ""
 
 func _cross_line() -> String:
 	for cell in soil.all():
@@ -7134,6 +7144,49 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+	var pa: SoilCell = soil.get_cell(8, 6)
+	var pb: SoilCell = soil.get_cell(9, 6)
+	var plant_snap: Array = [pa.to_dict(), pb.to_dict()]
+	var plant_muted: Array = []
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "meadowbell" and plot.growth >= 1.0:
+			plant_muted.append([plot, plot.growth])
+			plot.growth = 0.4
+	pa.tilled = true
+	pb.tilled = true
+	pb.plant_id = "meadowbell"
+	pb.growth = 1.0
+	pb.hue = 0.2
+	pb.stature = 0.7
+	pb.crop_yield = 0.6
+	pa.plant_id = ""
+	pa.growth = 0.0
+	pa.hue = 0.5
+	pa.stature = 1.0
+	pa.crop_yield = 1.0
+	Economy.add("meadowbell_seed", 1)
+	Economy.selected_seed = "meadowbell_seed"
+	_plant(pa)
+	if pa.plant_id != "meadowbell" or absf(pa.hue - 0.5) <= 0.02:
+		push_error("smoke: a seed beside a ripe parent stayed the default")
+		get_tree().quit(1)
+		return
+	pa.apply_dict(plant_snap[0])
+	pb.apply_dict(plant_snap[1])
+	for pair in plant_muted:
+		var muted_plot: SoilCell = pair[0]
+		muted_plot.growth = float(pair[1])
+	shopper.present = true
+	shopper.want = ""
+	PetalDecide.forced = "peach"
+	VillageShop.wish(shopper)
+	if shopper.want != "peach" or _want_line() != "Nessa Pod is looking for Peach.":
+		push_error("smoke: nessa did not ask for a peach")
+		get_tree().quit(1)
+		return
+	PetalDecide.forced = ""
+	shopper.want = ""
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -8471,8 +8524,12 @@ func _plant(plot: SoilCell) -> void:
 	plot.taken = false
 	plot.eaten_by = ""
 	plot.moisture = maxf(plot.moisture, 0.45)
+	var mixed := soil.inherit_into(plot)
 	audio.play_kind("plant")
-	toast("Planted %s." % definition.get("name", plant_id))
+	if mixed and (absf(plot.hue - 0.5) > 0.05 or absf(plot.stature - 1.0) > 0.05 or absf(plot.crop_yield - 1.0) > 0.05):
+		toast("Planted %s. A seedling took after both parents." % definition.get("name", plant_id))
+	else:
+		toast("Planted %s." % definition.get("name", plant_id))
 
 func _tend(plot: SoilCell) -> void:
 	if plot.plant_id == "" or plot.growth < 1.0:
@@ -10357,6 +10414,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"hem_stone_far_bell_card_line": _hem_stone_far_bell_card_line() if id == "nessa" else "",
 			"hem_stone_out_bell_card_line": _hem_stone_out_bell_card_line() if id == "nessa" else "",
 			"meadow_stone_strip_card_line": _meadow_stone_strip_card_line() if id == "nessa" else "",
+			"want_line": ("%s is looking for %s." % [person.display_name, ContentDB.plant(person.want).get("name", person.want)]) if person.want != "" else "",
 		})
 	return rows
 
@@ -10422,6 +10480,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["gate_sale_line"] = _gate_sale_line()
 	stats["parish_sale_line"] = _parish_sale_line()
 	stats["cross_line"] = _cross_line()
+	stats["want_line"] = _want_line()
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

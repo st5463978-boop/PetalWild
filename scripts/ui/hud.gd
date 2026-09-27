@@ -148,6 +148,9 @@ func show_place(stats: Dictionary) -> void:
 	var cross_line := str(stats.get("cross_line", ""))
 	if cross_line != "":
 		journal_box.add_child(ThemeKit.label(cross_line, 14))
+	var want_line := str(stats.get("want_line", ""))
+	if want_line != "":
+		journal_box.add_child(ThemeKit.label(want_line, 14))
 	var cane_line := str(stats.get("cane_line", ""))
 	if cane_line != "":
 		journal_box.add_child(ThemeKit.label(cane_line, 14))
@@ -568,6 +571,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	if bool(row.get("present", false)):
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("With you  %.0f" % (float(row.get("relation", 0)) * 100), 13))
+		var want_line := str(row.get("want_line", ""))
+		if want_line != "":
+			box.add_child(ThemeKit.label(want_line, 13))
 	else:
 		for line in row.get("unmet", []):
 			box.add_child(ThemeKit.label("·  " + str(line), 13, ThemeKit.TERRACOTTA))

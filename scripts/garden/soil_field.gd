@@ -92,6 +92,22 @@ func tick(game_minutes: float, weather: String) -> Array:
 		seed_rain = 0.0
 	return died
 
+func inherit_into(plot: SoilCell) -> bool:
+	if plot == null or plot.plant_id == "":
+		return false
+	var parent: SoilCell = null
+	var offsets: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for off in offsets:
+		var neighbor := get_cell(plot.ix + off.x, plot.iz + off.y)
+		if neighbor == null or neighbor.plant_id != plot.plant_id or neighbor.growth < 1.0:
+			continue
+		parent = neighbor
+		break
+	if parent == null:
+		return false
+	PlantGenetics.apply_cell(plot, PlantGenetics.mix(PlantGenetics.from_cell(parent), PlantGenetics.from_cell(_mate(parent)), plot.ix * 10 + plot.iz))
+	return true
+
 func seed_from(plant_id: String) -> String:
 	# ponytail: the bell ring reuses the rain neighbor; a scatter if one chime should fill the row.
 	_mark_sown = true

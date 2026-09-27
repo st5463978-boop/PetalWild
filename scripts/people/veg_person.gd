@@ -404,6 +404,7 @@ func to_state() -> Dictionary:
 		"position": [global_position.x, global_position.y, global_position.z],
 		"has_chore": has_chore,
 		"chore": [chore.x, chore.y, chore.z],
+		"want": want,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -421,3 +422,4 @@ func apply_state(data: Dictionary) -> void:
 	var job = data.get("chore", null)
 	if typeof(job) == TYPE_ARRAY and job.size() == 3:
 		chore = Vector3(float(job[0]), float(job[1]), float(job[2]))
+	want = str(data.get("want", want))

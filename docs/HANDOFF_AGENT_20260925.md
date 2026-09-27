@@ -16,7 +16,7 @@ What is still untrue:
 - Trust levels are specified 0–5. Only 0 and 1 exist. External actions never execute. Legendary is not a rank.
 - Simulation LOD (L0 hero/held through L4 aggregate) is mandatory. See `docs/SIMULATION_LAYERS.md`.
 
-The east-chain construction wave is closed. Road décor is data in `data/road_pieces.json` and `RoadDressing`. Do not add another worn strip. Next work is planting genetics, a creature visit/settle decide, and a villager shop loop.
+The east-chain construction wave is closed. Road décor is data in `data/road_pieces.json` and `RoadDressing`. Do not add another worn strip. Genetics, a creature settle decide, and a villager shop/want loop are in. Grove Park stays unbuilt.
 
 
 ## Build and run

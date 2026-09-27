@@ -19,8 +19,8 @@ This machine has no Vulkan surface. Godot falls back to OpenGL 3 / llvmpipe. Aud
 
 - Title, three slots, settings, licence reader, pause.
 - Orbit camera, tool row, journal, stall, trust page, F3 debug.
-- Soil till, plant, water, fertilise, tend, pond scoop, home kit. Rain or a bell ring can seed a neighbour; the seedling inherits hue, stature and yield from both ripe parents. A mixed bed says A seedling took after both parents.
-- Bellhelp still arrives for three ripe meadowbells. A visitor now settles only after a System-1 decide (offline default: settle). Nessa or Bram can buy produce from the stall tin when a decide says buy.
+- Soil till, plant, water, fertilise, tend, pond scoop, home kit. Rain or a bell ring can seed a neighbour; planting a seed beside a ripe parent of the same crop also copies hue, stature and yield. A mixed bed says A seedling took after both parents.
+- Bellhelp still arrives for three ripe meadowbells. A visitor now settles only after a System-1 decide (offline default: settle). Nessa or Bram can buy produce from the stall tin when a decide says buy. Each names a crop they want (offline: peach for Nessa, bramble for Bram); the parish page and their card say so.
 - Clock (6 game-minutes per real second), golden / mist / rain / night. An even afternoon rains from 11:00 through 16:30. An odd afternoon stays golden, including the capture hour, and the odd night still rains.
 - Data-driven plants and nine jelly species. Bellhelp arrives for 3 mature Meadowbells. A Bellhelp rings, very quietly, once a day while those bells are mature. A visitor rings too. Night, a thin meadow, and a departure stay silent. A reload keeps that day. The ring carries seed from one ripe meadowbell into the next empty tilled bed. The same day does not carry it again. In the rain the bees are down and the bell waits, so that day is not spent. When it rings, six bees come to the new bed until the day turns, and two stay on the farthest other ripe meadowbell. One ripe bed keeps the whole flight. While they work that new bed, the seedling grows faster until the day turns. Rain does not hurry it. The bed readout says the bees are hurrying that seedling. A dry bed still says it needs water. A reload keeps that flight. Once they are on that bed, the parish book notes it once that day. When two bees stay on another ripe bell, the book names that bed too. A resident Dusknip walks to the rung bed while the bees work it. Rain does not pull them there. A quiet day leaves them with Bellhelp. The note spends nothing and does not raise trust. Rain does not write it. Nessa walks to that bed when she writes the line. A filing, a draft, and a departure still come first. A reload keeps that day and that walk.
 - Chain continues through Bulrush, Reedic, Cirlark, Dusknip night-loam, Pegapear, Gushorn.
@@ -75,4 +75,4 @@ Three largest gaps still open, against `docs/reference/petalwild_target_garden_0
 
 ## Next integration
 
-Road décor is data-driven. Next: genetics, creature decide, villager shop. Grove Park stays unbuilt.
+Road décor is data-driven. Genetics, creature settle, and villager shop/wants are in. Grove Park stays unbuilt.
