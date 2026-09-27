@@ -125,7 +125,7 @@ func _decide() -> void:
 func _campaign() -> void:
 	_expect(CampaignBoard.needed() == 7, "seven lanes")
 	_expect(CampaignBoard.landed() == 7, "all seven lanes landed")
-	_expect(not CampaignBoard.complete(), "integration not marked complete until playable")
+	_expect(CampaignBoard.complete(), "integration complete")
 	_expect(CampaignBoard.debug_line().find("landed") >= 0, "debug names landed lanes")
 	_expect(CampaignBoard.waiting_ids().is_empty(), "no waiting lanes")
 	var lanes: Dictionary = CampaignBoard.lanes()

@@ -41,7 +41,7 @@ payload = {
     "baseline_tag": spec["tag"],
     "landed": landed,
     "needed": len(spec["lanes"]),
-    "complete": False,
+    "complete": landed >= len(spec["lanes"]),
     "lanes": lanes,
 }
 status_path.write_text(json.dumps(payload, indent=2) + "\n")

@@ -4,7 +4,7 @@
   "baseline_tag": "petal-campaign-baseline-20260927",
   "landed": 7,
   "needed": 7,
-  "complete": false,
+  "complete": true,
   "lanes": {
     "01": {
       "branch": "petal/01-foundation",

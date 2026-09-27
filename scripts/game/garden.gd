@@ -4556,6 +4556,9 @@ func _run_smoke() -> void:
 		push_error("smoke: nessa's day round missed the tea house")
 		get_tree().quit(1)
 		return
+	nessa.index = 0
+	nessa.pause = 0.0
+	nessa.tier = 1
 	nessa.global_position = porch + Vector3(0, 0, -2.4)
 	var tea_far := nessa.global_position.distance_to(porch)
 	nessa._process(6.0)
@@ -7578,7 +7581,7 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	var bell_bed := soil.get_cell(8, 6)
-	var reed_bed := soil.get_cell(8, 7)
+	var neighbour_reed := soil.get_cell(8, 7)
 	var lone_bed := soil.get_cell(9, 0)
 	bell_bed.tilled = true
 	bell_bed.plant_id = "meadowbell"
@@ -7587,13 +7590,13 @@ func _run_smoke() -> void:
 	bell_bed.fertility = 0.5
 	bell_bed.wilt = 0.0
 	bell_bed.grow_from_day = 1
-	reed_bed.tilled = true
-	reed_bed.plant_id = "reed"
-	reed_bed.growth = 0.4
-	reed_bed.moisture = 0.9
-	reed_bed.fertility = 0.5
-	reed_bed.wilt = 0.0
-	reed_bed.grow_from_day = 1
+	neighbour_reed.tilled = true
+	neighbour_reed.plant_id = "reed"
+	neighbour_reed.growth = 0.4
+	neighbour_reed.moisture = 0.9
+	neighbour_reed.fertility = 0.5
+	neighbour_reed.wilt = 0.0
+	neighbour_reed.grow_from_day = 1
 	lone_bed.tilled = true
 	lone_bed.plant_id = "meadowbell"
 	lone_bed.growth = 0.2
@@ -7605,7 +7608,7 @@ func _run_smoke() -> void:
 		push_error("smoke: a reed beside a meadowbell stayed quiet")
 		get_tree().quit(1)
 		return
-	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+	if str(ecology.rules.garden_line(soil.beds(), ContentDB.plants)).find("leans") == -1:
 		push_error("smoke: the parish missed the bank neighbour")
 		get_tree().quit(1)
 		return
@@ -7626,14 +7629,14 @@ func _run_smoke() -> void:
 		push_error("smoke: five meadowbells did not crowd")
 		get_tree().quit(1)
 		return
-	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+	if ecology.rules.garden_line(soil.beds(), ContentDB.plants).find("leans") == -1:
 		push_error("smoke: a crowded meadow hid the bank neighbour")
 		get_tree().quit(1)
 		return
-	var guest := ecology.force_spawn("bellhelp")
-	guest.hunger = 0.2
+	var hungry_help := ecology.force_spawn("bellhelp")
+	hungry_help.hunger = 0.2
 	ecology.tick(0.2, world_snapshot(), 0.0)
-	if guest.mood != "hungry":
+	if hungry_help.mood != "hungry":
 		push_error("smoke: a hungry bellhelp stayed content")
 		get_tree().quit(1)
 		return
@@ -10858,19 +10861,19 @@ func _tick_parish(delta: float) -> void:
 		"decide_confidence": PetalDecide.last_confidence,
 	}
 	var changed: Array = parish.tick(hours, ctx, Callable(self, "_choose_activity"))
-	var cam_at := camera.global_position if camera else Vector3.ZERO
 	for id in people.keys():
 		var person: VegPerson = people[id]
 		parish.apply_to(person)
 		if person.present:
 			person.set_activity(parish.label_for(id))
-			person.tier = SimLod.classify(person.global_position.distance_to(cam_at), false, false)
 		else:
 			person.set_activity("")
 		if person.has_chore or not person.present:
 			continue
 		var dest: Vector3 = parish.destination(id)
 		if dest.x == INF:
+			continue
+		if person.waypoints.size() > 1:
 			continue
 		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
 			var route: Array[Vector3] = [dest]

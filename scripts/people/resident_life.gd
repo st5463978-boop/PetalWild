@@ -273,8 +273,9 @@ func _meet(ctx: Dictionary) -> void:
 			continue
 		if not bool(present.get(other_id, false)):
 			continue
-		var key := id if id < other_id else other_id
-		var pair := "%s|%s" % [key, other_id if key == id else id]
+		var left := str(id)
+		var key: String = left if left < other_id else other_id
+		var pair := "%s|%s" % [key, other_id if key == left else left]
 		var met: Dictionary = life.get("met_day", {})
 		if int(met.get(pair, -1)) == day:
 			continue

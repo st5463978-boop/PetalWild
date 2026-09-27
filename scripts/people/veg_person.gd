@@ -66,6 +66,7 @@ func setup(definition: Dictionary) -> void:
 func set_route(points: Array[Vector3], snap := true) -> void:
 	waypoints = points
 	index = 0
+	pause = 0.0
 	if snap and not points.is_empty():
 		global_position = points[0]
 

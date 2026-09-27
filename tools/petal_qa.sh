@@ -17,7 +17,7 @@ run_script() {
   local token="$2"
   local log
   log="$(mktemp)"
-  if ! "$BIN" --headless --path "$ROOT" --script "$script" >"$log" 2>&1; then
+  if ! timeout 90s "$BIN" --headless --path "$ROOT" --script "$script" >"$log" 2>&1; then
     cat "$log"
     echo "FAIL $script" >&2
     exit 1
