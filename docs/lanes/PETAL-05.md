@@ -9,7 +9,7 @@ End-to-end hedge-tea chain on the existing stall tin, pouch, and crop harvest: g
 ## Branch / commit
 
 - Branch: `petal/05-economy`
-- Last commit: `109f86c` Treat an empty kettle as waiting for peach.
+- Last commit: `a4d909b` Capture the kettle steam and the stall crate.
 - Baseline: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
 - PR: https://github.com/st5463978-boop/PetalWild/pull/7
 
@@ -58,6 +58,11 @@ End-to-end hedge-tea chain on the existing stall tin, pouch, and crop harvest: g
 - garden `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` — PETAL_SMOKE_OK (kettle wait, steam, porch, crate cap, dusk shut, morning sale, save/load)
 - `tools/smoke.gd` — PETAL_RULES_OK
 - Expected leaks on garden smoke: 3 CanvasItem RIDs, 6 ObjectDB instances
+- `DISPLAY=:1 PETAL_KETTLE_SHOT=1 tools/run.sh res://scenes/garden.tscn` — PETAL_KETTLE_SHOT_OK, frames `docs/screenshots/kettle_brew.png` (porch steam) and `docs/screenshots/kettle_crate.png` (stall Kettle panel: tea on crate, sell 22). Qwen3-VL is not in this tree; it was not used.
+
+## Addendum
+
+Director rules applied: tests are the acceptance evidence; capture complements them. Campaign state file stays with PETAL-08. No PETAL_CAMPAIGN_STATE.md on this branch.
 
 ## Requests
 
