@@ -45,24 +45,28 @@ Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14).
 
 ## Playable
 
-- Parish page (J → Parish, or C / M) shows town folk, lane houses, Grove Park, service cover, and a gate-to-park path as counts.
-- After the road rumour is filed, South Lane occupies houses at LOD 4. No bodies spawn.
-- Nessa then offers Grove Park. Filing it shows a lawn south of the gate and puts visitors on that lawn as a count.
+- Parish page (J → Parish, or C / M) shows town folk, lane houses, Grove Park, service cover, a gate-to-park path, and LOD layers.
+- After the road rumour is filed, South Lane occupies named households. Far away they sit at aggregate; a near camera promotes two to individual records. Nobody is spawned.
+- Nessa then offers Grove Park. Filing it shows a lawn south of the gate. Visitors promote the same way.
 
 ## Interface
 
-- `TownSim.tick({people, residents, quality, road, park, passers, hour, weather, near_park})`
-- `TownSim.aggregate()` distant folk (L4)
+- `TownSim.tick({people, residents, quality, road, park, passers, hour, weather, near_park, near_lane, lane_fill})`
+- Folk records with layers `household` / `district` / `individual`. Hierarchy in `data/town.json`: world → creature.
+- `TownSim.aggregate()`, `individuals()`, `folk_ids()`
 - `Trust.file_park(person_id)` action `parish_park`
-- `SimLod.note_aggregate(n)` writes `tiers["4"]`
-- Save key `town`
+- `SimLod.note_town(individuals, distant)`
+- Save key `town` includes folk ids so promote/demote round-trips
+- `PETAL_TOWN_SHOT=1` captures `docs/screenshots/town_park.png` and `town_parish.png`
 
 ## Tests
 
-- `tests/test_town.gd` → `TOWN_OK`
+- `tests/test_town.gd` → `TOWN_OK` (includes promote/demote id stability)
 - `tests/test_systems.gd` → `SYSTEMS_OK`
 - `tools/smoke.gd` → `PETAL_RULES_OK`
 - `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_SMOKE_OK`
+- `DISPLAY=:1 PETAL_TOWN_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_TOWN_SHOT_OK`
+- Qwen3-VL assessment path is not operational here (CPU decide only). Frames were read directly.
 - `tests/smoke.gd` still parse-fails on this tree (Variant `:=`); not this lane.
 
 ## Blockers

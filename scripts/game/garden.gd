@@ -73,6 +73,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_TOWN_SHOT") == "1":
+		await _run_town_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -970,6 +973,7 @@ func _tick_town(world: Dictionary) -> void:
 		"hour": Clock.hour(),
 		"weather": Clock.weather,
 		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
+		"near_lane": cam_at.distance_to(GardenLayout.GATE) < 14.0,
 	}
 	if bool(ctx["road"]) and not town.chose_lane:
 		ctx["lane_fill"] = PetalDecide.choose(
@@ -977,7 +981,7 @@ func _tick_town(world: Dictionary) -> void:
 			["fill", "sparse"]
 		)
 	town.tick(ctx)
-	SimLod.note_aggregate(town.aggregate())
+	SimLod.note_town(town.individuals(), town.aggregate())
 	_sync_park()
 
 func _sync_park() -> void:
@@ -7421,6 +7425,23 @@ func _run_capture() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_town_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(15.3)
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_tick_town(world_snapshot())
+	_sync_park()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.4, 0), 7.2)
+	await get_tree().create_timer(0.4).timeout
+	await _shot("/workspace/docs/screenshots/town_park.png")
+	show_directory("place")
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/town_parish.png")
+	print("PETAL_TOWN_SHOT_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:

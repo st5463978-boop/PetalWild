@@ -185,6 +185,7 @@ func _park(parent: Node3D) -> void:
 	sign.font_size = 48
 	sign.pixel_size = 0.004
 	sign.position = Vector3(0, 1.15, 0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sign.shaded = false
 	sign.modulate = Color("#8d6a45")
 	sign.outline_modulate = Color("2a2118")
