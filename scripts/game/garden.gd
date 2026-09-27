@@ -80,6 +80,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_KETTLE_SHOT") == "1":
+		await _run_kettle_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -152,6 +155,7 @@ func _process(delta: float) -> void:
 		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
 		_bee_growth(minutes / 60.0)
+		_tick_mill(minutes)
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
@@ -273,7 +277,7 @@ func refresh_panels() -> void:
 	else:
 		hud.show_journal(_journal_rows(world), events, ecology.resident_total(), _bite_lines())
 	if hud.shop.visible:
-		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open())
+		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open(), _mill_row())
 
 func _stall_open() -> bool:
 	var h := Clock.hour()
@@ -914,6 +918,130 @@ func sell(plant_id: String) -> void:
 	if _lane_passers() > 0:
 		Trust.file_lane_sale("lumen")
 	refresh_panels()
+
+func stock_kettle() -> void:
+	if not Economy.stock_kettle():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Peach and meadowbell went into the kettle.")
+	var nessa := _person("nessa")
+	if nessa != null and nessa.present:
+		nessa.say("I will watch the kettle.")
+	_sync_mill()
+	refresh_panels()
+
+func carry_tea() -> void:
+	if not Economy.carry_tea():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Hedge tea sat down on the crate.")
+	_person("lumen").say("The crate has a cup.")
+	_sync_mill()
+	refresh_panels()
+
+func sell_tea() -> void:
+	if not _stall_open():
+		_stall_shut()
+		return
+	var extra := 1 if _lane_passers() > 0 else 0
+	var price := Economy.sell_tea()
+	if price <= 0:
+		toast("The crate has no tea.")
+		return
+	if extra > 0:
+		Economy.earn(extra)
+		Trust.file_lane_sale("lumen")
+	audio.play_kind("coin")
+	toast("Sold hedge tea for %d petal." % (price + extra))
+	_person("lumen").say("A cup for the lane.")
+	_sync_mill()
+	refresh_panels()
+
+func _tick_mill(minutes: float) -> void:
+	if Economy.mill.tick(minutes):
+		toast("The kettle finished a cup.")
+		_person("lumen").say("I can smell the tea.")
+	_try_carry()
+	_sync_mill()
+
+func _try_carry() -> void:
+	if Economy.mill.pot_count() < 1:
+		return
+	if Economy.mill.crate_count() >= int(Economy.mill.recipe().get("crate_cap", 3)):
+		return
+	if not _tea_worker():
+		return
+	var choice := PetalDecide.choose(
+		"Nessa has steeped hedge tea. Carry it to the stall crate, or let it sit?",
+		["carry", "wait"]
+	)
+	if choice != "carry":
+		return
+	if not Economy.carry_tea():
+		return
+	toast("Nessa carried hedge tea to the crate.")
+	var nessa := _person("nessa")
+	nessa.say("The tea is on the crate.")
+	if not nessa.has_chore:
+		nessa.chore = GardenLayout.STALL
+		nessa.has_chore = true
+
+func _tea_worker() -> bool:
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present:
+		return false
+	if nessa_filing or nessa_drafting or nessa_farewell or nessa_bees:
+		return false
+	return _stall_open()
+
+func _near_tea(hit: Vector3) -> bool:
+	return Vector2(hit.x - GardenLayout.TEA.x, hit.z - GardenLayout.TEA.z).length() < 1.45
+
+func _near_stall(hit: Vector3) -> bool:
+	return Vector2(hit.x - GardenLayout.STALL.x, hit.z - GardenLayout.STALL.z).length() < 1.55
+
+func _use_kettle() -> void:
+	if Economy.mill.brewing() or Economy.mill.pot_count() > 0:
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	stock_kettle()
+
+func _use_crate() -> void:
+	if Economy.mill.pot_count() > 0:
+		carry_tea()
+		return
+	if Economy.mill.crate_count() > 0:
+		sell_tea()
+		return
+	toast(Economy.mill_line(_stall_open(), _tea_worker()))
+
+func _sync_mill() -> void:
+	var steaming := Economy.mill.brewing()
+	for node in get_tree().get_nodes_in_group("parish_steam"):
+		node.visible = steaming
+	var cups := Economy.mill.crate_count() > 0
+	for node in get_tree().get_nodes_in_group("parish_cup"):
+		node.visible = cups
+
+func _mill_row() -> Dictionary:
+	return {
+		"line": Economy.mill_line(_stall_open(), _tea_worker()),
+		"can_stock": Economy.mill.can_stock(Economy.bag),
+		"can_carry": Economy.mill.pot_count() > 0 and Economy.mill.crate_count() < int(Economy.mill.recipe().get("crate_cap", 3)),
+		"crate": Economy.mill.crate_count(),
+		"price": Economy.mill.price() + (1 if _lane_passers() > 0 else 0),
+	}
+
+func _job_line(id: String, definition: Dictionary) -> String:
+	if id == "nessa" and Economy.mill.brewing():
+		return "Watches the kettle"
+	if id == "nessa" and Economy.mill.pot_count() > 0:
+		return "Carries tea to the crate"
+	if id == "lumen" and Economy.mill.crate_count() > 0:
+		return "Keeps the tea crate"
+	return str(definition.get("job", ""))
 
 func accept_lumen() -> void:
 	if Trust.lumen_proposal_day == Clock.day:
@@ -1708,6 +1836,7 @@ func apply_state(data: Dictionary) -> void:
 	_sync_plants()
 	_refresh_soil_colors()
 	road.sync(Trust.has_action("parish_road_rumour"))
+	_sync_mill()
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -7371,6 +7500,117 @@ func _run_smoke() -> void:
 		return
 	if not _smoke_jelly_feel():
 		return
+	Economy.mill.reset()
+	while Economy.count("peach") > 0:
+		Economy.take("peach", 1)
+	while Economy.count("meadowbell") > 0:
+		Economy.take("meadowbell", 1)
+	_sync_mill()
+	var mill_peach := Economy.count("peach")
+	var mill_bell := Economy.count("meadowbell")
+	var mill_tin := Economy.coins
+	if Economy.mill_line(true, false) != "Kettle waits for peach.":
+		push_error("smoke: an empty kettle hid the missing peach")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	if Economy.mill_line(true, false) != "Kettle waits for meadowbell.":
+		push_error("smoke: the kettle did not wait for a bell")
+		get_tree().quit(1)
+		return
+	Economy.add("meadowbell", 1)
+	if Economy.mill_line(true, false) != "The kettle is quiet.":
+		push_error("smoke: a ready kettle still waited")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	if not Economy.stock_kettle() or Economy.mill.brew != "hedge_tea" or Economy.count("peach") != mill_peach or Economy.count("meadowbell") != mill_bell:
+		push_error("smoke: the kettle did not take the fruit")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var steam_on := 0
+	for node in get_tree().get_nodes_in_group("parish_steam"):
+		if node.visible:
+			steam_on += 1
+	if steam_on < 1 or Economy.mill_line(true, false) != "The kettle is brewing hedge tea.":
+		push_error("smoke: the kettle did not steam")
+		get_tree().quit(1)
+		return
+	if not Economy.mill.tick(18.0) or Economy.mill.pot_count() != 1:
+		push_error("smoke: the kettle did not finish a cup")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	if Economy.mill_line(true, false) != "Tea is waiting on the porch.":
+		push_error("smoke: the cup did not wait on the porch")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() != 1:
+		push_error("smoke: tea did not reach the crate")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var cups_on := 0
+	for node in get_tree().get_nodes_in_group("parish_cup"):
+		if node.visible:
+			cups_on += 1
+	if cups_on < 1:
+		push_error("smoke: the crate hid the cup")
+		get_tree().quit(1)
+		return
+	for _cup in 2:
+		Economy.add("peach", 1)
+		Economy.add("meadowbell", 1)
+		if not Economy.stock_kettle():
+			push_error("smoke: the kettle refused a later cup")
+			get_tree().quit(1)
+			return
+		Economy.mill.tick(18.0)
+		if not Economy.carry_tea():
+			push_error("smoke: the crate refused a later cup")
+			get_tree().quit(1)
+			return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	Economy.stock_kettle()
+	Economy.mill.tick(18.0)
+	if Economy.mill_line(true, true) != "The crate is full." or Economy.carry_tea():
+		push_error("smoke: a full crate still took tea")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	var shut_tea := Economy.coins
+	var shut_crate := Economy.mill.crate_count()
+	sell_tea()
+	if Economy.coins != shut_tea or Economy.mill.crate_count() != shut_crate:
+		push_error("smoke: tea sold after dusk")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	sell_tea()
+	if Economy.coins < mill_tin + 22 or Economy.mill.crate_count() != 2:
+		push_error("smoke: morning tea did not pay")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() != 3 or Economy.mill.pot_count() != 0:
+		push_error("smoke: selling a cup did not free the crate")
+		get_tree().quit(1)
+		return
+	if str(_place_stats(world_snapshot()).get("kettle_line", "")) != "Hedge tea sits on the crate.":
+		push_error("smoke: the parish page hid the crate")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the kettle did not save")
+		get_tree().quit(1)
+		return
+	Economy.mill.reset()
+	apply_state(SaveGame.read_slot(1))
+	if Economy.mill.crate_count() != 3 or Economy.mill.brew != "":
+		push_error("smoke: the kettle did not reload")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -7506,6 +7746,7 @@ func _lamps() -> void:
 		var sign := node as Label3D
 		if sign:
 			sign.text = sign_text
+	_sync_mill()
 	var room_glow := 1.15 if night else 0.0
 	for node in get_tree().get_nodes_in_group("parish_room"):
 		var house_lamp := node as OmniLight3D
@@ -7572,6 +7813,35 @@ func _run_capture() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_kettle_shot() -> void:
+	Settings.reduce_motion = true
+	camera.snap_home()
+	Clock.set_hour(10.0)
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("kettle-shot: stock failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.TEA + Vector3(0, 0.7, -0.6), 4.2)
+	await get_tree().create_timer(0.55).timeout
+	await _shot("/workspace/docs/screenshots/kettle_brew.png")
+	Economy.mill.tick(18.0)
+	if not Economy.carry_tea():
+		push_error("kettle-shot: carry failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	hud.shop.visible = true
+	refresh_panels()
+	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 5.8)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/kettle_crate.png")
+	print("PETAL_KETTLE_SHOT_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:
@@ -8722,6 +8992,12 @@ func _primary_down() -> void:
 	if tool == "home":
 		_place_kit(hit)
 		return
+	if _near_tea(hit):
+		_use_kettle()
+		return
+	if _near_stall(hit):
+		_use_crate()
+		return
 	var cell_id := GardenLayout.world_to_cell(hit)
 	if cell_id.x < 0:
 		toast("The beds are inside the frames.")
@@ -9057,6 +9333,10 @@ func _hover_text() -> String:
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
+	if _near_tea(hit):
+		return Economy.mill_line(_stall_open(), _tea_worker())
+	if _near_stall(hit) and (Economy.mill.crate_count() > 0 or Economy.mill.pot_count() > 0):
+		return Economy.mill_line(_stall_open(), _tea_worker())
 	var cell_id := GardenLayout.world_to_cell(hit)
 	if cell_id.x < 0:
 		if GardenLayout.pond_distance(hit.x, hit.z) < GardenLayout.POND_RADIUS + 1.2:
@@ -10837,7 +11117,7 @@ func _people_rows(world: Dictionary) -> Array:
 			"name": person.display_name,
 			"role": person.role,
 			"home": home,
-			"job": definition.get("job", ""),
+			"job": _job_line(id, definition),
 			"state": state,
 			"household": str(life.get("household", "")),
 			"motive": str(life.get("motive", "")),
@@ -10951,6 +11231,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_afternoons"] = lane_afternoon_days.size()
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
+	stats["kettle_line"] = Economy.mill_line(_stall_open(), _tea_worker())
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
 	stats["foundry_demand"] = 1 if Trust.has_action("parish_draft") else 0
 	var notices := Trust.notices()

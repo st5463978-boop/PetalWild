@@ -45,7 +45,7 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   click a face   Space time   F8 play   J journal   B stall", 14, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   B stall", 13, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
 	hint_label.offset_left = -420
@@ -176,6 +176,9 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Petal Stall demand  %s" % str(stats.get("stall_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Potting Shed demand  %s" % str(stats.get("shed_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Hedge Tea House demand  %s" % str(stats.get("tea_demand", 0)), 16))
+	var kettle_line := str(stats.get("kettle_line", ""))
+	if kettle_line != "":
+		journal_box.add_child(ThemeKit.label(kettle_line, 16))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
@@ -243,7 +246,7 @@ func show_place(stats: Dictionary) -> void:
 	var tiers = stats.get("tiers", {})
 	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0)], 14))
 
-func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true) -> void:
+func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true, mill: Dictionary = {}) -> void:
 	_clear(shop_box)
 	shop_box.add_child(ThemeKit.title("Petal Stall", 22))
 	if stall_open:
@@ -264,6 +267,24 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: b
 		shop_box.add_child(button)
 		if lock != "" and bool(item.get("locked", false)):
 			shop_box.add_child(ThemeKit.label(lock, 12, ThemeKit.TERRACOTTA))
+	shop_box.add_child(ThemeKit.title("Kettle", 16))
+	shop_box.add_child(ThemeKit.label(str(mill.get("line", "The kettle is quiet.")), 14))
+	var brew := Button.new()
+	brew.text = "Stock the kettle  ·  peach + meadowbell"
+	brew.disabled = not bool(mill.get("can_stock", false))
+	brew.pressed.connect(func(): host.stock_kettle())
+	shop_box.add_child(brew)
+	var carry := Button.new()
+	carry.text = "Carry tea to the crate"
+	carry.disabled = not bool(mill.get("can_carry", false))
+	carry.pressed.connect(func(): host.carry_tea())
+	shop_box.add_child(carry)
+	var tea := Button.new()
+	tea.text = "Sell hedge tea  ·  %d  (%d)" % [int(mill.get("price", 22)), int(mill.get("crate", 0))]
+	tea.disabled = not stall_open or int(mill.get("crate", 0)) <= 0
+	if stall_open:
+		tea.pressed.connect(func(): host.sell_tea())
+	shop_box.add_child(tea)
 	shop_box.add_child(ThemeKit.title("Sell", 16))
 	var any := false
 	for item in produce:
