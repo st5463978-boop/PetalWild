@@ -19,8 +19,9 @@ func boot(creature_folder: Node3D) -> void:
 	for id in ContentDB.species_order:
 		states[id] = "rumoured"
 
-func tick(delta: float, world: Dictionary) -> void:
+func tick(delta: float, world: Dictionary, hours := 0.0) -> void:
 	_prune()
+	_needs(hours, world)
 	for actor in actors:
 		if not is_instance_valid(actor):
 			continue
@@ -80,6 +81,58 @@ func tick(delta: float, world: Dictionary) -> void:
 			continue
 		_promote(jelly, definition)
 	_romance(world)
+
+func taste_cart(crop: String, from_name: String) -> String:
+	# ponytail: a vale cart of their food fills them a little; a second crop if a parish sends mixed loads.
+	var who := ""
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if jelly.leaving or jelly.held:
+			continue
+		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+		if rules.food_of(definition) != crop:
+			continue
+		jelly.hunger = minf(1.0, jelly.hunger + 0.45)
+		if jelly.mood == "hungry":
+			jelly.mood = "content"
+		if who == "":
+			who = jelly.display_name
+	if who == "":
+		return ""
+	var crop_name := str(ContentDB.plant(crop).get("name", crop))
+	var text := "%s tasted the %s from %s." % [who, crop_name, from_name]
+	event_happened.emit(text)
+	return text
+
+func feed(jelly: Jelly) -> void:
+	if jelly == null or not is_instance_valid(jelly):
+		return
+	jelly.hunger = 1.0
+	if jelly.mood == "hungry":
+		jelly.mood = "content"
+
+func _needs(hours: float, world: Dictionary) -> void:
+	# ponytail: hunger follows game hours so a smoke tick of 0.2s does not starve them.
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if hours > 0.0 and not jelly.held:
+			jelly.hunger = maxf(0.0, jelly.hunger - hours * 0.12)
+		if jelly.held or jelly.leaving:
+			continue
+		if jelly.mood == "panic" or jelly.mood == "dizzy" or jelly.mood == "playful":
+			continue
+		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+		var restless := rules.restless_line(definition, world.get("plant_counts", {}), ContentDB.plants)
+		if jelly.hunger < 0.28:
+			jelly.mood = "hungry"
+		elif restless != "":
+			jelly.mood = "restless"
+		elif jelly.mood == "hungry" or jelly.mood == "restless":
+			jelly.mood = "content"
 
 func try_promote(jelly: Jelly) -> void:
 	if jelly == null or not is_instance_valid(jelly):
@@ -215,9 +268,10 @@ func _promote(jelly: Jelly, definition: Dictionary) -> void:
 		_raise(jelly.species_id, "settler")
 		event_happened.emit("%s is settling." % name)
 	elif jelly.life == "visitor" and jelly.site_time > 18.0:
-		var choice := PetalDecide.choose(
+		var choice: String = PetalDecide.choose(
 			"%s has visited. The garden still fits. Settle or keep visiting?" % name,
-			["settle", "keep visiting"]
+			["settle", "keep visiting"],
+			"settle %s" % jelly.species_id
 		)
 		if choice != "settle":
 			return
@@ -288,6 +342,44 @@ func _count(id: String) -> int:
 func _resident_count(id: String) -> int:
 	return int(resident_counts().get(id, 0))
 
+func bump() -> void:
+	_prune()
+	var n := actors.size()
+	for i in n:
+		var a: Jelly = actors[i]
+		if not is_instance_valid(a) or a.tier >= 2:
+			continue
+		for j in range(i + 1, n):
+			var b: Jelly = actors[j]
+			if not is_instance_valid(b) or b.tier >= 2:
+				continue
+			if a.held and b.held:
+				continue
+			var split: Dictionary = JellyFeel.separate(
+				a.global_position,
+				a.touch_radius(),
+				a.vel,
+				a.held,
+				b.global_position,
+				b.touch_radius(),
+				b.vel,
+				b.held
+			)
+			if not bool(split["hit"]):
+				continue
+			var a_pos: Vector3 = split["a_pos"]
+			var b_pos: Vector3 = split["b_pos"]
+			var a_vel: Vector3 = split["a_vel"]
+			var b_vel: Vector3 = split["b_vel"]
+			a.global_position = a_pos
+			b.global_position = b_pos
+			a.vel = a_vel
+			b.vel = b_vel
+			if not a.held:
+				a.ripple = maxf(a.ripple, 0.25)
+			if not b.held:
+				b.ripple = maxf(b.ripple, 0.25)
+
 func _prune() -> void:
 	var keep: Array = []
 	for actor in actors:
@@ -330,6 +422,7 @@ func apply_state(data: Dictionary) -> void:
 		jelly.bond = float(entry.get("bond", 0.1))
 		jelly.mood = str(entry.get("mood", "content"))
 		jelly.site_time = float(entry.get("site_time", 0.0))
+		jelly.hunger = float(entry.get("hunger", 1.0))
 		jelly.bite_wait = float(entry.get("bite_wait", 2.0))
 		jelly.leaving = bool(entry.get("leaving", false))
 		jelly.young = bool(entry.get("young", false))
