@@ -59,6 +59,78 @@
       "Hmph. That's a decent crumb structure."
     ]
   },
+  "lumen": {
+    "greeting": [
+      "The trays are labelled. Ask before you spend the tin.",
+      "Seeds on the left. Patience is not for sale."
+    ],
+    "eat": [
+      "I keep a peach slice behind the till. Don't tell Bram."
+    ],
+    "social": [
+      "Sit. The trays can wait one cup."
+    ],
+    "leisure": [
+      "A turn past the porch, then back to the cloth."
+    ],
+    "home": [
+      "The room behind the stall is enough."
+    ],
+    "shelter": [
+      "The awning holds. The tin stays put."
+    ],
+    "work": [
+      "The stall is open. Ask before you spend."
+    ]
+  },
+  "bram": {
+    "greeting": [
+      "Mind the frames. The soil remembers feet.",
+      "The stall is loud. The beds were quieter."
+    ],
+    "eat": [
+      "I'll take a bramble if the tin has one."
+    ],
+    "social": [
+      "Tea, then the driest bed."
+    ],
+    "leisure": [
+      "The south lawn is honest. The stall is not."
+    ],
+    "home": [
+      "The shed will do."
+    ],
+    "shelter": [
+      "Rain on the beds. I will wait it."
+    ],
+    "work": [
+      "That bed is thirsty. I will walk it."
+    ]
+  },
+  "nessa": {
+    "greeting": [
+      "I am only writing what the garden already did.",
+      "A Bellhelp lives here. I brought a notebook and nothing else."
+    ],
+    "eat": [
+      "Peach, if the stall has it. Then back to the gate."
+    ],
+    "social": [
+      "Tea, and a name for the book if anyone new walked in."
+    ],
+    "leisure": [
+      "The porch, then the gate. The book stays shut."
+    ],
+    "home": [
+      "The hut desk is enough for the night."
+    ],
+    "shelter": [
+      "Rain. The notes wait."
+    ],
+    "work": [
+      "I am watching who arrives."
+    ]
+  },
   "oshi": {
     "greeting": [
       "I only write down what the garden has already done.",

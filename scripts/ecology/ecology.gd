@@ -19,8 +19,9 @@ func boot(creature_folder: Node3D) -> void:
 	for id in ContentDB.species_order:
 		states[id] = "rumoured"
 
-func tick(delta: float, world: Dictionary) -> void:
+func tick(delta: float, world: Dictionary, hours := 0.0) -> void:
 	_prune()
+	_needs(hours, world)
 	for actor in actors:
 		if not is_instance_valid(actor):
 			continue
@@ -80,6 +81,27 @@ func tick(delta: float, world: Dictionary) -> void:
 			continue
 		_promote(jelly, definition)
 	_romance(world)
+
+func _needs(hours: float, world: Dictionary) -> void:
+	# ponytail: hunger follows game hours so a smoke tick of 0.2s does not starve them.
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if hours > 0.0 and not jelly.held:
+			jelly.hunger = maxf(0.0, jelly.hunger - hours * 0.12)
+		if jelly.held or jelly.leaving:
+			continue
+		if jelly.mood == "panic" or jelly.mood == "dizzy" or jelly.mood == "playful":
+			continue
+		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+		var restless := rules.restless_line(definition, world.get("plant_counts", {}), ContentDB.plants)
+		if jelly.hunger < 0.28:
+			jelly.mood = "hungry"
+		elif restless != "":
+			jelly.mood = "restless"
+		elif jelly.mood == "hungry" or jelly.mood == "restless":
+			jelly.mood = "content"
 
 func try_promote(jelly: Jelly) -> void:
 	if jelly == null or not is_instance_valid(jelly):
@@ -215,9 +237,10 @@ func _promote(jelly: Jelly, definition: Dictionary) -> void:
 		_raise(jelly.species_id, "settler")
 		event_happened.emit("%s is settling." % name)
 	elif jelly.life == "visitor" and jelly.site_time > 18.0:
-		var choice := PetalDecide.choose(
+		var choice: String = PetalDecide.choose(
 			"%s has visited. The garden still fits. Settle or keep visiting?" % name,
-			["settle", "keep visiting"]
+			["settle", "keep visiting"],
+			"settle %s" % jelly.species_id
 		)
 		if choice != "settle":
 			return
@@ -368,6 +391,7 @@ func apply_state(data: Dictionary) -> void:
 		jelly.bond = float(entry.get("bond", 0.1))
 		jelly.mood = str(entry.get("mood", "content"))
 		jelly.site_time = float(entry.get("site_time", 0.0))
+		jelly.hunger = float(entry.get("hunger", 1.0))
 		jelly.bite_wait = float(entry.get("bite_wait", 2.0))
 		jelly.leaving = bool(entry.get("leaving", false))
 		jelly.young = bool(entry.get("young", false))

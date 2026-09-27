@@ -7,8 +7,13 @@
     "voice": "Precise, warm, proud of the trays.",
     "home": "The room behind Petal Stall",
     "job": "Keeps Petal Stall",
+    "household": "stall house",
+    "motive": "Keep the trays honest and the tin unspent.",
     "starts_present": true,
-    "blurb": "A tall leek in a terracotta apron and seed-frame spectacles. She will not spend the stall tin unless you say so."
+    "blurb": "A tall leek in a terracotta apron and seed-frame spectacles. She will not spend the stall tin unless you say so.",
+    "schedule": {"dawn": "home", "day": "work", "dusk": "leisure", "night": "home"},
+    "places": {"home": "stall", "work": "stall", "leisure": "tea", "eat": "stall", "social": "tea", "rest": "stall", "shelter": "stall"},
+    "relations": {"bram": 0.4, "nessa": 0.22}
   },
   {
     "id": "bram",
@@ -18,8 +23,13 @@
     "voice": "Low, dry, fond of the beds and suspicious of juggling.",
     "home": "The potting shed",
     "job": "Walks the plots",
+    "household": "shed house",
+    "motive": "Keep the beds wet enough and leave a kept cane alone.",
     "starts_present": true,
-    "blurb": "A stout beet with a leaf hat and muddy boots. He thinks the stall is loud. He is usually right about the soil."
+    "blurb": "A stout beet with a leaf hat and muddy boots. He thinks the stall is loud. He is usually right about the soil.",
+    "schedule": {"dawn": "work", "day": "work", "dusk": "leisure", "night": "home"},
+    "places": {"home": "shed", "work": "plots", "leisure": "tea", "eat": "stall", "social": "tea", "rest": "shed", "shelter": "shed"},
+    "relations": {"lumen": 0.35, "nessa": 0.18}
   },
   {
     "id": "nessa",
@@ -29,8 +39,13 @@
     "voice": "Quick, curious, writes everything down.",
     "home": "Not settled yet",
     "job": "Watches who arrives",
+    "household": "lane house",
+    "motive": "Write what the garden already did, and file nothing that leaves.",
     "starts_present": false,
     "blurb": "A small pea with a vine pack and a parish notebook. She arrives when a Bellhelp resides and a home kit is set.",
+    "schedule": {"dawn": "work", "day": "work", "dusk": "leisure", "night": "home"},
+    "places": {"home": "hut", "work": "gate", "leisure": "tea", "eat": "stall", "social": "tea", "rest": "hut", "shelter": "tea"},
+    "relations": {"lumen": 0.2, "bram": 0.16},
     "arrive": [
       {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
       {"type": "structure", "id": "home_kit", "min": 1, "label": "A placed home kit"}
