@@ -68,7 +68,7 @@ func _inspect_card(theme: Theme) -> void:
 	inspect_panel.offset_left = 16
 	inspect_panel.offset_top = 92
 	inspect_panel.offset_right = 292
-	inspect_panel.offset_bottom = 268
+	inspect_panel.offset_bottom = 340
 	add_child(inspect_panel)
 	inspect_box = VBoxContainer.new()
 	inspect_box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -88,7 +88,15 @@ func show_inspect(row: Dictionary) -> void:
 	inspect_box.add_child(ThemeKit.label("Mood  ·  %s" % str(row.get("mood", "")), 14))
 	inspect_box.add_child(ThemeKit.label("Bond  ·  %d%%" % int(float(row.get("bond", 0.0)) * 100.0), 14))
 	inspect_box.add_child(ThemeKit.label(str(row.get("life", "")).capitalize(), 13, ThemeKit.MOSS_DEEP))
+	var hunger := float(row.get("hunger", 1.0))
+	if hunger < 0.28:
+		inspect_box.add_child(ThemeKit.label("Hungry  ·  wants %s" % str(row.get("food", "food")), 13, ThemeKit.TERRACOTTA))
 	inspect_box.add_child(ThemeKit.label("The face looks back. Esc lets go.", 12))
+	if bool(row.get("can_feed", false)):
+		var feed := Button.new()
+		feed.text = "Feed from the pouch"
+		feed.pressed.connect(func(): host.feed_inspected())
+		inspect_box.add_child(feed)
 
 func hide_inspect() -> void:
 	if inspect_panel:
@@ -176,6 +184,12 @@ func show_place(stats: Dictionary) -> void:
 	var habitat_line := str(stats.get("habitat_line", ""))
 	if habitat_line != "":
 		journal_box.add_child(ThemeKit.label(habitat_line, 14))
+	var courtship_line := str(stats.get("courtship_line", ""))
+	if courtship_line != "":
+		journal_box.add_child(ThemeKit.label(courtship_line, 14))
+	var forage_line := str(stats.get("forage_line", ""))
+	if forage_line != "":
+		journal_box.add_child(ThemeKit.label(forage_line, 14, ThemeKit.TERRACOTTA))
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))

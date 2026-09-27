@@ -385,7 +385,16 @@ func _tick_region() -> void:
 			continue
 		var row: Dictionary = note
 		if str(row.get("type", "")) == "deliver" and str(row.get("to", "")) == "hollow":
-			Economy.add(str(row.get("crop", "")), int(row.get("qty", 1)))
+			var crop_id := str(row.get("crop", ""))
+			Economy.add(crop_id, int(row.get("qty", 1)))
+			var from_id := str(row.get("from", ""))
+			var from_row: Dictionary = region.town(from_id)
+			var from_name := str(from_row.get("name", from_id))
+			if from_name == "":
+				from_name = "the vale"
+			var scent := ecology.taste_cart(crop_id, from_name)
+			if scent != "":
+				toast(scent)
 		var text := str(row.get("text", ""))
 		if text != "":
 			toast(text)
@@ -7716,6 +7725,53 @@ func _run_smoke() -> void:
 		push_error("smoke: five meadowbells did not tally as meadow")
 		get_tree().quit(1)
 		return
+	Economy.add("meadowbell", 1)
+	if not _feed_creature(mix_jelly) or mix_jelly.hunger < 0.99 or mix_jelly.mood != "content":
+		push_error("smoke: a pouch meadowbell did not feed the bellhelp")
+		get_tree().quit(1)
+		return
+	mix_jelly.hunger = 0.15
+	mix_jelly.mood = "hungry"
+	var mix_scent: String = ecology.taste_cart("meadowbell", "Thatchmere")
+	if mix_jelly.mood != "content" or mix_scent.find("Thatchmere") == -1:
+		push_error("smoke: bells from the vale did not feed a hungry bellhelp")
+		get_tree().quit(1)
+		return
+	_force_plant(4, 2, "bramble", 1.0)
+	_force_plant(5, 2, "bramble", 1.0)
+	_force_plant(4, 3, "bramble", 1.0)
+	var mix_berry := ecology.first("berrypatch")
+	if mix_berry == null:
+		mix_berry = ecology.force_spawn("berrypatch")
+	mix_berry.life = "resident"
+	mix_berry.leaving = false
+	var mix_berry_mate := ecology.force_spawn("berrypatch")
+	mix_berry_mate.life = "resident"
+	mix_berry_mate.leaving = false
+	ecology.states["berrypatch"] = "resident"
+	ecology.young_spawned["berrypatch"] = false
+	ecology.tick(0.2, world_snapshot(), 0.0)
+	if str(ecology.states.get("berrypatch", "")) != "breeding":
+		push_error("smoke: berrypatch did not nest in the brambles")
+		get_tree().quit(1)
+		return
+	if _plot_line(soil.get_cell(4, 2)).find("Nest.") == -1:
+		push_error("smoke: a bramble nest hid its name")
+		get_tree().quit(1)
+		return
+	var mix_court: String = ecology.rules.courtship_line(ecology.states, ContentDB.species)
+	if mix_court.find("courting") == -1:
+		push_error("smoke: the parish hid the courtship")
+		get_tree().quit(1)
+		return
+	if str(_place_stats(world_snapshot()).get("courtship_line", "")).find("courting") == -1:
+		push_error("smoke: the parish page hid the courtship")
+		get_tree().quit(1)
+		return
+	if ecology.rules.forage_line(ContentDB.species, {"meadowbell": 0}, {}, {"meadowbell": 1}, ContentDB.plants) != "The kettle is steeping the Meadowbell Bellhelp wants.":
+		push_error("smoke: the kettle hid the bells bellhelp wanted")
+		get_tree().quit(1)
+		return
 	if not _smoke_jelly_feel():
 		return
 	Economy.mill.reset()
@@ -8052,8 +8108,10 @@ func _run_capture() -> void:
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	_force_plant(2, 0, "reed", 0.85)
 	_sync_plants()
+	ecology.states["bellhelp"] = "breeding"
 	hud.journal.visible = true
 	show_directory("place")
+	refresh_panels()
 	camera.snap_home()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/ecology_parish.png")
@@ -9612,12 +9670,39 @@ func _inspect_face(jelly: Jelly) -> void:
 		audio.play_kind("squish", -18)
 
 func _inspect_card(jelly: Jelly) -> Dictionary:
+	var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+	var food_id := ecology.rules.food_of(definition)
+	var food_name := str(ContentDB.plant(food_id).get("name", food_id))
 	return {
 		"name": jelly.display_name,
 		"mood": jelly.mood,
 		"life": jelly.life,
 		"bond": jelly.bond,
+		"hunger": jelly.hunger,
+		"food": food_name,
+		"can_feed": jelly.hunger < 0.28 and food_id != "" and Economy.count(food_id) > 0,
 	}
+
+func feed_inspected() -> void:
+	if focus == null or not is_instance_valid(focus):
+		return
+	if not _feed_creature(focus):
+		return
+	if hud:
+		hud.show_inspect(_inspect_card(focus))
+	refresh_panels()
+
+func _feed_creature(jelly: Jelly) -> bool:
+	if jelly == null or not is_instance_valid(jelly):
+		return false
+	var food_id := ecology.rules.food_of(ContentDB.species_def(jelly.species_id))
+	if food_id == "" or not Economy.take(food_id, 1):
+		toast("Nothing in the pouch to feed them.")
+		return false
+	ecology.feed(jelly)
+	var food_name := str(ContentDB.plant(food_id).get("name", food_id))
+	toast("You fed %s a %s." % [jelly.display_name, food_name])
+	return true
 
 func _clear_inspect() -> void:
 	if focus != null and is_instance_valid(focus):
@@ -9734,6 +9819,9 @@ func _plot_line(plot: SoilCell) -> String:
 		line += "  ·  " + liked
 	if ecology.rules.crowded(definition, soil.count_plant(plot.plant_id)):
 		line += "  ·  Crowded."
+	var nest_bit := ecology.rules.nest_plot_bit(plot.plant_id, plot.growth, ecology.states, ContentDB.species)
+	if nest_bit != "":
+		line += "  ·  " + nest_bit
 	if plot.moisture < float(definition.get("water_need", 0.3)):
 		return line + "  ·  Needs water."
 	if plot.fertility < float(definition.get("fertility_need", 0.2)):
@@ -11605,6 +11693,20 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	var habitat_line: String = ecology.rules.habitat_line(soil.beds(), ContentDB.plants)
 	stats["habitat_line"] = habitat_line
 	SimLod.district_stats["habitats"] = habitat_line
+	stats["courtship_line"] = ecology.rules.courtship_line(ecology.states, ContentDB.species)
+	var kettle_crops := {}
+	if Economy.mill.brew != "":
+		var mill_recipe: Dictionary = Economy.mill.recipe(Economy.mill.brew)
+		var mill_inputs = mill_recipe.get("inputs", {})
+		if typeof(mill_inputs) == TYPE_DICTIONARY:
+			kettle_crops = mill_inputs
+	stats["forage_line"] = ecology.rules.forage_line(
+		ContentDB.species,
+		world.get("mature", {}),
+		Economy.bag,
+		kettle_crops,
+		ContentDB.plants
+	)
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

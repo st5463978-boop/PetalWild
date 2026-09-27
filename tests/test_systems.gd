@@ -32,6 +32,32 @@ func _init() -> void:
 	_expect(rules.need_line({"food": "meadowbell"}, 0.2, {}, plants).find("Hungry") != -1, "hunger asks for food")
 	_expect(rules.food_of({"food": "meadowbell"}) == "meadowbell", "bellhelp food is meadowbell")
 	_expect(rules.habitat_line(pair, plants) == "Habitats  ·  Bank 1, Meadow 1", "a reed and a bell tally two habitats")
+	var berry := {
+		"name": "Berrypatch",
+		"habitat": "cane",
+		"food": "bramble",
+		"romance": {
+			"type": "resident_count",
+			"species": "berrypatch",
+			"min": 2,
+			"label": "A second Berrypatch resident",
+			"nest": "bramble",
+			"nest_min": 3,
+			"nest_label": "a bramble nest",
+		},
+	}
+	var nest_world := {"resident_count": {"berrypatch": 2}, "mature": {"bramble": 2}}
+	_expect(not rules.romance_met(berry, nest_world), "two canes are not a nest")
+	nest_world["mature"]["bramble"] = 3
+	_expect(rules.romance_met(berry, nest_world), "three brambles make a nest")
+	_expect(rules.romance_label(berry).find("bramble nest") != -1, "romance names the nest")
+	_expect(rules.courtship_line({"berrypatch": "breeding"}, {"berrypatch": berry}) == "Berrypatch is courting in the canes.", "parish names cane courtship")
+	_expect(rules.nest_plot_bit("bramble", 1.0, {"berrypatch": "breeding"}, {"berrypatch": berry}) == "Nest.", "a ripe bramble is a nest")
+	_expect(rules.nest_plot_bit("bramble", 0.4, {"berrypatch": "breeding"}, {"berrypatch": berry}) == "", "a young bramble is not a nest")
+	var guests := {"bellhelp": {"name": "Bellhelp", "food": "meadowbell", "habitat": "meadow"}}
+	_expect(rules.forage_line(guests, {"meadowbell": 0}, {}, {"meadowbell": 1}, plants) == "The kettle is steeping the Meadowbell Bellhelp wants.", "kettle forage names the bells")
+	_expect(rules.forage_line(guests, {"meadowbell": 0}, {"meadowbell": 2}, {}, plants) == "The pouch holds the Meadowbell Bellhelp wanted.", "pouch forage names the bells")
+	_expect(rules.forage_line(guests, {"meadowbell": 4}, {"meadowbell": 2}, {"meadowbell": 1}, plants) == "", "a full meadow stays quiet")
 	var mill := ParishChain.new()
 	mill.boot([{
 		"id": "hedge_tea",

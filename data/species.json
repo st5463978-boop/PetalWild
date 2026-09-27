@@ -31,10 +31,11 @@
     "wobble": 0.55,
     "habitat": "cane",
     "food": "bramble",
-    "blurb": "A cluster of berry lobes that settles where the canes fruit.",
+    "blurb": "A cluster of berry lobes that settles where the canes fruit. A pair nests in a thick bramble and leaves one young.",
     "requirements": [
       {"type": "mature_plant", "plant": "bramble", "min": 2, "label": "2 mature Brambles"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "berrypatch", "min": 2, "label": "A second Berrypatch resident", "nest": "bramble", "nest_min": 3, "nest_label": "a bramble nest"}
   },
   {
     "id": "bulrush",
@@ -69,11 +70,12 @@
     "wobble": 0.4,
     "habitat": "bank",
     "food": "reed",
-    "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water.",
+    "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water. A pair nests in a reed stand and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
       {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "reedic", "min": 2, "label": "A second Reedic resident", "nest": "reed", "nest_min": 3, "nest_label": "a reed nest"}
   },
   {
     "id": "cirlark",
@@ -88,11 +90,12 @@
     "wobble": 0.65,
     "habitat": "meadow",
     "food": "meadowbell",
-    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp.",
+    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp. A pair nests in a looked-after meadow and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
       {"type": "garden_quality", "min": 0.42, "label": "The garden is looked after"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "cirlark", "min": 2, "label": "A second Cirlark resident", "nest": "meadowbell", "nest_min": 4, "nest_label": "a meadow nest"}
   },
   {
     "id": "grapling",
@@ -107,11 +110,12 @@
     "wobble": 0.9,
     "habitat": "cane",
     "food": "bramble",
-    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble.",
+    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble. A pair nests in that thicket and leaves one young.",
     "requirements": [
       {"type": "mature_plant", "plant": "bramble", "min": 3, "label": "3 mature Brambles"},
       {"type": "fertility", "min": 0.55, "label": "Rich soil across the beds"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "grapling", "min": 2, "label": "A second Grapling resident", "nest": "bramble", "nest_min": 4, "nest_label": "a thicket nest"}
   },
   {
     "id": "dusknip",
@@ -126,10 +130,11 @@
     "wobble": 0.5,
     "habitat": "meadow",
     "food": "meadowbell",
-    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it.",
+    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it. A pair nests in the bells and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
     ],
+    "romance": {"type": "resident_count", "species": "dusknip", "min": 2, "label": "A second Dusknip resident", "nest": "meadowbell", "nest_min": 3, "nest_label": "a bell nest"},
     "soil_effect": {"chem": "nightloam", "count": 5}
   },
   {
