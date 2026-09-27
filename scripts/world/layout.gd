@@ -17,6 +17,7 @@ const HUT := Vector3(-5.6, 0.0, -7.9)
 const FOUNDRY := Vector3(-1.4, 0.0, -8.3)
 const HALL := Vector3(0.55, 0.0, -9.7)
 const GATE := Vector3(0.0, 0.0, -11.2)
+const PARK := Vector3(0.0, 0.0, -16.6)
 
 static func plot_origin(ix: int, iz: int) -> Vector2:
 	var px := 0 if ix < COLS else 1
