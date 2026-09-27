@@ -20,10 +20,6 @@ Godot 4.8-dev6 official `8898c2b3d` (`tools/fetch_godot.sh`), `--rendering-drive
 
 ## What landed
 
-`third_party/kenney_city_builder/` is the kit, with paths moved under that folder. `scenes/parish.tscn` is the playable town. The boot scene is still `scenes/main.tscn`. The title has a Parish button. Esc on the parish returns to the grove.
+`third_party/kenney_city_builder/` is the kit, with paths moved under that folder. `scenes/parish.tscn` is that project's main scene: fifteen structures, empty grid and $10000 on play, F3 loads `sample map/map.res` (122 cells, cash 5860). `run/main_scene` points at it. The grove scene remains `scenes/main.tscn`.
 
-The sample town is `sample_map.json` (the kit's 122 cells, cash 5860, plus one garden-bed cell). The upstream `map.res` was not copied because it points at `res://scripts/data_map.gd`.
-
-`structures/garden-bed.tres` is the piece added on top of the kit. It uses the Kenney Nature Kit bush already in `assets/third_party/kenney/`. The other fifteen pieces stay in the kit's original order so the sample indices still match.
-
-Grove Park is still unbuilt. The parish grid is not the grove, and it does not replace utility scoring, the session inventory, or navigation.
+Grove Park is still unbuilt. The parish grid does not replace utility scoring, the session inventory, or navigation.

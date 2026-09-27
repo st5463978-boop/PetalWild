@@ -1113,7 +1113,7 @@ Field records follow. `research_doc` is the note a build agent should open befor
 - PORTABLE? yes
 - REFERENCE ONLY? no
 - QUALITY: high for a starter grid
-- INTEGRATION COST: low. Paths live under third_party/kenney_city_builder. Boot scene unchanged.
+- INTEGRATION COST: low. Paths live under third_party/kenney_city_builder. Play opens scenes/parish.tscn.
 - EXPECTED BENEFIT: A town you can place on this pin without writing a grid editor.
 - DECISION: ADOPT
 - ASSIGNED PETAL LANE: PETAL-06

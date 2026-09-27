@@ -60,9 +60,9 @@ The stall inventory stays the session dictionary.
 
 ## PETAL-06
 
-The grove stays the boot scene. Grove Park stays unbuilt. The parish you can open from the title is Kenney's city-builder grid, not the sim's town counts.
+Play opens the Kenney city builder. Grove Park stays unbuilt. The grove scene is still `scenes/main.tscn`. The parish grid is not the sim's town counts.
 
-- Starter Kit City Builder. Decision ADOPT. Class GREEN for the MIT code and the CC0 models, sprites, and sounds. The bundled Lilita One file is SIL OFL 1.1 and ships with `fonts/license.txt`. Repository `KenneyNL/Starter-Kit-City-Builder`, commit `4535092`. It opened on this pin: 122 sample cells, rendered. Integration: `scenes/parish.tscn`. A garden bed structure uses the nature-kit bush already in the tree. Do not retarget `run/main_scene`.
+- Starter Kit City Builder. Decision ADOPT. Class GREEN for the MIT code and the CC0 models, sprites, and sounds. The bundled Lilita One file is SIL OFL 1.1 and ships with `fonts/license.txt`. Repository `KenneyNL/Starter-Kit-City-Builder`, commit `4535092`. Integration: `scenes/parish.tscn` is `run/main_scene`. Fifteen structures. Empty grid and $10000 on play. F3 loads the 122-cell sample. Same controls as the upstream project.
 - CityCrafter3D. Decision STUDY. Class GREEN (MIT, copyright 2025 immaculate-lift-studios). Editor generator. Default block 200, street 25. It does not run without building scenes assigned. Do not vendor the plugin or the example gif.
 - town. Decision STUDY. Class REVIEW (AGPL-3.0-or-later plus Commons Clause). Repository `RedPlanetHQ/town`. Benefit: an author names a place, the sim picks the cell, placement is seeded, and a resident is a slot. Integration: copy nothing. Pathing stays a separate service.
 - VivaPinataPlus. Decision REJECT. Class GREEN. The MIT grant is the launcher, not the commercial game. The README has no store link. Do not import it. Do not run it. Do not require original Viva Piñata files.

@@ -7,12 +7,13 @@ config_version=5
 
 config/name="PetalWild"
 config/description="A living garden in Hedge Hollow."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/parish.tscn"
 config/features=PackedStringArray("4.8", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+Audio="*res://third_party/kenney_city_builder/scripts/audio.gd"
 Settings="*res://scripts/autoload/settings.gd"
 ContentDB="*res://scripts/autoload/content_db.gd"
 Clock="*res://scripts/autoload/clock.gd"

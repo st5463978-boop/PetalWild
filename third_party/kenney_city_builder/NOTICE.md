@@ -10,6 +10,4 @@ Code, including `scripts/`, is MIT. Copyright (c) 2025 Kenney. The licence text 
 
 `fonts/lilita_one_regular.ttf` is Lilita One, SIL Open Font License 1.1. The licence text is `fonts/license.txt`. Reserved font name: Lilita.
 
-`sample_map.json` is the kit's sample town (122 cells) exported so it does not depend on the upstream `res://scripts/` paths stored in `map.res`.
-
-`structures/garden-bed.tres` is a Petalwild addition. It places the CC0 Kenney Nature Kit bush already in this repository.
+`sample map/map.res` is the kit's sample town (122 cells, cash 5860), re-saved so its script paths point at this folder. F3 loads it. Play starts on an empty grid with $10000, same as the upstream project.

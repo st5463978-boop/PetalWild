@@ -24,13 +24,13 @@ FILES / SUBSYSTEMS OF INTEREST: `third_party/kenney_city_builder/`, `scenes/pari
 
 EXPECTED BENEFIT: A placeable town already runs on this pin. The grove does not have to become that grid.
 
-INTEGRATION COST: already in the tree. Title button Parish. Esc returns.
+INTEGRATION COST: already in the tree. `run/main_scene` is `scenes/parish.tscn`.
 
 RISKS: Replacing the grove with the grid. Vendoring CityCrafter's 200-unit blocks or the Viva Piñata launcher.
 
-RECOMMENDED ACTION: Leave the parish scene as the town builder. Add further pieces as `Structure` resources at the end of the array so the sample indices stay valid.
+RECOMMENDED ACTION: Leave the fifteen structures and the F3 sample map as the upstream project shipped them.
 
-DO NOT: Change `run/main_scene`. Import VivaPiñataPlus. Build Grove Park out of this grid.
+DO NOT: Import VivaPiñataPlus. Build Grove Park out of this grid. Insert a structure ahead of the sample indices.
 
 RESEARCH DOCUMENT LINK: `docs/research/wave0/GODOT_STORE_PASS.md`
 
