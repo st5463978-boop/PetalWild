@@ -1,0 +1,14 @@
+[
+  {
+    "id": "hedge_tea",
+    "name": "Hedge tea",
+    "station": "kettle",
+    "inputs": {"peach": 1, "meadowbell": 1},
+    "output": "hedge_tea",
+    "output_count": 1,
+    "minutes": 18,
+    "sell_price": 22,
+    "crate_cap": 3,
+    "blurb": "Peach and meadowbell steep in the tea-house kettle. Nessa carries a cup to the stall crate when she is here."
+  }
+]

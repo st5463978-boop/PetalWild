@@ -7,7 +7,11 @@
     "water_need": 0.38,
     "fertility_need": 0.18,
     "sell_price": 5,
-    "blurb": "A low cream bell. Pollinators treat a stand of them as an invitation."
+    "habitat": "meadow",
+    "likes": "reed",
+    "likes_label": "Reed nearby.",
+    "crowd": 5,
+    "blurb": "A low cream bell. Pollinators treat a stand of them as an invitation. A reed beside it hurries the bells."
   },
   {
     "id": "peach",
@@ -17,7 +21,11 @@
     "water_need": 0.42,
     "fertility_need": 0.22,
     "sell_price": 12,
-    "blurb": "A dwarf peach with one heavy fruit. The stall keeps a tray for these."
+    "habitat": "orchard",
+    "likes": "nightlantern",
+    "likes_label": "Lantern nearby.",
+    "crowd": 3,
+    "blurb": "A dwarf peach with one heavy fruit. The stall keeps a tray for these. A nightlantern beside it sweetens the fruit."
   },
   {
     "id": "reed",
@@ -27,7 +35,11 @@
     "water_need": 0.5,
     "fertility_need": 0.16,
     "sell_price": 6,
-    "blurb": "Tall water grass. Bulrush will not wade in without a stand of it."
+    "habitat": "bank",
+    "likes": "meadowbell",
+    "likes_label": "Bells nearby.",
+    "crowd": 4,
+    "blurb": "Tall water grass. Bulrush will not wade in without a stand of it. Meadowbells on the bank hurry the heads."
   },
   {
     "id": "bramble",
@@ -37,7 +49,11 @@
     "water_need": 0.36,
     "fertility_need": 0.24,
     "sell_price": 9,
-    "blurb": "A low cane with dark fruit. It thickens the hedges and feeds Berrypatch."
+    "habitat": "cane",
+    "likes": "meadowbell",
+    "likes_label": "Bells nearby.",
+    "crowd": 5,
+    "blurb": "A low cane with dark fruit. It thickens the hedges and feeds Berrypatch. Meadowbells beside it hurry the berries."
   },
   {
     "id": "mosspear",
@@ -48,7 +64,11 @@
     "fertility_need": 0.58,
     "seed_fertility": 0.42,
     "sell_price": 11,
-    "blurb": "A ground pear that only sweetens in rich soil."
+    "habitat": "loam",
+    "likes": "nightlantern",
+    "likes_label": "Lantern nearby.",
+    "crowd": 4,
+    "blurb": "A ground pear that only sweetens in rich soil. A nightlantern beside it hurries the fruit."
   },
   {
     "id": "nightlantern",
@@ -59,6 +79,10 @@
     "fertility_need": 0.28,
     "chem": "nightloam",
     "sell_price": 18,
-    "blurb": "A dusk bulb. It will only take in soil that Dusknip has changed."
+    "habitat": "dusk",
+    "likes": "mosspear",
+    "likes_label": "Pear nearby.",
+    "crowd": 3,
+    "blurb": "A dusk bulb. It will only take in soil that Dusknip has changed. A mosspear beside it hurries the light."
   }
 ]
