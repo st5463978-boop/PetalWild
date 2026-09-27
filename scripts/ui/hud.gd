@@ -130,6 +130,9 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Creature residents  %s" % str(stats.get("creature_residents", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Employed at the stall  %s" % str(stats.get("employed", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Garden care  %d%%" % int(float(stats.get("garden_quality", 0.0)) * 100.0), 16))
+	var ecology_line := str(stats.get("ecology_line", ""))
+	if ecology_line != "":
+		journal_box.add_child(ThemeKit.label(ecology_line, 14))
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))
@@ -549,6 +552,9 @@ func _species_card(row: Dictionary) -> PanelContainer:
 		box.add_child(ThemeKit.label("✓  " + str(line), 13, ThemeKit.MOSS))
 	for line in row.get("unmet", []):
 		box.add_child(ThemeKit.label("·  " + str(line), 13, ThemeKit.TERRACOTTA))
+	var need := str(row.get("need", ""))
+	if need != "":
+		box.add_child(ThemeKit.label(need, 13, ThemeKit.TERRACOTTA))
 	var romance := str(row.get("romance", ""))
 	if romance != "":
 		var ready: bool = row.get("romance_met", false)

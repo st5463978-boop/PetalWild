@@ -151,7 +151,7 @@ func _process(delta: float) -> void:
 		_dawn_birds()
 	if Clock.running:
 		_note_lane_afternoon()
-	ecology.tick(delta, world)
+	ecology.tick(delta, world, minutes / 60.0)
 	_wire_jellies()
 	_update_creatures(delta)
 	_check_nessa(world)
@@ -1516,6 +1516,7 @@ func _dawn_birds() -> void:
 
 func world_snapshot() -> Dictionary:
 	var mature := {}
+	var plant_counts := {}
 	var chem := {}
 	var moisture := 0.0
 	var fertility_all := 0.0
@@ -1531,6 +1532,8 @@ func world_snapshot() -> Dictionary:
 			fertility_worked += plot.fertility
 			worked += 1
 		chem[plot.chem] = int(chem.get(plot.chem, 0)) + 1
+		if plot.plant_id != "":
+			plant_counts[plot.plant_id] = int(plant_counts.get(plot.plant_id, 0)) + 1
 		if plot.plant_id != "" and plot.growth >= 1.0:
 			mature[plot.plant_id] = int(mature.get(plot.plant_id, 0)) + 1
 	var mature_total := 0
@@ -1548,6 +1551,7 @@ func world_snapshot() -> Dictionary:
 		"moisture": moisture / maxf(float(count), 1.0),
 		"fertility": fertility,
 		"chem": chem,
+		"plant_counts": plant_counts,
 		"weather": Clock.weather,
 		"hour": Clock.hour(),
 		"species_state": ecology.states.duplicate(),
@@ -7210,6 +7214,78 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+	var bell_bed := soil.get_cell(8, 6)
+	var reed_bed := soil.get_cell(8, 7)
+	var lone_bed := soil.get_cell(9, 0)
+	bell_bed.tilled = true
+	bell_bed.plant_id = "meadowbell"
+	bell_bed.growth = 0.2
+	bell_bed.moisture = 0.9
+	bell_bed.fertility = 0.5
+	bell_bed.wilt = 0.0
+	bell_bed.grow_from_day = 1
+	reed_bed.tilled = true
+	reed_bed.plant_id = "reed"
+	reed_bed.growth = 0.4
+	reed_bed.moisture = 0.9
+	reed_bed.fertility = 0.5
+	reed_bed.wilt = 0.0
+	reed_bed.grow_from_day = 1
+	lone_bed.tilled = true
+	lone_bed.plant_id = "meadowbell"
+	lone_bed.growth = 0.2
+	lone_bed.moisture = 0.9
+	lone_bed.fertility = 0.5
+	lone_bed.wilt = 0.0
+	lone_bed.grow_from_day = 1
+	if _plot_line(bell_bed).find("Reed nearby.") == -1:
+		push_error("smoke: a reed beside a meadowbell stayed quiet")
+		get_tree().quit(1)
+		return
+	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+		push_error("smoke: the parish missed the bank neighbour")
+		get_tree().quit(1)
+		return
+	soil.tick(60.0, "clear")
+	if bell_bed.growth <= lone_bed.growth:
+		push_error("smoke: a reed neighbour did not hurry the bell")
+		get_tree().quit(1)
+		return
+	for ix in 5:
+		var crowd_bed := soil.get_cell(ix, 7)
+		crowd_bed.tilled = true
+		crowd_bed.plant_id = "meadowbell"
+		crowd_bed.growth = 0.5
+		crowd_bed.moisture = 0.9
+		crowd_bed.fertility = 0.5
+		crowd_bed.grow_from_day = 1
+	if _plot_line(soil.get_cell(0, 7)).find("Crowded.") == -1:
+		push_error("smoke: five meadowbells did not crowd")
+		get_tree().quit(1)
+		return
+	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+		push_error("smoke: a crowded meadow hid the bank neighbour")
+		get_tree().quit(1)
+		return
+	var guest := ecology.force_spawn("bellhelp")
+	guest.hunger = 0.2
+	ecology.tick(0.2, world_snapshot(), 0.0)
+	if guest.mood != "hungry":
+		push_error("smoke: a hungry bellhelp stayed content")
+		get_tree().quit(1)
+		return
+	var saw_need := false
+	ecology.states["bellhelp"] = "sighted"
+	for row in _journal_rows(world_snapshot()):
+		var card: Dictionary = row
+		if str(card.get("name", "")) != "Bellhelp":
+			continue
+		if str(card.get("need", "")).find("Hungry") != -1:
+			saw_need = true
+	if not saw_need:
+		push_error("smoke: the journal hid a hungry bellhelp")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -8756,6 +8832,11 @@ func _plot_line(plot: SoilCell) -> String:
 	var line := "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
 	if absf(plot.hue - 0.5) > 0.05 or absf(plot.stature - 1.0) > 0.05 or absf(plot.crop_yield - 1.0) > 0.05:
 		line += "  ·  Mixed."
+	var liked := ecology.rules.likes_label(definition, soil.neighbor_ids(plot))
+	if liked != "":
+		line += "  ·  " + liked
+	if ecology.rules.crowded(definition, soil.count_plant(plot.plant_id)):
+		line += "  ·  Crowded."
 	if plot.moisture < float(definition.get("water_need", 0.3)):
 		return line + "  ·  Needs water."
 	if plot.fertility < float(definition.get("fertility_need", 0.2)):
@@ -9345,6 +9426,9 @@ func _browse(hours: float) -> void:
 		plot.taken = true
 		plot.eaten_by = jelly.display_name
 		jelly.bite_wait = 4.0
+		jelly.hunger = 1.0
+		if jelly.mood == "hungry":
+			jelly.mood = "content"
 		toast("%s takes a bite." % jelly.display_name)
 
 func _seek_dusk() -> void:
@@ -9776,6 +9860,9 @@ func _feed_plant(species_id: String) -> String:
 		if hour >= 16.0 and hour < 22.0:
 			return "nightlantern"
 		return "peach"
+	var food := ecology.rules.food_of(ContentDB.species_def(species_id))
+	if food != "":
+		return food
 	for req in ContentDB.species_def(species_id).get("requirements", []):
 		if str(req.get("type", "")) == "mature_plant":
 			return str(req.get("plant", ""))
@@ -10083,6 +10170,14 @@ func _journal_rows(world: Dictionary) -> Array:
 			romance = "Trusts your hands."
 		if status == "breeding" and _has_young(id):
 			romance += " A young one is with them."
+		var hunger := 1.0
+		for actor in ecology.actors:
+			var guest: Jelly = actor
+			if is_instance_valid(guest) and guest.species_id == id:
+				hunger = minf(hunger, guest.hunger)
+		var need := ""
+		if known:
+			need = ecology.rules.need_line(definition, hunger, world, ContentDB.plants)
 		rows.append({
 			"name": definition.get("name", id) if known else "A rumour",
 			"status": status,
@@ -10092,6 +10187,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance": romance,
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
+			"need": need,
 		})
 	if _far_bell_line() != "":
 		rows.append({
@@ -10506,6 +10602,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["parish_sale_line"] = _parish_sale_line()
 	stats["cross_line"] = _cross_line()
 	stats["want_line"] = _want_line()
+	stats["ecology_line"] = ecology.rules.garden_line(soil.beds(), ContentDB.plants)
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

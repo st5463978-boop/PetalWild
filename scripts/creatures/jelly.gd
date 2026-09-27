@@ -18,6 +18,7 @@ var attract := Vector3.ZERO
 var berth := Vector3.ZERO
 var use_berth := false
 var site_time := 0.0
+var hunger := 1.0
 var bite_wait := 2.0
 var leaving := false
 var squash := 1.0
@@ -38,6 +39,7 @@ func setup(definition: Dictionary) -> void:
 	display_name = str(definition.get("name", species_id))
 	radius = float(definition.get("radius", 0.34))
 	life = "curious"
+	hunger = 1.0
 	_build(definition)
 	attract = global_position
 	goal = global_position
@@ -480,6 +482,7 @@ func to_state() -> Dictionary:
 		"bond": bond,
 		"mood": mood,
 		"site_time": site_time,
+		"hunger": hunger,
 		"bite_wait": bite_wait,
 		"leaving": leaving,
 		"young": young,
