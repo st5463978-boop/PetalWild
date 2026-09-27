@@ -8916,6 +8916,8 @@ func _build_bed_turf() -> void:
 	material.albedo_color = Color("#4e7a36")
 	material.roughness = 0.96
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.albedo_texture = soil_grass
+	material.uv1_scale = Vector3(2.4, 2.4, 1)
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = disc
@@ -9162,6 +9164,8 @@ func _scallop_lawn() -> void:
 	material.albedo_color = Color("#4e7a36")
 	material.roughness = 0.96
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.albedo_texture = soil_grass
+	material.uv1_scale = Vector3(2.4, 2.4, 1)
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = disc
@@ -9513,6 +9517,8 @@ func _bridge_lid(node_name: String, at: Vector3, size: Vector3) -> void:
 	material.albedo_color = Color("#1c3420")
 	material.roughness = 0.96
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.albedo_texture = soil_grass
+	material.uv1_scale = Vector3(2.2, 2.2, 1)
 	var x0 := at.x - size.x * 0.5
 	var i := 0
 	while float(i) * 0.42 < size.x - 0.05:
@@ -10579,7 +10585,10 @@ func _refresh_soil_colors() -> void:
 		var material := patch.material_override as StandardMaterial3D
 		if _joined_bed(plot):
 			patch.mesh = bed_lid
-			material.albedo_color = Color("#1c3420")
+			if plot.plant_id != "" or plot.tilled:
+				material.albedo_color = _soil_color(plot)
+			else:
+				material.albedo_color = Color("#1c3420")
 		else:
 			patch.mesh = soil_lid
 			material.albedo_color = _soil_color(plot)
@@ -10617,7 +10626,7 @@ func _soil_color(plot: SoilCell) -> Color:
 func _bind_soil_tex(material: StandardMaterial3D, plot: SoilCell) -> void:
 	if material == null:
 		return
-	if plot.tilled and not _joined_bed(plot):
+	if plot.tilled or plot.plant_id != "":
 		material.albedo_texture = soil_dirt
 	else:
 		material.albedo_texture = soil_grass
