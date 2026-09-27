@@ -60,6 +60,7 @@ var last_shop_hour := -1.0
 var bus := GardenBus.new()
 var region := RegionSim.new()
 var region_stamp := -1
+var vale_crate_crop := ""
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -380,12 +381,20 @@ func _tick_region() -> void:
 		return
 	region_stamp = stamp
 	var notes: Array = region.pulse(Clock.day, Clock.hour(), _vale_garden())
+	_handle_vale_notes(notes)
+
+func _handle_vale_notes(notes: Array) -> void:
 	for note in notes:
 		if typeof(note) != TYPE_DICTIONARY:
 			continue
 		var row: Dictionary = note
 		if str(row.get("type", "")) == "deliver" and str(row.get("to", "")) == "hollow":
-			Economy.add(str(row.get("crop", "")), int(row.get("qty", 1)))
+			var crop := str(row.get("crop", ""))
+			Economy.add(crop, int(row.get("qty", 1)))
+			vale_crate_crop = crop
+			_sync_vale_crate()
+			if crop == "peach" or crop == "meadowbell":
+				toast("The kettle can take that %s." % crop)
 		var text := str(row.get("text", ""))
 		if text != "":
 			toast(text)
@@ -435,6 +444,37 @@ func share_vale_seed(to_id: String, crop: String) -> void:
 	Economy.take(seed_id, 1)
 	toast(str(result.get("text", "")))
 	refresh_panels()
+
+func take_vale_crate() -> void:
+	if vale_crate_crop == "":
+		toast("The gate is empty.")
+		refresh_panels()
+		return
+	var crop := vale_crate_crop
+	vale_crate_crop = ""
+	_sync_vale_crate()
+	Trust.file_vale_cart("nessa", "A %s cart sat down at the gate." % crop)
+	toast("The %s crate sat by the gate." % crop)
+	refresh_panels()
+
+func _sync_vale_crate() -> void:
+	var show := vale_crate_crop != ""
+	for node in get_tree().get_nodes_in_group("vale_crate"):
+		var body := node as Node3D
+		if body:
+			body.visible = show
+	var label := vale_crate_crop
+	if label == "":
+		label = "Vale cart"
+	for node in get_tree().get_nodes_in_group("vale_crate_sign"):
+		var sign := node as Label3D
+		if sign:
+			sign.text = label
+
+func _near_vale_crate(hit: Vector3) -> bool:
+	if vale_crate_crop == "":
+		return false
+	return Vector2(hit.x - GardenLayout.GATE.x, hit.z - GardenLayout.GATE.z).length() < 1.35
 
 func _note_lane_afternoon() -> void:
 	# ponytail: three distinct afternoons; a clock if a partial afternoon should count.
@@ -1199,6 +1239,7 @@ func _tick_town(world: Dictionary) -> void:
 		"road": Trust.has_action("parish_road_rumour"),
 		"park": Trust.has_action("parish_park"),
 		"passers": _lane_passers(),
+		"vale": region.traffic("hollow") + (1 if vale_crate_crop != "" else 0),
 		"hour": Clock.hour(),
 		"weather": Clock.weather,
 		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
@@ -1911,6 +1952,7 @@ func to_state() -> Dictionary:
 		"town": town.to_dict(),
 		"region": region.to_dict(),
 		"region_stamp": region_stamp,
+		"vale_crate_crop": vale_crate_crop,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1992,6 +2034,8 @@ func apply_state(data: Dictionary) -> void:
 	if typeof(saved_region) == TYPE_DICTIONARY:
 		region.boot(saved_region)
 	region_stamp = int(data.get("region_stamp", -1))
+	vale_crate_crop = str(data.get("vale_crate_crop", ""))
+	_sync_vale_crate()
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -8170,10 +8214,30 @@ func _run_vale_shot() -> void:
 	camera.snap_home()
 	region.pulse(Clock.day, Clock.hour(), _vale_garden())
 	region.send_cart("reedbank", "hollow", "reed", 1)
+	var carts_raw = region.state.get("carts", [])
+	var carts: Array = carts_raw if typeof(carts_raw) == TYPE_ARRAY else []
+	for entry in carts:
+		var cart: Dictionary = entry
+		if str(cart.get("to", "")) == "hollow":
+			cart["eta"] = 1
+	var later := Clock.hour() + 1.0
+	var day := Clock.day
+	if later >= 24.0:
+		later -= 24.0
+		day += 1
+	var notes: Array = region.pulse(day, later, _vale_garden())
+	_handle_vale_notes(notes)
 	show_directory("vale")
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.5).timeout
 	await _shot("/workspace/docs/screenshots/vale_tab.png")
+	if hud.journal:
+		hud.journal.visible = false
+	camera.focus_on(GardenLayout.GATE + Vector3(0.4, 0.1, 0.4), 7.2)
+	camera.pitch = 22.0
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.5).timeout
+	await _shot("/workspace/docs/screenshots/vale_gate.png")
 	print("PETAL_VALE_SHOT_OK")
 	get_tree().quit(0)
 
@@ -9364,6 +9428,9 @@ func _primary_down() -> void:
 	if tool == "home":
 		_place_kit(hit)
 		return
+	if _near_vale_crate(hit):
+		take_vale_crate()
+		return
 	if _near_tea(hit):
 		_use_kettle()
 		return
@@ -9706,6 +9773,8 @@ func _hover_text() -> String:
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
+	if _near_vale_crate(hit):
+		return "Vale crate  ·  %s  ·  click" % vale_crate_crop
 	if _near_tea(hit):
 		return Economy.mill_line(_stall_open(), _tea_worker())
 	if _near_stall(hit) and (Economy.mill.crate_count() > 0 or Economy.mill.pot_count() > 0):
@@ -11552,7 +11621,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
-	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow")
+	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow") + (1 if vale_crate_crop != "" else 0)
 	stats["lane_passers"] = _lane_passers()
 	stats["vale_line"] = region.headline()
 	stats["vale_traffic"] = region.traffic("hollow")

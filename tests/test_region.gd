@@ -76,6 +76,7 @@ func _init() -> void:
 	send.boot()
 	var gift: Dictionary = send.send_cart("lea", "mossford", "bramble", 1)
 	_expect(bool(gift.get("ok", false)), "a player cart can leave bramble lea")
+	_expect(not send.page().get("cart_rows", []).is_empty(), "a sent cart is on the vale map")
 	var play := RegionSim.new()
 	play.boot()
 	var reed_h := play.stock_of("hollow", "reed")
@@ -86,6 +87,26 @@ func _init() -> void:
 	_expect(play.stock_of("hollow", "reed") > reed_h, "six days of trickle feed hollow reed")
 	_expect(play.stock_of("lea", "bramble") != lea_b or play.traffic("mossford") > 0, "lea still moves bramble across the vale")
 	var fid: Dictionary = play.fidelity()
+	var sheet: Dictionary = sim.page()
+	var hollow_hex := {}
+	for row in sheet.get("settlements", []):
+		var hamlet: Dictionary = row
+		if str(hamlet.get("id", "")) == "hollow":
+			hollow_hex = hamlet
+	_expect(int(hollow_hex.get("q", -1)) == 0 and int(hollow_hex.get("r", -1)) == 0, "vale page keeps hex cells")
+	var cart_rows_raw = sheet.get("cart_rows", [])
+	var cart_rows: Array = cart_rows_raw if typeof(cart_rows_raw) == TYPE_ARRAY else []
+	_expect(not cart_rows.is_empty() or sim.traffic("hollow") == 0, "cart rows match the road")
+	var asker := RegionSim.new()
+	asker.boot()
+	asker.decide_cb = func(_q, _opts): return "ask for a crop"
+	asker.pulse(1, 8.0, {})
+	var ask_page: Dictionary = asker.page()
+	var ask_rows_raw = ask_page.get("ask_rows", [])
+	var ask_rows: Array = ask_rows_raw if typeof(ask_rows_raw) == TYPE_ARRAY else []
+	_expect(not ask_rows.is_empty(), "a hungry neighbour asks hollow first")
+	var asked: Dictionary = ask_rows[0]
+	_expect(str(asked.get("crop", "")) != "", "the ask names a crop")
 	_expect(int(fid.get("settlements", 0)) == 5, "world rollup keeps five parishes")
 	_expect(int(fid.get("hands", 0)) >= 4, "world rollup counts hands")
 	var packed_play: Dictionary = play.to_dict()

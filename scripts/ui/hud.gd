@@ -267,6 +267,27 @@ func show_vale(report: Dictionary) -> void:
 	var world_line := str(report.get("world_line", ""))
 	if world_line != "":
 		journal_box.add_child(_wrap(world_line, 14))
+	journal_box.add_child(_vale_map(report))
+	var ask_rows_raw = report.get("ask_rows", [])
+	var ask_rows: Array = ask_rows_raw if typeof(ask_rows_raw) == TYPE_ARRAY else []
+	var asked := {}
+	if not ask_rows.is_empty():
+		journal_box.add_child(ThemeKit.title("Parish asks", 16))
+		journal_box.add_child(_wrap("They asked first. Send what they named.", 13, ThemeKit.TERRACOTTA))
+		for spec in ask_rows:
+			var ask: Dictionary = spec
+			var to_id := str(ask.get("to", ""))
+			var crop := str(ask.get("crop", ""))
+			if to_id != "":
+				asked[to_id] = true
+			journal_box.add_child(_wrap(str(ask.get("text", ask.get("label", ""))), 14, ThemeKit.TERRACOTTA))
+			if to_id == "" or crop == "":
+				continue
+			var button := Button.new()
+			button.text = str(ask.get("label", "Send"))
+			button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			button.pressed.connect(func(): host.send_vale_cart(to_id, crop))
+			journal_box.add_child(button)
 	for row in report.get("settlements", []):
 		var hamlet: Dictionary = row
 		var lod := int(hamlet.get("lod", 4))
@@ -303,10 +324,12 @@ func show_vale(report: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.title("Send a cart", 16))
 	for spec in report.get("sends", []):
 		var send: Dictionary = spec
+		var to_id := str(send.get("to", ""))
+		if asked.has(to_id):
+			continue
 		var button := Button.new()
 		button.text = str(send.get("label", "Send"))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		var to_id := str(send.get("to", ""))
 		var crop := str(send.get("crop", ""))
 		button.pressed.connect(func(): host.send_vale_cart(to_id, crop))
 		journal_box.add_child(button)
@@ -320,14 +343,60 @@ func show_vale(report: Dictionary) -> void:
 		var crop := str(send.get("crop", ""))
 		button.pressed.connect(func(): host.share_vale_seed(to_id, crop))
 		journal_box.add_child(button)
-	for line in report.get("asks", []):
-		journal_box.add_child(_wrap(str(line), 14, ThemeKit.TERRACOTTA))
 	var log_raw = report.get("log", [])
 	var log: Array = log_raw if typeof(log_raw) == TYPE_ARRAY else []
 	if not log.is_empty():
 		journal_box.add_child(ThemeKit.title("Vale book", 16))
 		for line in log:
 			journal_box.add_child(_wrap("· " + str(line), 14))
+
+func _vale_map(report: Dictionary) -> Control:
+	var board := Control.new()
+	board.custom_minimum_size = Vector2(380, 168)
+	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var asked := {}
+	for spec in report.get("ask_rows", []):
+		var ask: Dictionary = spec
+		asked[str(ask.get("to", ""))] = true
+	var inbound := {}
+	for spec in report.get("cart_rows", []):
+		var cart: Dictionary = spec
+		inbound[str(cart.get("to", ""))] = true
+	var origin := Vector2(190, 78)
+	var size := 34.0
+	for row in report.get("settlements", []):
+		var hamlet: Dictionary = row
+		var q := float(int(hamlet.get("q", 0)))
+		var r := float(int(hamlet.get("r", 0)))
+		var at := origin + Vector2(size * 1.5 * q, size * sqrt(3.0) * (r + q * 0.5))
+		var lod := int(hamlet.get("lod", 4))
+		var fill := Color("#6a5a48")
+		if bool(hamlet.get("player", false)):
+			fill = Color("#c4895a")
+		elif lod <= 2:
+			fill = Color("#6d9a4a")
+		elif lod == 3:
+			fill = Color("#8a7a4a")
+		if asked.has(str(hamlet.get("id", ""))):
+			fill = ThemeKit.TERRACOTTA
+		var cell := ColorRect.new()
+		cell.color = fill
+		cell.position = at - Vector2(28, 16)
+		cell.size = Vector2(56, 32)
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		board.add_child(cell)
+		var name := str(hamlet.get("name", ""))
+		var bits := name.split(" ")
+		var short := str(bits[bits.size() - 1]) if bits.size() > 0 else name
+		if inbound.has(str(hamlet.get("id", ""))):
+			short = "cart · " + short
+		var caption := ThemeKit.label(short, 11, ThemeKit.CREAM)
+		caption.position = at - Vector2(26, 12)
+		caption.size = Vector2(52, 24)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		board.add_child(caption)
+	return board
 
 func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true, mill: Dictionary = {}) -> void:
 	_clear(shop_box)

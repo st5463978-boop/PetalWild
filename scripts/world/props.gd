@@ -15,6 +15,7 @@ func build(parent: Node3D) -> void:
 	_lantern(parent, Vector3(-6.2, 0, 3.5))
 	_lantern(parent, Vector3(3.4, 0, -2.5))
 	_reeds(parent)
+	_gate_crate(parent)
 
 func _stall(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -237,6 +238,29 @@ func _reeds(parent: Node3D) -> void:
 		if at.x < 5.2:
 			continue
 		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.02, 0.025, 0.9, Color("#6d7a3a"))
+
+func _gate_crate(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "ValeCrate"
+	root.position = GardenLayout.GATE + Vector3(0.95, 0.0, 0.55)
+	root.visible = false
+	root.add_to_group("vale_crate")
+	parent.add_child(root)
+	_crate(root, Vector3(0, 0.16, 0))
+	var sign := Label3D.new()
+	sign.text = "Vale cart"
+	sign.font_size = 42
+	sign.pixel_size = 0.004
+	sign.position = Vector3(0, 0.72, 0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sign.shaded = false
+	sign.modulate = Color("#c4a070")
+	sign.outline_modulate = Color("2a2118")
+	sign.outline_size = 10
+	sign.add_to_group("vale_crate_sign")
+	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
+		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
+	root.add_child(sign)
 
 func _crate(parent: Node3D, at: Vector3) -> void:
 	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))

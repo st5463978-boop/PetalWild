@@ -4,7 +4,7 @@ PetalWild is a garden-scale living world. You till, plant, water, and fertilise 
 
 The art target is the dense sunlit garden in `docs/reference/`. The current scene is a playable step toward that, and `docs/VISUAL_GAP.md` says what is still wrong.
 
-J journal, M vale, C town. Neighbouring parishes in Petal Vale trade carts with Hedge Hollow.
+J journal, M vale, C town. Neighbouring parishes in Petal Vale trade carts with Hedge Hollow. A cart to Hollow sits as a crate at the gate.
 
 ## Run
 
