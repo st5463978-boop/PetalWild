@@ -9,7 +9,9 @@ End-to-end hedge-tea chain on the existing stall tin, pouch, and crop harvest: g
 ## Branch / commit
 
 - Branch: `petal/05-economy`
+- Last commit: `109f86c` Treat an empty kettle as waiting for peach.
 - Baseline: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
+- PR: https://github.com/st5463978-boop/PetalWild/pull/7
 
 ## Census (before this lane)
 
@@ -52,9 +54,10 @@ End-to-end hedge-tea chain on the existing stall tin, pouch, and crop harvest: g
 
 ## Tests
 
-- `tests/test_systems.gd` — SYSTEMS_OK (genetics + chain)
-- garden `PETAL_SMOKE=1` — PETAL_SMOKE_OK including kettle disrupt/recover
-- `tools/smoke.gd` — PETAL_RULES_OK (unchanged ecology rules)
+- `tests/test_systems.gd` — SYSTEMS_OK (genetics + brew / full crate / recover)
+- garden `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` — PETAL_SMOKE_OK (kettle wait, steam, porch, crate cap, dusk shut, morning sale, save/load)
+- `tools/smoke.gd` — PETAL_RULES_OK
+- Expected leaks on garden smoke: 3 CanvasItem RIDs, 6 ObjectDB instances
 
 ## Requests
 
