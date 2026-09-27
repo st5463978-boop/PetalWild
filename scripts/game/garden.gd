@@ -73,6 +73,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_FACE_SHOT") == "1":
+		await _run_face_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -7387,16 +7390,20 @@ func _run_capture() -> void:
 	await _shot("/workspace/docs/screenshots/wave1_overview.png")
 	if jelly:
 		jelly.reduce_motion = true
+		jelly.leaving = false
+		jelly.global_position = GardenLayout.STALL + Vector3(1.6, 0.15, 1.35)
+		jelly.rotation.y = PI
+		jelly.vel = Vector3.ZERO
+		_inspect_face(jelly)
+		await get_tree().create_timer(0.55).timeout
+		await _shot("/workspace/docs/screenshots/wave1_face.png")
+		_clear_inspect()
 		jelly.global_position = Vector3(-10.6, 0.2, -1.4)
 		jelly.rotation.y = PI
 		jelly.vel = Vector3.ZERO
 		camera.focus_on(jelly.global_position + Vector3(0, 0.28, 0), 2.15)
 		await get_tree().create_timer(0.45).timeout
 		await _shot("/workspace/docs/screenshots/wave1_jelly.png")
-		_inspect_face(jelly)
-		await get_tree().create_timer(0.45).timeout
-		await _shot("/workspace/docs/screenshots/wave1_face.png")
-		_clear_inspect()
 	camera.focus_on(_person("lumen").global_position + Vector3(0, 0.62, 0), 5.4)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_lumen.png")
@@ -7421,6 +7428,23 @@ func _run_capture() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_face_shot() -> void:
+	Settings.reduce_motion = true
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+	jelly.reduce_motion = true
+	jelly.leaving = false
+	jelly.global_position = GardenLayout.STALL + Vector3(1.6, 0.15, 1.35)
+	jelly.rotation.y = PI
+	jelly.vel = Vector3.ZERO
+	_inspect_face(jelly)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.7).timeout
+	await _shot("/workspace/docs/screenshots/wave1_face.png")
+	print("PETAL_FACE_SHOT_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:
@@ -8782,7 +8806,8 @@ func _inspect_face(jelly: Jelly) -> void:
 	focus = jelly
 	jelly.inspect_face()
 	if camera:
-		camera.focus_on(jelly.face_point(), 3.6)
+		camera.pitch = 34.0
+		camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 7.4)
 	bus.note("inspect", jelly.display_name)
 	toast("%s looks back." % jelly.display_name)
 	if hud:
