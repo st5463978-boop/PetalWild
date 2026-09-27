@@ -83,6 +83,15 @@ static func run_integrate(garden: Node) -> void:
 		push_error("integrate: F3 is missing decide/lanes")
 		tree.quit(1)
 		return
+	if garden.region.ids().size() != 5:
+		push_error("integrate: vale is missing")
+		tree.quit(1)
+		return
+	var packed: Dictionary = garden.to_state()
+	if not packed.has("crate_yields") or not packed.has("parish") or not packed.has("town") or not packed.has("region"):
+		push_error("integrate: save dropped a lane key")
+		tree.quit(1)
+		return
 	print("PETAL_INTEGRATE_OK")
 	tree.quit(0)
 

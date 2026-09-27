@@ -38,6 +38,11 @@ run_script() {
 run_script res://tools/smoke.gd PETAL_RULES_OK
 run_script res://tests/test_systems.gd SYSTEMS_OK
 run_script res://tests/test_integrate.gd PETAL_CONTRACTS_OK
+run_script res://tests/test_foundation.gd FOUNDATION_OK
+run_script res://tests/test_jelly.gd JELLY_FEEL_OK
+run_script res://tests/test_resident_life.gd RESIDENT_LIFE_OK
+run_script res://tests/test_town.gd TOWN_OK
+run_script res://tests/test_region.gd REGION_OK
 echo "PETAL_QA_SCRIPTS_OK"
 if [ "${PETAL_QA_GARDEN:-0}" = "1" ]; then
   export DISPLAY="${DISPLAY:-:1}"

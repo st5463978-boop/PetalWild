@@ -21,7 +21,7 @@ Canonical stack is the Hedge Hollow garden. Shared files will collide. PETAL-08 
 
 | Path | Census | Action |
 | --- | --- | --- |
-| `scripts/main.gd` + `scripts/presentation/grove_*.gd` + `scripts/sim/*` | Kenney grove. Not the running scene. Catalogs expect dict plants (`sunpetal`, Cara). Live `data/plants.json` is an array of meadowbell/peach/… | Leave on disk. Do not autoload `PetalWorld` / `PetalContent`. `tests/smoke.gd` is this stack and is broken against live JSON. |
+| `scripts/main.gd` + `scripts/presentation/grove_*.gd` + Kenney files in `scripts/sim/` | Kenney grove. Not the running scene. Catalogs expect dict plants (`sunpetal`, Cara). Live `data/plants.json` is an array of meadowbell/peach/… | Leave on disk. Do not autoload `PetalWorld` / `PetalContent`. `tests/smoke.gd` is this stack and is broken against live JSON. Live vale is `scripts/sim/region_sim.gd` only. |
 | `game/` | Second wave behind `.gdignore` | Ignore. |
 | `data/residents.json`, `data/opening.json`, `data/dialogue.json` | Kenney residents (Cara, Mia, Pod) | Live people are `data/people.json` (Lumen, Bram, Nessa). |
 | `docs/HANDOFF_AGENT_20260925.md` Hailo NPU `/v1/decide` | Stale vs locked DPO CPU layer | Follow `docs/PETAL_CAMPAIGN_DECISION_LAYER.md`. |
@@ -31,7 +31,17 @@ Canonical stack is the Hedge Hollow garden. Shared files will collide. PETAL-08 
 - Plant records: `id`, `name`, `seed`, `sell_price`. Optional `grow_hours`, `water_need`, `fertility_need`, `chem`.
 - Species records: `id`, `name`, `requirements[]` with `type` + `label`.
 - People records: `id`, `name`. Live ids: `lumen`, `bram`, `nessa`.
-- Save version 1. `to_state` / `apply_state` on garden, soil cells, ecology, people, economy, clock, trust.
+- Save version 1. `to_state` / `apply_state` on garden, soil cells, ecology, people, economy, clock, trust. Extra keys: `crate_yields`, `parish`, `town`, `region`, `region_stamp`.
 - Decide: `POST /decide {question, context, options[]}` → `index`. Offline when `PETAL_DECIDE` is not `1`.
 - No recursive node names (`_bell_stone_strip_…`).
-- Grove Park remains unbuilt until 06 ships a real venue with `active: true`.
+- Keys: **M** opens Petal Vale, **C** opens the town/parish page.
+- Grove Park is a hidden lawn until `parish_park` is filed. Catalog `grove_park.active` stays false.
+
+## Resolutions after 01–07
+
+| Collision | Resolution |
+| --- | --- |
+| M and C | M = vale (`RegionSim`). C = town place page (`TownSim`). |
+| Save keys | Combine `crate_yields` + `parish` + `town` + `region`. |
+| `scripts/sim/` | Kenney files stay unused. `region_sim.gd` is live. |
+| Parish vs vale rows | `_place_stats` uses `hamlet` for vale rows so it does not shadow `town`. |

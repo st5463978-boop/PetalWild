@@ -48,6 +48,14 @@ func _catalogs() -> void:
 	_expect(str(district.get("id", "")) == "hedge_hollow", "live district is Hedge Hollow")
 	var road: Dictionary = _object("res://data/road_pieces.json")
 	_expect(road.has("pieces") and (road.get("pieces") as Array).size() > 0, "road pieces data")
+	var vale: Dictionary = _object("res://data/regions.json")
+	_expect(str(vale.get("home", "")) == "hollow", "vale home is Hedge Hollow")
+	var settlements: Array = vale.get("settlements", [])
+	_expect(settlements.size() == 5, "five vale parishes")
+	var vale_ids := PackedStringArray()
+	for row in settlements:
+		vale_ids.append(str(row.get("id", "")))
+	_expect(vale_ids.has("hollow") and vale_ids.has("reedbank") and vale_ids.has("mossford") and vale_ids.has("lea") and vale_ids.has("thatch"), "vale names")
 
 func _genetics() -> void:
 	var child: Dictionary = PlantGenetics.mix({"hue": 0.2, "stature": 0.7, "crop_yield": 0.6}, {"hue": 0.8, "stature": 1.4, "crop_yield": 1.5}, 8)
@@ -116,9 +124,10 @@ func _decide() -> void:
 
 func _campaign() -> void:
 	_expect(CampaignBoard.needed() == 7, "seven lanes")
-	_expect(CampaignBoard.landed() == 0, "none landed yet")
-	_expect(not CampaignBoard.complete(), "not complete")
-	_expect(CampaignBoard.debug_line().find("wait") >= 0, "debug names waiting lanes")
+	_expect(CampaignBoard.landed() == 7, "all seven lanes landed")
+	_expect(not CampaignBoard.complete(), "integration not marked complete until playable")
+	_expect(CampaignBoard.debug_line().find("landed") >= 0, "debug names landed lanes")
+	_expect(CampaignBoard.waiting_ids().is_empty(), "no waiting lanes")
 	var lanes: Dictionary = CampaignBoard.lanes()
 	_expect(str(lanes.get("tag", "")) == "petal-campaign-baseline-20260927", "baseline tag")
 
