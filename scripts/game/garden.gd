@@ -7238,11 +7238,20 @@ func _run_smoke() -> void:
 	mix_lone.fertility = 0.5
 	mix_lone.wilt = 0.0
 	mix_lone.grow_from_day = 1
+	var mix_clear: Array[Vector2i] = [Vector2i(9, 1), Vector2i(8, 0), Vector2i(8, 5), Vector2i(7, 6), Vector2i(9, 6)]
+	for mix_at in mix_clear:
+		var mix_side := soil.get_cell(mix_at.x, mix_at.y)
+		if mix_side:
+			mix_side.plant_id = ""
 	if _plot_line(mix_bell).find("Reed nearby.") == -1:
 		push_error("smoke: a reed beside a meadowbell stayed quiet")
 		get_tree().quit(1)
 		return
-	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+	var mix_pair: Array = [
+		{"plant_id": "meadowbell", "ix": 8, "iz": 6},
+		{"plant_id": "reed", "ix": 8, "iz": 7},
+	]
+	if ecology.rules.garden_line(mix_pair, ContentDB.plants) != "The meadow leans on the bank.":
 		push_error("smoke: the parish missed the bank neighbour")
 		get_tree().quit(1)
 		return
@@ -7251,6 +7260,7 @@ func _run_smoke() -> void:
 		push_error("smoke: a reed neighbour did not hurry the bell")
 		get_tree().quit(1)
 		return
+	var mix_packed: Array = []
 	for mix_ix in 5:
 		var mix_crowd := soil.get_cell(mix_ix, 7)
 		mix_crowd.tilled = true
@@ -7259,11 +7269,12 @@ func _run_smoke() -> void:
 		mix_crowd.moisture = 0.9
 		mix_crowd.fertility = 0.5
 		mix_crowd.grow_from_day = 1
+		mix_packed.append({"plant_id": "meadowbell", "ix": mix_ix, "iz": 7})
 	if _plot_line(soil.get_cell(0, 7)).find("Crowded.") == -1:
 		push_error("smoke: five meadowbells did not crowd")
 		get_tree().quit(1)
 		return
-	if ecology.rules.garden_line(soil.beds(), ContentDB.plants) != "The meadow leans on the bank.":
+	if ecology.rules.garden_line(mix_packed, ContentDB.plants) != "The meadow is crowded.":
 		push_error("smoke: a crowded meadow hid the bank neighbour")
 		get_tree().quit(1)
 		return
@@ -7276,8 +7287,8 @@ func _run_smoke() -> void:
 		return
 	var mix_need := false
 	ecology.states["bellhelp"] = "sighted"
-	for row in _journal_rows(world_snapshot()):
-		var mix_card: Dictionary = row
+	for mix_row in _journal_rows(world_snapshot()):
+		var mix_card: Dictionary = mix_row
 		if str(mix_card.get("name", "")) != "Bellhelp":
 			continue
 		if str(mix_card.get("need", "")).find("Hungry") != -1:
