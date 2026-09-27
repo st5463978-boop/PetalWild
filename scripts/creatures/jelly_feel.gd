@@ -48,18 +48,19 @@ static func clamp_pos(p: Vector3, fallback: Vector3) -> Vector3:
 static func hold_follow(pos: Vector3, target: Vector3, vel: Vector3, dt: float) -> Vector3:
 	var pull := target - pos
 	vel += pull * HOLD_SPRING * dt
-	vel *= HOLD_DAMP
+	vel *= pow(HOLD_DAMP, dt * 60.0)
 	return clamp_vel(vel)
 
 
 static func fall(vel: Vector3, dt: float) -> Vector3:
 	vel.y -= GRAVITY * dt
-	vel.x *= AIR_DAMP
-	vel.z *= AIR_DAMP
+	var air := pow(AIR_DAMP, dt * 60.0)
+	vel.x *= air
+	vel.z *= air
 	return clamp_vel(vel)
 
 
-static func land(pos: Vector3, vel: Vector3, floor_y: float) -> Dictionary:
+static func land(pos: Vector3, vel: Vector3, floor_y: float, dt: float = 0.016) -> Dictionary:
 	var hit := false
 	var bounced := false
 	var squash := 1.0
@@ -73,10 +74,13 @@ static func land(pos: Vector3, vel: Vector3, floor_y: float) -> Dictionary:
 			ripple = clampf(impact * 0.2, 0.0, 1.0)
 			vel.y = impact * RESTITUTION
 			bounced = vel.y > 1.05
+			vel.x *= GROUND_FRICTION
+			vel.z *= GROUND_FRICTION
 		else:
 			vel.y = 0.0
-		vel.x *= GROUND_FRICTION
-		vel.z *= GROUND_FRICTION
+			var slide := pow(GROUND_FRICTION, dt * 60.0)
+			vel.x *= slide
+			vel.z *= slide
 		vel = clamp_vel(vel)
 	return {
 		"pos": pos,

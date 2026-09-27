@@ -455,7 +455,7 @@ func _full(delta: float) -> void:
 		global_position += vel * dt
 		if not held:
 			var floor_y := _stand_y()
-			var landed_step: Dictionary = JellyFeel.land(global_position, vel, floor_y)
+			var landed_step: Dictionary = JellyFeel.land(global_position, vel, floor_y, dt)
 			global_position = landed_step["pos"]
 			vel = landed_step["vel"]
 			if bool(landed_step["hit"]):

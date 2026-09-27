@@ -7221,16 +7221,17 @@ func _smoke_jelly_feel() -> bool:
 	jelly.global_position = Vector3(0.0, 0.2, 0.0)
 	jelly.vel = Vector3.ZERO
 	jelly.reduce_motion = false
-	jelly.grab(Vector3(1.8, 1.35, 0.2))
-	for _hold in 4:
-		jelly._full(0.016)
-	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.35:
-		push_error("smoke: jelly grab did not lift")
-		get_tree().quit(1)
-		return false
+	jelly.grab(Vector3(3.2, 1.7, 0.0))
+	jelly._full(0.05)
 	var grab_scale: Vector3 = jelly.body_root.scale if jelly.body_root else Vector3.ONE
 	if grab_scale.y >= grab_scale.x:
 		push_error("smoke: held jelly did not stretch")
+		get_tree().quit(1)
+		return false
+	for _hold in 10:
+		jelly._full(0.016)
+	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.35:
+		push_error("smoke: jelly grab did not lift")
 		get_tree().quit(1)
 		return false
 	jelly.sample_pos.clear()

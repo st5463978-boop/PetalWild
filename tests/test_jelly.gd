@@ -33,7 +33,7 @@ func _throw_samples() -> void:
 	_expect(thrown.length() <= JellyFeel.MAX_SPEED + 0.01, "throw speed stays capped")
 
 func _land() -> void:
-	var landed: Dictionary = JellyFeel.land(Vector3(0.0, -0.2, 0.0), Vector3(1.0, -4.0, 0.0), 0.0)
+	var landed: Dictionary = JellyFeel.land(Vector3(0.0, -0.2, 0.0), Vector3(1.0, -4.0, 0.0), 0.0, 0.016)
 	var pos: Vector3 = landed["pos"]
 	var vel: Vector3 = landed["vel"]
 	_expect(bool(landed["hit"]), "a below-floor step hits")
@@ -50,7 +50,7 @@ func _tunnel() -> void:
 	for _i in 20:
 		vel = JellyFeel.fall(vel, dt)
 		pos += vel * dt
-		var step: Dictionary = JellyFeel.land(pos, vel, 0.0)
+		var step: Dictionary = JellyFeel.land(pos, vel, 0.0, dt)
 		pos = step["pos"]
 		vel = step["vel"]
 	_expect(pos.y >= -0.001, "substeps do not leave the body under the lawn")
