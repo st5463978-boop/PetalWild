@@ -20,9 +20,10 @@ Updated 2026-09-27.
 
 - Task: player plants a neighbour or a crowded stand and sees plant growth plus creature hunger change.
 - Branch: `petal/02-ecology`
+- Last commit: `c11c86b` Check companion lines on the two beds under test.
 - Paths: `data/plants.json`, `data/species.json`, `scripts/ecology/ecology_rules.gd`, `scripts/ecology/ecology.gd`, `scripts/garden/soil_field.gd`, `scripts/creatures/jelly.gd`, `scripts/game/garden.gd`, `scripts/ui/hud.gd`, `tools/smoke.gd`, `tests/test_systems.gd`
 - Interface: `Ecology.tick(delta, world, hours=0)`, `EcologyRules.growth_factor` / `garden_line` / `need_line`, `SoilField.neighbor_ids`, world snapshot `plant_counts`, parish `ecology_line`, journal `need`
-- Tests: `PETAL_RULES_OK`, `SYSTEMS_OK`, garden `PETAL_SMOKE_OK`
+- Tests: `PETAL_RULES_OK` pass, `SYSTEMS_OK` pass, garden `PETAL_SMOKE_OK` pass (leaked 3 CanvasItem RIDs / 6 ObjectDB instances, expected)
 - Blockers: none
 - Requests: PETAL-03 can tint a hungry jelly face from `mood == "hungry"`. PETAL-07 already shows the new journal/parish lines.
 
