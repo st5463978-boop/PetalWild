@@ -1,8 +1,10 @@
 # PetalWild
 
-PetalWild is a garden-scale living world. You till, plant, water, and fertilise a small grove. Plants change who visits. Grokbot jellies can be picked up, squeezed, and thrown. Veg people keep a stall. The town beyond the hedge is named and not built yet.
+PetalWild is a garden-scale living world. You till, plant, water, and fertilise a small grove. Plants change who visits. Grokbot jellies can be picked up, squeezed, and thrown. Veg people keep a stall. Neighbouring parishes in Petal Vale trade carts with Hedge Hollow.
 
 The art target is the dense sunlit garden in `docs/reference/`. The current scene is a playable step toward that, and `docs/VISUAL_GAP.md` says what is still wrong.
+
+J journal, M vale, C town. Neighbouring parishes in Petal Vale trade carts with Hedge Hollow.
 
 ## Run
 
@@ -38,7 +40,7 @@ Modes: `overview`, `golden`, `creature`, `person`, `shop`, `night`, `rain`.
 
 ## Play
 
-1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly's face to meet them. Click the body and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug, F8 self-play beat (plants a Meadowbell on an empty bed).
+1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly's face to meet them. Click the body and drag to pet or throw. E opens the stall. J journal, M vale, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug, F8 self-play beat (plants a Meadowbell on an empty bed).
 
 The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plots you scoop yourself.
 

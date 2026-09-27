@@ -45,7 +45,7 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   C town   B stall", 13, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   C town   M vale   B stall", 13, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
 	hint_label.offset_left = -420
@@ -238,10 +238,16 @@ func show_place(stats: Dictionary) -> void:
 	if dusk_line != "":
 		journal_box.add_child(ThemeKit.label(dusk_line, 14))
 	journal_box.add_child(ThemeKit.label("Demand for rooms that are not built stays in the town counts, not as bodies.", 14))
+	var vale_line := str(stats.get("vale_line", ""))
+	if vale_line != "":
+		journal_box.add_child(ThemeKit.title("Petal Vale", 16))
+		journal_box.add_child(ThemeKit.label(vale_line, 14))
+		for line in stats.get("vale_rows", []):
+			journal_box.add_child(ThemeKit.label(str(line), 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])
 	if notices.is_empty():
-		journal_box.add_child(ThemeKit.label("The board is bare. Approved proposals are posted here. The town beyond the hedge lives in the counts above.", 14))
+		journal_box.add_child(ThemeKit.label("The board is bare. Approved proposals are posted here. The vale keeps its own page.", 14))
 	for notice in notices:
 		journal_box.add_child(ThemeKit.label(str(notice), 14))
 	journal_box.add_child(ThemeKit.title("Venues", 16))
@@ -249,6 +255,70 @@ func show_place(stats: Dictionary) -> void:
 		journal_box.add_child(ThemeKit.label(str(line), 14))
 	var tiers = stats.get("tiers", {})
 	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s · town %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0), tiers.get("4", 0)], 14))
+
+func show_vale(report: Dictionary) -> void:
+	_clear(journal_box)
+	journal_box.add_child(ThemeKit.title(str(report.get("title", "Petal Vale")), 22))
+	journal_box.add_child(ThemeKit.label("Parishes beyond the hedge. Carts, walkers, and seed. Not a war map.", 14, ThemeKit.MOSS_DEEP))
+	for row in report.get("settlements", []):
+		var hamlet: Dictionary = row
+		var lod := int(hamlet.get("lod", 4))
+		var lod_name := "far"
+		if lod <= 2:
+			lod_name = "here"
+		elif lod == 3:
+			lod_name = "near"
+		var choice := str(hamlet.get("choice", ""))
+		var conf := float(hamlet.get("confidence", 0.0))
+		var extra := ""
+		if choice != "":
+			extra = " · %s (%.2f)" % [choice, conf]
+		journal_box.add_child(ThemeKit.title("%s · %s" % [str(hamlet.get("name", "")), str(hamlet.get("stance", ""))], 16))
+		journal_box.add_child(ThemeKit.label("grows %s · needs %s · %s · %d hands%s" % [str(hamlet.get("specialty", "")), str(hamlet.get("need", "")), lod_name, int(hamlet.get("hands", 0)), extra], 14))
+		journal_box.add_child(ThemeKit.label(str(hamlet.get("stock_line", "")), 13))
+	var carts_raw = report.get("carts", [])
+	var carts: Array = carts_raw if typeof(carts_raw) == TYPE_ARRAY else []
+	if not carts.is_empty():
+		journal_box.add_child(ThemeKit.title("Carts on the lane", 16))
+		for line in carts:
+			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+	var walks_raw = report.get("migrants", [])
+	var walks: Array = walks_raw if typeof(walks_raw) == TYPE_ARRAY else []
+	if not walks.is_empty():
+		journal_box.add_child(ThemeKit.title("Walkers", 16))
+		for line in walks:
+			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+	if bool(report.get("can_welcome", false)):
+		var welcome := Button.new()
+		welcome.text = "Welcome the walker at the hedge"
+		welcome.pressed.connect(func(): host.welcome_vale())
+		journal_box.add_child(welcome)
+	journal_box.add_child(ThemeKit.title("Send a cart", 16))
+	for spec in report.get("sends", []):
+		var send: Dictionary = spec
+		var button := Button.new()
+		button.text = str(send.get("label", "Send"))
+		var to_id := str(send.get("to", ""))
+		var crop := str(send.get("crop", ""))
+		button.pressed.connect(func(): host.send_vale_cart(to_id, crop))
+		journal_box.add_child(button)
+	journal_box.add_child(ThemeKit.title("Share seed", 16))
+	for spec in report.get("sends", []):
+		var send: Dictionary = spec
+		var button := Button.new()
+		button.text = "Share %s seed with %s" % [str(send.get("crop", "")), str(send.get("name", send.get("to", "")))]
+		var to_id := str(send.get("to", ""))
+		var crop := str(send.get("crop", ""))
+		button.pressed.connect(func(): host.share_vale_seed(to_id, crop))
+		journal_box.add_child(button)
+	for line in report.get("asks", []):
+		journal_box.add_child(ThemeKit.label(str(line), 14, ThemeKit.TERRACOTTA))
+	var log_raw = report.get("log", [])
+	var log: Array = log_raw if typeof(log_raw) == TYPE_ARRAY else []
+	if not log.is_empty():
+		journal_box.add_child(ThemeKit.title("Vale book", 16))
+		for line in log:
+			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
 
 func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true, mill: Dictionary = {}) -> void:
 	_clear(shop_box)
@@ -447,7 +517,7 @@ func _journal(theme: Theme) -> void:
 	pages = {"journal": journal_box, "people": people_box, "trust": trust_box, "place": place_box}
 	# Pages share the scroll by reparenting. Simpler: one box and we swap content via show methods.
 	# People, trust, and place are filled into journal_box by the host when the tab changes.
-	for spec in [["journal", "Garden"], ["people", "People"], ["trust", "Trust"], ["place", "Parish"]]:
+	for spec in [["journal", "Garden"], ["people", "People"], ["trust", "Trust"], ["place", "Parish"], ["vale", "Vale"]]:
 		var button := Button.new()
 		var page := str(spec[0])
 		button.text = spec[1]
