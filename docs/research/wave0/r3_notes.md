@@ -17,13 +17,15 @@ Lane contracts in `docs/AGENT_CONTRACTS.md` still name PETAL_08 as shop flow. Th
 
 ## Orchestration patterns worth keeping
 
-**One next step.** game-creator's multi-session skill keeps a short state file: phase, last concrete action, one next step, blockers. The 2026-09-25 handoff already does this in prose. A machine-readable line next to the foreman queue would let the next worker start without re-reading the east road. Do not import their template.
+game-creator is RED and REJECT. It has no `LICENSE` file. The sentences below restate a QA loop. They are not a reading of that repository.
+
+**One next step.** A short state file keeps phase, last concrete action, one next step, and blockers. The 2026-09-25 handoff already does this in prose. A machine-readable line next to the foreman queue would let the next worker start without re-reading the east road. Write that line ourselves. Do not import a template.
 
 **Gates, not a studio org chart.** Claude-Code-Game-Studios (MIT) names director gates (pillars, architecture, QA coverage, phase exit) and writes a verdict. Petalwild does not need 49 Claude agents. The foreman already has the events. Use the index as a checklist: a story is not done without smoke, a visual claim is not done without a display shot, and a creative-direction change still escalates.
 
 **Independent workers, human land.** The one-button workflow (MIT) generates ten games in isolated contexts, smoke-tests the batch, and stops. Ranking and publishing are a separate human request. For this campaign: parallel lanes do not edit the same garden file, the smoke gate is mandatory, and merge stays with integration. Do not start a generator of new games.
 
-**Text before pixels.** game-creator exposes a function that returns game state as text so an agent need not interpret a screenshot. Petalwild smoke already prints counts. One JSON line (trust, rumour filed, plot moisture, who is embodied) would let a worker check the sim when the picture is ambiguous. Write it in our smoke. The plugin's licence is ambiguous (README says MIT, `package.json` says ISC, no `LICENSE` file, Strudel audio is AGPL), so the code stays unread as a source.
+**Text before pixels.** Petalwild smoke already prints counts. One JSON line (trust, rumour filed, plot moisture, who is embodied) would let a worker check the sim when the picture is ambiguous. Write it in our smoke. Do not open game-creator to copy that function.
 
 ## QA mechanisms
 

@@ -25,3 +25,5 @@ Licence files inside the Kenney zips were kept next to the packs.
 Not downloaded: CC-BY OpenGameArt packs, large CC0 park ambiences, Quaternius Drive folders, ambientCG sets over the size budget, Kenney Fantasy Town.
 
 Nothing from Viva Piñata, Cities: Skylines, Nintendo, or Jelly-Baby was copied.
+
+Wave 0 (27 September 2026) copied no candidate code and no candidate art into this tree. Harvest Moon 2.0 was rejected because a MIT code grant sat next to a Pokémon sheet and an unlabeled tileset. Dwellcraft and game-creator have no licence file. Those bytes were not added here.

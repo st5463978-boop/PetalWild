@@ -9,17 +9,17 @@
     "engine": "Phaser 3 and Three.js",
     "last_activity": "2026-05-25T18:02:30Z",
     "licence_spdx": null,
-    "licence_class": "REVIEW",
-    "licence_evidence": "GitHub licence API returned null. Shallow clone at this commit has no LICENSE file. README ends by claiming MIT and says @strudel/web is AGPL-3.0. package.json says ISC. skills/game-qa frontmatter says MIT. Those statements disagree, so the grant is ambiguous.",
+    "licence_class": "RED",
+    "licence_evidence": "GitHub licence API returned null. Shallow clone at this commit has no LICENSE file. README ends by claiming MIT and says @strudel/web is AGPL-3.0. package.json says ISC. skills/game-qa frontmatter says MIT. Those statements disagree, so the grant is ambiguous. R4 firewall: no LICENSE file. Conflicting README MIT, package.json ISC, and a named AGPL audio dependency are not a grant. Class RED. Decision REJECT.",
     "petalwild_target": "tools/orchestration and the existing Godot smoke, as an original rewrite of the QA loop. Not the Godot tree.",
     "directly_reusable": false,
     "portable": false,
-    "reference_only": true,
+    "reference_only": false,
     "quality": "high",
     "integration_cost": "high",
     "expected_benefit": "A five-phase check (build, runtime, gameplay, architecture, visual) plus a text dump of game state an agent can read without pixels.",
-    "decision": "STUDY",
-    "recommendation_decision": "STUDY",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
     "decision_layer": {
       "reuse": {
         "status": "escalate",
@@ -62,14 +62,14 @@
       "Celebrity face sprites and a face-detection asset pipeline must not enter the garden.",
       "Play.fun monetization and here.now deploy are unrelated to Petalwild."
     ],
-    "recommended_action": "Study the QA phases, the session-state file, and the text state dump. Lane recommendation PETAL-08. Also useful to PETAL-03 and PETAL-05 as a reason to keep a visual check separate from headless smoke.",
+    "recommended_action": "Reject the repository. Restate a QA loop in Petalwild's own notes. Do not read its skills as a source.",
     "do_not": [
-      "Do not copy skills, agents, templates, or examples into tools/ or the Godot project.",
-      "Do not add Strudel or any AGPL audio dependency.",
-      "Do not import character likeness assets."
+      "Copy skills, agents, or templates from this repository.",
+      "Add the Strudel / AGPL audio dependency.",
+      "Treat a README licence claim without a LICENSE file as permission."
     ],
     "research_doc": "docs/research/wave0/r3_notes.md",
-    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "decision_authority": "Grok/Cursor, agreeing with PETAL-R4. Hailo POST /decide returned HTTP 502. options[0] was not used.",
     "assigned_lane": "PETAL-08"
   },
   {

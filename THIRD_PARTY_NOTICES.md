@@ -13,3 +13,5 @@ The following assets are CC0 1.0 and are not covered by that MIT grant:
 Godot Engine is MIT, copyright its contributors, and is not bundled in this repository. This project pins the 4.8-dev6 official binary `8898c2b3d`.
 
 No GPL, AGPL, or CC-BY work is included in the program or the asset tree.
+
+Wave 0 recovery on 27 September 2026 added no third-party program code and no third-party assets. Candidate repositories were inspected under `_research/` or through their public licence files and were not vendored. See `docs/LICENSE_MATRIX.md`.
