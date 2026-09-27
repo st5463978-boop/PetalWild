@@ -8210,7 +8210,9 @@ func _run_resident_shot() -> void:
 		life["needs"]["social"] = 0.7
 		life["pick_hour"] = -1
 		parish.lives[id] = life
+	Clock.running = false
 	_tick_parish(0.2)
+	Clock.running = true
 	for id in ["lumen", "bram"]:
 		var dest: Vector3 = parish.destination(id)
 		if dest.x == INF:
