@@ -9,6 +9,9 @@ func _init() -> void:
 	_speed()
 	_separate()
 	_stall()
+	_species()
+	_hungry()
+	_nuzzle()
 	print("JELLY_FEEL_OK")
 	quit(0)
 
@@ -94,6 +97,36 @@ func _stall() -> void:
 	var wader: Dictionary = JellyFeel.bounce_prop(pond, Vector3.ZERO, 0.3, true)
 	var wader_pos: Vector3 = wader["pos"]
 	_expect(wader_pos.distance_to(pond) < 0.05, "a water jelly may sit in the pond")
+
+func _species() -> void:
+	var grape: Dictionary = JellyFeel.tune({"wobble": 0.9, "shape": "long"})
+	var reed: Dictionary = JellyFeel.tune({"wobble": 0.4, "shape": "flat"})
+	_expect(float(grape["spring"]) < float(reed["spring"]), "a high-wobble jelly follows more softly")
+	_expect(float(grape["stretch"]) > float(reed["stretch"]), "a high-wobble jelly stretches more")
+	_expect(float(grape["bounce"]) > float(reed["bounce"]), "a high-wobble jelly bounces more")
+	var forced: Dictionary = JellyFeel.tune({"wobble": 0.9, "give": 0.2, "bounce": 0.2})
+	_expect(float(forced["spring"]) > float(grape["spring"]), "optional give firms the follow")
+	_expect(absf(float(forced["bounce"]) - 0.2) < 0.001, "optional bounce key is used")
+	_expect(absf(float(grape["damp"]) - JellyFeel.HOLD_DAMP) < 0.001, "damp stays on the lift-tuned value")
+
+func _hungry() -> void:
+	_expect(JellyFeel.hungry(0.15, "content"), "low hunger reads hungry")
+	_expect(JellyFeel.hungry(0.9, "hungry"), "hungry mood reads hungry")
+	_expect(not JellyFeel.hungry(0.9, "playful"), "full and playful is not hungry")
+
+func _nuzzle() -> void:
+	var still: Dictionary = JellyFeel.pet_hold(0.0, 0.05, 0.3)
+	_expect(float(still["pet_time"]) > 0.2, "a still hold accumulates")
+	_expect(not bool(still["nuzzle"]), "a short still hold has not nuzzled yet")
+	var fire: Dictionary = JellyFeel.pet_hold(0.88, 0.05, 0.04)
+	_expect(bool(fire["nuzzle"]), "a long still hold nuzzles")
+	var again: Dictionary = JellyFeel.pet_hold(0.95, 0.05, 0.04)
+	_expect(not bool(again["nuzzle"]), "nuzzle fires once at the threshold")
+	var yank: Dictionary = JellyFeel.pet_hold(0.8, 0.5, 0.016)
+	_expect(float(yank["pet_time"]) == 0.0, "a yank clears the pet")
+	_expect(bool(yank["cancel"]), "a yank cancels the nuzzle")
+	var stretch: Dictionary = JellyFeel.pet_hold(0.5, 0.25, 0.016)
+	_expect(absf(float(stretch["pet_time"]) - 0.5) < 0.001, "a mild stretch pauses the pet")
 
 func _expect(ok: bool, label: String) -> void:
 	if ok:

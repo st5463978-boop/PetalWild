@@ -45,10 +45,68 @@ static func clamp_pos(p: Vector3, fallback: Vector3) -> Vector3:
 	return p.clamp(GARDEN_MIN, GARDEN_MAX)
 
 
-static func hold_follow(pos: Vector3, target: Vector3, vel: Vector3, dt: float) -> Vector3:
+static func tune(definition: Dictionary) -> Dictionary:
+	var wobble := clampf(float(definition.get("wobble", 0.5)), 0.15, 1.2)
+	var give := wobble
+	if definition.has("give"):
+		give = clampf(float(definition.get("give", wobble)), 0.15, 1.2)
+	var shape := str(definition.get("shape", ""))
+	var spring := HOLD_SPRING * lerpf(1.16, 0.84, give)
+	var gain := STRETCH_GAIN * lerpf(0.8, 1.2, give)
+	var rest := RESTITUTION * lerpf(0.82, 1.18, give)
+	match shape:
+		"long":
+			gain *= 1.12
+		"flat":
+			gain *= 0.88
+			rest *= 0.88
+		"bell":
+			rest *= 1.06
+		"lobes":
+			gain *= 1.08
+		"crown":
+			spring *= 1.06
+			rest *= 0.92
+		"pear":
+			spring *= 1.04
+	if definition.has("bounce"):
+		rest = clampf(float(definition.get("bounce", rest)), 0.15, 0.8)
+	return {
+		"spring": spring,
+		"damp": HOLD_DAMP,
+		"bounce": rest,
+		"stretch": gain,
+	}
+
+
+static func hungry(hunger: float, mood: String) -> bool:
+	return hunger < 0.28 or mood == "hungry"
+
+
+static func pet_hold(pet_time: float, stretch: float, dt: float) -> Dictionary:
+	if stretch > 0.4:
+		return {"pet_time": 0.0, "nuzzle": false, "cancel": true}
+	if stretch < 0.18:
+		var next := pet_time + dt
+		return {
+			"pet_time": next,
+			"nuzzle": next >= 0.9 and pet_time < 0.9,
+			"cancel": false,
+		}
+	return {"pet_time": pet_time, "nuzzle": false, "cancel": false}
+
+
+static func hold_follow(
+	pos: Vector3,
+	target: Vector3,
+	vel: Vector3,
+	dt: float,
+	spring: float = HOLD_SPRING,
+	damp: float = HOLD_DAMP
+) -> Vector3:
 	var pull := target - pos
-	vel += pull * HOLD_SPRING * dt
-	vel *= pow(HOLD_DAMP, dt * 60.0)
+	vel += pull * spring * dt
+	vel *= pow(damp, dt * 60.0)
 	return clamp_vel(vel)
 
 
@@ -60,7 +118,13 @@ static func fall(vel: Vector3, dt: float) -> Vector3:
 	return clamp_vel(vel)
 
 
-static func land(pos: Vector3, vel: Vector3, floor_y: float, dt: float = 0.016) -> Dictionary:
+static func land(
+	pos: Vector3,
+	vel: Vector3,
+	floor_y: float,
+	dt: float = 0.016,
+	restitution: float = RESTITUTION
+) -> Dictionary:
 	var hit := false
 	var bounced := false
 	var squash := 1.0
@@ -72,7 +136,7 @@ static func land(pos: Vector3, vel: Vector3, floor_y: float, dt: float = 0.016) 
 		if impact > BOUNCE_MIN:
 			squash = clampf(1.0 - impact * 0.075, SQUASH_MIN, 1.0)
 			ripple = clampf(impact * 0.2, 0.0, 1.0)
-			vel.y = impact * RESTITUTION
+			vel.y = impact * restitution
 			bounced = vel.y > 1.05
 			vel.x *= GROUND_FRICTION
 			vel.z *= GROUND_FRICTION
@@ -92,9 +156,9 @@ static func land(pos: Vector3, vel: Vector3, floor_y: float, dt: float = 0.016) 
 	}
 
 
-static func stretch_amount(pull_len: float, speed: float, held: bool) -> float:
+static func stretch_amount(pull_len: float, speed: float, held: bool, gain: float = STRETCH_GAIN) -> float:
 	if held:
-		return clampf(pull_len * STRETCH_GAIN, 0.0, STRETCH_MAX)
+		return clampf(pull_len * gain, 0.0, STRETCH_MAX)
 	return clampf(speed * 0.065, 0.0, 0.34)
 
 
@@ -176,7 +240,13 @@ static func separate(
 	}
 
 
-static func bounce_prop(pos: Vector3, vel: Vector3, radius: float, water_ok: bool) -> Dictionary:
+static func bounce_prop(
+	pos: Vector3,
+	vel: Vector3,
+	radius: float,
+	water_ok: bool,
+	restitution: float = RESTITUTION
+) -> Dictionary:
 	var hit := false
 	for box in _props():
 		var center: Vector3 = box[0]
@@ -197,12 +267,12 @@ static func bounce_prop(pos: Vector3, vel: Vector3, radius: float, water_ok: boo
 			var dir := 1.0 if dx >= 0.0 else -1.0
 			pos.x = center.x + dir * px
 			if vel.x * dir < 0.0:
-				vel.x = -vel.x * RESTITUTION
+				vel.x = -vel.x * restitution
 		else:
 			var dirz := 1.0 if dz >= 0.0 else -1.0
 			pos.z = center.z + dirz * pz
 			if vel.z * dirz < 0.0:
-				vel.z = -vel.z * RESTITUTION
+				vel.z = -vel.z * restitution
 	if not water_ok:
 		var pond := Vector2(pos.x - GardenLayout.POND_CENTER.x, pos.z - GardenLayout.POND_CENTER.z)
 		var rim := GardenLayout.POND_RADIUS * 0.9 + radius
@@ -215,7 +285,7 @@ static func bounce_prop(pos: Vector3, vel: Vector3, radius: float, water_ok: boo
 			var outward := Vector3(n.x, 0.0, n.y)
 			var into := vel.x * outward.x + vel.z * outward.z
 			if into < 0.0:
-				vel -= outward * into * (1.0 + RESTITUTION)
+				vel -= outward * into * (1.0 + restitution)
 	return {"pos": pos, "vel": clamp_vel(vel), "hit": hit}
 
 

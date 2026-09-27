@@ -7888,6 +7888,46 @@ func _smoke_jelly_feel() -> bool:
 		push_error("smoke: stall did not bounce a jelly")
 		get_tree().quit(1)
 		return false
+	var grape := ecology.force_spawn("grapling")
+	var disc := ecology.force_spawn("reedic")
+	if grape.feel_spring >= disc.feel_spring:
+		push_error("smoke: grapling should handle softer than reedic")
+		get_tree().quit(1)
+		return false
+	grape.queue_free()
+	disc.queue_free()
+	jelly.held = false
+	jelly.mood = "content"
+	jelly.feel = "idle"
+	jelly.stretch = 0.0
+	jelly.hunger = 0.12
+	if not jelly.is_hungry() or jelly.shown_mood() != "hungry":
+		push_error("smoke: a starved jelly did not read hungry")
+		get_tree().quit(1)
+		return false
+	jelly._update_face()
+	if jelly.eye_l == null or jelly.eye_l.scale.y > 0.7:
+		push_error("smoke: hungry face stayed wide-eyed")
+		get_tree().quit(1)
+		return false
+	var nuzz := ecology.force_spawn("bellhelp")
+	nuzz.global_position = Vector3(0.0, 0.2, 0.0)
+	nuzz.vel = Vector3.ZERO
+	nuzz.bond = 0.4
+	nuzz.grab(nuzz.global_position + Vector3(0.02, 0.28, 0.0))
+	for _nuzzle in 72:
+		nuzz._full(0.016)
+	if not nuzz.nuzzled or nuzz.bond < 0.46:
+		push_error("smoke: a still hold did not nuzzle")
+		get_tree().quit(1)
+		return false
+	nuzz.hold_target = nuzz.global_position + Vector3(2.8, 1.6, 0.0)
+	nuzz._full(0.05)
+	if nuzz.pet_time > 0.02:
+		push_error("smoke: a yank did not cancel the nuzzle")
+		get_tree().quit(1)
+		return false
+	nuzz.queue_free()
 	jelly.queue_free()
 	other.queue_free()
 	ecology._prune()
@@ -8091,17 +8131,25 @@ func _run_jelly_play() -> void:
 		jelly = ecology.force_spawn(id)
 	jelly.life = "settler"
 	jelly.leaving = false
-	jelly.reduce_motion = false
+	jelly.reduce_motion = true
 	jelly.tier = 0
+	jelly.hunger = 0.16
+	jelly.mood = "hungry"
 	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	set_tool("hands")
-	held = jelly
 	focus = jelly
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	jelly._update_face()
+	jelly._apply_deform()
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/jelly_hungry.png")
+	jelly.reduce_motion = false
+	held = jelly
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	await get_tree().create_timer(0.2).timeout
 	jelly.grab(jelly.global_position + Vector3(1.2, 1.15, 0.1))
 	for _i in 16:
 		jelly._full(0.016)
@@ -8113,6 +8161,19 @@ func _run_jelly_play() -> void:
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_held.png")
+	jelly.hold_target = jelly.global_position + Vector3(0.03, 0.22, 0.0)
+	jelly.nuzzled = false
+	jelly.pet_time = 0.0
+	for _nuzzle in 72:
+		jelly._full(0.016)
+	if not jelly.nuzzled:
+		push_error("jelly play: still hold did not nuzzle")
+		get_tree().quit(1)
+		return
+	jelly.set_select(true, true)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/jelly_nuzzle.png")
 	jelly.sample_pos.clear()
 	jelly.sample_ms.clear()
 	jelly.sample_pos.append(jelly.global_position)
@@ -9702,7 +9763,7 @@ func _hover_text() -> String:
 	if tool == "hands" or held != null:
 		var jelly: Jelly = held if held != null else _pick_jelly()
 		if jelly:
-			return "%s  ·  %s  ·  %s" % [jelly.display_name, jelly.mood, jelly.feel]
+			return "%s  ·  %s  ·  %s" % [jelly.display_name, jelly.shown_mood(), jelly.feel]
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
@@ -10183,6 +10244,10 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 	elif kind == "pet":
 		toast("%s bounces." % jelly.display_name)
 		audio.play_kind("squish", -18)
+	elif kind == "nuzzle":
+		toast("%s nuzzles your hands." % jelly.display_name)
+		audio.play_kind("squish", -20)
+		ecology.try_promote(jelly)
 	elif kind == "poke":
 		audio.play_kind("squish", -18)
 
