@@ -19,10 +19,6 @@ var inspect_panel: Panel
 var inspect_box: VBoxContainer
 var journal_box: VBoxContainer
 var shop_box: VBoxContainer
-var people_box: VBoxContainer
-var trust_box: VBoxContainer
-var place_box: VBoxContainer
-var pages := {}
 var seed_button: Button
 var _toast_time := 0.0
 
@@ -399,10 +395,6 @@ func toggle_shop() -> void:
 		journal.visible = false
 		host.refresh_panels()
 
-func show_page(page: String) -> void:
-	for key in pages.keys():
-		pages[key].visible = key == page
-
 func set_photo(on: bool) -> void:
 	for child in get_children():
 		if child == photo_label:
@@ -520,12 +512,6 @@ func _journal(theme: Theme) -> void:
 	journal_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	journal_box.custom_minimum_size = Vector2(400, 0)
 	scroll.add_child(journal_box)
-	people_box = VBoxContainer.new()
-	trust_box = VBoxContainer.new()
-	place_box = VBoxContainer.new()
-	pages = {"journal": journal_box, "people": people_box, "trust": trust_box, "place": place_box}
-	# Pages share the scroll by reparenting. Simpler: one box and we swap content via show methods.
-	# People, trust, and place are filled into journal_box by the host when the tab changes.
 	for spec in [["journal", "Garden"], ["people", "People"], ["trust", "Trust"], ["place", "Parish"], ["vale", "Vale"]]:
 		var button := Button.new()
 		var page := str(spec[0])
