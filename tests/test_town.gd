@@ -32,6 +32,11 @@ func _init() -> void:
 	_expect(town.route.size() > 1, "a path runs from the gate to the park plot")
 	_expect(town.coverage() > 0.4, "open rooms cover the live plots")
 	_expect(int(town.stats.get("town_pop", 0)) > int(town.stats.get("garden_pop", 0)), "settlement grows past the garden")
+	var sparse := TownSim.new()
+	sparse.boot()
+	ctx["lane_fill"] = "sparse"
+	sparse.tick(ctx)
+	_expect(sparse.occupancy("lane") <= town.occupancy("lane"), "sparse fill keeps fewer houses")
 	ctx["park"] = true
 	town.tick(ctx)
 	_expect(town.building_open("grove_park"), "grove park opens from the filing")

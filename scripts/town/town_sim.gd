@@ -12,7 +12,7 @@ var plots: Array = []
 var route: Array = []
 var stats: Dictionary = {}
 var lane_mode := "fill"
-var _chose_lane := false
+var chose_lane := false
 
 func boot(text: String = "") -> void:
 	var raw := text
@@ -39,7 +39,7 @@ func boot(text: String = "") -> void:
 		buildings[str(row.get("id", ""))] = row.duplicate(true)
 	_build_plots()
 	lane_mode = "fill"
-	_chose_lane = false
+	chose_lane = false
 	stats = _blank_stats()
 
 func tick(ctx: Dictionary) -> void:
@@ -103,13 +103,13 @@ func page_lines() -> PackedStringArray:
 func to_dict() -> Dictionary:
 	return {
 		"lane_mode": lane_mode,
-		"chose_lane": _chose_lane,
+		"chose_lane": chose_lane,
 		"stats": stats.duplicate(true),
 	}
 
 func from_dict(data: Dictionary) -> void:
 	lane_mode = str(data.get("lane_mode", "fill"))
-	_chose_lane = bool(data.get("chose_lane", false))
+	chose_lane = bool(data.get("chose_lane", false))
 	var saved: Variant = data.get("stats", {})
 	if typeof(saved) == TYPE_DICTIONARY:
 		stats = (saved as Dictionary).duplicate(true)
@@ -158,9 +158,13 @@ func _open_districts(ctx: Dictionary) -> void:
 		if need == "park":
 			now = bool(ctx.get("park", false))
 		row["now_open"] = now
-	if bool(districts.get("lane", {}).get("now_open", false)) and not _chose_lane:
-		_chose_lane = true
-		lane_mode = _decide_fill()
+	if bool(districts.get("lane", {}).get("now_open", false)) and not chose_lane:
+		chose_lane = true
+		var fill := str(ctx.get("lane_fill", ""))
+		if fill == "fill" or fill == "sparse":
+			lane_mode = fill
+		else:
+			lane_mode = _decide_fill()
 
 func _decide_fill() -> String:
 	var options: Array = ["fill", "sparse"]

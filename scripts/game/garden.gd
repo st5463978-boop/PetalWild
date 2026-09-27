@@ -960,7 +960,7 @@ func _tick_town(world: Dictionary) -> void:
 	if town.plots.is_empty():
 		town.boot()
 	var cam_at := camera.global_position if camera else Vector3.ZERO
-	town.tick({
+	var ctx := {
 		"people": _present_people(),
 		"residents": ecology.resident_total() if ecology else 0,
 		"quality": float(world.get("garden_quality", 0.0)),
@@ -970,7 +970,13 @@ func _tick_town(world: Dictionary) -> void:
 		"hour": Clock.hour(),
 		"weather": Clock.weather,
 		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
-	})
+	}
+	if bool(ctx["road"]) and not town.chose_lane:
+		ctx["lane_fill"] = PetalDecide.choose(
+			"South Lane has empty houses beyond the hedge. Fill them or keep them sparse?",
+			["fill", "sparse"]
+		)
+	town.tick(ctx)
 	SimLod.note_aggregate(town.aggregate())
 	_sync_park()
 

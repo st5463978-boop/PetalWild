@@ -10,7 +10,7 @@ Settlement that grows past Hedge Hollow without hero-detail simulation for dista
 
 - Branch: `petal/06-town`
 - From: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
-- Commit: pending first test pass
+- PR: https://github.com/st5463978-boop/PetalWild/pull/9
 
 ## Census (before this lane)
 
@@ -60,8 +60,10 @@ Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14).
 ## Tests
 
 - `tests/test_town.gd` → `TOWN_OK`
-- Existing `SYSTEMS_OK`, `PETAL_RULES_OK`
-- Garden `PETAL_SMOKE_OK` (must keep Grove Park catalog inactive)
+- `tests/test_systems.gd` → `SYSTEMS_OK`
+- `tools/smoke.gd` → `PETAL_RULES_OK`
+- `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_SMOKE_OK`
+- `tests/smoke.gd` still parse-fails on this tree (Variant `:=`); not this lane.
 
 ## Blockers
 
