@@ -10,15 +10,15 @@ func _init() -> void:
 	_expect(PlantGenetics.price(5, 1.0) == 5, "plain yield keeps the stall price")
 	var field := SoilField.new()
 	var parent := field.get_cell(1, 1)
-	var child := field.get_cell(2, 1)
+	var sprout := field.get_cell(2, 1)
 	parent.plant_id = "meadowbell"
 	parent.growth = 1.0
 	parent.hue = 0.2
 	parent.stature = 0.7
-	child.plant_id = "meadowbell"
-	child.growth = 0.04
-	_expect(field.inherit_into(child), "a seed beside a ripe parent takes a mix")
-	_expect(absf(child.hue - 0.5) > 0.02, "inherited hue left the default")
+	sprout.plant_id = "meadowbell"
+	sprout.growth = 0.04
+	_expect(field.inherit_into(sprout), "a seed beside a ripe parent takes a mix")
+	_expect(absf(sprout.hue - 0.5) > 0.02, "inherited hue left the default")
 	print("SYSTEMS_OK")
 	quit(0)
 
