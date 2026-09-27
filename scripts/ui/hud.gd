@@ -45,7 +45,7 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   B stall", 13, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   C town   B stall", 13, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
 	hint_label.offset_left = -420
@@ -163,6 +163,8 @@ func show_place(stats: Dictionary) -> void:
 	_clear(journal_box)
 	journal_box.add_child(ThemeKit.title(str(stats.get("name", "Hedge Hollow")), 22))
 	journal_box.add_child(ThemeKit.label("Phase %s · one parish. The lane beyond the hedge counts ripe beds." % str(stats.get("phase", "A")), 14))
+	for line in stats.get("town_lines", []):
+		journal_box.add_child(ThemeKit.label(str(line), 14))
 	journal_box.add_child(ThemeKit.label("Veg people  %s" % str(stats.get("veg_people", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Creature residents  %s" % str(stats.get("creature_residents", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Employed at the stall  %s" % str(stats.get("employed", 0)), 16))
@@ -182,6 +184,8 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Grove Park demand  %s" % str(stats.get("park_demand", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Lane houses  %s" % str(stats.get("lane_houses", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Lane beyond the hedge  %s" % str(stats.get("lane_passers", 0)), 16))
 	journal_box.add_child(ThemeKit.label(str(stats.get("road_line", "The road beyond the hedge is not yet a rumour.")), 14))
 	for key in ["far_bell_line", "bell_sale_line", "join_line", "south_line", "lane_south_line", "end_line", "lane_busy_line", "east_line", "east_past_line", "east_far_line", "east_near_line", "east_closer_bell_line", "west_gate_bell_line", "south_step_line", "west_turn_line", "end_step_line", "outer_east_line", "further_east_line", "span_east_line", "reach_east_line", "field_east_line", "brink_east_line", "margin_east_line", "hem_east_line", "hem_stone_line", "hem_stone_bell_line", "hem_stone_on_bell_line", "hem_stone_far_bell_line", "hem_stone_out_bell_line", "outer_stone_strip_line", "outer_strip_bell_stone_line", "meadow_strip_bell_line", "meadow_stone_strip_line", "farther_strip_bell_line", "last_bell_stone_line", "last_strip_bell_line", "end_strip_stone_line", "far_bell_stone_line", "far_stone_strip_line", "gate_sale_line", "parish_sale_line"]:
@@ -233,18 +237,18 @@ func show_place(stats: Dictionary) -> void:
 	var dusk_line := str(stats.get("dusk_line", ""))
 	if dusk_line != "":
 		journal_box.add_child(ThemeKit.label(dusk_line, 14))
-	journal_box.add_child(ThemeKit.label("Demand for the rooms that are not built is not simulated.", 14))
+	journal_box.add_child(ThemeKit.label("Demand for rooms that are not built stays in the town counts, not as bodies.", 14))
 	journal_box.add_child(ThemeKit.title("Town Hall board", 16))
 	var notices: Array = stats.get("notices", [])
 	if notices.is_empty():
-		journal_box.add_child(ThemeKit.label("The board is bare. Approved proposals are posted here. The town beyond the hedge is not.", 14))
+		journal_box.add_child(ThemeKit.label("The board is bare. Approved proposals are posted here. The town beyond the hedge lives in the counts above.", 14))
 	for notice in notices:
 		journal_box.add_child(ThemeKit.label(str(notice), 14))
 	journal_box.add_child(ThemeKit.title("Venues", 16))
 	for line in stats.get("venues", []):
 		journal_box.add_child(ThemeKit.label(str(line), 14))
 	var tiers = stats.get("tiers", {})
-	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0)], 14))
+	journal_box.add_child(ThemeKit.label("Sim tiers  hero %s · near %s · district %s · offscreen %s · town %s" % [tiers.get("0", 0), tiers.get("1", 0), tiers.get("2", 0), tiers.get("3", 0), tiers.get("4", 0)], 14))
 
 func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true, mill: Dictionary = {}) -> void:
 	_clear(shop_box)
@@ -566,6 +570,14 @@ func show_road() -> void:
 		func(): host.accept_road()
 	)
 
+func show_park() -> void:
+	_fill_proposal(
+		"Nessa Pod",
+		"Grove Park can be a public lawn beyond the hedge.\n\nI can write that in the parish book. The lawn will hold visitors as a count. Nobody is spawned.\n\nNo coins. Nothing is sent. I will not write it unless you say so.",
+		"File Grove Park",
+		func(): host.accept_park()
+	)
+
 func show_nessa() -> void:
 	_fill_proposal(
 		"Nessa Pod",
@@ -664,6 +676,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	var kept := str(row.get("road_line", ""))
 	if kept != "":
 		box.add_child(ThemeKit.label(kept, 13))
+	var park_kept := str(row.get("park_line", ""))
+	if park_kept != "":
+		box.add_child(ThemeKit.label(park_kept, 13))
 	for key in ["join_line", "parish_bell_line", "parish_sale_line", "hem_card_line", "hem_stone_card_line", "hem_stone_bell_card_line", "hem_stone_on_bell_card_line", "hem_stone_far_bell_card_line", "hem_stone_out_bell_card_line", "meadow_stone_strip_card_line"]:
 		var card_bit := str(row.get(key, ""))
 		if card_bit != "":
@@ -673,6 +688,11 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		road.text = "Hear the road rumour"
 		road.pressed.connect(show_road)
 		box.add_child(road)
+	if bool(row.get("can_park", false)):
+		var park := Button.new()
+		park.text = "Hear Grove Park"
+		park.pressed.connect(show_park)
+		box.add_child(park)
 	if bool(row.get("can_draft", false)):
 		var draft := Button.new()
 		draft.text = "Hear the parish draft"

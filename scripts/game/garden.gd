@@ -2,6 +2,7 @@ extends Node3D
 
 var soil := SoilField.new()
 var road := RoadDressing.new()
+var town := TownSim.new()
 var ecology: Ecology
 var camera: GardenCamera
 var hud: Hud
@@ -107,6 +108,7 @@ func _build() -> void:
 	GardenDressing.new().build(self)
 	GardenProps.new().build(self)
 	road.build(self)
+	town.boot()
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -135,6 +137,7 @@ func _build() -> void:
 	debug_overlay = DebugOverlay.new()
 	add_child(debug_overlay)
 	debug_overlay.build(self)
+	_tick_town(world_snapshot())
 
 func _process(delta: float) -> void:
 	if photo:
@@ -199,6 +202,7 @@ func _process(delta: float) -> void:
 			_person("bram").say("The stall is loud. The beds were quieter.")
 	SimLod.recount(_lod_actors())
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	_tick_town(world)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -221,6 +225,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_tool("hands")
 			KEY_J:
 				hud.toggle_journal()
+			KEY_M, KEY_C:
+				show_directory("place")
 			KEY_B:
 				hud.toggle_shop()
 			KEY_F:
@@ -1070,7 +1076,62 @@ func accept_road() -> void:
 	toast("Nessa filed the road rumour. Nothing left the parish.")
 	nessa.say("The road is only a rumour. The book keeps it.")
 	road.sync(Trust.has_action("parish_road_rumour"))
+	_tick_town(world_snapshot())
 	refresh_panels()
+
+func accept_park() -> void:
+	if not Trust.has_action("parish_road_rumour"):
+		toast("The road is not in the book. Nothing was filed.")
+		return
+	if Trust.has_action("parish_park"):
+		toast("Grove Park is already in the book.")
+		return
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.present:
+		toast("Nessa is not here. Nothing was filed.")
+		return
+	Trust.file_park("nessa")
+	toast("Nessa filed Grove Park. The lawn is public. Nobody was spawned.")
+	nessa.say("The park is a lawn beyond the hedge. The book keeps it.")
+	_sync_park()
+	_tick_town(world_snapshot())
+	refresh_panels()
+
+func _tick_town(world: Dictionary) -> void:
+	if town.plots.is_empty():
+		town.boot()
+	var cam_at := camera.global_position if camera else Vector3.ZERO
+	var ctx := {
+		"people": _present_people(),
+		"residents": ecology.resident_total() if ecology else 0,
+		"quality": float(world.get("garden_quality", 0.0)),
+		"road": Trust.has_action("parish_road_rumour"),
+		"park": Trust.has_action("parish_park"),
+		"passers": _lane_passers(),
+		"hour": Clock.hour(),
+		"weather": Clock.weather,
+		"near_park": cam_at.distance_to(GardenLayout.PARK) < 14.0,
+	}
+	if bool(ctx["road"]) and not town.chose_lane:
+		ctx["lane_fill"] = PetalDecide.choose(
+			"South Lane has empty houses beyond the hedge. Fill them or keep them sparse?",
+			["fill", "sparse"]
+		)
+	town.tick(ctx)
+	SimLod.note_aggregate(town.aggregate())
+	_sync_park()
+
+func _sync_park() -> void:
+	var show := Trust.has_action("parish_park")
+	for node in get_tree().get_nodes_in_group("grove_park"):
+		var body := node as Node3D
+		if body:
+			body.visible = show
+
+func _park_card_line() -> String:
+	if Trust.has_action("parish_park"):
+		return "Grove Park is a public lawn."
+	return ""
 
 # Road pieces live in data/road_pieces.json. Counts stay named for smoke.
 func _road_path_count() -> int:
@@ -1755,6 +1816,7 @@ func to_state() -> Dictionary:
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 		"crate_yields": crate_yields.duplicate(true),
 		"parish": parish.to_state(),
+		"town": town.to_dict(),
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1837,6 +1899,11 @@ func apply_state(data: Dictionary) -> void:
 	_refresh_soil_colors()
 	road.sync(Trust.has_action("parish_road_rumour"))
 	_sync_mill()
+	var saved_town: Variant = data.get("town", {})
+	if typeof(saved_town) == TYPE_DICTIONARY:
+		town.from_dict(saved_town as Dictionary)
+	_tick_town(world_snapshot())
+	_sync_park()
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -11136,7 +11203,9 @@ func _people_rows(world: Dictionary) -> Array:
 			"can_file": person.present and id == "nessa",
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
+			"can_park": person.present and id == "nessa" and Trust.has_action("parish_road_rumour") and not Trust.has_action("parish_park"),
 			"road_line": _road_card_line() if id == "nessa" else "",
+			"park_line": _park_card_line() if id == "nessa" else "",
 			"join_line": _join_line() if id == "nessa" else "",
 			"parish_bell_line": _east_closer_bell_line() if id == "nessa" else "",
 			"parish_sale_line": _parish_sale_line() if id == "nessa" else "",
@@ -11245,6 +11314,17 @@ func _place_stats(world: Dictionary) -> Dictionary:
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
+	_tick_town(world)
+	stats["town_line"] = str(town.stats.get("headline", ""))
+	stats["town_pop"] = int(town.stats.get("town_pop", 0))
+	stats["town_aggregate"] = town.aggregate()
+	stats["town_jobs"] = int(town.stats.get("jobs", 0))
+	stats["town_riders"] = int(town.stats.get("riders", 0))
+	stats["park_demand"] = town.occupancy("grove_park")
+	stats["lane_houses"] = town.occupancy("lane")
+	stats["town_cover"] = town.coverage()
+	stats["town_lines"] = town.page_lines()
+	stats["tiers"] = SimLod.tiers.duplicate()
 	return stats
 
 func _stock(world: Dictionary) -> Array:

@@ -8,6 +8,7 @@ func build(parent: Node3D) -> void:
 	_hut(parent)
 	_foundry(parent)
 	_hall(parent)
+	_park(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
@@ -174,6 +175,28 @@ func _hall(parent: Node3D) -> void:
 	light.omni_range = 1.6
 	light.shadow_enabled = false
 	root.add_child(light)
+
+func _park(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "GrovePark"
+	root.position = GardenLayout.PARK
+	root.visible = false
+	root.add_to_group("grove_park")
+	parent.add_child(root)
+	_box(root, Vector3(0, 0.02, 0), Vector3(4.6, 0.04, 3.2), Color("#3f6a32"))
+	_box(root, Vector3(-1.6, 0.04, -1.1), Vector3(0.7, 0.08, 0.5), Color("#4a4038"))
+	_box(root, Vector3(1.5, 0.04, 0.9), Vector3(0.6, 0.07, 0.42), Color("#4a4038"))
+	_bench(root, Vector3(-1.2, 0.0, 0.6))
+	_bench(root, Vector3(1.1, 0.0, -0.7))
+	var sign := Label3D.new()
+	sign.text = "Grove Park"
+	sign.font_size = 48
+	sign.pixel_size = 0.004
+	sign.position = Vector3(0, 1.15, 0)
+	sign.shaded = false
+	sign.modulate = Color("#8d6a45")
+	sign.outline_modulate = Color("2a2118")
+	root.add_child(sign)
 
 func _bench(parent: Node3D, at: Vector3) -> void:
 	var root := Node3D.new()
