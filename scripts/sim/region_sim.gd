@@ -166,6 +166,8 @@ func page() -> Dictionary:
 		rows.append({
 			"id": id,
 			"name": str(row.get("name", id)),
+			"q": int(row.get("q", 0)),
+			"r": int(row.get("r", 0)),
 			"specialty": str(row.get("specialty", "")),
 			"need": str(row.get("need", "")),
 			"hands": int(row.get("hands", 0)),
@@ -178,9 +180,16 @@ func page() -> Dictionary:
 			"stock_line": _stock_line(row),
 			"player": bool(row.get("player", false)),
 		})
+	var cart_rows: Array = []
 	var cart_lines: Array = []
 	for entry in state.get("carts", []):
 		var cart: Dictionary = entry
+		cart_rows.append({
+			"from": str(cart.get("from", "")),
+			"to": str(cart.get("to", "")),
+			"crop": str(cart.get("crop", "")),
+			"eta": int(cart.get("eta", 0)),
+		})
 		cart_lines.append("%s cart · %s → %s · %dh" % [_crop_name(str(cart.get("crop", ""))), _town_name(str(cart.get("from", ""))), _town_name(str(cart.get("to", ""))), int(cart.get("eta", 0))])
 	var walk_lines: Array = []
 	for entry in state.get("migrants", []):
@@ -190,9 +199,11 @@ func page() -> Dictionary:
 		"title": str(state.get("vale", "Petal Vale")),
 		"settlements": rows,
 		"carts": cart_lines,
+		"cart_rows": cart_rows,
 		"migrants": walk_lines,
 		"log": _log_slice(),
-		"asks": state.get("asks", []),
+		"asks": _ask_lines(),
+		"ask_rows": _ask_rows(),
 		"sends": _send_options(),
 		"can_welcome": _hollow_migrant() >= 0,
 		"world_line": str(fidelity().get("line", "")),
@@ -457,12 +468,13 @@ func _faction_act(row: Dictionary, _day: int) -> Array:
 		_note(text)
 		return [{"type": "hold", "text": text, "id": id}]
 	if choice == "ask for a crop":
-		var ask := "%s asked Hedge Hollow for %s." % [str(row.get("name", "")), _crop_name(str(row.get("need", "")))]
+		var need := str(row.get("need", ""))
+		var ask := "%s asked Hedge Hollow for %s." % [str(row.get("name", "")), _crop_name(need)]
 		var asks: Array = state.get("asks", [])
-		asks.append(ask)
+		asks.append({"id": id, "name": str(row.get("name", id)), "crop": need, "text": ask})
 		state["asks"] = asks
 		_note(ask)
-		return [{"type": "ask", "text": ask, "id": id, "crop": str(row.get("need", ""))}]
+		return [{"type": "ask", "text": ask, "id": id, "crop": need}]
 	return []
 
 
@@ -593,6 +605,9 @@ func _who_has(crop: String, skip: String) -> String:
 func _send_options() -> Array:
 	var out: Array = []
 	var towns: Dictionary = state.get("settlements", {})
+	var asked := {}
+	for row in _ask_rows():
+		asked[str(row.get("to", ""))] = true
 	for id in towns.keys():
 		if str(id) == HOME:
 			continue
@@ -603,7 +618,37 @@ func _send_options() -> Array:
 			"crop": need,
 			"name": str(row.get("name", id)),
 			"label": "Send %s to %s" % [_crop_name(need), str(row.get("name", id))],
+			"asked": asked.has(str(id)),
 		})
+	return out
+
+
+func _ask_rows() -> Array:
+	var out: Array = []
+	for entry in state.get("asks", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			var row: Dictionary = entry
+			out.append({
+				"to": str(row.get("id", "")),
+				"crop": str(row.get("crop", "")),
+				"name": str(row.get("name", row.get("id", ""))),
+				"label": "Send %s to %s" % [_crop_name(str(row.get("crop", ""))), str(row.get("name", row.get("id", "")))],
+				"text": str(row.get("text", "")),
+			})
+			continue
+		var line := str(entry)
+		out.append({"to": "", "crop": "", "name": "", "label": line, "text": line})
+	return out
+
+
+func _ask_lines() -> Array:
+	var out: Array = []
+	for row in _ask_rows():
+		var text := str(row.get("text", ""))
+		if text != "":
+			out.append(text)
+		elif str(row.get("label", "")) != "":
+			out.append(str(row.get("label", "")))
 	return out
 
 

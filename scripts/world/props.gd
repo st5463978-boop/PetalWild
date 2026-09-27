@@ -15,6 +15,7 @@ func build(parent: Node3D) -> void:
 	_lantern(parent, Vector3(-6.2, 0, 3.5))
 	_lantern(parent, Vector3(3.4, 0, -2.5))
 	_reeds(parent)
+	_gate_crate(parent)
 
 func _stall(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -87,9 +88,9 @@ func _shed(parent: Node3D) -> void:
 	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
 	_cylinder(root, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
 	_sphere(root, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
-	var pan := _cylinder(root, Vector3(0.0, 0.2, 1.08), 0.1, 0.12, 0.18, Color("#3a322c"))
+	var pan := _cylinder(root, Vector3(0.0, 0.2, 1.08), 0.12, 0.14, 0.2, Color("#c47c4a"))
 	pan.add_to_group("parish_pan")
-	var jam_steam := _sphere(root, Vector3(0.0, 0.42, 1.08), 0.06, Color("#e8dcc8"))
+	var jam_steam := _sphere(root, Vector3(0.0, 0.46, 1.08), 0.1, Color("#f2e6d2"))
 	jam_steam.add_to_group("parish_jam_steam")
 	jam_steam.visible = false
 	var light := OmniLight3D.new()
@@ -114,7 +115,7 @@ func _tea(parent: Node3D) -> void:
 	_cylinder(root, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
 	var kettle := _cylinder(root, Vector3(0.48, 0.22, -0.95), 0.09, 0.11, 0.28, Color("#2a3034"))
 	kettle.add_to_group("parish_kettle")
-	var steam := _sphere(root, Vector3(0.48, 0.5, -0.95), 0.07, Color("#d8d2c4"))
+	var steam := _sphere(root, Vector3(0.48, 0.54, -0.95), 0.11, Color("#efe8dc"))
 	steam.add_to_group("parish_steam")
 	steam.visible = false
 	var light := OmniLight3D.new()
@@ -259,6 +260,29 @@ func _reeds(parent: Node3D) -> void:
 		if at.x < 5.2:
 			continue
 		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.02, 0.025, 0.9, Color("#6d7a3a"))
+
+func _gate_crate(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "ValeCrate"
+	root.position = GardenLayout.GATE + Vector3(0.95, 0.0, 0.55)
+	root.visible = false
+	root.add_to_group("vale_crate")
+	parent.add_child(root)
+	_crate(root, Vector3(0, 0.16, 0))
+	var sign := Label3D.new()
+	sign.text = "Vale cart"
+	sign.font_size = 42
+	sign.pixel_size = 0.004
+	sign.position = Vector3(0, 0.72, 0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sign.shaded = false
+	sign.modulate = Color("#c4a070")
+	sign.outline_modulate = Color("2a2118")
+	sign.outline_size = 10
+	sign.add_to_group("vale_crate_sign")
+	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
+		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
+	root.add_child(sign)
 
 func _crate(parent: Node3D, at: Vector3) -> void:
 	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))

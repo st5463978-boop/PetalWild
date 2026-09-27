@@ -348,6 +348,15 @@ func inspect_face() -> void:
 func clear_inspect() -> void:
 	inspected = false
 
+func snack() -> void:
+	hunger = 1.0
+	mood = "happy"
+	bond = minf(1.0, bond + 0.05)
+	ripple = 0.85
+	bite_wait = 4.0
+	poke_time = 0.55
+	reacted.emit("snack", self)
+
 func _eye(root: Node3D, at: Vector3, color: Color, keep_iris := false) -> Node3D:
 	var pivot := Node3D.new()
 	pivot.position = at

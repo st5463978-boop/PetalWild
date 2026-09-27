@@ -133,6 +133,19 @@ func file_bee_note(person_id: String, note: String = "Bees on the bed. Nothing w
 		"at": Time.get_datetime_string_from_system(),
 	})
 
+func file_vale_cart(person_id: String, note: String) -> void:
+	# ponytail: one gate line; file_notes if taking a crate should raise trust.
+	audit.append({
+		"person": person_id,
+		"action": "parish_vale_cart",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": note,
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_notes(person_id: String, note: String) -> void:
 	audit.append({
 		"person": person_id,

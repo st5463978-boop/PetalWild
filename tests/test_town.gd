@@ -30,6 +30,13 @@ func _init() -> void:
 	_expect(int(town.lod_counts().get("4", 0)) == town.aggregate(), "distant houses sit at LOD 4")
 	_expect(int(town.lod_counts().get("0", -1)) == 0, "no hero tick for distant folk")
 	_expect(town.route.size() > 1, "a path runs from the gate to the park plot")
+	var riders0 := int(town.stats.get("riders", 0))
+	ctx["vale"] = 2
+	town.tick(ctx)
+	_expect(int(town.stats.get("riders", 0)) == riders0 + 2, "vale carts join the gate riders")
+	_expect(str(town.stats.get("headline", "")).find("vale cart") != -1, "the town page names a vale cart")
+	ctx["vale"] = 0
+	town.tick(ctx)
 	_expect(town.coverage() > 0.4, "open rooms cover the live plots")
 	_expect(int(town.stats.get("town_pop", 0)) > int(town.stats.get("garden_pop", 0)), "settlement grows past the garden")
 	var sparse := TownSim.new()

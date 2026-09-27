@@ -125,6 +125,9 @@ func page_lines() -> PackedStringArray:
 		lines.append("Path  gate to park · %s steps · %s riders" % [str(route.size() - 1), str(stats.get("riders", 0))])
 	else:
 		lines.append("Path  the hedge still closes the way.")
+	var vale := int(stats.get("vale", 0))
+	if vale > 0:
+		lines.append("Vale carts at the gate  %s" % str(vale))
 	var tea_n := occupancy("tea")
 	if tea_n > 0:
 		lines.append("Tea porch  %s with a cup · still no body" % str(tea_n))
@@ -342,7 +345,8 @@ func _tally(ctx: Dictionary) -> void:
 	var cover := float(served) / maxf(float(live), 1.0)
 	var riders := 0
 	if route.size() > 1 and bool(districts.get("lane", {}).get("now_open", false)):
-		riders = int(ctx.get("passers", 0)) + int(ctx.get("traffic", 0))
+		riders = int(ctx.get("passers", 0)) + int(ctx.get("traffic", 0)) + int(ctx.get("vale", 0))
+	var vale := int(ctx.get("vale", 0))
 	var headline := "Hedge Hollow stands alone."
 	if bool(districts.get("park", {}).get("now_open", false)):
 		headline = "Grove Park is a public lawn. The lane holds houses. Nobody walks them in hero detail."
@@ -350,6 +354,8 @@ func _tally(ctx: Dictionary) -> void:
 		headline = "Hedge tea draws the lane to the porch. They sit as a count."
 	elif bool(districts.get("lane", {}).get("now_open", false)):
 		headline = "South Lane holds houses beyond the hedge. They tick as counts."
+	if vale > 0:
+		headline += " A vale cart is on the gate road."
 	stats["garden_pop"] = garden
 	stats["town_pop"] = garden + distant
 	stats["aggregate"] = aggregate()
@@ -357,6 +363,7 @@ func _tally(ctx: Dictionary) -> void:
 	stats["jobs"] = jobs
 	stats["coverage"] = cover
 	stats["riders"] = riders
+	stats["vale"] = vale
 	stats["headline"] = headline
 	stats["bodies"] = 0
 
@@ -368,6 +375,7 @@ func _blank_stats() -> Dictionary:
 		"jobs": 0,
 		"coverage": 0.0,
 		"riders": 0,
+		"vale": 0,
 		"headline": "Hedge Hollow stands alone.",
 		"bodies": 0,
 		"lane_occ": 0,
