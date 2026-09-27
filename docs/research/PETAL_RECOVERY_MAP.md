@@ -8,7 +8,7 @@ A second pass opened the Astra catalogue (162 entries). The notes are `docs/rese
 
 Hailo `POST /decide` returned HTTP 502. Decisions were locked from the repositories. `options[0]` was not used. Full records: `docs/research/OPEN_SOURCE_CANDIDATES.md`.
 
-No external source was imported. Clones, if any, stay in gitignored `_research/`.
+The Godot store pass vendored one project: Kenney's Starter Kit City Builder, as `scenes/parish.tscn`. Notes: `docs/research/wave0/GODOT_STORE_PASS.md`. Other clones stay in gitignored `_research/`.
 
 ## PETAL-01
 
@@ -60,10 +60,12 @@ The stall inventory stays the session dictionary.
 
 ## PETAL-06
 
-The town beyond the hedge stays data until a wave builds it. Grove Park stays unbuilt.
+The grove stays the boot scene. Grove Park stays unbuilt. The parish you can open from the title is Kenney's city-builder grid, not the sim's town counts.
 
+- Starter Kit City Builder. Decision ADOPT. Class GREEN for the MIT code and the CC0 models, sprites, and sounds. The bundled Lilita One file is SIL OFL 1.1 and ships with `fonts/license.txt`. Repository `KenneyNL/Starter-Kit-City-Builder`, commit `4535092`. It opened on this pin: 122 sample cells, rendered. Integration: `scenes/parish.tscn`. A garden bed structure uses the nature-kit bush already in the tree. Do not retarget `run/main_scene`.
+- CityCrafter3D. Decision STUDY. Class GREEN (MIT, copyright 2025 immaculate-lift-studios). Editor generator. Default block 200, street 25. It does not run without building scenes assigned. Do not vendor the plugin or the example gif.
 - town. Decision STUDY. Class REVIEW (AGPL-3.0-or-later plus Commons Clause). Repository `RedPlanetHQ/town`. Benefit: an author names a place, the sim picks the cell, placement is seeded, and a resident is a slot. Integration: copy nothing. Pathing stays a separate service.
-- VivaPinataPlus. Decision REJECT. Class GREEN. The MIT grant is the launcher, not the commercial game. Do not import it. Do not require original Viva Piñata files.
+- VivaPinataPlus. Decision REJECT. Class GREEN. The MIT grant is the launcher, not the commercial game. The README has no store link. Do not import it. Do not run it. Do not require original Viva Piñata files.
 - Dwellcraft. Decision REJECT. Class RED. No licence file. The only keep is an observed order: pick a scale, then walk in. Do not copy the site or `Ryan-fm/Dwellcraft`.
 - OpenCityMaker. Decision STUDY. Class GREEN (MIT, copyright 2026 Derek Wang). Commit `dc78e7f`. Benefit: a town can read as a few silhouettes on a board, with a closer view as a choice. Integration: do not import the 2048 board, the landmark atlas, or the real city names.
 

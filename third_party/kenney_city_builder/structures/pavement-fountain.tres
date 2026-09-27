@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Structure" load_steps=3 format=3 uid="uid://dqqe3iofnleup"]
+
+[ext_resource type="PackedScene" uid="uid://b505tmpwvwfv3" path="res://third_party/kenney_city_builder/models/pavement-fountain.glb" id="1_r2n53"]
+[ext_resource type="Script" uid="uid://b4i7dfy6u3e8w" path="res://third_party/kenney_city_builder/scripts/structure.gd" id="2_wqyte"]
+
+[resource]
+script = ExtResource("2_wqyte")
+model = ExtResource("1_r2n53")
+price = 10

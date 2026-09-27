@@ -6,6 +6,34 @@ The Astra second pass (`docs/research/wave0/ASTRA_INDEX_PASS.md`) did not add a 
 
 A card is an opportunity. It does not replace a working controller.
 
+## Parish grid
+
+TITLE: Kenney city builder as the parish you can open
+
+SOURCE URL: https://github.com/KenneyNL/Starter-Kit-City-Builder
+
+SOURCE COMMIT/TAG: 4535092b740b378b700efd9df9e27a631815b84a
+
+LICENCE: MIT code. CC0 models, sprites, and sounds. Lilita One is SIL OFL 1.1.
+
+DECISION: ADOPT
+
+TARGET PETAL LANE: PETAL-06
+
+FILES / SUBSYSTEMS OF INTEREST: `third_party/kenney_city_builder/`, `scenes/parish.tscn`. Boot scene stays `scenes/main.tscn`.
+
+EXPECTED BENEFIT: A placeable town already runs on this pin. The grove does not have to become that grid.
+
+INTEGRATION COST: already in the tree. Title button Parish. Esc returns.
+
+RISKS: Replacing the grove with the grid. Vendoring CityCrafter's 200-unit blocks or the Viva Piñata launcher.
+
+RECOMMENDED ACTION: Leave the parish scene as the town builder. Add further pieces as `Structure` resources at the end of the array so the sample indices stay valid.
+
+DO NOT: Change `run/main_scene`. Import VivaPiñataPlus. Build Grove Park out of this grid.
+
+RESEARCH DOCUMENT LINK: `docs/research/wave0/GODOT_STORE_PASS.md`
+
 ## Godot grab feel
 
 TITLE: Native jelly grab, flick, and settle

@@ -27,3 +27,5 @@ Not downloaded: CC-BY OpenGameArt packs, large CC0 park ambiences, Quaternius Dr
 Nothing from Viva Piñata, Cities: Skylines, Nintendo, or Jelly-Baby was copied.
 
 Wave 0 (27 September 2026) copied no candidate code and no candidate art into this tree. Harvest Moon 2.0 was rejected because a MIT code grant sat next to a Pokémon sheet and an unlabeled tileset. Dwellcraft and game-creator have no licence file. Those bytes were not added here.
+
+The Godot store pass the same day added Kenney's Starter Kit City Builder (commit `4535092`) under `third_party/kenney_city_builder/`. Code is MIT. Models, sprites, and sounds are CC0. Lilita One is SIL OFL 1.1. `structures/garden-bed.tres` points at the nature-kit bush already listed above. Viva Piñata files were not added. CityCrafter3D was not added.

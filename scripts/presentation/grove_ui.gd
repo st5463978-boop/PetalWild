@@ -228,6 +228,7 @@ func _build_title() -> void:
 	box.add_child(row)
 	row.add_child(_button("Settings", func(): settings.visible = true))
 	row.add_child(_button("Credits", func(): credits.visible = true))
+	row.add_child(_button("Parish", func(): game.open_parish()))
 	add_child(title)
 
 

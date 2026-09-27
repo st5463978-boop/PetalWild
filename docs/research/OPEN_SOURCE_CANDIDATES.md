@@ -1094,3 +1094,57 @@ Field records follow. `research_doc` is the note a build agent should open befor
 - RECOMMENDED ACTION: Leave it. Use the Gloop scale note and the Jelly-Baby feel note.
 - DO NOT: Copy physics.js or the fruit sprites.
 - RESEARCH DOCUMENT: docs/research/wave0/ASTRA_INDEX_PASS.md
+
+## Godot store pass
+
+## Starter Kit City Builder
+
+- NAME: Starter Kit City Builder
+- URL: https://github.com/KenneyNL/Starter-Kit-City-Builder
+- SOURCE REPOSITORY: KenneyNL/Starter-Kit-City-Builder
+- PURPOSE: Godot 4.6 grid city builder. Place, rotate, demolish, save. Sample town included.
+- LANGUAGE: GDScript
+- ENGINE: Godot 4.6 project, opened on 4.8-dev6
+- LAST ACTIVITY: 2026-03-12
+- LICENCE: GREEN (MIT code, CC0 models/sprites/sounds, SIL OFL font)
+- LICENCE EVIDENCE: GitHub SPDX MIT. LICENSE.md copyright 2025 Kenney. Store page states models, sprites, and sounds are CC0. fonts/license.txt is SIL OFL 1.1 for Lilita One.
+- PETALWILD TARGET: PETAL-06
+- DIRECTLY REUSABLE? yes
+- PORTABLE? yes
+- REFERENCE ONLY? no
+- QUALITY: high for a starter grid
+- INTEGRATION COST: low. Paths live under third_party/kenney_city_builder. Boot scene unchanged.
+- EXPECTED BENEFIT: A town you can place on this pin without writing a grid editor.
+- DECISION: ADOPT
+- ASSIGNED PETAL LANE: PETAL-06
+- COMMIT: 4535092b740b378b700efd9df9e27a631815b84a
+- FILES / SUBSYSTEMS: scripts/builder.gd, scenes/main.tscn, models/, sample map/map.res
+- RECOMMENDED ACTION: Keep scenes/parish.tscn. Add pieces at the end of the structure array.
+- DO NOT: Point run/main_scene at the parish. Drop the OFL file.
+- RESEARCH DOCUMENT: docs/research/wave0/GODOT_STORE_PASS.md
+
+## CityCrafter3D
+
+- NAME: CityCrafter3D
+- URL: https://github.com/immaculate-lift-studio/CityCrafter3D
+- SOURCE REPOSITORY: immaculate-lift-studio/CityCrafter3D
+- PURPOSE: Editor plugin that lays blocks, roads, and PackedScene buildings.
+- LANGUAGE: GDScript
+- ENGINE: Godot 4.4 addon
+- LAST ACTIVITY: not vendored
+- LICENCE: GREEN (MIT)
+- LICENCE EVIDENCE: addons/citycrafter/LICENSE is the MIT licence, copyright 2025 immaculate-lift-studios.
+- PETALWILD TARGET: PETAL-06
+- DIRECTLY REUSABLE? no
+- PORTABLE? no
+- REFERENCE ONLY? yes
+- QUALITY: medium
+- INTEGRATION COST: high. Default block size is 200 and street width is 25. Generation refuses to run until building scenes are assigned.
+- EXPECTED BENEFIT: None over the Kenney grid for a parish you can walk.
+- DECISION: STUDY
+- ASSIGNED PETAL LANE: PETAL-06
+- COMMIT: not pinned. Sparse read of addons/citycrafter only.
+- FILES / SUBSYSTEMS: citycrafter.gd, city_configuration.gd
+- RECOMMENDED ACTION: Leave it out. The parish scene is the town.
+- DO NOT: Vendor the plugin, the example gif, or the Kenney commercial city-kit blobs.
+- RESEARCH DOCUMENT: docs/research/wave0/GODOT_STORE_PASS.md

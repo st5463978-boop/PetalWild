@@ -7,6 +7,7 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 | `scripts/`, `scenes/`, `data/`, `shaders/`, `tests/` | GREEN | MIT | Original. Copyright 2026 Scott Thompson |
 | Godot 4.8-dev6 engine | GREEN | MIT | Not vendored. Pinned binary only |
 | Kenney Nature Kit, Foliage Pack, Mini Forest, Interface Sounds | GREEN | CC0 1.0 | `assets/third_party/kenney/` |
+| Kenney Starter Kit City Builder | GREEN | MIT code, CC0 models/sprites/sounds, SIL OFL 1.1 font | `third_party/kenney_city_builder/`. Commit `4535092`. Notices in `NOTICE.md` and `fonts/license.txt` |
 | Poly Haven leafy grass, flower scattered dirt, forest leaves 02, forest leaves 03 | GREEN | CC0 | 1K JPG albedo, normal, ARM |
 | OpenGameArt Forest Ambience, Slobad | GREEN | CC0 1.0 | `assets/third_party/opengameart/Forest_Ambience.mp3` |
 | Asset Quest Stylized Garden demo | GREEN | CC0 1.0 | In the running garden via `scripts/world/dressing.gd`. Files stay in `third_party/incoming/assetquest-stylized-garden-demo/` |
@@ -14,7 +15,7 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 | Jelly-Baby | REVIEW | GPL-3.0-only | Not imported. Behaviour reference only |
 | openage | REVIEW | GPL-3.0-or-later | Not imported. Architecture notes only |
 | redplanethq/town | REVIEW | AGPL-3.0-or-later plus Commons Clause | Not imported |
-| VivaPinataPlus | GREEN as a repo, unused | MIT | REJECT. Launcher only. No commercial game files |
+| VivaPinataPlus | GREEN as a repo, unused | MIT | REJECT. Launcher only. No store link. No commercial game files |
 | TiP-Recomp | RED for this project | no-AI policy | Not fetched, not analysed |
 | Cities: Skylines topic | RED if assets | proprietary | Genre research only |
 | Supplied concept paintings | project art | supplied by the creative director | `docs/reference/petalwild_target_*.png` |

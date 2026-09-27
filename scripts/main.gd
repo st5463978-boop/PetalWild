@@ -100,6 +100,10 @@ func new_slot(slot: int) -> void:
 	_begin(slot, true)
 
 
+func open_parish() -> void:
+	get_tree().change_scene_to_file("res://scenes/parish.tscn")
+
+
 func continue_slot(slot: int) -> void:
 	var loaded := PetalSave.load_slot(slot)
 	if loaded.is_empty():

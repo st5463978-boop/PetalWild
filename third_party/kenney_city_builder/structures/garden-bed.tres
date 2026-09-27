@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Structure" load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/third_party/kenney/nature-kit/Models/FBX format/plant_bushSmall.fbx" id="1_bush"]
+[ext_resource type="Script" path="res://third_party/kenney_city_builder/scripts/structure.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+model = ExtResource("1_bush")
+mesh_scale = 3.0
+price = 15
