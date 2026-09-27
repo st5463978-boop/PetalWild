@@ -4,6 +4,8 @@ Action map for the build lanes. 27 September 2026.
 
 Read this file and `docs/research/KANBAN.md` before new implementation. A card is an opportunity. It is not permission to replace a working system.
 
+A second pass opened the Astra catalogue (162 entries). The notes are `docs/research/wave0/ASTRA_INDEX_PASS.md`. It did not add a solver and it did not add a town importer.
+
 Hailo `POST /decide` returned HTTP 502. Decisions were locked from the repositories. `options[0]` was not used. Full records: `docs/research/OPEN_SOURCE_CANDIDATES.md`.
 
 No external source was imported. Clones, if any, stay in gitignored `_research/`.
@@ -35,6 +37,7 @@ The running body is `scripts/presentation/jelly_actor.gd`, instanced by `scripts
 - godot-softbody2d. Decision STUDY. Class GREEN. 2D rigid-body lattice. Do not vendor it.
 - JoltPhysics upstream. Decision REJECT. Class GREEN. The engine already contains `modules/jolt_physics`. Do not add the upstream repository.
 - godot-vrm. Decision REJECT. Class REVIEW. Spring bone is already in the engine. Sample models are separately licensed.
+- Melon Lab. Decision REJECT. Class RED. Repository `Ayi1337/gpt6-astra-one-shot-games` at `4178b08`. It is an eighteen-point 2D ring with no `LICENSE` file. Gloop is the MIT note for that scale. Do not copy `physics.js`.
 
 ## PETAL-04
 
@@ -62,6 +65,7 @@ The town beyond the hedge stays data until a wave builds it. Grove Park stays un
 - town. Decision STUDY. Class REVIEW (AGPL-3.0-or-later plus Commons Clause). Repository `RedPlanetHQ/town`. Benefit: an author names a place, the sim picks the cell, placement is seeded, and a resident is a slot. Integration: copy nothing. Pathing stays a separate service.
 - VivaPinataPlus. Decision REJECT. Class GREEN. The MIT grant is the launcher, not the commercial game. Do not import it. Do not require original Viva Piñata files.
 - Dwellcraft. Decision REJECT. Class RED. No licence file. The only keep is an observed order: pick a scale, then walk in. Do not copy the site or `Ryan-fm/Dwellcraft`.
+- OpenCityMaker. Decision STUDY. Class GREEN (MIT, copyright 2026 Derek Wang). Commit `dc78e7f`. Benefit: a town can read as a few silhouettes on a board, with a closer view as a choice. Integration: do not import the 2048 board, the landmark atlas, or the real city names.
 
 ## PETAL-07
 

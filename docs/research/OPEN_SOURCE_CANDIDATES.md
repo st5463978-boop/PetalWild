@@ -1,5 +1,7 @@
 # Open-source candidates
 
+Second pass, 27 September 2026: the Astra catalogue was opened entry by entry. New records are under "Astra index additions" at the bottom. See `docs/research/wave0/ASTRA_INDEX_PASS.md`.
+
 Wave 0 catalogue, 27 September 2026. Hailo `POST /decide` returned HTTP 502. Grok locked every decision from the licence file and the inspected code. `options[0]` was not used.
 
 Indexes are not candidates. `bobeff/open-source-games`, `awesome-gpt-6-astra`, and `awesome-ai-built-games` are CC0 lists. A list's licence is not the licence of a linked repository.
@@ -46,6 +48,8 @@ Nothing in this catalogue was copied into `scripts/`, `scenes/`, `data/`, `shade
 | OpenTTD | PETAL-08 | STUDY | REVIEW | GPL-2.0 |
 | Unknown Horizons Godot port | PETAL-08 | STUDY | REVIEW | GPL-2.0 |
 | MicropolisCore | PETAL-08 | STUDY | REVIEW | GPL-3.0-or-later |
+| OpenCityMaker | PETAL-06 | STUDY | GREEN | MIT |
+| Melon Lab | PETAL-03 | REJECT | RED | none |
 
 Field records follow. `research_doc` is the note a build agent should open before acting.
 
@@ -1036,3 +1040,57 @@ Field records follow. `research_doc` is the note a build agent should open befor
 - RECOMMENDED ACTION: Study the simulator as the reason L4 stays statistical. Do not import the scan. Lane recommendation PETAL-08. Hailo did not choose.
 - DO NOT: Do not copy the C++ core or the TypeScript simulator.; Do not use the names SimCity or Micropolis in the game.; Do not clone SimHacker/micropolis as a substitute.
 - RESEARCH DOCUMENT: docs/research/wave0/r4_review.md
+
+## Astra index additions
+
+## OpenCityMaker
+
+- NAME: OpenCityMaker
+- URL: https://github.com/derek-wangpch/OpenCityMaker
+- SOURCE REPOSITORY: derek-wangpch/OpenCityMaker
+- PURPOSE: A 4×4 procedural city 2048. Twelve cities, eleven silhouette tiers, local saves.
+- LANGUAGE: TypeScript
+- ENGINE: Three.js
+- LAST ACTIVITY: 2026-09-21
+- LICENCE: GREEN (MIT)
+- LICENCE EVIDENCE: LICENSE is the MIT licence, copyright 2026 Derek Wang. GitHub SPDX MIT.
+- PETALWILD TARGET: PETAL-06
+- DIRECTLY REUSABLE? no
+- PORTABLE? no
+- REFERENCE ONLY? yes
+- QUALITY: medium
+- INTEGRATION COST: low as a note, high as an import
+- EXPECTED BENEFIT: A town can read as a few silhouettes on a board.
+- DECISION: STUDY
+- ASSIGNED PETAL LANE: PETAL-06
+- COMMIT: dc78e7fe87809470bfe13f95cee6c90b195cd2dd
+- FILES / SUBSYSTEMS: README.md, LICENSE
+- RECOMMENDED ACTION: Keep the zoom idea. Do not import the board or the landmark atlas.
+- DO NOT: Copy real city names or skyline models into Petalwild.
+- RESEARCH DOCUMENT: docs/research/wave0/ASTRA_INDEX_PASS.md
+
+## Melon Lab
+
+- NAME: Melon Lab
+- URL: https://github.com/Ayi1337/gpt6-astra-one-shot-games
+- SOURCE REPOSITORY: Ayi1337/gpt6-astra-one-shot-games
+- PURPOSE: 2D soft fruit that merges. An eighteen-point ring with edge, diameter, and area terms.
+- LANGUAGE: JavaScript
+- ENGINE: browser, no engine
+- LAST ACTIVITY: 2026-09-05
+- LICENCE: RED (none)
+- LICENCE EVIDENCE: No LICENSE file in the repository. GitHub licence API returns none. Commit 4178b08.
+- PETALWILD TARGET: PETAL-03
+- DIRECTLY REUSABLE? no
+- PORTABLE? no
+- REFERENCE ONLY? no
+- QUALITY: medium
+- INTEGRATION COST: high, and not allowed
+- EXPECTED BENEFIT: None over the MIT Gloop card. No grab and no throw.
+- DECISION: REJECT
+- ASSIGNED PETAL LANE: PETAL-03
+- COMMIT: 4178b08d569372a1492878d73c6018a90f564e5b
+- FILES / SUBSYSTEMS: melon-lab/src/public/physics.js
+- RECOMMENDED ACTION: Leave it. Use the Gloop scale note and the Jelly-Baby feel note.
+- DO NOT: Copy physics.js or the fruit sprites.
+- RESEARCH DOCUMENT: docs/research/wave0/ASTRA_INDEX_PASS.md

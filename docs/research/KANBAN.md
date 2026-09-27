@@ -2,6 +2,8 @@
 
 Wave 0 handoff. No Hermes or Slack list was reachable from this workspace, so this file is the board the build lanes read.
 
+The Astra second pass (`docs/research/wave0/ASTRA_INDEX_PASS.md`) did not add a card. Melon Lab is an unlicensed fruit ring. CityMaker is a readability note for PETAL-06, not a port.
+
 A card is an opportunity. It does not replace a working controller.
 
 ## Godot grab feel

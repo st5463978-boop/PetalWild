@@ -35,3 +35,8 @@ No GPL program code is linked into the game. A future decision to do that has to
 | Jelly-Baby, openage, town, DwarfCorp, Space Station 14, Egregoria, Citybound, Julius, OpenTTD, Unknown Horizons Godot port, MicropolisCore, godot-vrm | REVIEW | STUDY, except godot-vrm which is REJECT | see the recovery map |
 | Harvest Moon 2.0, Dwellcraft, pocket-salvage, game-creator | RED | REJECT | do not fetch into the tree |
 | JoltPhysics upstream | GREEN | REJECT | already in the engine module |
+| OpenCityMaker | GREEN | STUDY | MIT. Town readability only. Not imported |
+| Melon Lab (`Ayi1337/gpt6-astra-one-shot-games`) | RED | REJECT | No licence file. Soft-body fruit ring |
+| hit-and-run-web | REVIEW | REJECT | MIT code text. Simpsons assets carved out |
+| toy2game | REVIEW | REJECT | Noncommercial custom licence, not OSI open source |
+| Orbital Garden (file inside the Astra catalogue) | REVIEW | do not copy | Catalogue is CC0. This work states no grant of its own |

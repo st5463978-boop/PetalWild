@@ -12,7 +12,7 @@ Lane contracts in `docs/AGENT_CONTRACTS.md` still name PETAL_08 as shop flow. Th
 
 ## Indexes
 
-- [awesome-gpt-6-astra](https://github.com/MartinDelophy/awesome-gpt-6-astra) — catalogue licence CC0-1.0. That grant is the list, not the games. Useful originals with public source: [the-free-game](https://github.com/LucasMarquesShiva/the-free-game) (carded). Last Beacon is MIT Canvas tower defense with an iteration log; not carded. Dwellcraft has no GitHub licence; not inspected further. Several colony and fishing clones have no public source and look like commercial recreations; they were not fetched.
+- [awesome-gpt-6-astra](https://github.com/MartinDelophy/awesome-gpt-6-astra) — catalogue licence CC0-1.0. The 27 September second pass opened the list: 162 entries, 18 source repositories. The write-up is `docs/research/wave0/ASTRA_INDEX_PASS.md`. The catalogue grant is not the games' grant.
 - [awesome-ai-built-games](https://github.com/lappemic/awesome-ai-built-games) — catalogue licence CC0-1.0. Six originals followed: Godot-MCP, quasar-saz, pocket-salvage, world-of-claudecraft, Unity-MCP, viber3d.
 
 ## Orchestration patterns worth keeping
