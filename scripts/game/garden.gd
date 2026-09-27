@@ -10144,6 +10144,9 @@ func _tick_parish(delta: float) -> void:
 				speaker.say(str(row.get("text", "")))
 
 func _choose_activity(question: String, options: Array) -> String:
+	# ponytail: smoke and forced shop/settle choices must not be stolen by a day's pick.
+	if OS.get_environment("PETAL_SMOKE") == "1" or PetalDecide.forced != "":
+		return str(options[0]) if options.size() > 0 else ""
 	return PetalDecide.choose(question, options)
 
 func _lod_actors() -> Array:

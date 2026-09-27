@@ -39,7 +39,12 @@ Directory and overhead labels name what they are doing. Clicking a resident writ
 
 ### Tests
 - `tests/test_resident_life.gd` → `RESIDENT_LIFE_OK`
-- existing `tests/test_systems.gd`, `tests/smoke.gd`, `tools/smoke.gd`, garden `PETAL_SMOKE`
+- `tests/test_systems.gd` → `SYSTEMS_OK`
+- `tools/smoke.gd` → `PETAL_RULES_OK`
+- garden `PETAL_SMOKE=1` → `PETAL_SMOKE_OK`
+- grove `tests/smoke.gd` → pre-existing Variant inference warning on line 89 (PETAL-12); not this lane
+
+Last commit: `b5d8e22` plus decide-steal guard.
 
 ### Requests
 - PETAL-07: directory already shows the new lines; no UI rewrite needed.
