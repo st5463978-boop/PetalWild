@@ -24,7 +24,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | 05 | `petal/05-economy` | `3259c49` | ported | jam + tea servings, shortage line, larger steam |
 | 06 | `petal/06-town` | `bfff006` | ported | lawn count, tea porch, vale carts as counts |
 | 07 | `petal/07-region` | `ca50495` | ported | hex map, ask-first sends, gate crate |
-| 08 | `petal/08-integration` | `79e3123` | — | park land + 01–07 ports + salvage (folk meshes, grab spring, firewall, art desk) |
+| 08 | `petal/08-integration` | `e11dcc4` | — | park land + 01–07 ports + salvage + garden soil/grass restore |
 
 Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`, `vale_crate_crop`.
 
@@ -65,6 +65,12 @@ Skipped:
 Garden: `PETAL_SMOKE_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `JELLY_PLAY_OK` land_y=0.029 feel=bounce pos≈(3.14, 0.029, -14.19) `PETAL_RESIDENT_SHOT_OK`
 
 Pass-2 kettle/town/vale/face plates were already green on `831bbfd` and were not recaptured.
+
+## Garden look audit (`e11dcc4`)
+
+`residents_veg_folk_park.png` was Grove Park, not the garden. The green checker was `shaders/terrain.gdshader` `sin(x)*sin(z)` from Hedge Hollow `af1d576`, not a missing-texture fallback. Poly Haven leafy grass and flowered dirt have been in `assets/third_party/polyhaven/` since `1248380` but were only sampled by legacy `grove_view.gd`. Live `garden.gd` / `dressing.gd` never bound them. No HDRI exists in the tree. Kenney nature-kit trees were grove-only; dressing used cylinder cones. Overlapping “on the Grove Park lawn” labels were `VegPerson.act_label` on every resident plus park `Label3D`s.
+
+Restored: terrain samples leafy grass / dirt; worked bed lids use dirt; lawn discs sample grass; backdrop trees use Kenney FBX; world activity labels stay off. Frames: `docs/screenshots/garden_overview.png`, `garden_beds.png`, `garden_stall.png` (1440×900).
 
 ## Remaining
 
