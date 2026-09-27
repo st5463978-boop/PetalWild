@@ -22,6 +22,7 @@ var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
 var body: Node3D
+var want := ""
 
 func setup(definition: Dictionary) -> void:
 	person_id = str(definition.get("id", ""))

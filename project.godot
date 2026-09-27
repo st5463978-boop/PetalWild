@@ -20,6 +20,7 @@ Economy="*res://scripts/autoload/economy.gd"
 Trust="*res://scripts/autoload/trust.gd"
 SaveGame="*res://scripts/autoload/save_game.gd"
 SimLod="*res://scripts/autoload/sim_lod.gd"
+PetalDecide="*res://scripts/autoload/petal_decide.gd"
 
 [display]
 

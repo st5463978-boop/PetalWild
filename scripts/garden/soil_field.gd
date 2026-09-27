@@ -116,10 +116,22 @@ func _seed_one(only: String = "") -> String:
 			spot.taken = false
 			spot.eaten_by = ""
 			spot.moisture = maxf(spot.moisture, 0.74)
+			var mate := _mate(parent)
+			PlantGenetics.apply_cell(spot, PlantGenetics.mix(PlantGenetics.from_cell(parent), PlantGenetics.from_cell(mate), parent.ix * 10 + parent.iz))
 			if _mark_sown:
 				sown_at = GardenLayout.cell_center(spot.ix, spot.iz)
 			return parent.plant_id
 	return ""
+
+func _mate(parent: SoilCell) -> SoilCell:
+	for cell in all():
+		var other: SoilCell = cell
+		if other == parent:
+			continue
+		if other.plant_id != parent.plant_id or other.growth < 1.0:
+			continue
+		return other
+	return parent
 
 func _seed_spot(ix: int, iz: int, plant_id: String) -> SoilCell:
 	var best: SoilCell = null
@@ -192,6 +204,9 @@ func apply_state(saved: Array) -> void:
 			soil.growth = 0.0
 			soil.wilt = 0.0
 			soil.eaten_by = ""
+			soil.hue = 0.5
+			soil.stature = 1.0
+			soil.crop_yield = 1.0
 	for entry in saved:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue

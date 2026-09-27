@@ -4,7 +4,7 @@ extends Node3D
 var plant_id := ""
 var built_ripe := false
 
-func show_plant(id: String, growth: float, water: float, fertility: float) -> void:
+func show_plant(id: String, growth: float, water: float, fertility: float, traits: Dictionary = {}) -> void:
 	var want_ripe := id == "reed" and growth >= 1.0
 	if id != plant_id or want_ripe != built_ripe:
 		plant_id = id
@@ -18,8 +18,26 @@ func show_plant(id: String, growth: float, water: float, fertility: float) -> vo
 	# ponytail: a tired crop stands shorter; a color shift if the squat still reads as healthy.
 	var tired := not limp and fertility < float(ContentDB.plant(id).get("fertility_need", 0.2))
 	var squat := 0.62 if limp else (0.78 if tired else 1.0)
-	scale = Vector3(amount, amount * squat, amount)
+	var stature := float(traits.get("stature", 1.0))
+	scale = Vector3(amount, amount * squat * stature, amount)
 	rotation.z = 0.35 if limp else 0.0
+	_tint(traits)
+
+func _tint(traits: Dictionary) -> void:
+	var hue := float(traits.get("hue", 0.5))
+	if absf(hue - 0.5) <= 0.02:
+		return
+	for child in get_children():
+		var mesh := child as MeshInstance3D
+		if mesh == null:
+			continue
+		var mat := mesh.material_override as StandardMaterial3D
+		if mat == null:
+			continue
+		var color := mat.albedo_color
+		if color.g > color.r + 0.05 and color.g > color.b:
+			continue
+		mat.albedo_color = color.lerp(Color.from_hsv(hue, 0.42, color.v), 0.55)
 
 func _build(id: String) -> void:
 	match id:

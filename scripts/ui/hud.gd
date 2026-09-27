@@ -141,129 +141,13 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Lane beyond the hedge  %s" % str(stats.get("lane_passers", 0)), 16))
 	journal_box.add_child(ThemeKit.label(str(stats.get("road_line", "The road beyond the hedge is not yet a rumour.")), 14))
-	var far_bell_line := str(stats.get("far_bell_line", ""))
-	if far_bell_line != "":
-		journal_box.add_child(ThemeKit.label(far_bell_line, 14))
-	var bell_sale_line := str(stats.get("bell_sale_line", ""))
-	if bell_sale_line != "":
-		journal_box.add_child(ThemeKit.label(bell_sale_line, 14))
-	var join_line := str(stats.get("join_line", ""))
-	if join_line != "":
-		journal_box.add_child(ThemeKit.label(join_line, 14))
-	var south_line := str(stats.get("south_line", ""))
-	if south_line != "":
-		journal_box.add_child(ThemeKit.label(south_line, 14))
-	var lane_south_line := str(stats.get("lane_south_line", ""))
-	if lane_south_line != "":
-		journal_box.add_child(ThemeKit.label(lane_south_line, 14))
-	var end_line := str(stats.get("end_line", ""))
-	if end_line != "":
-		journal_box.add_child(ThemeKit.label(end_line, 14))
-	var lane_busy_line := str(stats.get("lane_busy_line", ""))
-	if lane_busy_line != "":
-		journal_box.add_child(ThemeKit.label(lane_busy_line, 14))
-	var east_line := str(stats.get("east_line", ""))
-	if east_line != "":
-		journal_box.add_child(ThemeKit.label(east_line, 14))
-	var east_past_line := str(stats.get("east_past_line", ""))
-	if east_past_line != "":
-		journal_box.add_child(ThemeKit.label(east_past_line, 14))
-	var east_far_line := str(stats.get("east_far_line", ""))
-	if east_far_line != "":
-		journal_box.add_child(ThemeKit.label(east_far_line, 14))
-	var east_near_line := str(stats.get("east_near_line", ""))
-	if east_near_line != "":
-		journal_box.add_child(ThemeKit.label(east_near_line, 14))
-	var east_closer_bell_line := str(stats.get("east_closer_bell_line", ""))
-	if east_closer_bell_line != "":
-		journal_box.add_child(ThemeKit.label(east_closer_bell_line, 14))
-	var west_gate_bell_line := str(stats.get("west_gate_bell_line", ""))
-	if west_gate_bell_line != "":
-		journal_box.add_child(ThemeKit.label(west_gate_bell_line, 14))
-	var south_step_line := str(stats.get("south_step_line", ""))
-	if south_step_line != "":
-		journal_box.add_child(ThemeKit.label(south_step_line, 14))
-	var west_turn_line := str(stats.get("west_turn_line", ""))
-	if west_turn_line != "":
-		journal_box.add_child(ThemeKit.label(west_turn_line, 14))
-	var end_step_line := str(stats.get("end_step_line", ""))
-	if end_step_line != "":
-		journal_box.add_child(ThemeKit.label(end_step_line, 14))
-	var outer_east_line := str(stats.get("outer_east_line", ""))
-	if outer_east_line != "":
-		journal_box.add_child(ThemeKit.label(outer_east_line, 14))
-	var further_east_line := str(stats.get("further_east_line", ""))
-	if further_east_line != "":
-		journal_box.add_child(ThemeKit.label(further_east_line, 14))
-	var span_east_line := str(stats.get("span_east_line", ""))
-	if span_east_line != "":
-		journal_box.add_child(ThemeKit.label(span_east_line, 14))
-	var reach_east_line := str(stats.get("reach_east_line", ""))
-	if reach_east_line != "":
-		journal_box.add_child(ThemeKit.label(reach_east_line, 14))
-	var field_east_line := str(stats.get("field_east_line", ""))
-	if field_east_line != "":
-		journal_box.add_child(ThemeKit.label(field_east_line, 14))
-	var brink_east_line := str(stats.get("brink_east_line", ""))
-	if brink_east_line != "":
-		journal_box.add_child(ThemeKit.label(brink_east_line, 14))
-	var margin_east_line := str(stats.get("margin_east_line", ""))
-	if margin_east_line != "":
-		journal_box.add_child(ThemeKit.label(margin_east_line, 14))
-	var hem_east_line := str(stats.get("hem_east_line", ""))
-	if hem_east_line != "":
-		journal_box.add_child(ThemeKit.label(hem_east_line, 14))
-	var hem_stone_line := str(stats.get("hem_stone_line", ""))
-	if hem_stone_line != "":
-		journal_box.add_child(ThemeKit.label(hem_stone_line, 14))
-	var hem_stone_bell_line := str(stats.get("hem_stone_bell_line", ""))
-	if hem_stone_bell_line != "":
-		journal_box.add_child(ThemeKit.label(hem_stone_bell_line, 14))
-	var hem_stone_on_bell_line := str(stats.get("hem_stone_on_bell_line", ""))
-	if hem_stone_on_bell_line != "":
-		journal_box.add_child(ThemeKit.label(hem_stone_on_bell_line, 14))
-	var hem_stone_far_bell_line := str(stats.get("hem_stone_far_bell_line", ""))
-	if hem_stone_far_bell_line != "":
-		journal_box.add_child(ThemeKit.label(hem_stone_far_bell_line, 14))
-	var hem_stone_out_bell_line := str(stats.get("hem_stone_out_bell_line", ""))
-	if hem_stone_out_bell_line != "":
-		journal_box.add_child(ThemeKit.label(hem_stone_out_bell_line, 14))
-	var outer_stone_strip_line := str(stats.get("outer_stone_strip_line", ""))
-	if outer_stone_strip_line != "":
-		journal_box.add_child(ThemeKit.label(outer_stone_strip_line, 14))
-	var outer_strip_bell_stone_line := str(stats.get("outer_strip_bell_stone_line", ""))
-	if outer_strip_bell_stone_line != "":
-		journal_box.add_child(ThemeKit.label(outer_strip_bell_stone_line, 14))
-	var meadow_strip_bell_line := str(stats.get("meadow_strip_bell_line", ""))
-	if meadow_strip_bell_line != "":
-		journal_box.add_child(ThemeKit.label(meadow_strip_bell_line, 14))
-	var meadow_stone_strip_line := str(stats.get("meadow_stone_strip_line", ""))
-	if meadow_stone_strip_line != "":
-		journal_box.add_child(ThemeKit.label(meadow_stone_strip_line, 14))
-	var farther_strip_bell_line := str(stats.get("farther_strip_bell_line", ""))
-	if farther_strip_bell_line != "":
-		journal_box.add_child(ThemeKit.label(farther_strip_bell_line, 14))
-	var last_bell_stone_line := str(stats.get("last_bell_stone_line", ""))
-	if last_bell_stone_line != "":
-		journal_box.add_child(ThemeKit.label(last_bell_stone_line, 14))
-	var last_strip_bell_line := str(stats.get("last_strip_bell_line", ""))
-	if last_strip_bell_line != "":
-		journal_box.add_child(ThemeKit.label(last_strip_bell_line, 14))
-	var end_strip_stone_line := str(stats.get("end_strip_stone_line", ""))
-	if end_strip_stone_line != "":
-		journal_box.add_child(ThemeKit.label(end_strip_stone_line, 14))
-	var far_bell_stone_line := str(stats.get("far_bell_stone_line", ""))
-	if far_bell_stone_line != "":
-		journal_box.add_child(ThemeKit.label(far_bell_stone_line, 14))
-	var far_stone_strip_line := str(stats.get("far_stone_strip_line", ""))
-	if far_stone_strip_line != "":
-		journal_box.add_child(ThemeKit.label(far_stone_strip_line, 14))
-	var gate_sale_line := str(stats.get("gate_sale_line", ""))
-	if gate_sale_line != "":
-		journal_box.add_child(ThemeKit.label(gate_sale_line, 14))
-	var parish_sale_line := str(stats.get("parish_sale_line", ""))
-	if parish_sale_line != "":
-		journal_box.add_child(ThemeKit.label(parish_sale_line, 14))
+	for key in ["far_bell_line", "bell_sale_line", "join_line", "south_line", "lane_south_line", "end_line", "lane_busy_line", "east_line", "east_past_line", "east_far_line", "east_near_line", "east_closer_bell_line", "west_gate_bell_line", "south_step_line", "west_turn_line", "end_step_line", "outer_east_line", "further_east_line", "span_east_line", "reach_east_line", "field_east_line", "brink_east_line", "margin_east_line", "hem_east_line", "hem_stone_line", "hem_stone_bell_line", "hem_stone_on_bell_line", "hem_stone_far_bell_line", "hem_stone_out_bell_line", "outer_stone_strip_line", "outer_strip_bell_stone_line", "meadow_strip_bell_line", "meadow_stone_strip_line", "farther_strip_bell_line", "last_bell_stone_line", "last_strip_bell_line", "end_strip_stone_line", "far_bell_stone_line", "far_stone_strip_line", "gate_sale_line", "parish_sale_line"]:
+		var road_bit := str(stats.get(key, ""))
+		if road_bit != "":
+			journal_box.add_child(ThemeKit.label(road_bit, 14))
+	var cross_line := str(stats.get("cross_line", ""))
+	if cross_line != "":
+		journal_box.add_child(ThemeKit.label(cross_line, 14))
 	var cane_line := str(stats.get("cane_line", ""))
 	if cane_line != "":
 		journal_box.add_child(ThemeKit.label(cane_line, 14))
@@ -695,36 +579,10 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	var kept := str(row.get("road_line", ""))
 	if kept != "":
 		box.add_child(ThemeKit.label(kept, 13))
-	var join_kept := str(row.get("join_line", ""))
-	if join_kept != "":
-		box.add_child(ThemeKit.label(join_kept, 13))
-	var parish_bell_kept := str(row.get("parish_bell_line", ""))
-	if parish_bell_kept != "":
-		box.add_child(ThemeKit.label(parish_bell_kept, 13))
-	var parish_sale_kept := str(row.get("parish_sale_line", ""))
-	if parish_sale_kept != "":
-		box.add_child(ThemeKit.label(parish_sale_kept, 13))
-	var hem_card_kept := str(row.get("hem_card_line", ""))
-	if hem_card_kept != "":
-		box.add_child(ThemeKit.label(hem_card_kept, 13))
-	var hem_stone_card_kept := str(row.get("hem_stone_card_line", ""))
-	if hem_stone_card_kept != "":
-		box.add_child(ThemeKit.label(hem_stone_card_kept, 13))
-	var hem_stone_bell_card_kept := str(row.get("hem_stone_bell_card_line", ""))
-	if hem_stone_bell_card_kept != "":
-		box.add_child(ThemeKit.label(hem_stone_bell_card_kept, 13))
-	var hem_stone_on_bell_card_kept := str(row.get("hem_stone_on_bell_card_line", ""))
-	if hem_stone_on_bell_card_kept != "":
-		box.add_child(ThemeKit.label(hem_stone_on_bell_card_kept, 13))
-	var hem_stone_far_bell_card_kept := str(row.get("hem_stone_far_bell_card_line", ""))
-	if hem_stone_far_bell_card_kept != "":
-		box.add_child(ThemeKit.label(hem_stone_far_bell_card_kept, 13))
-	var hem_stone_out_bell_card_kept := str(row.get("hem_stone_out_bell_card_line", ""))
-	if hem_stone_out_bell_card_kept != "":
-		box.add_child(ThemeKit.label(hem_stone_out_bell_card_kept, 13))
-	var meadow_stone_strip_card_kept := str(row.get("meadow_stone_strip_card_line", ""))
-	if meadow_stone_strip_card_kept != "":
-		box.add_child(ThemeKit.label(meadow_stone_strip_card_kept, 13))
+	for key in ["join_line", "parish_bell_line", "parish_sale_line", "hem_card_line", "hem_stone_card_line", "hem_stone_bell_card_line", "hem_stone_on_bell_card_line", "hem_stone_far_bell_card_line", "hem_stone_out_bell_card_line", "meadow_stone_strip_card_line"]:
+		var card_bit := str(row.get(key, ""))
+		if card_bit != "":
+			box.add_child(ThemeKit.label(card_bit, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"

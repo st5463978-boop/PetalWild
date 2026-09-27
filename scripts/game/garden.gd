@@ -1,6 +1,7 @@
 extends Node3D
 
 var soil := SoilField.new()
+var road := RoadDressing.new()
 var ecology: Ecology
 var camera: GardenCamera
 var hud: Hud
@@ -52,6 +53,8 @@ var bird_day := -1
 var bee_day := -1
 var bee_note_day := -1
 var bee_flower := Vector3.ZERO
+var crate_yields := {}
+var last_shop_hour := -1.0
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -92,7 +95,7 @@ func _build() -> void:
 
 	GardenDressing.new().build(self)
 	GardenProps.new().build(self)
-	_build_road_stones()
+	road.build(self)
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -168,6 +171,7 @@ func _process(delta: float) -> void:
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	_lamps()
 	audio.set_weather(Clock.weather)
+	_tick_shop()
 	_update_status()
 	panel_timer += delta
 	if panel_timer > 0.45 and (hud.journal.visible or hud.shop.visible):
@@ -277,9 +281,44 @@ func _lane_passers() -> int:
 
 func _sell_price(plant_id: String) -> int:
 	var price := int(ContentDB.plant(plant_id).get("sell_price", 1))
+	price = PlantGenetics.price(price, _next_yield(plant_id))
 	if _lane_passers() > 0:
 		price += 1
 	return price
+
+func _next_yield(plant_id: String) -> float:
+	var held = crate_yields.get(plant_id, [])
+	if typeof(held) == TYPE_ARRAY and held.size() > 0:
+		return float(held[0])
+	return 1.0
+
+func _store_yield(plant_id: String, crop_yield: float) -> void:
+	if not crate_yields.has(plant_id):
+		crate_yields[plant_id] = []
+	crate_yields[plant_id].append(crop_yield)
+
+func _take_yield(plant_id: String) -> float:
+	var held = crate_yields.get(plant_id, [])
+	if typeof(held) != TYPE_ARRAY or held.is_empty():
+		return 1.0
+	return float(held.pop_front())
+
+func _tick_shop() -> void:
+	if not _stall_open():
+		return
+	var hour := floorf(Clock.hour())
+	if hour == last_shop_hour:
+		return
+	last_shop_hour = hour
+	for id in ["nessa", "bram"]:
+		var person := _person(id)
+		var deal := VillageShop.trade(person)
+		if str(deal.get("choice", "")) != "buy":
+			continue
+		var crop := str(deal.get("id", ""))
+		toast("%s bought %s for %d petal." % [person.display_name, ContentDB.plant(crop).get("name", crop), int(deal.get("price", 0))])
+		person.say("I'll take that.")
+		refresh_panels()
 
 func _note_lane_afternoon() -> void:
 	# ponytail: three distinct afternoons; a clock if a partial afternoon should count.
@@ -312,10 +351,8 @@ func _road_card_line() -> String:
 	return ""
 
 func _far_bell_line() -> String:
-	# ponytail: one page line while the three far-lawn bells are showing.
-	if _road_bell_count() != 3:
-		return ""
-	return "Three bells stand on the far lawn."
+	return road.line("parish_road_bell")
+
 
 func _bell_sale_line() -> String:
 	# ponytail: one page line the day a sale names the far-lawn bells.
@@ -324,16 +361,12 @@ func _bell_sale_line() -> String:
 	return "A sale named the far-lawn bells."
 
 func _join_line() -> String:
-	# ponytail: one page line while the gate-opening stone is showing.
-	if _road_join_count() != 1:
-		return ""
-	return "One stone marks the gate opening."
+	return road.line("parish_road_join")
+
 
 func _south_line() -> String:
-	# ponytail: one page line while the south-end stone is showing.
-	if _road_south_stone_count() != 1:
-		return ""
-	return "The way south ends at a stone."
+	return road.line("parish_road_south_stone")
+
 
 func _lane_south_line() -> String:
 	# ponytail: one page line; passers stay a count, no body walks the south stone.
@@ -342,202 +375,136 @@ func _lane_south_line() -> String:
 	return "The lane has reached the south stone."
 
 func _end_line() -> String:
-	# ponytail: one page line while the stone past the bench is showing. The older south line stays.
-	if _road_end_stone_count() != 1:
-		return ""
-	return "The way ends past the bench."
+	return road.line("parish_road_end_stone")
+
 
 func _east_line() -> String:
-	# ponytail: one page line while the east strip is showing.
-	if _road_east_count() != 1:
-		return ""
-	return "The way turns east at the end stone."
+	return road.line("parish_road_east")
+
 
 func _east_past_line() -> String:
-	# ponytail: one page line while the second east strip is showing.
-	if _road_east_past_count() != 1:
-		return ""
-	return "The way continues east past the bell."
+	return road.line("parish_road_east_past")
+
 
 func _east_far_line() -> String:
-	# ponytail: one page line while the east-end stone is showing.
-	if _road_east_far_stone_count() != 1:
-		return ""
-	return "A stone marks the east end."
+	return road.line("parish_road_east_far_stone")
+
 
 func _east_near_line() -> String:
-	# ponytail: one page line while the farther step toward the parish is showing.
-	if _road_east_near_count() != 1:
-		return ""
-	return "The way steps closer to the parish."
+	return road.line("parish_road_east_near")
+
 
 func _east_closer_bell_line() -> String:
-	# ponytail: one page line while the parish-end meadowbell is showing.
-	if _road_east_closer_bell_count() != 1:
-		return ""
-	return "A bell stands at the parish end."
+	return road.line("parish_road_east_closer_bell")
+
 
 func _west_gate_bell_line() -> String:
-	# ponytail: one page line while the west-end meadowbell is showing.
-	if _road_east_hedge_west_bell_count() != 1:
-		return ""
-	return "A bell stands beside the way toward the gate."
+	return road.line("parish_road_east_hedge_west_bell")
+
 
 func _south_step_line() -> String:
-	# ponytail: one page line while the strip south of the gate-side bell is showing.
-	if _road_east_hedge_west_south_count() != 1:
-		return ""
-	return "The way steps south of the gate-side bell."
+	return road.line("parish_road_east_hedge_west_south")
+
 
 func _west_turn_line() -> String:
-	# ponytail: one page line while the strip west of the far-south bell is showing.
-	if _road_east_hedge_west_pace_west_count() != 1:
-		return ""
-	return "The way turns west of the far-south bell."
+	return road.line("parish_road_east_hedge_west_pace_west")
+
 
 func _end_step_line() -> String:
-	# ponytail: one page line while the strip toward the end stone is showing.
-	if _road_east_hedge_west_pace_north_count() != 1:
-		return ""
-	return "The way steps toward the end stone."
+	return road.line("parish_road_east_hedge_west_pace_north")
+
 
 func _outer_east_line() -> String:
-	# ponytail: one page line while the strip east of the outer-end bell is showing.
-	if _road_east_hedge_west_pace_east_rim_count() != 1:
-		return ""
-	return "The way steps east of the outer-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_rim")
+
 
 func _further_east_line() -> String:
-	# ponytail: one page line while the strip further east of the outer bell is showing.
-	if _road_east_hedge_west_pace_east_farther_count() != 1:
-		return ""
-	return "The way steps further east of the outer bell."
+	return road.line("parish_road_east_hedge_west_pace_east_farther")
+
 
 func _span_east_line() -> String:
-	# ponytail: one page line while the strip past the east-end bell is showing.
-	if _road_east_hedge_west_pace_east_span_count() != 1:
-		return ""
-	return "The way steps past the east-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_span")
+
 
 func _reach_east_line() -> String:
-	# ponytail: one page line while the reach-end meadowbell is showing.
-	if _road_east_hedge_west_pace_east_reach_bell_count() != 1:
-		return ""
-	return "The way steps east of the reach-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_reach_bell")
+
 
 func _field_east_line() -> String:
-	# ponytail: one page line while the strip past the reach-end bell is showing.
-	if _road_east_hedge_west_pace_east_field_count() != 1:
-		return ""
-	return "The way steps past the reach-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_field")
+
 
 func _brink_east_line() -> String:
-	# ponytail: one page line while the strip past the verge-end bell is showing.
-	if _road_east_hedge_west_pace_east_brink_count() != 1:
-		return ""
-	return "The way steps past the verge-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_brink")
+
 
 func _margin_east_line() -> String:
-	# ponytail: one page line while the strip past the edge-end bell is showing.
-	if _road_east_hedge_west_pace_east_margin_count() != 1:
-		return ""
-	return "The way steps past the edge-end bell."
+	return road.line("parish_road_east_hedge_west_pace_east_margin")
+
 
 func _hem_east_line() -> String:
-	# ponytail: one page line while the strip past the margin strip is showing.
-	if _road_east_hedge_west_pace_east_hem_count() != 1:
-		return ""
-	return "The way steps past the margin strip."
+	return road.line("parish_road_east_hedge_west_pace_east_hem")
+
 
 func _hem_stone_line() -> String:
-	# ponytail: one page line while the stone east of that strip is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_count() != 1:
-		return ""
-	return "The way steps past the hem strip."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone")
+
 
 func _hem_stone_bell_line() -> String:
-	# ponytail: one page line while the bell east of that stone is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_bell_count() != 1:
-		return ""
-	return "The way steps east of the hem stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_bell")
+
 
 func _hem_stone_on_bell_line() -> String:
-	# ponytail: one page line while the bell east of that bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_on_bell_count() != 1:
-		return ""
-	return "The way steps east of the hem-stone bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_on_bell")
+
 
 func _hem_stone_far_bell_line() -> String:
-	# ponytail: one page line while the bell east of that farther bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_far_bell_count() != 1:
-		return ""
-	return "The way steps past the hem-stone bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_far_bell")
+
 
 func _hem_stone_out_bell_line() -> String:
-	# ponytail: one page line while the bell east of the far bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_bell_count() != 1:
-		return ""
-	return "The way steps east of the far bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_bell")
+
 
 func _outer_stone_strip_line() -> String:
-	# ponytail: one page line while the strip east of the outer stone is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() != 1:
-		return ""
-	return "The way steps past the outer stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip")
+
 
 func _outer_strip_bell_stone_line() -> String:
-	# ponytail: one page line while the stone east of the outer-strip bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() != 1:
-		return ""
-	return "The way steps past the outer-strip bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone")
+
 
 func _meadow_strip_bell_line() -> String:
-	# ponytail: one page line while the bell at the east end of the meadowbell strip is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1:
-		return ""
-	return "The way steps past the meadow-strip bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
+
 
 func _meadow_stone_strip_line() -> String:
-	# ponytail: one page line while the strip east of the meadow-strip stone is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1:
-		return ""
-	return "The way steps east of the meadow-strip stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
+
 
 func _farther_strip_bell_line() -> String:
-	# ponytail: one page line while the bell at the east end of the farther strip is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() != 1:
-		return ""
-	return "The way steps past the farther-strip bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell")
+
 
 func _last_bell_stone_line() -> String:
-	# ponytail: one page line while the stone east of the farther-stone's bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1:
-		return ""
-	return "The way steps past the last bell stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
+
 
 func _last_strip_bell_line() -> String:
-	# ponytail: one page line while the bell at the east end of the last bell strip is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1:
-		return ""
-	return "The way steps past the last-strip bell."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
+
 
 func _end_strip_stone_line() -> String:
-	# ponytail: one page line while the strip east of the last-strip's stone is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1:
-		return ""
-	return "The way steps east of the last-strip's stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
+
 
 func _far_bell_stone_line() -> String:
-	# ponytail: one page line while the stone east of the last-strip's stone bell is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1:
-		return ""
-	return "The way steps past the far bell stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
+
 
 func _far_stone_strip_line() -> String:
-	# ponytail: one page line while the strip east of the far bell stone is showing.
-	if _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1:
-		return ""
-	return "The way steps east of the far bell stone."
+	return road.line("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
+
 
 func _hem_card_line() -> String:
 	# ponytail: Nessa's card repeats the page line while that strip is showing.
@@ -598,6 +565,15 @@ func _lane_busy_line() -> String:
 	if not Trust.has_action("parish_road_rumour") or _lane_passers() < 3:
 		return ""
 	return "The lane is busy past the bench."
+
+func _cross_line() -> String:
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "":
+			continue
+		if absf(plot.hue - 0.5) > 0.05 or absf(plot.stature - 1.0) > 0.05 or absf(plot.crop_yield - 1.0) > 0.05:
+			return "A seedling took after both parents."
+	return ""
 
 func _cane_line() -> String:
 	# ponytail: one page line while both opening canes are short; it goes when either ripens.
@@ -884,6 +860,7 @@ func sell(plant_id: String) -> void:
 	if Economy.count(plant_id) <= 0:
 		return
 	var price := _sell_price(plant_id)
+	_take_yield(plant_id)
 	Economy.take(plant_id, 1)
 	Economy.earn(price)
 	audio.play_kind("coin")
@@ -927,4604 +904,375 @@ func accept_road() -> void:
 	Trust.file_road_rumour("nessa")
 	toast("Nessa filed the road rumour. Nothing left the parish.")
 	nessa.say("The road is only a rumour. The book keeps it.")
-	_sync_road_stones()
+	road.sync(Trust.has_action("parish_road_rumour"))
 	refresh_panels()
 
-func _build_road_stones() -> void:
-	# ponytail: three flats past the gate; a path mesh if the rumour should become a road.
-	var spots: Array[Vector3] = [
-		Vector3(0.18, 0.07, -12.05),
-		Vector3(-0.22, 0.06, -12.72),
-		Vector3(0.08, 0.07, -13.4),
-	]
-	for at in spots:
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.46, 0.07, 0.32)
-		var stone := MeshInstance3D.new()
-		stone.mesh = mesh
-		var material := StandardMaterial3D.new()
-		material.albedo_color = Color("#4a4038")
-		material.roughness = 0.92
-		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		stone.material_override = material
-		stone.position = at
-		stone.rotation.y = at.x * 2.0
-		stone.visible = false
-		stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		stone.add_to_group("parish_road_stone")
-		add_child(stone)
-	var strip := BoxMesh.new()
-	strip.size = Vector3(1.05, 0.03, 3.55)
-	var path := MeshInstance3D.new()
-	path.mesh = strip
-	var path_mat := StandardMaterial3D.new()
-	path_mat.albedo_color = Color("#6a5e4c")
-	path_mat.roughness = 0.96
-	path_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	path.material_override = path_mat
-	path.position = Vector3(0.0, 0.02, -11.775)
-	path.visible = false
-	path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	path.add_to_group("parish_road_path")
-	add_child(path)
-	var inner := BoxMesh.new()
-	inner.size = Vector3(1.05, 0.03, 0.75)
-	var inside := MeshInstance3D.new()
-	inside.mesh = inner
-	var inside_mat := StandardMaterial3D.new()
-	inside_mat.albedo_color = Color("#6a5e4c")
-	inside_mat.roughness = 0.96
-	inside_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	inside.material_override = inside_mat
-	inside.position = Vector3(0.0, 0.02, -9.675)
-	inside.visible = false
-	inside.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	inside.add_to_group("parish_road_inside")
-	add_child(inside)
-	var join_mesh := BoxMesh.new()
-	join_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var join := MeshInstance3D.new()
-	join.mesh = join_mesh
-	var join_mat := StandardMaterial3D.new()
-	join_mat.albedo_color = Color("#4a4038")
-	join_mat.roughness = 0.92
-	join_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	join.material_override = join_mat
-	join.position = Vector3(0.16, 0.07, -10.02)
-	join.rotation.y = 0.4
-	join.visible = false
-	join.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	join.add_to_group("parish_road_join")
-	add_child(join)
-	var far_mesh := BoxMesh.new()
-	far_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var far_stone := MeshInstance3D.new()
-	far_stone.mesh = far_mesh
-	var far_mat := StandardMaterial3D.new()
-	far_mat.albedo_color = Color("#4a4038")
-	far_mat.roughness = 0.92
-	far_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	far_stone.material_override = far_mat
-	far_stone.position = Vector3(0.12, 0.07, -15.55)
-	far_stone.rotation.y = 0.6
-	far_stone.visible = false
-	far_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	far_stone.add_to_group("parish_road_far_stone")
-	add_child(far_stone)
-	var far_strip := BoxMesh.new()
-	far_strip.size = Vector3(1.05, 0.03, 1.2)
-	var far_path := MeshInstance3D.new()
-	far_path.mesh = far_strip
-	var far_path_mat := StandardMaterial3D.new()
-	far_path_mat.albedo_color = Color("#6a5e4c")
-	far_path_mat.roughness = 0.96
-	far_path_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	far_path.material_override = far_path_mat
-	far_path.position = Vector3(0.12, 0.02, -16.15)
-	far_path.visible = false
-	far_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	far_path.add_to_group("parish_road_far_path")
-	add_child(far_path)
-	var south_mesh := BoxMesh.new()
-	south_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var south_stone := MeshInstance3D.new()
-	south_stone.mesh = south_mesh
-	var south_mat := StandardMaterial3D.new()
-	south_mat.albedo_color = Color("#4a4038")
-	south_mat.roughness = 0.92
-	south_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	south_stone.material_override = south_mat
-	south_stone.position = Vector3(0.12, 0.07, -16.9)
-	south_stone.rotation.y = -0.4
-	south_stone.visible = false
-	south_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	south_stone.add_to_group("parish_road_south_stone")
-	add_child(south_stone)
-	var south_bench := Node3D.new()
-	south_bench.position = Vector3(0.85, 0.0, -16.9)
-	south_bench.rotation.y = 0.0
-	south_bench.visible = false
-	south_bench.add_to_group("parish_road_south_bench")
-	add_child(south_bench)
-	var south_parts: Array = [
-		[Vector3(0, 0.22, 0), Vector3(0.72, 0.05, 0.28), Color("#8d6244")],
-		[Vector3(0, 0.36, -0.12), Vector3(0.72, 0.2, 0.05), Color("#a87852")],
-		[Vector3(-0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-		[Vector3(0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-	]
-	for south_part in south_parts:
-		var south_plank := BoxMesh.new()
-		south_plank.size = south_part[1]
-		var south_plank_node := MeshInstance3D.new()
-		south_plank_node.mesh = south_plank
-		var south_plank_mat := StandardMaterial3D.new()
-		south_plank_mat.albedo_color = south_part[2]
-		south_plank_mat.roughness = 0.84
-		south_plank_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		south_plank_node.material_override = south_plank_mat
-		south_plank_node.position = south_part[0]
-		south_plank_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		south_bench.add_child(south_plank_node)
-	var past_strip := BoxMesh.new()
-	past_strip.size = Vector3(1.05, 0.03, 1.2)
-	var past_path := MeshInstance3D.new()
-	past_path.mesh = past_strip
-	var past_mat := StandardMaterial3D.new()
-	past_mat.albedo_color = Color("#6a5e4c")
-	past_mat.roughness = 0.96
-	past_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	past_path.material_override = past_mat
-	past_path.position = Vector3(0.12, 0.02, -17.65)
-	past_path.visible = false
-	past_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	past_path.add_to_group("parish_road_past_bench")
-	add_child(past_path)
-	var end_mesh := BoxMesh.new()
-	end_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var end_stone := MeshInstance3D.new()
-	end_stone.mesh = end_mesh
-	var end_mat := StandardMaterial3D.new()
-	end_mat.albedo_color = Color("#4a4038")
-	end_mat.roughness = 0.92
-	end_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	end_stone.material_override = end_mat
-	end_stone.position = Vector3(0.12, 0.07, -18.4)
-	end_stone.rotation.y = 0.3
-	end_stone.visible = false
-	end_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	end_stone.add_to_group("parish_road_end_stone")
-	add_child(end_stone)
-	var end_bell := PlantView.new()
-	end_bell.position = Vector3(0.48, 0.04, -18.55)
-	end_bell.visible = false
-	end_bell.add_to_group("parish_road_end_bell")
-	add_child(end_bell)
-	end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var east_strip := BoxMesh.new()
-	east_strip.size = Vector3(1.2, 0.03, 1.05)
-	var east_path := MeshInstance3D.new()
-	east_path.mesh = east_strip
-	var east_mat := StandardMaterial3D.new()
-	east_mat.albedo_color = Color("#6a5e4c")
-	east_mat.roughness = 0.96
-	east_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_path.material_override = east_mat
-	east_path.position = Vector3(0.72, 0.02, -18.4)
-	east_path.visible = false
-	east_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_path.add_to_group("parish_road_east")
-	add_child(east_path)
-	var east_bell := PlantView.new()
-	east_bell.position = Vector3(1.48, 0.04, -18.4)
-	east_bell.visible = false
-	east_bell.add_to_group("parish_road_east_bell")
-	add_child(east_bell)
-	east_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var east_past_strip := BoxMesh.new()
-	east_past_strip.size = Vector3(1.2, 0.03, 1.05)
-	var east_past := MeshInstance3D.new()
-	east_past.mesh = east_past_strip
-	var east_past_mat := StandardMaterial3D.new()
-	east_past_mat.albedo_color = Color("#6a5e4c")
-	east_past_mat.roughness = 0.96
-	east_past_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_past.material_override = east_past_mat
-	east_past.position = Vector3(2.3, 0.02, -18.4)
-	east_past.visible = false
-	east_past.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_past.add_to_group("parish_road_east_past")
-	add_child(east_past)
-	var east_far_strip := BoxMesh.new()
-	east_far_strip.size = Vector3(1.2, 0.03, 1.05)
-	var east_far := MeshInstance3D.new()
-	east_far.mesh = east_far_strip
-	var east_far_mat := StandardMaterial3D.new()
-	east_far_mat.albedo_color = Color("#6a5e4c")
-	east_far_mat.roughness = 0.96
-	east_far_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_far.material_override = east_far_mat
-	east_far.position = Vector3(3.5, 0.02, -18.4)
-	east_far.visible = false
-	east_far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_far.add_to_group("parish_road_east_far")
-	add_child(east_far)
-	var east_far_stone_mesh := BoxMesh.new()
-	east_far_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var east_far_stone := MeshInstance3D.new()
-	east_far_stone.mesh = east_far_stone_mesh
-	var east_far_stone_mat := StandardMaterial3D.new()
-	east_far_stone_mat.albedo_color = Color("#4a4038")
-	east_far_stone_mat.roughness = 0.92
-	east_far_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_far_stone.material_override = east_far_stone_mat
-	east_far_stone.position = Vector3(4.28, 0.07, -18.4)
-	east_far_stone.rotation.y = 0.25
-	east_far_stone.visible = false
-	east_far_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_far_stone.add_to_group("parish_road_east_far_stone")
-	add_child(east_far_stone)
-	var east_bench := Node3D.new()
-	east_bench.position = Vector3(4.95, 0.0, -18.4)
-	east_bench.rotation.y = 0.0
-	east_bench.visible = false
-	east_bench.add_to_group("parish_road_east_far_bench")
-	add_child(east_bench)
-	var east_bench_parts: Array = [
-		[Vector3(0, 0.22, 0), Vector3(0.72, 0.05, 0.28), Color("#8d6244")],
-		[Vector3(0, 0.36, -0.12), Vector3(0.72, 0.2, 0.05), Color("#a87852")],
-		[Vector3(-0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-		[Vector3(0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-	]
-	for east_part in east_bench_parts:
-		var east_plank := BoxMesh.new()
-		east_plank.size = east_part[1]
-		var east_plank_node := MeshInstance3D.new()
-		east_plank_node.mesh = east_plank
-		var east_plank_mat := StandardMaterial3D.new()
-		east_plank_mat.albedo_color = east_part[2]
-		east_plank_mat.roughness = 0.84
-		east_plank_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		east_plank_node.material_override = east_plank_mat
-		east_plank_node.position = east_part[0]
-		east_plank_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		east_bench.add_child(east_plank_node)
-	var east_return_strip := BoxMesh.new()
-	east_return_strip.size = Vector3(1.05, 0.03, 1.2)
-	var east_return := MeshInstance3D.new()
-	east_return.mesh = east_return_strip
-	var east_return_mat := StandardMaterial3D.new()
-	east_return_mat.albedo_color = Color("#6a5e4c")
-	east_return_mat.roughness = 0.96
-	east_return_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_return.material_override = east_return_mat
-	east_return.position = Vector3(4.28, 0.02, -17.8)
-	east_return.visible = false
-	east_return.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_return.add_to_group("parish_road_east_return")
-	add_child(east_return)
-	var east_near_strip := BoxMesh.new()
-	east_near_strip.size = Vector3(1.05, 0.03, 1.2)
-	var east_near := MeshInstance3D.new()
-	east_near.mesh = east_near_strip
-	var east_near_mat := StandardMaterial3D.new()
-	east_near_mat.albedo_color = Color("#6a5e4c")
-	east_near_mat.roughness = 0.96
-	east_near_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_near.material_override = east_near_mat
-	east_near.position = Vector3(4.28, 0.02, -16.6)
-	east_near.visible = false
-	east_near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_near.add_to_group("parish_road_east_near")
-	add_child(east_near)
-	var east_closer_strip := BoxMesh.new()
-	east_closer_strip.size = Vector3(1.05, 0.03, 1.2)
-	var east_closer := MeshInstance3D.new()
-	east_closer.mesh = east_closer_strip
-	var east_closer_mat := StandardMaterial3D.new()
-	east_closer_mat.albedo_color = Color("#6a5e4c")
-	east_closer_mat.roughness = 0.96
-	east_closer_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_closer.material_override = east_closer_mat
-	east_closer.position = Vector3(4.28, 0.02, -15.4)
-	east_closer.visible = false
-	east_closer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_closer.add_to_group("parish_road_east_closer")
-	add_child(east_closer)
-	var closer_bell := PlantView.new()
-	closer_bell.position = Vector3(4.55, 0.04, -14.8)
-	closer_bell.visible = false
-	closer_bell.add_to_group("parish_road_east_closer_bell")
-	add_child(closer_bell)
-	closer_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var east_hedge_strip := BoxMesh.new()
-	east_hedge_strip.size = Vector3(1.05, 0.03, 1.2)
-	var east_hedge := MeshInstance3D.new()
-	east_hedge.mesh = east_hedge_strip
-	var east_hedge_mat := StandardMaterial3D.new()
-	east_hedge_mat.albedo_color = Color("#6a5e4c")
-	east_hedge_mat.roughness = 0.96
-	east_hedge_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	east_hedge.material_override = east_hedge_mat
-	east_hedge.position = Vector3(4.28, 0.02, -14.2)
-	east_hedge.visible = false
-	east_hedge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	east_hedge.add_to_group("parish_road_east_hedge")
-	add_child(east_hedge)
-	var hedge_bell := PlantView.new()
-	hedge_bell.position = Vector3(4.55, 0.04, -13.6)
-	hedge_bell.visible = false
-	hedge_bell.add_to_group("parish_road_east_hedge_bell")
-	add_child(hedge_bell)
-	hedge_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var hedge_past_strip := BoxMesh.new()
-	hedge_past_strip.size = Vector3(1.05, 0.03, 1.2)
-	var hedge_past := MeshInstance3D.new()
-	hedge_past.mesh = hedge_past_strip
-	var hedge_past_mat := StandardMaterial3D.new()
-	hedge_past_mat.albedo_color = Color("#6a5e4c")
-	hedge_past_mat.roughness = 0.96
-	hedge_past_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	hedge_past.material_override = hedge_past_mat
-	hedge_past.position = Vector3(4.28, 0.02, -13.0)
-	hedge_past.visible = false
-	hedge_past.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	hedge_past.add_to_group("parish_road_east_hedge_past")
-	add_child(hedge_past)
-	var hedge_onward_strip := BoxMesh.new()
-	hedge_onward_strip.size = Vector3(1.05, 0.03, 1.2)
-	var hedge_onward := MeshInstance3D.new()
-	hedge_onward.mesh = hedge_onward_strip
-	var hedge_onward_mat := StandardMaterial3D.new()
-	hedge_onward_mat.albedo_color = Color("#6a5e4c")
-	hedge_onward_mat.roughness = 0.96
-	hedge_onward_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	hedge_onward.material_override = hedge_onward_mat
-	hedge_onward.position = Vector3(4.28, 0.02, -11.8)
-	hedge_onward.visible = false
-	hedge_onward.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	hedge_onward.add_to_group("parish_road_east_hedge_onward")
-	add_child(hedge_onward)
-	var hedge_face_mesh := BoxMesh.new()
-	hedge_face_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var hedge_face := MeshInstance3D.new()
-	hedge_face.mesh = hedge_face_mesh
-	var hedge_face_mat := StandardMaterial3D.new()
-	hedge_face_mat.albedo_color = Color("#4a4038")
-	hedge_face_mat.roughness = 0.92
-	hedge_face_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	hedge_face.material_override = hedge_face_mat
-	hedge_face.position = Vector3(4.28, 0.07, -10.95)
-	hedge_face.rotation.y = 0.25
-	hedge_face.visible = false
-	hedge_face.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	hedge_face.add_to_group("parish_road_east_hedge_stone")
-	add_child(hedge_face)
-	var face_bell := PlantView.new()
-	face_bell.position = Vector3(4.83, 0.04, -10.95)
-	face_bell.visible = false
-	face_bell.add_to_group("parish_road_east_hedge_face_bell")
-	add_child(face_bell)
-	face_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var hedge_west_strip := BoxMesh.new()
-	hedge_west_strip.size = Vector3(1.2, 0.03, 1.05)
-	var hedge_west := MeshInstance3D.new()
-	hedge_west.mesh = hedge_west_strip
-	var hedge_west_mat := StandardMaterial3D.new()
-	hedge_west_mat.albedo_color = Color("#6a5e4c")
-	hedge_west_mat.roughness = 0.96
-	hedge_west_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	hedge_west.material_override = hedge_west_mat
-	hedge_west.position = Vector3(3.6, 0.02, -10.95)
-	hedge_west.visible = false
-	hedge_west.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	hedge_west.add_to_group("parish_road_east_hedge_west")
-	add_child(hedge_west)
-	var west_stone_mesh := BoxMesh.new()
-	west_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var west_stone := MeshInstance3D.new()
-	west_stone.mesh = west_stone_mesh
-	var west_stone_mat := StandardMaterial3D.new()
-	west_stone_mat.albedo_color = Color("#4a4038")
-	west_stone_mat.roughness = 0.92
-	west_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	west_stone.material_override = west_stone_mat
-	west_stone.position = Vector3(3.25, 0.07, -10.95)
-	west_stone.rotation.y = -0.2
-	west_stone.visible = false
-	west_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	west_stone.add_to_group("parish_road_east_hedge_west_stone")
-	add_child(west_stone)
-	var west_bell := PlantView.new()
-	west_bell.position = Vector3(3.8, 0.04, -10.95)
-	west_bell.visible = false
-	west_bell.add_to_group("parish_road_east_hedge_west_bell")
-	add_child(west_bell)
-	west_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var south_bell := PlantView.new()
-	south_bell.position = Vector3(3.8, 0.04, -12.15)
-	south_bell.visible = false
-	south_bell.add_to_group("parish_road_east_hedge_west_south_bell")
-	add_child(south_bell)
-	south_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var south_strip := BoxMesh.new()
-	south_strip.size = Vector3(1.05, 0.03, 1.2)
-	var south_path := MeshInstance3D.new()
-	south_path.mesh = south_strip
-	var gate_south_mat := StandardMaterial3D.new()
-	gate_south_mat.albedo_color = Color("#6a5e4c")
-	gate_south_mat.roughness = 0.96
-	gate_south_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	south_path.material_override = gate_south_mat
-	south_path.position = Vector3(3.8, 0.02, -13.35)
-	south_path.visible = false
-	south_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	south_path.add_to_group("parish_road_east_hedge_west_south")
-	add_child(south_path)
-	var further_strip := BoxMesh.new()
-	further_strip.size = Vector3(1.05, 0.03, 1.2)
-	var further_path := MeshInstance3D.new()
-	further_path.mesh = further_strip
-	var further_mat := StandardMaterial3D.new()
-	further_mat.albedo_color = Color("#6a5e4c")
-	further_mat.roughness = 0.96
-	further_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	further_path.material_override = further_mat
-	further_path.position = Vector3(3.8, 0.02, -14.55)
-	further_path.visible = false
-	further_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	further_path.add_to_group("parish_road_east_hedge_west_further")
-	add_child(further_path)
-	var further_bell := PlantView.new()
-	further_bell.position = Vector3(3.8, 0.04, -15.15)
-	further_bell.visible = false
-	further_bell.add_to_group("parish_road_east_hedge_west_further_bell")
-	add_child(further_bell)
-	further_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_strip := BoxMesh.new()
-	pace_strip.size = Vector3(1.05, 0.03, 1.2)
-	var pace_path := MeshInstance3D.new()
-	pace_path.mesh = pace_strip
-	var pace_mat := StandardMaterial3D.new()
-	pace_mat.albedo_color = Color("#6a5e4c")
-	pace_mat.roughness = 0.96
-	pace_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_path.material_override = pace_mat
-	pace_path.position = Vector3(3.8, 0.02, -16.35)
-	pace_path.visible = false
-	pace_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_path.add_to_group("parish_road_east_hedge_west_pace")
-	add_child(pace_path)
-	var pace_bell := PlantView.new()
-	pace_bell.position = Vector3(3.8, 0.04, -16.95)
-	pace_bell.visible = false
-	pace_bell.add_to_group("parish_road_east_hedge_west_pace_bell")
-	add_child(pace_bell)
-	pace_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_south_strip := BoxMesh.new()
-	pace_south_strip.size = Vector3(1.05, 0.03, 1.2)
-	var pace_south_path := MeshInstance3D.new()
-	pace_south_path.mesh = pace_south_strip
-	var pace_south_mat := StandardMaterial3D.new()
-	pace_south_mat.albedo_color = Color("#6a5e4c")
-	pace_south_mat.roughness = 0.96
-	pace_south_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_south_path.material_override = pace_south_mat
-	pace_south_path.position = Vector3(3.8, 0.02, -18.15)
-	pace_south_path.visible = false
-	pace_south_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_south_path.add_to_group("parish_road_east_hedge_west_pace_south")
-	add_child(pace_south_path)
-	var pace_south_bell := PlantView.new()
-	pace_south_bell.position = Vector3(3.8, 0.04, -18.75)
-	pace_south_bell.visible = false
-	pace_south_bell.add_to_group("parish_road_east_hedge_west_pace_south_bell")
-	add_child(pace_south_bell)
-	pace_south_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_far_strip := BoxMesh.new()
-	pace_far_strip.size = Vector3(1.05, 0.03, 1.2)
-	var pace_far_path := MeshInstance3D.new()
-	pace_far_path.mesh = pace_far_strip
-	var pace_far_mat := StandardMaterial3D.new()
-	pace_far_mat.albedo_color = Color("#6a5e4c")
-	pace_far_mat.roughness = 0.96
-	pace_far_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_far_path.material_override = pace_far_mat
-	pace_far_path.position = Vector3(3.8, 0.02, -19.95)
-	pace_far_path.visible = false
-	pace_far_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_far_path.add_to_group("parish_road_east_hedge_west_pace_far")
-	add_child(pace_far_path)
-	var pace_far_bell := PlantView.new()
-	pace_far_bell.position = Vector3(3.8, 0.04, -20.55)
-	pace_far_bell.visible = false
-	pace_far_bell.add_to_group("parish_road_east_hedge_west_pace_far_bell")
-	add_child(pace_far_bell)
-	pace_far_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_west_strip := BoxMesh.new()
-	pace_west_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_west_path := MeshInstance3D.new()
-	pace_west_path.mesh = pace_west_strip
-	var pace_west_mat := StandardMaterial3D.new()
-	pace_west_mat.albedo_color = Color("#6a5e4c")
-	pace_west_mat.roughness = 0.96
-	pace_west_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_west_path.material_override = pace_west_mat
-	pace_west_path.position = Vector3(2.6, 0.02, -20.55)
-	pace_west_path.visible = false
-	pace_west_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_west_path.add_to_group("parish_road_east_hedge_west_pace_west")
-	add_child(pace_west_path)
-	var pace_on_strip := BoxMesh.new()
-	pace_on_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_on_path := MeshInstance3D.new()
-	pace_on_path.mesh = pace_on_strip
-	var pace_on_mat := StandardMaterial3D.new()
-	pace_on_mat.albedo_color = Color("#6a5e4c")
-	pace_on_mat.roughness = 0.96
-	pace_on_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_on_path.material_override = pace_on_mat
-	pace_on_path.position = Vector3(1.4, 0.02, -20.55)
-	pace_on_path.visible = false
-	pace_on_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_on_path.add_to_group("parish_road_east_hedge_west_pace_on")
-	add_child(pace_on_path)
-	var pace_near_strip := BoxMesh.new()
-	pace_near_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_near_path := MeshInstance3D.new()
-	pace_near_path.mesh = pace_near_strip
-	var pace_near_mat := StandardMaterial3D.new()
-	pace_near_mat.albedo_color = Color("#6a5e4c")
-	pace_near_mat.roughness = 0.96
-	pace_near_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_near_path.material_override = pace_near_mat
-	pace_near_path.position = Vector3(0.2, 0.02, -20.55)
-	pace_near_path.visible = false
-	pace_near_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_near_path.add_to_group("parish_road_east_hedge_west_pace_near")
-	add_child(pace_near_path)
-	var pace_north_strip := BoxMesh.new()
-	pace_north_strip.size = Vector3(1.05, 0.03, 1.2)
-	var pace_north_path := MeshInstance3D.new()
-	pace_north_path.mesh = pace_north_strip
-	var pace_north_mat := StandardMaterial3D.new()
-	pace_north_mat.albedo_color = Color("#6a5e4c")
-	pace_north_mat.roughness = 0.96
-	pace_north_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_north_path.material_override = pace_north_mat
-	pace_north_path.position = Vector3(0.2, 0.02, -19.35)
-	pace_north_path.visible = false
-	pace_north_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_north_path.add_to_group("parish_road_east_hedge_west_pace_north")
-	add_child(pace_north_path)
-	var pace_east_strip := BoxMesh.new()
-	pace_east_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_path := MeshInstance3D.new()
-	pace_east_path.mesh = pace_east_strip
-	var pace_east_mat := StandardMaterial3D.new()
-	pace_east_mat.albedo_color = Color("#6a5e4c")
-	pace_east_mat.roughness = 0.96
-	pace_east_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_path.material_override = pace_east_mat
-	pace_east_path.position = Vector3(1.4, 0.02, -19.35)
-	pace_east_path.visible = false
-	pace_east_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_path.add_to_group("parish_road_east_hedge_west_pace_east")
-	add_child(pace_east_path)
-	var pace_east_bell := PlantView.new()
-	pace_east_bell.position = Vector3(2.0, 0.04, -19.35)
-	pace_east_bell.visible = false
-	pace_east_bell.add_to_group("parish_road_east_hedge_west_pace_east_bell")
-	add_child(pace_east_bell)
-	pace_east_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_on_strip := BoxMesh.new()
-	pace_east_on_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_on_path := MeshInstance3D.new()
-	pace_east_on_path.mesh = pace_east_on_strip
-	var pace_east_on_mat := StandardMaterial3D.new()
-	pace_east_on_mat.albedo_color = Color("#6a5e4c")
-	pace_east_on_mat.roughness = 0.96
-	pace_east_on_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_on_path.material_override = pace_east_on_mat
-	pace_east_on_path.position = Vector3(3.2, 0.02, -19.35)
-	pace_east_on_path.visible = false
-	pace_east_on_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_on_path.add_to_group("parish_road_east_hedge_west_pace_east_on")
-	add_child(pace_east_on_path)
-	var pace_east_on_bell := PlantView.new()
-	pace_east_on_bell.position = Vector3(3.8, 0.04, -19.35)
-	pace_east_on_bell.visible = false
-	pace_east_on_bell.add_to_group("parish_road_east_hedge_west_pace_east_on_bell")
-	add_child(pace_east_on_bell)
-	pace_east_on_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_out_strip := BoxMesh.new()
-	pace_east_out_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_out_path := MeshInstance3D.new()
-	pace_east_out_path.mesh = pace_east_out_strip
-	var pace_east_out_mat := StandardMaterial3D.new()
-	pace_east_out_mat.albedo_color = Color("#6a5e4c")
-	pace_east_out_mat.roughness = 0.96
-	pace_east_out_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_out_path.material_override = pace_east_out_mat
-	pace_east_out_path.position = Vector3(5.0, 0.02, -19.35)
-	pace_east_out_path.visible = false
-	pace_east_out_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_out_path.add_to_group("parish_road_east_hedge_west_pace_east_out")
-	add_child(pace_east_out_path)
-	var pace_east_out_bell := PlantView.new()
-	pace_east_out_bell.position = Vector3(5.6, 0.04, -19.35)
-	pace_east_out_bell.visible = false
-	pace_east_out_bell.add_to_group("parish_road_east_hedge_west_pace_east_out_bell")
-	add_child(pace_east_out_bell)
-	pace_east_out_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_beyond_strip := BoxMesh.new()
-	pace_east_beyond_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_beyond_path := MeshInstance3D.new()
-	pace_east_beyond_path.mesh = pace_east_beyond_strip
-	var pace_east_beyond_mat := StandardMaterial3D.new()
-	pace_east_beyond_mat.albedo_color = Color("#6a5e4c")
-	pace_east_beyond_mat.roughness = 0.96
-	pace_east_beyond_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_beyond_path.material_override = pace_east_beyond_mat
-	pace_east_beyond_path.position = Vector3(6.8, 0.02, -19.35)
-	pace_east_beyond_path.visible = false
-	pace_east_beyond_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_beyond_path.add_to_group("parish_road_east_hedge_west_pace_east_beyond")
-	add_child(pace_east_beyond_path)
-	var pace_east_beyond_bell := PlantView.new()
-	pace_east_beyond_bell.position = Vector3(7.4, 0.04, -19.35)
-	pace_east_beyond_bell.visible = false
-	pace_east_beyond_bell.add_to_group("parish_road_east_hedge_west_pace_east_beyond_bell")
-	add_child(pace_east_beyond_bell)
-	pace_east_beyond_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_yonder_strip := BoxMesh.new()
-	pace_east_yonder_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_yonder_path := MeshInstance3D.new()
-	pace_east_yonder_path.mesh = pace_east_yonder_strip
-	var pace_east_yonder_mat := StandardMaterial3D.new()
-	pace_east_yonder_mat.albedo_color = Color("#6a5e4c")
-	pace_east_yonder_mat.roughness = 0.96
-	pace_east_yonder_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_yonder_path.material_override = pace_east_yonder_mat
-	pace_east_yonder_path.position = Vector3(8.6, 0.02, -19.35)
-	pace_east_yonder_path.visible = false
-	pace_east_yonder_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_yonder_path.add_to_group("parish_road_east_hedge_west_pace_east_yonder")
-	add_child(pace_east_yonder_path)
-	var pace_east_yonder_bell := PlantView.new()
-	pace_east_yonder_bell.position = Vector3(9.2, 0.04, -19.35)
-	pace_east_yonder_bell.visible = false
-	pace_east_yonder_bell.add_to_group("parish_road_east_hedge_west_pace_east_yonder_bell")
-	add_child(pace_east_yonder_bell)
-	pace_east_yonder_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_outer_strip := BoxMesh.new()
-	pace_east_outer_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_outer_path := MeshInstance3D.new()
-	pace_east_outer_path.mesh = pace_east_outer_strip
-	var pace_east_outer_mat := StandardMaterial3D.new()
-	pace_east_outer_mat.albedo_color = Color("#6a5e4c")
-	pace_east_outer_mat.roughness = 0.96
-	pace_east_outer_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_outer_path.material_override = pace_east_outer_mat
-	pace_east_outer_path.position = Vector3(10.4, 0.02, -19.35)
-	pace_east_outer_path.visible = false
-	pace_east_outer_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_outer_path.add_to_group("parish_road_east_hedge_west_pace_east_outer")
-	add_child(pace_east_outer_path)
-	var pace_east_outer_bell := PlantView.new()
-	pace_east_outer_bell.position = Vector3(11.0, 0.04, -19.35)
-	pace_east_outer_bell.visible = false
-	pace_east_outer_bell.add_to_group("parish_road_east_hedge_west_pace_east_outer_bell")
-	add_child(pace_east_outer_bell)
-	pace_east_outer_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_rim_strip := BoxMesh.new()
-	pace_east_rim_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_rim_path := MeshInstance3D.new()
-	pace_east_rim_path.mesh = pace_east_rim_strip
-	var pace_east_rim_mat := StandardMaterial3D.new()
-	pace_east_rim_mat.albedo_color = Color("#6a5e4c")
-	pace_east_rim_mat.roughness = 0.96
-	pace_east_rim_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_rim_path.material_override = pace_east_rim_mat
-	pace_east_rim_path.position = Vector3(12.2, 0.02, -19.35)
-	pace_east_rim_path.visible = false
-	pace_east_rim_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_rim_path.add_to_group("parish_road_east_hedge_west_pace_east_rim")
-	add_child(pace_east_rim_path)
-	var pace_east_farther_strip := BoxMesh.new()
-	pace_east_farther_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_farther_path := MeshInstance3D.new()
-	pace_east_farther_path.mesh = pace_east_farther_strip
-	var pace_east_farther_mat := StandardMaterial3D.new()
-	pace_east_farther_mat.albedo_color = Color("#6a5e4c")
-	pace_east_farther_mat.roughness = 0.96
-	pace_east_farther_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_path.material_override = pace_east_farther_mat
-	pace_east_farther_path.position = Vector3(13.4, 0.02, -19.35)
-	pace_east_farther_path.visible = false
-	pace_east_farther_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_path.add_to_group("parish_road_east_hedge_west_pace_east_farther")
-	add_child(pace_east_farther_path)
-	var pace_east_along_bell := PlantView.new()
-	pace_east_along_bell.position = Vector3(14.6, 0.04, -19.35)
-	pace_east_along_bell.visible = false
-	pace_east_along_bell.add_to_group("parish_road_east_hedge_west_pace_east_along_bell")
-	add_child(pace_east_along_bell)
-	pace_east_along_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_forth_strip := BoxMesh.new()
-	pace_east_forth_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_forth_path := MeshInstance3D.new()
-	pace_east_forth_path.mesh = pace_east_forth_strip
-	var pace_east_forth_mat := StandardMaterial3D.new()
-	pace_east_forth_mat.albedo_color = Color("#6a5e4c")
-	pace_east_forth_mat.roughness = 0.96
-	pace_east_forth_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_forth_path.material_override = pace_east_forth_mat
-	pace_east_forth_path.position = Vector3(15.8, 0.02, -19.35)
-	pace_east_forth_path.visible = false
-	pace_east_forth_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_forth_path.add_to_group("parish_road_east_hedge_west_pace_east_forth")
-	add_child(pace_east_forth_path)
-	var pace_east_forth_bell := PlantView.new()
-	pace_east_forth_bell.position = Vector3(16.4, 0.04, -19.35)
-	pace_east_forth_bell.visible = false
-	pace_east_forth_bell.add_to_group("parish_road_east_hedge_west_pace_east_forth_bell")
-	add_child(pace_east_forth_bell)
-	pace_east_forth_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_span_strip := BoxMesh.new()
-	pace_east_span_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_span_path := MeshInstance3D.new()
-	pace_east_span_path.mesh = pace_east_span_strip
-	var pace_east_span_mat := StandardMaterial3D.new()
-	pace_east_span_mat.albedo_color = Color("#6a5e4c")
-	pace_east_span_mat.roughness = 0.96
-	pace_east_span_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_span_path.material_override = pace_east_span_mat
-	pace_east_span_path.position = Vector3(17.6, 0.02, -19.35)
-	pace_east_span_path.visible = false
-	pace_east_span_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_span_path.add_to_group("parish_road_east_hedge_west_pace_east_span")
-	add_child(pace_east_span_path)
-	var pace_east_mark_bell := PlantView.new()
-	pace_east_mark_bell.position = Vector3(18.8, 0.04, -19.35)
-	pace_east_mark_bell.visible = false
-	pace_east_mark_bell.add_to_group("parish_road_east_hedge_west_pace_east_mark_bell")
-	add_child(pace_east_mark_bell)
-	pace_east_mark_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_reach_strip := BoxMesh.new()
-	pace_east_reach_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_reach_path := MeshInstance3D.new()
-	pace_east_reach_path.mesh = pace_east_reach_strip
-	var pace_east_reach_mat := StandardMaterial3D.new()
-	pace_east_reach_mat.albedo_color = Color("#6a5e4c")
-	pace_east_reach_mat.roughness = 0.96
-	pace_east_reach_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_reach_path.material_override = pace_east_reach_mat
-	pace_east_reach_path.position = Vector3(20.0, 0.02, -19.35)
-	pace_east_reach_path.visible = false
-	pace_east_reach_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_reach_path.add_to_group("parish_road_east_hedge_west_pace_east_reach")
-	add_child(pace_east_reach_path)
-	var pace_east_reach_bell := PlantView.new()
-	pace_east_reach_bell.position = Vector3(20.6, 0.04, -19.35)
-	pace_east_reach_bell.visible = false
-	pace_east_reach_bell.add_to_group("parish_road_east_hedge_west_pace_east_reach_bell")
-	add_child(pace_east_reach_bell)
-	pace_east_reach_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_field_strip := BoxMesh.new()
-	pace_east_field_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_field_path := MeshInstance3D.new()
-	pace_east_field_path.mesh = pace_east_field_strip
-	var pace_east_field_mat := StandardMaterial3D.new()
-	pace_east_field_mat.albedo_color = Color("#6a5e4c")
-	pace_east_field_mat.roughness = 0.96
-	pace_east_field_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_field_path.material_override = pace_east_field_mat
-	pace_east_field_path.position = Vector3(21.8, 0.02, -19.35)
-	pace_east_field_path.visible = false
-	pace_east_field_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_field_path.add_to_group("parish_road_east_hedge_west_pace_east_field")
-	add_child(pace_east_field_path)
-	var pace_east_lea_strip := BoxMesh.new()
-	pace_east_lea_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_lea_path := MeshInstance3D.new()
-	pace_east_lea_path.mesh = pace_east_lea_strip
-	var pace_east_lea_mat := StandardMaterial3D.new()
-	pace_east_lea_mat.albedo_color = Color("#6a5e4c")
-	pace_east_lea_mat.roughness = 0.96
-	pace_east_lea_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_lea_path.material_override = pace_east_lea_mat
-	pace_east_lea_path.position = Vector3(23.0, 0.02, -19.35)
-	pace_east_lea_path.visible = false
-	pace_east_lea_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_lea_path.add_to_group("parish_road_east_hedge_west_pace_east_lea")
-	add_child(pace_east_lea_path)
-	var pace_east_lea_bell := PlantView.new()
-	pace_east_lea_bell.position = Vector3(23.6, 0.04, -19.35)
-	pace_east_lea_bell.visible = false
-	pace_east_lea_bell.add_to_group("parish_road_east_hedge_west_pace_east_lea_bell")
-	add_child(pace_east_lea_bell)
-	pace_east_lea_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_verge_strip := BoxMesh.new()
-	pace_east_verge_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_verge_path := MeshInstance3D.new()
-	pace_east_verge_path.mesh = pace_east_verge_strip
-	var pace_east_verge_mat := StandardMaterial3D.new()
-	pace_east_verge_mat.albedo_color = Color("#6a5e4c")
-	pace_east_verge_mat.roughness = 0.96
-	pace_east_verge_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_verge_path.material_override = pace_east_verge_mat
-	pace_east_verge_path.position = Vector3(24.8, 0.02, -19.35)
-	pace_east_verge_path.visible = false
-	pace_east_verge_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_verge_path.add_to_group("parish_road_east_hedge_west_pace_east_verge")
-	add_child(pace_east_verge_path)
-	var pace_east_verge_bell := PlantView.new()
-	pace_east_verge_bell.position = Vector3(25.4, 0.04, -19.35)
-	pace_east_verge_bell.visible = false
-	pace_east_verge_bell.add_to_group("parish_road_east_hedge_west_pace_east_verge_bell")
-	add_child(pace_east_verge_bell)
-	pace_east_verge_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_brink_strip := BoxMesh.new()
-	pace_east_brink_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_brink_path := MeshInstance3D.new()
-	pace_east_brink_path.mesh = pace_east_brink_strip
-	var pace_east_brink_mat := StandardMaterial3D.new()
-	pace_east_brink_mat.albedo_color = Color("#6a5e4c")
-	pace_east_brink_mat.roughness = 0.96
-	pace_east_brink_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_brink_path.material_override = pace_east_brink_mat
-	pace_east_brink_path.position = Vector3(26.6, 0.02, -19.35)
-	pace_east_brink_path.visible = false
-	pace_east_brink_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_brink_path.add_to_group("parish_road_east_hedge_west_pace_east_brink")
-	add_child(pace_east_brink_path)
-	var pace_east_edge_strip := BoxMesh.new()
-	pace_east_edge_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_edge_path := MeshInstance3D.new()
-	pace_east_edge_path.mesh = pace_east_edge_strip
-	var pace_east_edge_mat := StandardMaterial3D.new()
-	pace_east_edge_mat.albedo_color = Color("#6a5e4c")
-	pace_east_edge_mat.roughness = 0.96
-	pace_east_edge_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_edge_path.material_override = pace_east_edge_mat
-	pace_east_edge_path.position = Vector3(27.8, 0.02, -19.35)
-	pace_east_edge_path.visible = false
-	pace_east_edge_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_edge_path.add_to_group("parish_road_east_hedge_west_pace_east_edge")
-	add_child(pace_east_edge_path)
-	var pace_east_edge_bell := PlantView.new()
-	pace_east_edge_bell.position = Vector3(28.4, 0.04, -19.35)
-	pace_east_edge_bell.visible = false
-	pace_east_edge_bell.add_to_group("parish_road_east_hedge_west_pace_east_edge_bell")
-	add_child(pace_east_edge_bell)
-	pace_east_edge_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_margin_strip := BoxMesh.new()
-	pace_east_margin_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_margin_path := MeshInstance3D.new()
-	pace_east_margin_path.mesh = pace_east_margin_strip
-	var pace_east_margin_mat := StandardMaterial3D.new()
-	pace_east_margin_mat.albedo_color = Color("#6a5e4c")
-	pace_east_margin_mat.roughness = 0.96
-	pace_east_margin_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_margin_path.material_override = pace_east_margin_mat
-	pace_east_margin_path.position = Vector3(29.6, 0.02, -19.35)
-	pace_east_margin_path.visible = false
-	pace_east_margin_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_margin_path.add_to_group("parish_road_east_hedge_west_pace_east_margin")
-	add_child(pace_east_margin_path)
-	var pace_east_hem_strip := BoxMesh.new()
-	pace_east_hem_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_hem_path := MeshInstance3D.new()
-	pace_east_hem_path.mesh = pace_east_hem_strip
-	var pace_east_hem_mat := StandardMaterial3D.new()
-	pace_east_hem_mat.albedo_color = Color("#6a5e4c")
-	pace_east_hem_mat.roughness = 0.96
-	pace_east_hem_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_hem_path.material_override = pace_east_hem_mat
-	pace_east_hem_path.position = Vector3(30.8, 0.02, -19.35)
-	pace_east_hem_path.visible = false
-	pace_east_hem_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_hem_path.add_to_group("parish_road_east_hedge_west_pace_east_hem")
-	add_child(pace_east_hem_path)
-	var pace_east_hem_stone_mesh := BoxMesh.new()
-	pace_east_hem_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_hem_stone := MeshInstance3D.new()
-	pace_east_hem_stone.mesh = pace_east_hem_stone_mesh
-	var pace_east_hem_stone_mat := StandardMaterial3D.new()
-	pace_east_hem_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_hem_stone_mat.roughness = 0.92
-	pace_east_hem_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_hem_stone.material_override = pace_east_hem_stone_mat
-	pace_east_hem_stone.position = Vector3(32.0, 0.07, -19.35)
-	pace_east_hem_stone.rotation.y = 0.3
-	pace_east_hem_stone.visible = false
-	pace_east_hem_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_hem_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone")
-	add_child(pace_east_hem_stone)
-	var pace_east_hem_stone_bell := PlantView.new()
-	pace_east_hem_stone_bell.position = Vector3(33.2, 0.04, -19.35)
-	pace_east_hem_stone_bell.visible = false
-	pace_east_hem_stone_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_bell")
-	add_child(pace_east_hem_stone_bell)
-	pace_east_hem_stone_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_hem_stone_on_bell := PlantView.new()
-	pace_east_hem_stone_on_bell.position = Vector3(34.4, 0.04, -19.35)
-	pace_east_hem_stone_on_bell.visible = false
-	pace_east_hem_stone_on_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_on_bell")
-	add_child(pace_east_hem_stone_on_bell)
-	pace_east_hem_stone_on_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_hem_stone_far_bell := PlantView.new()
-	pace_east_hem_stone_far_bell.position = Vector3(35.6, 0.04, -19.35)
-	pace_east_hem_stone_far_bell.visible = false
-	pace_east_hem_stone_far_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_far_bell")
-	add_child(pace_east_hem_stone_far_bell)
-	pace_east_hem_stone_far_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_hem_stone_out_bell := PlantView.new()
-	pace_east_hem_stone_out_bell.position = Vector3(36.8, 0.04, -19.35)
-	pace_east_hem_stone_out_bell.visible = false
-	pace_east_hem_stone_out_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_bell")
-	add_child(pace_east_hem_stone_out_bell)
-	pace_east_hem_stone_out_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_hem_stone_out_on_bell := PlantView.new()
-	pace_east_hem_stone_out_on_bell.position = Vector3(38.0, 0.04, -19.35)
-	pace_east_hem_stone_out_on_bell.visible = false
-	pace_east_hem_stone_out_on_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell")
-	add_child(pace_east_hem_stone_out_on_bell)
-	pace_east_hem_stone_out_on_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_out_on_stone_mesh := BoxMesh.new()
-	pace_east_out_on_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_out_on_stone := MeshInstance3D.new()
-	pace_east_out_on_stone.mesh = pace_east_out_on_stone_mesh
-	var pace_east_out_on_stone_mat := StandardMaterial3D.new()
-	pace_east_out_on_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_out_on_stone_mat.roughness = 0.92
-	pace_east_out_on_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_out_on_stone.material_override = pace_east_out_on_stone_mat
-	pace_east_out_on_stone.position = Vector3(39.2, 0.07, -19.35)
-	pace_east_out_on_stone.rotation.y = 0.3
-	pace_east_out_on_stone.visible = false
-	pace_east_out_on_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_out_on_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone")
-	add_child(pace_east_out_on_stone)
-	var pace_east_out_on_stone_strip := BoxMesh.new()
-	pace_east_out_on_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_out_on_stone_path := MeshInstance3D.new()
-	pace_east_out_on_stone_path.mesh = pace_east_out_on_stone_strip
-	var pace_east_out_on_strip_mat := StandardMaterial3D.new()
-	pace_east_out_on_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_out_on_strip_mat.roughness = 0.96
-	pace_east_out_on_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_out_on_stone_path.material_override = pace_east_out_on_strip_mat
-	pace_east_out_on_stone_path.position = Vector3(40.4, 0.02, -19.35)
-	pace_east_out_on_stone_path.visible = false
-	pace_east_out_on_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_out_on_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip")
-	add_child(pace_east_out_on_stone_path)
-	var pace_east_out_on_east_strip := BoxMesh.new()
-	pace_east_out_on_east_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_out_on_east_path := MeshInstance3D.new()
-	pace_east_out_on_east_path.mesh = pace_east_out_on_east_strip
-	var pace_east_out_on_east_mat := StandardMaterial3D.new()
-	pace_east_out_on_east_mat.albedo_color = Color("#6a5e4c")
-	pace_east_out_on_east_mat.roughness = 0.96
-	pace_east_out_on_east_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_out_on_east_path.material_override = pace_east_out_on_east_mat
-	pace_east_out_on_east_path.position = Vector3(41.6, 0.02, -19.35)
-	pace_east_out_on_east_path.visible = false
-	pace_east_out_on_east_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_out_on_east_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east")
-	add_child(pace_east_out_on_east_path)
-	var pace_east_out_on_east_bell := PlantView.new()
-	pace_east_out_on_east_bell.position = Vector3(42.2, 0.04, -19.35)
-	pace_east_out_on_east_bell.visible = false
-	pace_east_out_on_east_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell")
-	add_child(pace_east_out_on_east_bell)
-	pace_east_out_on_east_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_east_stone_mesh := BoxMesh.new()
-	pace_east_east_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_east_stone := MeshInstance3D.new()
-	pace_east_east_stone.mesh = pace_east_east_stone_mesh
-	var pace_east_east_stone_mat := StandardMaterial3D.new()
-	pace_east_east_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_east_stone_mat.roughness = 0.92
-	pace_east_east_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_east_stone.material_override = pace_east_east_stone_mat
-	pace_east_east_stone.position = Vector3(43.4, 0.07, -19.35)
-	pace_east_east_stone.rotation.y = 0.3
-	pace_east_east_stone.visible = false
-	pace_east_east_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_east_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone")
-	add_child(pace_east_east_stone)
-	var pace_east_bell_stone_strip := BoxMesh.new()
-	pace_east_bell_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_bell_stone_path := MeshInstance3D.new()
-	pace_east_bell_stone_path.mesh = pace_east_bell_stone_strip
-	var pace_east_bell_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_bell_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_bell_stone_strip_mat.roughness = 0.96
-	pace_east_bell_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_bell_stone_path.material_override = pace_east_bell_stone_strip_mat
-	pace_east_bell_stone_path.position = Vector3(44.6, 0.02, -19.35)
-	pace_east_bell_stone_path.visible = false
-	pace_east_bell_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_bell_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip")
-	add_child(pace_east_bell_stone_path)
-	var pace_east_bell_stone_end_bell := PlantView.new()
-	pace_east_bell_stone_end_bell.position = Vector3(45.2, 0.04, -19.35)
-	pace_east_bell_stone_end_bell.visible = false
-	pace_east_bell_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell")
-	add_child(pace_east_bell_stone_end_bell)
-	pace_east_bell_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_strip_end_stone_mesh := BoxMesh.new()
-	pace_east_strip_end_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_strip_end_stone := MeshInstance3D.new()
-	pace_east_strip_end_stone.mesh = pace_east_strip_end_stone_mesh
-	var pace_east_strip_end_stone_mat := StandardMaterial3D.new()
-	pace_east_strip_end_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_strip_end_stone_mat.roughness = 0.92
-	pace_east_strip_end_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_strip_end_stone.material_override = pace_east_strip_end_stone_mat
-	pace_east_strip_end_stone.position = Vector3(46.4, 0.07, -19.35)
-	pace_east_strip_end_stone.rotation.y = 0.3
-	pace_east_strip_end_stone.visible = false
-	pace_east_strip_end_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_strip_end_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone")
-	add_child(pace_east_strip_end_stone)
-	var pace_east_end_stone_strip := BoxMesh.new()
-	pace_east_end_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_end_stone_path := MeshInstance3D.new()
-	pace_east_end_stone_path.mesh = pace_east_end_stone_strip
-	var pace_east_end_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_end_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_end_stone_strip_mat.roughness = 0.96
-	pace_east_end_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_end_stone_path.material_override = pace_east_end_stone_strip_mat
-	pace_east_end_stone_path.position = Vector3(47.6, 0.02, -19.35)
-	pace_east_end_stone_path.visible = false
-	pace_east_end_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_end_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_end_stone_path)
-	var pace_east_end_stone_end_bell := PlantView.new()
-	pace_east_end_stone_end_bell.position = Vector3(48.2, 0.04, -19.35)
-	pace_east_end_stone_end_bell.visible = false
-	pace_east_end_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_end_stone_end_bell)
-	pace_east_end_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_end_bell_stone_mesh := BoxMesh.new()
-	pace_east_end_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_end_bell_stone := MeshInstance3D.new()
-	pace_east_end_bell_stone.mesh = pace_east_end_bell_stone_mesh
-	var pace_east_end_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_end_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_end_bell_stone_mat.roughness = 0.92
-	pace_east_end_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_end_bell_stone.material_override = pace_east_end_bell_stone_mat
-	pace_east_end_bell_stone.position = Vector3(49.4, 0.07, -19.35)
-	pace_east_end_bell_stone.rotation.y = 0.3
-	pace_east_end_bell_stone.visible = false
-	pace_east_end_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_end_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_end_bell_stone)
-	var pace_east_meadow_stone_strip := BoxMesh.new()
-	pace_east_meadow_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_meadow_stone_path := MeshInstance3D.new()
-	pace_east_meadow_stone_path.mesh = pace_east_meadow_stone_strip
-	var pace_east_meadow_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_meadow_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_meadow_stone_strip_mat.roughness = 0.96
-	pace_east_meadow_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_meadow_stone_path.material_override = pace_east_meadow_stone_strip_mat
-	pace_east_meadow_stone_path.position = Vector3(50.6, 0.02, -19.35)
-	pace_east_meadow_stone_path.visible = false
-	pace_east_meadow_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_meadow_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_meadow_stone_path)
-	var pace_east_meadow_stone_end_bell := PlantView.new()
-	pace_east_meadow_stone_end_bell.position = Vector3(51.2, 0.04, -19.35)
-	pace_east_meadow_stone_end_bell.visible = false
-	pace_east_meadow_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_meadow_stone_end_bell)
-	pace_east_meadow_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_meadow_bell_stone_mesh := BoxMesh.new()
-	pace_east_meadow_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_meadow_bell_stone := MeshInstance3D.new()
-	pace_east_meadow_bell_stone.mesh = pace_east_meadow_bell_stone_mesh
-	var pace_east_meadow_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_meadow_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_meadow_bell_stone_mat.roughness = 0.92
-	pace_east_meadow_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_meadow_bell_stone.material_override = pace_east_meadow_bell_stone_mat
-	pace_east_meadow_bell_stone.position = Vector3(52.4, 0.07, -19.35)
-	pace_east_meadow_bell_stone.rotation.y = 0.3
-	pace_east_meadow_bell_stone.visible = false
-	pace_east_meadow_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_meadow_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_meadow_bell_stone)
-	var pace_east_meadow_bell_strip := BoxMesh.new()
-	pace_east_meadow_bell_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_meadow_bell_path := MeshInstance3D.new()
-	pace_east_meadow_bell_path.mesh = pace_east_meadow_bell_strip
-	var pace_east_meadow_bell_strip_mat := StandardMaterial3D.new()
-	pace_east_meadow_bell_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_meadow_bell_strip_mat.roughness = 0.96
-	pace_east_meadow_bell_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_meadow_bell_path.material_override = pace_east_meadow_bell_strip_mat
-	pace_east_meadow_bell_path.position = Vector3(53.6, 0.02, -19.35)
-	pace_east_meadow_bell_path.visible = false
-	pace_east_meadow_bell_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_meadow_bell_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_meadow_bell_path)
-	var pace_east_meadow_strip_stone_mesh := BoxMesh.new()
-	pace_east_meadow_strip_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_meadow_strip_stone := MeshInstance3D.new()
-	pace_east_meadow_strip_stone.mesh = pace_east_meadow_strip_stone_mesh
-	var pace_east_meadow_strip_stone_mat := StandardMaterial3D.new()
-	pace_east_meadow_strip_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_meadow_strip_stone_mat.roughness = 0.92
-	pace_east_meadow_strip_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_meadow_strip_stone.material_override = pace_east_meadow_strip_stone_mat
-	pace_east_meadow_strip_stone.position = Vector3(54.8, 0.07, -19.35)
-	pace_east_meadow_strip_stone.rotation.y = 0.3
-	pace_east_meadow_strip_stone.visible = false
-	pace_east_meadow_strip_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_meadow_strip_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone")
-	add_child(pace_east_meadow_strip_stone)
-	var pace_east_farther_stone_strip := BoxMesh.new()
-	pace_east_farther_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_farther_stone_path := MeshInstance3D.new()
-	pace_east_farther_stone_path.mesh = pace_east_farther_stone_strip
-	var pace_east_farther_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_farther_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_farther_stone_strip_mat.roughness = 0.96
-	pace_east_farther_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_stone_path.material_override = pace_east_farther_stone_strip_mat
-	pace_east_farther_stone_path.position = Vector3(56.0, 0.02, -19.35)
-	pace_east_farther_stone_path.visible = false
-	pace_east_farther_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip")
-	add_child(pace_east_farther_stone_path)
-	var pace_east_farther_stone_end_bell := PlantView.new()
-	pace_east_farther_stone_end_bell.position = Vector3(56.6, 0.04, -19.35)
-	pace_east_farther_stone_end_bell.visible = false
-	pace_east_farther_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell")
-	add_child(pace_east_farther_stone_end_bell)
-	pace_east_farther_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_farther_bell_stone_mesh := BoxMesh.new()
-	pace_east_farther_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_farther_bell_stone := MeshInstance3D.new()
-	pace_east_farther_bell_stone.mesh = pace_east_farther_bell_stone_mesh
-	var pace_east_farther_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_farther_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_farther_bell_stone_mat.roughness = 0.92
-	pace_east_farther_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_bell_stone.material_override = pace_east_farther_bell_stone_mat
-	pace_east_farther_bell_stone.position = Vector3(57.8, 0.07, -19.35)
-	pace_east_farther_bell_stone.rotation.y = 0.3
-	pace_east_farther_bell_stone.visible = false
-	pace_east_farther_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone")
-	add_child(pace_east_farther_bell_stone)
-	var pace_east_farther_bell_strip := BoxMesh.new()
-	pace_east_farther_bell_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_farther_bell_path := MeshInstance3D.new()
-	pace_east_farther_bell_path.mesh = pace_east_farther_bell_strip
-	var pace_east_farther_bell_strip_mat := StandardMaterial3D.new()
-	pace_east_farther_bell_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_farther_bell_strip_mat.roughness = 0.96
-	pace_east_farther_bell_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_bell_path.material_override = pace_east_farther_bell_strip_mat
-	pace_east_farther_bell_path.position = Vector3(59.0, 0.02, -19.35)
-	pace_east_farther_bell_path.visible = false
-	pace_east_farther_bell_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_bell_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip")
-	add_child(pace_east_farther_bell_path)
-	var pace_east_farther_bell_end_bell := PlantView.new()
-	pace_east_farther_bell_end_bell.position = Vector3(59.6, 0.04, -19.35)
-	pace_east_farther_bell_end_bell.visible = false
-	pace_east_farther_bell_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_farther_bell_end_bell)
-	pace_east_farther_bell_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_farther_end_bell_stone_mesh := BoxMesh.new()
-	pace_east_farther_end_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_farther_end_bell_stone := MeshInstance3D.new()
-	pace_east_farther_end_bell_stone.mesh = pace_east_farther_end_bell_stone_mesh
-	var pace_east_farther_end_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_farther_end_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_farther_end_bell_stone_mat.roughness = 0.92
-	pace_east_farther_end_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_end_bell_stone.material_override = pace_east_farther_end_bell_stone_mat
-	pace_east_farther_end_bell_stone.position = Vector3(60.8, 0.07, -19.35)
-	pace_east_farther_end_bell_stone.rotation.y = 0.3
-	pace_east_farther_end_bell_stone.visible = false
-	pace_east_farther_end_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_end_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_farther_end_bell_stone)
-	var pace_east_farther_end_stone_strip := BoxMesh.new()
-	pace_east_farther_end_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_farther_end_stone_path := MeshInstance3D.new()
-	pace_east_farther_end_stone_path.mesh = pace_east_farther_end_stone_strip
-	var pace_east_farther_end_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_farther_end_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_farther_end_stone_strip_mat.roughness = 0.96
-	pace_east_farther_end_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_farther_end_stone_path.material_override = pace_east_farther_end_stone_strip_mat
-	pace_east_farther_end_stone_path.position = Vector3(62.0, 0.02, -19.35)
-	pace_east_farther_end_stone_path.visible = false
-	pace_east_farther_end_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_farther_end_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_farther_end_stone_path)
-	var pace_east_farther_end_stone_end_bell := PlantView.new()
-	pace_east_farther_end_stone_end_bell.position = Vector3(62.6, 0.04, -19.35)
-	pace_east_farther_end_stone_end_bell.visible = false
-	pace_east_farther_end_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_farther_end_stone_end_bell)
-	pace_east_farther_end_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_last_bell_stone_mesh := BoxMesh.new()
-	pace_east_last_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_last_bell_stone := MeshInstance3D.new()
-	pace_east_last_bell_stone.mesh = pace_east_last_bell_stone_mesh
-	var pace_east_last_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_last_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_last_bell_stone_mat.roughness = 0.92
-	pace_east_last_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_last_bell_stone.material_override = pace_east_last_bell_stone_mat
-	pace_east_last_bell_stone.position = Vector3(63.8, 0.07, -19.35)
-	pace_east_last_bell_stone.rotation.y = 0.3
-	pace_east_last_bell_stone.visible = false
-	pace_east_last_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_last_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_last_bell_stone)
-	var pace_east_last_stone_strip := BoxMesh.new()
-	pace_east_last_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_last_stone_path := MeshInstance3D.new()
-	pace_east_last_stone_path.mesh = pace_east_last_stone_strip
-	var pace_east_last_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_last_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_last_stone_strip_mat.roughness = 0.96
-	pace_east_last_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_last_stone_path.material_override = pace_east_last_stone_strip_mat
-	pace_east_last_stone_path.position = Vector3(65.0, 0.02, -19.35)
-	pace_east_last_stone_path.visible = false
-	pace_east_last_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_last_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_last_stone_path)
-	var pace_east_last_stone_end_bell := PlantView.new()
-	pace_east_last_stone_end_bell.position = Vector3(65.6, 0.04, -19.35)
-	pace_east_last_stone_end_bell.visible = false
-	pace_east_last_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_last_stone_end_bell)
-	pace_east_last_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_last_strip_stone_mesh := BoxMesh.new()
-	pace_east_last_strip_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_last_strip_stone := MeshInstance3D.new()
-	pace_east_last_strip_stone.mesh = pace_east_last_strip_stone_mesh
-	var pace_east_last_strip_stone_mat := StandardMaterial3D.new()
-	pace_east_last_strip_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_last_strip_stone_mat.roughness = 0.92
-	pace_east_last_strip_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_last_strip_stone.material_override = pace_east_last_strip_stone_mat
-	pace_east_last_strip_stone.position = Vector3(66.8, 0.07, -19.35)
-	pace_east_last_strip_stone.rotation.y = 0.3
-	pace_east_last_strip_stone.visible = false
-	pace_east_last_strip_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_last_strip_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_last_strip_stone)
-	var pace_east_last_strip_mesh := BoxMesh.new()
-	pace_east_last_strip_mesh.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_last_strip_path := MeshInstance3D.new()
-	pace_east_last_strip_path.mesh = pace_east_last_strip_mesh
-	var pace_east_last_strip_mat := StandardMaterial3D.new()
-	pace_east_last_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_last_strip_mat.roughness = 0.96
-	pace_east_last_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_last_strip_path.material_override = pace_east_last_strip_mat
-	pace_east_last_strip_path.position = Vector3(68.0, 0.02, -19.35)
-	pace_east_last_strip_path.visible = false
-	pace_east_last_strip_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_last_strip_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_last_strip_path)
-	var pace_east_last_strip_end_bell := PlantView.new()
-	pace_east_last_strip_end_bell.position = Vector3(68.6, 0.04, -19.35)
-	pace_east_last_strip_end_bell.visible = false
-	pace_east_last_strip_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_last_strip_end_bell)
-	pace_east_last_strip_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_end_strip_stone_mesh := BoxMesh.new()
-	pace_east_end_strip_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_end_strip_stone := MeshInstance3D.new()
-	pace_east_end_strip_stone.mesh = pace_east_end_strip_stone_mesh
-	var pace_east_end_strip_stone_mat := StandardMaterial3D.new()
-	pace_east_end_strip_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_end_strip_stone_mat.roughness = 0.92
-	pace_east_end_strip_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_end_strip_stone.material_override = pace_east_end_strip_stone_mat
-	pace_east_end_strip_stone.position = Vector3(69.8, 0.07, -19.35)
-	pace_east_end_strip_stone.rotation.y = 0.3
-	pace_east_end_strip_stone.visible = false
-	pace_east_end_strip_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_end_strip_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_end_strip_stone)
-	var pace_east_end_strip_mesh := BoxMesh.new()
-	pace_east_end_strip_mesh.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_end_strip_path := MeshInstance3D.new()
-	pace_east_end_strip_path.mesh = pace_east_end_strip_mesh
-	var pace_east_end_strip_mat := StandardMaterial3D.new()
-	pace_east_end_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_end_strip_mat.roughness = 0.96
-	pace_east_end_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_end_strip_path.material_override = pace_east_end_strip_mat
-	pace_east_end_strip_path.position = Vector3(71.0, 0.02, -19.35)
-	pace_east_end_strip_path.visible = false
-	pace_east_end_strip_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_end_strip_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_end_strip_path)
-	var pace_east_end_strip_bell := PlantView.new()
-	pace_east_end_strip_bell.position = Vector3(71.6, 0.04, -19.35)
-	pace_east_end_strip_bell.visible = false
-	pace_east_end_strip_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_end_strip_bell)
-	pace_east_end_strip_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_far_bell_stone_mesh := BoxMesh.new()
-	pace_east_far_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_far_bell_stone := MeshInstance3D.new()
-	pace_east_far_bell_stone.mesh = pace_east_far_bell_stone_mesh
-	var pace_east_far_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_far_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_far_bell_stone_mat.roughness = 0.92
-	pace_east_far_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_far_bell_stone.material_override = pace_east_far_bell_stone_mat
-	pace_east_far_bell_stone.position = Vector3(72.8, 0.07, -19.35)
-	pace_east_far_bell_stone.rotation.y = 0.3
-	pace_east_far_bell_stone.visible = false
-	pace_east_far_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_far_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_far_bell_stone)
-	var pace_east_far_stone_strip := BoxMesh.new()
-	pace_east_far_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_far_stone_path := MeshInstance3D.new()
-	pace_east_far_stone_path.mesh = pace_east_far_stone_strip
-	var pace_east_far_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_far_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_far_stone_strip_mat.roughness = 0.96
-	pace_east_far_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_far_stone_path.material_override = pace_east_far_stone_strip_mat
-	pace_east_far_stone_path.position = Vector3(74.0, 0.02, -19.35)
-	pace_east_far_stone_path.visible = false
-	pace_east_far_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_far_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_far_stone_path)
-	var pace_east_far_stone_end_bell := PlantView.new()
-	pace_east_far_stone_end_bell.position = Vector3(74.6, 0.04, -19.35)
-	pace_east_far_stone_end_bell.visible = false
-	pace_east_far_stone_end_bell.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
-	add_child(pace_east_far_stone_end_bell)
-	pace_east_far_stone_end_bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var pace_east_far_end_bell_stone_mesh := BoxMesh.new()
-	pace_east_far_end_bell_stone_mesh.size = Vector3(0.46, 0.07, 0.32)
-	var pace_east_far_end_bell_stone := MeshInstance3D.new()
-	pace_east_far_end_bell_stone.mesh = pace_east_far_end_bell_stone_mesh
-	var pace_east_far_end_bell_stone_mat := StandardMaterial3D.new()
-	pace_east_far_end_bell_stone_mat.albedo_color = Color("#4a4038")
-	pace_east_far_end_bell_stone_mat.roughness = 0.92
-	pace_east_far_end_bell_stone_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_far_end_bell_stone.material_override = pace_east_far_end_bell_stone_mat
-	pace_east_far_end_bell_stone.position = Vector3(75.8, 0.07, -19.35)
-	pace_east_far_end_bell_stone.rotation.y = 0.3
-	pace_east_far_end_bell_stone.visible = false
-	pace_east_far_end_bell_stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_far_end_bell_stone.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
-	add_child(pace_east_far_end_bell_stone)
-	var pace_east_far_end_stone_strip := BoxMesh.new()
-	pace_east_far_end_stone_strip.size = Vector3(1.2, 0.03, 1.05)
-	var pace_east_far_end_stone_path := MeshInstance3D.new()
-	pace_east_far_end_stone_path.mesh = pace_east_far_end_stone_strip
-	var pace_east_far_end_stone_strip_mat := StandardMaterial3D.new()
-	pace_east_far_end_stone_strip_mat.albedo_color = Color("#6a5e4c")
-	pace_east_far_end_stone_strip_mat.roughness = 0.96
-	pace_east_far_end_stone_strip_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	pace_east_far_end_stone_path.material_override = pace_east_far_end_stone_strip_mat
-	pace_east_far_end_stone_path.position = Vector3(77.0, 0.02, -19.35)
-	pace_east_far_end_stone_path.visible = false
-	pace_east_far_end_stone_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pace_east_far_end_stone_path.add_to_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
-	add_child(pace_east_far_end_stone_path)
-	var disc := CylinderMesh.new()
-	disc.top_radius = 0.85
-	disc.bottom_radius = 0.85
-	disc.height = 0.04
-	disc.radial_segments = 16
-	var lawn := MeshInstance3D.new()
-	lawn.mesh = disc
-	var lawn_mat := StandardMaterial3D.new()
-	lawn_mat.albedo_color = Color("#3f6a32")
-	lawn_mat.roughness = 0.96
-	lawn_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	lawn.material_override = lawn_mat
-	lawn.position = Vector3(0.0, 0.02, -14.45)
-	lawn.visible = false
-	lawn.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	lawn.add_to_group("parish_road_lawn")
-	add_child(lawn)
-	var bell_spots: Array[Vector3] = [
-		Vector3(0.28, 0.04, -14.25),
-		Vector3(-0.32, 0.04, -14.55),
-		Vector3(0.05, 0.04, -14.75),
-	]
-	for bell_at in bell_spots:
-		var bell := PlantView.new()
-		bell.position = bell_at
-		bell.visible = false
-		bell.add_to_group("parish_road_bell")
-		add_child(bell)
-		bell.show_plant("meadowbell", 0.4, 0.8, 0.5)
-	var bench := Node3D.new()
-	bench.position = Vector3(0.62, 0.0, -14.4)
-	bench.rotation.y = atan2(-0.6167, -0.1167)
-	bench.visible = false
-	bench.add_to_group("parish_road_bench")
-	add_child(bench)
-	var bench_parts: Array = [
-		[Vector3(0, 0.22, 0), Vector3(0.72, 0.05, 0.28), Color("#8d6244")],
-		[Vector3(0, 0.36, -0.12), Vector3(0.72, 0.2, 0.05), Color("#a87852")],
-		[Vector3(-0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-		[Vector3(0.3, 0.11, 0), Vector3(0.05, 0.22, 0.24), Color("#6b4a32")],
-	]
-	for part in bench_parts:
-		var plank := BoxMesh.new()
-		plank.size = part[1]
-		var plank_node := MeshInstance3D.new()
-		plank_node.mesh = plank
-		var plank_mat := StandardMaterial3D.new()
-		plank_mat.albedo_color = part[2]
-		plank_mat.roughness = 0.84
-		plank_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		plank_node.material_override = plank_mat
-		plank_node.position = part[0]
-		plank_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		bench.add_child(plank_node)
-
-func _sync_road_stones() -> void:
-	var show := Trust.has_action("parish_road_rumour")
-	for node in get_tree().get_nodes_in_group("parish_road_stone"):
-		var stone := node as Node3D
-		if stone:
-			stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_path"):
-		var path := node as Node3D
-		if path:
-			path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_inside"):
-		var inside := node as Node3D
-		if inside:
-			inside.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_join"):
-		var join := node as Node3D
-		if join:
-			join.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_far_stone"):
-		var far_stone := node as Node3D
-		if far_stone:
-			far_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_far_path"):
-		var far_path := node as Node3D
-		if far_path:
-			far_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_south_stone"):
-		var south_stone := node as Node3D
-		if south_stone:
-			south_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_south_bench"):
-		var south_bench := node as Node3D
-		if south_bench:
-			south_bench.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_past_bench"):
-		var past_path := node as Node3D
-		if past_path:
-			past_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_end_stone"):
-		var end_stone := node as Node3D
-		if end_stone:
-			end_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_end_bell"):
-		var end_bell := node as Node3D
-		if end_bell:
-			end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east"):
-		var east_path := node as Node3D
-		if east_path:
-			east_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_bell"):
-		var east_bell := node as Node3D
-		if east_bell:
-			east_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_past"):
-		var east_past := node as Node3D
-		if east_past:
-			east_past.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_far"):
-		var east_far := node as Node3D
-		if east_far:
-			east_far.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_far_stone"):
-		var east_far_stone := node as Node3D
-		if east_far_stone:
-			east_far_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_far_bench"):
-		var east_bench := node as Node3D
-		if east_bench:
-			east_bench.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_return"):
-		var east_return := node as Node3D
-		if east_return:
-			east_return.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_near"):
-		var east_near := node as Node3D
-		if east_near:
-			east_near.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_closer"):
-		var east_closer := node as Node3D
-		if east_closer:
-			east_closer.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_closer_bell"):
-		var closer_bell := node as Node3D
-		if closer_bell:
-			closer_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge"):
-		var east_hedge := node as Node3D
-		if east_hedge:
-			east_hedge.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_bell"):
-		var hedge_bell := node as Node3D
-		if hedge_bell:
-			hedge_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_past"):
-		var hedge_past := node as Node3D
-		if hedge_past:
-			hedge_past.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_onward"):
-		var hedge_onward := node as Node3D
-		if hedge_onward:
-			hedge_onward.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_stone"):
-		var hedge_face := node as Node3D
-		if hedge_face:
-			hedge_face.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_face_bell"):
-		var face_bell := node as Node3D
-		if face_bell:
-			face_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west"):
-		var hedge_west := node as Node3D
-		if hedge_west:
-			hedge_west.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_stone"):
-		var west_stone := node as Node3D
-		if west_stone:
-			west_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_bell"):
-		var west_bell := node as Node3D
-		if west_bell:
-			west_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_south_bell"):
-		var south_bell := node as Node3D
-		if south_bell:
-			south_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_south"):
-		var south_path := node as Node3D
-		if south_path:
-			south_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_further"):
-		var further_path := node as Node3D
-		if further_path:
-			further_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_further_bell"):
-		var further_bell := node as Node3D
-		if further_bell:
-			further_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace"):
-		var pace_path := node as Node3D
-		if pace_path:
-			pace_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_bell"):
-		var pace_bell := node as Node3D
-		if pace_bell:
-			pace_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_south"):
-		var pace_south_path := node as Node3D
-		if pace_south_path:
-			pace_south_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_south_bell"):
-		var pace_south_bell := node as Node3D
-		if pace_south_bell:
-			pace_south_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_far"):
-		var pace_far_path := node as Node3D
-		if pace_far_path:
-			pace_far_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_far_bell"):
-		var pace_far_bell := node as Node3D
-		if pace_far_bell:
-			pace_far_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_west"):
-		var pace_west_path := node as Node3D
-		if pace_west_path:
-			pace_west_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_on"):
-		var pace_on_path := node as Node3D
-		if pace_on_path:
-			pace_on_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_near"):
-		var pace_near_path := node as Node3D
-		if pace_near_path:
-			pace_near_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_north"):
-		var pace_north_path := node as Node3D
-		if pace_north_path:
-			pace_north_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east"):
-		var pace_east_path := node as Node3D
-		if pace_east_path:
-			pace_east_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_bell"):
-		var pace_east_bell := node as Node3D
-		if pace_east_bell:
-			pace_east_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_on"):
-		var pace_east_on_path := node as Node3D
-		if pace_east_on_path:
-			pace_east_on_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_on_bell"):
-		var pace_east_on_bell := node as Node3D
-		if pace_east_on_bell:
-			pace_east_on_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_out"):
-		var pace_east_out_path := node as Node3D
-		if pace_east_out_path:
-			pace_east_out_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_out_bell"):
-		var pace_east_out_bell := node as Node3D
-		if pace_east_out_bell:
-			pace_east_out_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_beyond"):
-		var pace_east_beyond_path := node as Node3D
-		if pace_east_beyond_path:
-			pace_east_beyond_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_beyond_bell"):
-		var pace_east_beyond_bell := node as Node3D
-		if pace_east_beyond_bell:
-			pace_east_beyond_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_yonder"):
-		var pace_east_yonder_path := node as Node3D
-		if pace_east_yonder_path:
-			pace_east_yonder_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_yonder_bell"):
-		var pace_east_yonder_bell := node as Node3D
-		if pace_east_yonder_bell:
-			pace_east_yonder_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_outer"):
-		var pace_east_outer_path := node as Node3D
-		if pace_east_outer_path:
-			pace_east_outer_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_outer_bell"):
-		var pace_east_outer_bell := node as Node3D
-		if pace_east_outer_bell:
-			pace_east_outer_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_rim"):
-		var pace_east_rim_path := node as Node3D
-		if pace_east_rim_path:
-			pace_east_rim_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_farther"):
-		var pace_east_farther_path := node as Node3D
-		if pace_east_farther_path:
-			pace_east_farther_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_along_bell"):
-		var pace_east_along_bell := node as Node3D
-		if pace_east_along_bell:
-			pace_east_along_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_forth"):
-		var pace_east_forth_path := node as Node3D
-		if pace_east_forth_path:
-			pace_east_forth_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_forth_bell"):
-		var pace_east_forth_bell := node as Node3D
-		if pace_east_forth_bell:
-			pace_east_forth_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_span"):
-		var pace_east_span_path := node as Node3D
-		if pace_east_span_path:
-			pace_east_span_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_mark_bell"):
-		var pace_east_mark_bell := node as Node3D
-		if pace_east_mark_bell:
-			pace_east_mark_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_reach"):
-		var pace_east_reach_path := node as Node3D
-		if pace_east_reach_path:
-			pace_east_reach_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_reach_bell"):
-		var pace_east_reach_bell := node as Node3D
-		if pace_east_reach_bell:
-			pace_east_reach_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_field"):
-		var pace_east_field_path := node as Node3D
-		if pace_east_field_path:
-			pace_east_field_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_lea"):
-		var pace_east_lea_path := node as Node3D
-		if pace_east_lea_path:
-			pace_east_lea_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_lea_bell"):
-		var pace_east_lea_bell := node as Node3D
-		if pace_east_lea_bell:
-			pace_east_lea_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_verge"):
-		var pace_east_verge_path := node as Node3D
-		if pace_east_verge_path:
-			pace_east_verge_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_verge_bell"):
-		var pace_east_verge_bell := node as Node3D
-		if pace_east_verge_bell:
-			pace_east_verge_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_brink"):
-		var pace_east_brink_path := node as Node3D
-		if pace_east_brink_path:
-			pace_east_brink_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_edge"):
-		var pace_east_edge_path := node as Node3D
-		if pace_east_edge_path:
-			pace_east_edge_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_edge_bell"):
-		var pace_east_edge_bell := node as Node3D
-		if pace_east_edge_bell:
-			pace_east_edge_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_margin"):
-		var pace_east_margin_path := node as Node3D
-		if pace_east_margin_path:
-			pace_east_margin_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem"):
-		var pace_east_hem_path := node as Node3D
-		if pace_east_hem_path:
-			pace_east_hem_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone"):
-		var pace_east_hem_stone := node as Node3D
-		if pace_east_hem_stone:
-			pace_east_hem_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_bell"):
-		var pace_east_hem_stone_bell := node as Node3D
-		if pace_east_hem_stone_bell:
-			pace_east_hem_stone_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_on_bell"):
-		var pace_east_hem_stone_on_bell := node as Node3D
-		if pace_east_hem_stone_on_bell:
-			pace_east_hem_stone_on_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_far_bell"):
-		var pace_east_hem_stone_far_bell := node as Node3D
-		if pace_east_hem_stone_far_bell:
-			pace_east_hem_stone_far_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_bell"):
-		var pace_east_hem_stone_out_bell := node as Node3D
-		if pace_east_hem_stone_out_bell:
-			pace_east_hem_stone_out_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell"):
-		var pace_east_hem_stone_out_on_bell := node as Node3D
-		if pace_east_hem_stone_out_on_bell:
-			pace_east_hem_stone_out_on_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone"):
-		var pace_east_out_on_stone := node as Node3D
-		if pace_east_out_on_stone:
-			pace_east_out_on_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip"):
-		var pace_east_out_on_strip := node as Node3D
-		if pace_east_out_on_strip:
-			pace_east_out_on_strip.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east"):
-		var pace_east_out_on_east := node as Node3D
-		if pace_east_out_on_east:
-			pace_east_out_on_east.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell"):
-		var pace_east_out_on_east_bell := node as Node3D
-		if pace_east_out_on_east_bell:
-			pace_east_out_on_east_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone"):
-		var pace_east_east_stone := node as Node3D
-		if pace_east_east_stone:
-			pace_east_east_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip"):
-		var pace_east_bell_stone_path := node as Node3D
-		if pace_east_bell_stone_path:
-			pace_east_bell_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell"):
-		var pace_east_bell_stone_end_bell := node as Node3D
-		if pace_east_bell_stone_end_bell:
-			pace_east_bell_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone"):
-		var pace_east_strip_end_stone := node as Node3D
-		if pace_east_strip_end_stone:
-			pace_east_strip_end_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip"):
-		var pace_east_end_stone_path := node as Node3D
-		if pace_east_end_stone_path:
-			pace_east_end_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_end_stone_end_bell := node as Node3D
-		if pace_east_end_stone_end_bell:
-			pace_east_end_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_end_bell_stone := node as Node3D
-		if pace_east_end_bell_stone:
-			pace_east_end_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_meadow_stone_path := node as Node3D
-		if pace_east_meadow_stone_path:
-			pace_east_meadow_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_meadow_stone_end_bell := node as Node3D
-		if pace_east_meadow_stone_end_bell:
-			pace_east_meadow_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_meadow_bell_stone := node as Node3D
-		if pace_east_meadow_bell_stone:
-			pace_east_meadow_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_meadow_bell_path := node as Node3D
-		if pace_east_meadow_bell_path:
-			pace_east_meadow_bell_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone"):
-		var pace_east_meadow_strip_stone := node as Node3D
-		if pace_east_meadow_strip_stone:
-			pace_east_meadow_strip_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip"):
-		var pace_east_farther_stone_path := node as Node3D
-		if pace_east_farther_stone_path:
-			pace_east_farther_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell"):
-		var pace_east_farther_stone_end_bell := node as Node3D
-		if pace_east_farther_stone_end_bell:
-			pace_east_farther_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone"):
-		var pace_east_farther_bell_stone := node as Node3D
-		if pace_east_farther_bell_stone:
-			pace_east_farther_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip"):
-		var pace_east_farther_bell_path := node as Node3D
-		if pace_east_farther_bell_path:
-			pace_east_farther_bell_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell"):
-		var pace_east_farther_bell_end_bell := node as Node3D
-		if pace_east_farther_bell_end_bell:
-			pace_east_farther_bell_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_farther_end_bell_stone := node as Node3D
-		if pace_east_farther_end_bell_stone:
-			pace_east_farther_end_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_farther_end_stone_path := node as Node3D
-		if pace_east_farther_end_stone_path:
-			pace_east_farther_end_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_farther_end_stone_end_bell := node as Node3D
-		if pace_east_farther_end_stone_end_bell:
-			pace_east_farther_end_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_last_bell_stone := node as Node3D
-		if pace_east_last_bell_stone:
-			pace_east_last_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_last_stone_path := node as Node3D
-		if pace_east_last_stone_path:
-			pace_east_last_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_last_stone_end_bell := node as Node3D
-		if pace_east_last_stone_end_bell:
-			pace_east_last_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_last_strip_stone := node as Node3D
-		if pace_east_last_strip_stone:
-			pace_east_last_strip_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_last_strip_path := node as Node3D
-		if pace_east_last_strip_path:
-			pace_east_last_strip_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_last_strip_end_bell := node as Node3D
-		if pace_east_last_strip_end_bell:
-			pace_east_last_strip_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_end_strip_stone := node as Node3D
-		if pace_east_end_strip_stone:
-			pace_east_end_strip_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_end_strip_path := node as Node3D
-		if pace_east_end_strip_path:
-			pace_east_end_strip_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_end_strip_bell := node as Node3D
-		if pace_east_end_strip_bell:
-			pace_east_end_strip_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_far_bell_stone := node as Node3D
-		if pace_east_far_bell_stone:
-			pace_east_far_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_far_stone_path := node as Node3D
-		if pace_east_far_stone_path:
-			pace_east_far_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var pace_east_far_stone_end_bell := node as Node3D
-		if pace_east_far_stone_end_bell:
-			pace_east_far_stone_end_bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var pace_east_far_end_bell_stone := node as Node3D
-		if pace_east_far_end_bell_stone:
-			pace_east_far_end_bell_stone.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var pace_east_far_end_stone_path := node as Node3D
-		if pace_east_far_end_stone_path:
-			pace_east_far_end_stone_path.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_lawn"):
-		var lawn := node as Node3D
-		if lawn:
-			lawn.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_bell"):
-		var bell := node as Node3D
-		if bell:
-			bell.visible = show
-	for node in get_tree().get_nodes_in_group("parish_road_bench"):
-		var bench := node as Node3D
-		if bench:
-			bench.visible = show
-
+# Road pieces live in data/road_pieces.json. Counts stay named for smoke.
 func _road_path_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_path"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		if path.global_position.z >= GardenLayout.GATE.z:
-			return -1
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		var south := path.global_position.z - size.z * 0.5
-		if north > -9.85 or north < -10.15 or south > -13.35:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_path")
 
 func _road_inside_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_inside"):
-		var inside := node as MeshInstance3D
-		if inside == null or not inside.visible:
-			continue
-		var size := (inside.mesh as BoxMesh).size
-		var north := inside.global_position.z + size.z * 0.5
-		var south := inside.global_position.z - size.z * 0.5
-		if north > -9.15 or north < -9.45 or south > -9.95 or south < -10.2:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(inside.global_position.x) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(inside.global_position).x >= 0 or GardenLayout.in_plots(inside.global_position.x, inside.global_position.z):
-			return -1
-		var albedo := inside.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_inside")
 
 func _road_join_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_join"):
-		var join := node as MeshInstance3D
-		if join == null or not join.visible:
-			continue
-		if join.global_position.z > -9.9 or join.global_position.z < -10.2 or absf(join.global_position.x) > 0.4:
-			return -1
-		if GardenLayout.world_to_cell(join.global_position).x >= 0 or GardenLayout.in_plots(join.global_position.x, join.global_position.z):
-			return -1
-		var albedo := join.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_join")
 
 func _road_far_stone_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_far_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.z > -15.3 or stone.global_position.z < -16.2 or absf(stone.global_position.x) > 0.4:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_far_stone")
 
 func _road_far_path_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_far_path"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		var south := path.global_position.z - size.z * 0.5
-		if north > -15.4 or north < -15.7 or south > -16.5 or south < -17.2:
-			return -1
-		if absf(path.global_position.x - 0.12) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_far_path")
 
 func _road_south_stone_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_south_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.z > -16.6 or stone.global_position.z < -17.3 or absf(stone.global_position.x - 0.12) > 0.25:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_south_stone")
 
 func _road_south_bench_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_south_bench"):
-		var bench := node as Node3D
-		if bench == null or not bench.visible:
-			continue
-		if bench.global_position.z > -16.5 or bench.global_position.x < 0.5:
-			return -1
-		if absf(bench.rotation.y) > 0.4:
-			return -1
-		var planks := 0
-		for child in bench.get_children():
-			if child is MeshInstance3D:
-				planks += 1
-			if child is VegPerson:
-				return -1
-		if planks < 4:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_south_bench")
 
 func _road_past_bench_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_past_bench"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		var south := path.global_position.z - size.z * 0.5
-		if north > -16.95 or north < -17.2 or south > -18.0 or south < -18.8:
-			return -1
-		if absf(path.global_position.x - 0.12) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_past_bench")
 
 func _road_end_stone_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_end_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.z > -18.15 or stone.global_position.z < -18.9 or absf(stone.global_position.x - 0.12) > 0.25:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_end_stone")
 
 func _road_lawn_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_lawn"):
-		var lawn := node as MeshInstance3D
-		if lawn == null or not lawn.visible:
-			continue
-		var disc := lawn.mesh as CylinderMesh
-		if disc == null:
-			return -1
-		var north := lawn.global_position.z + disc.top_radius
-		if north >= -13.45 or lawn.global_position.z >= -14.0:
-			return -1
-		var albedo := lawn.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#3f6a32")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_lawn")
 
 func _road_end_bell_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_end_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.z > -18.1 or bell.global_position.z < -18.9:
-			return -1
-		if absf(bell.global_position.x - 0.48) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_end_bell")
 
 func _road_east_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		var east := path.global_position.x + size.x * 0.5
-		if west < 0.0 or west > 0.25 or east < 1.15:
-			return -1
-		if size.z < 1.0 or size.z > 1.15:
-			return -1
-		if absf(path.global_position.z + 18.4) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east")
 
 func _road_east_bell_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.x < 1.25 or bell.global_position.x > 1.7:
-			return -1
-		if absf(bell.global_position.z + 18.4) > 0.25:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_bell")
 
 func _road_east_past_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_past"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		var east := path.global_position.x + size.x * 0.5
-		if west < 1.55 or west > 1.85 or east < 2.7:
-			return -1
-		if size.z < 1.0 or size.z > 1.15:
-			return -1
-		if absf(path.global_position.z + 18.4) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_past")
 
 func _road_east_far_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_far"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		var east := path.global_position.x + size.x * 0.5
-		if west < 2.75 or west > 3.05 or east < 3.9:
-			return -1
-		if size.z < 1.0 or size.z > 1.15:
-			return -1
-		if absf(path.global_position.z + 18.4) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_far")
 
 func _road_east_far_stone_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_far_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.x < 4.05 or stone.global_position.x > 4.55:
-			return -1
-		if absf(stone.global_position.z + 18.4) > 0.25:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_far_stone")
 
 func _road_east_far_bench_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_far_bench"):
-		var bench := node as Node3D
-		if bench == null or not bench.visible:
-			continue
-		if bench.global_position.x < 4.7 or absf(bench.global_position.z + 18.4) > 0.25:
-			return -1
-		if absf(bench.rotation.y) > 0.4:
-			return -1
-		var planks := 0
-		for child in bench.get_children():
-			if child is MeshInstance3D:
-				planks += 1
-			if child is VegPerson:
-				return -1
-		if planks < 4:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_far_bench")
 
 func _road_east_return_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_return"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -18.55 or south > -18.25 or north > -17.0 or north < -17.4:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_return")
 
 func _road_east_near_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_near"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -17.4 or south > -17.0 or north > -15.8 or north < -16.2:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_near")
 
 func _road_east_closer_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_closer"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -16.2 or south > -15.8 or north > -14.6 or north < -15.0:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_closer")
 
 func _road_east_closer_bell_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_closer_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.z > -14.55 or bell.global_position.z < -15.05:
-			return -1
-		if absf(bell.global_position.x - 4.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_closer_bell")
 
 func _road_east_hedge_count() -> int:
-	# ponytail: one worn step past the parish-end bell; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -15.0 or south > -14.6 or north > -13.4 or north < -13.8:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge")
 
 func _road_east_hedge_bell_count() -> int:
-	# ponytail: one short bell at the hedge end of the last strip; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.z > -13.35 or bell.global_position.z < -13.85:
-			return -1
-		if absf(bell.global_position.x - 4.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_bell")
 
 func _road_east_hedge_past_count() -> int:
-	# ponytail: one worn step past the hedge-end bell; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_past"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -13.8 or south > -13.4 or north > -12.2 or north < -12.6:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_past")
 
 func _road_east_hedge_onward_count() -> int:
-	# ponytail: one more worn step toward the hedge; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_onward"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var south := path.global_position.z - size.z * 0.5
-		var north := path.global_position.z + size.z * 0.5
-		if south < -12.6 or south > -12.2 or north > -11.0 or north < -11.4:
-			return -1
-		if size.x < 1.0 or size.x > 1.15:
-			return -1
-		if absf(path.global_position.x - 4.28) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_onward")
 
 func _road_east_hedge_stone_count() -> int:
-	# ponytail: one stone at the hedge face; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.z > -10.75 or stone.global_position.z < -11.15 or absf(stone.global_position.x - 4.28) > 0.25:
-			return -1
-		if stone.global_position.x < 2.9 or stone.global_position.z < -11.2:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_stone")
 
 func _road_east_hedge_face_bell_count() -> int:
-	# ponytail: one short bell beside the hedge-face stone; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_face_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.z > -10.75 or bell.global_position.z < -11.15:
-			return -1
-		if absf(bell.global_position.x - 4.83) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_face_bell")
 
 func _road_east_hedge_west_count() -> int:
-	# ponytail: one worn step west toward the gate; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		var east := path.global_position.x + size.x * 0.5
-		if west <= 2.9 or west > 3.2 or east < 4.0 or east > 4.4:
-			return -1
-		if size.z < 0.95 or size.z > 1.15:
-			return -1
-		if absf(path.global_position.z + 10.95) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west")
 
 func _road_east_hedge_west_stone_count() -> int:
-	# ponytail: one stone at the west end of the gate strip; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var mesh := stone.mesh as BoxMesh
-		if mesh == null:
-			return -1
-		var face := stone.global_position.x - mesh.size.x * 0.5
-		if face <= 2.9 or stone.global_position.x < 3.05 or stone.global_position.x > 3.45:
-			return -1
-		if absf(stone.global_position.z + 10.95) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(stone.global_position).x >= 0 or GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_stone")
 
 func _road_east_hedge_west_bell_count() -> int:
-	# ponytail: one short bell beside the west-end stone; a page line if the book should name it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 10.95) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_bell")
 
 func _road_east_hedge_west_south_bell_count() -> int:
-	# ponytail: one short bell a pace south of the west-end bell; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_south_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 12.15) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_south_bell")
 
 func _road_east_hedge_west_south_count() -> int:
-	# ponytail: one worn step south of the south bell; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_south"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		if west <= 2.9 or absf(path.global_position.x - 3.8) > 0.2:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 13.35) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_south")
 
 func _road_east_hedge_west_further_count() -> int:
-	# ponytail: one worn step further south of the gate-side strip; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_further"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		if west <= 2.9 or absf(path.global_position.x - 3.8) > 0.2:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 14.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_further")
 
 func _road_east_hedge_west_further_bell_count() -> int:
-	# ponytail: one short bell at the south end of the further strip; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_further_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 15.15) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_further_bell")
 
 func _road_east_hedge_west_pace_count() -> int:
-	# ponytail: one worn step south of the south-end bell; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		if west <= 2.9 or absf(path.global_position.x - 3.8) > 0.2:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 16.35) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace")
 
 func _road_east_hedge_west_pace_bell_count() -> int:
-	# ponytail: one short bell at the south end of the pace strip; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 16.95) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_bell")
 
 func _road_east_hedge_west_pace_south_count() -> int:
-	# ponytail: one worn step south of the pace-end bell; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_south"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		if west <= 2.9 or absf(path.global_position.x - 3.8) > 0.2:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 18.15) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_south")
 
 func _road_east_hedge_west_pace_south_bell_count() -> int:
-	# ponytail: one short bell at the south end of the pace-south strip; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_south_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 18.75) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_south_bell")
 
 func _road_east_hedge_west_pace_far_count() -> int:
-	# ponytail: one worn step south of the pace-south bell; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_far"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var west := path.global_position.x - size.x * 0.5
-		if west <= 2.9 or absf(path.global_position.x - 3.8) > 0.2:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.95) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_far")
 
 func _road_east_hedge_west_pace_far_bell_count() -> int:
-	# ponytail: one short bell at the south end of the far pace strip; still east of the opening.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_far_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9:
-			return -1
-		if absf(bell.global_position.z + 20.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_far_bell")
 
 func _road_east_hedge_west_pace_west_count() -> int:
-	# ponytail: one worn step west of the far-south bell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_west"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		if absf(path.global_position.x - 2.6) > 0.2 or path.global_position.z > -18.6:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 20.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_west")
 
 func _road_east_hedge_west_pace_on_count() -> int:
-	# ponytail: one worn step further west, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_on"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		if absf(path.global_position.x - 1.4) > 0.2 or path.global_position.z > -18.6:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 20.55) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(path.global_position).x >= 0 or GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_on")
 
 func _road_east_hedge_west_pace_near_count() -> int:
-	# ponytail: one worn step further west, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_near"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		if absf(path.global_position.x - 0.2) > 0.2 or path.global_position.z > -18.6:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 20.55) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_near")
 
 func _road_east_hedge_west_pace_north_count() -> int:
-	# ponytail: one worn step north toward the end stone, still south of it.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_north"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 0.2) > 0.2 or north > -18.5:
-			return -1
-		if size.z < 1.05 or size.z > 1.35 or size.x < 0.9 or size.x > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_north")
 
 func _road_east_hedge_west_pace_east_count() -> int:
-	# ponytail: one worn step east of the north strip, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 1.4) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east")
 
 func _road_east_hedge_west_pace_east_bell_count() -> int:
-	# ponytail: one short bell at the east end of the east strip, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 2.0) > 0.2 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_bell")
 
 func _road_east_hedge_west_pace_east_on_count() -> int:
-	# ponytail: one worn step east of the east-end bell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_on"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 3.2) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_on")
 
 func _road_east_hedge_west_pace_east_on_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the east-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_on_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 3.8) > 0.2 or bell.global_position.x < 2.9 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0 or GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_on_bell")
 
 func _road_east_hedge_west_pace_east_out_count() -> int:
-	# ponytail: one worn step east of the further meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_out"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 5.0) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_out")
 
 func _road_east_hedge_west_pace_east_out_bell_count() -> int:
-	# ponytail: one short bell at the east face of the strip east of the further meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_out_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 5.6) > 0.2 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_out_bell")
 
 func _road_east_hedge_west_pace_east_beyond_count() -> int:
-	# ponytail: one worn step east of the east-face meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_beyond"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 6.8) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_beyond")
 
 func _road_east_hedge_west_pace_east_beyond_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the east-face meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_beyond_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 7.4) > 0.2 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_beyond_bell")
 
 func _road_east_hedge_west_pace_east_yonder_count() -> int:
-	# ponytail: one worn step east of the eastern-pace meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_yonder"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 8.6) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_yonder")
 
 func _road_east_hedge_west_pace_east_yonder_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the eastern-pace meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_yonder_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 9.2) > 0.2 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_yonder_bell")
 
 func _road_east_hedge_west_pace_east_outer_count() -> int:
-	# ponytail: one worn step east of the yonder-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_outer"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 10.4) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_outer")
 
 func _road_east_hedge_west_pace_east_outer_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the yonder-end meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_outer_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 11.0) > 0.2 or bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_outer_bell")
 
 func _road_east_hedge_west_pace_east_rim_count() -> int:
-	# ponytail: one worn step east of the outer-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_rim"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 12.2) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_rim")
 
 func _road_east_hedge_west_pace_east_farther_count() -> int:
-	# ponytail: one worn step east of the outer-east strip, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_farther"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 13.4) > 0.2 or north > -18.5:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_farther")
 
 func _road_east_hedge_west_pace_east_along_bell_count() -> int:
-	# ponytail: one short bell one pace east of the farther strip, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_along_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 14.6) > 0.2 or bell.global_position.x < 13.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_along_bell")
 
 func _road_east_hedge_west_pace_east_forth_count() -> int:
-	# ponytail: one worn step east of the meadowbell one pace east of the farther strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_forth"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 15.8) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 15.0:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_forth")
 
 func _road_east_hedge_west_pace_east_forth_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the farther meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_forth_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 16.4) > 0.2 or bell.global_position.x < 15.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_forth_bell")
 
 func _road_east_hedge_west_pace_east_span_count() -> int:
-	# ponytail: one worn step east of the east-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_span"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 17.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 16.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_span")
 
 func _road_east_hedge_west_pace_east_mark_bell_count() -> int:
-	# ponytail: one short bell one pace east of the strip past the east-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_mark_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 18.8) > 0.2 or bell.global_position.x < 18.0:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_mark_bell")
 
 func _road_east_hedge_west_pace_east_reach_count() -> int:
-	# ponytail: one worn step east of the marked meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_reach"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 20.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 19.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_reach")
 
 func _road_east_hedge_west_pace_east_reach_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the marked meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_reach_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 20.6) > 0.2 or bell.global_position.x < 20.0:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_reach_bell")
 
 func _road_east_hedge_west_pace_east_field_count() -> int:
-	# ponytail: one worn step east of the reach-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_field"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 21.8) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 21.0:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_field")
 
 func _road_east_hedge_west_pace_east_lea_count() -> int:
-	# ponytail: one worn step east of the strip past the reach-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_lea"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 23.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 22.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_lea")
 
 func _road_east_hedge_west_pace_east_lea_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the field strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_lea_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 23.6) > 0.2 or bell.global_position.x < 23.0:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_lea_bell")
 
 func _road_east_hedge_west_pace_east_verge_count() -> int:
-	# ponytail: one worn step east of the lea-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_verge"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 24.8) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 24.0:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_verge")
 
 func _road_east_hedge_west_pace_east_verge_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the lea-end meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_verge_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 25.4) > 0.2 or bell.global_position.x < 24.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_verge_bell")
 
 func _road_east_hedge_west_pace_east_brink_count() -> int:
-	# ponytail: one worn step east of the verge-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_brink"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 26.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 25.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_brink")
 
 func _road_east_hedge_west_pace_east_edge_count() -> int:
-	# ponytail: one worn step east of the strip past the verge-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_edge"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 27.8) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 27.0:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_edge")
 
 func _road_east_hedge_west_pace_east_edge_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip east of the brink strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_edge_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 28.4) > 0.2 or bell.global_position.x < 27.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_edge_bell")
 
 func _road_east_hedge_west_pace_east_margin_count() -> int:
-	# ponytail: one worn step east of the edge-end meadowbell, still south of the end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_margin"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 29.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 28.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_margin")
 
 func _road_east_hedge_west_pace_east_hem_count() -> int:
-	# ponytail: one worn step east of the strip past the edge-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 30.8) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 30.0:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem")
 
 func _road_east_hedge_west_pace_east_hem_stone_count() -> int:
-	# ponytail: one low stone east of the strip past the margin strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 32.0) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 31.2:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_bell_count() -> int:
-	# ponytail: one short bell one pace east of the stone past the hem strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 33.2) > 0.2 or bell.global_position.x < 32.4:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_on_bell_count() -> int:
-	# ponytail: one short bell one pace east of the bell past the hem stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_on_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 34.4) > 0.2 or bell.global_position.x < 33.6:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_on_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_far_bell_count() -> int:
-	# ponytail: one short bell one pace east of the bell past the hem-stone bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_far_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 35.6) > 0.2 or bell.global_position.x < 34.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_far_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_bell_count() -> int:
-	# ponytail: one short bell one pace east of the bell past the hem-stone bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 36.8) > 0.2 or bell.global_position.x < 36.0:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_count() -> int:
-	# ponytail: one short bell one pace east of the bell east of the far bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 38.0) > 0.2 or bell.global_position.x < 37.2:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the bell east of the far bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 39.2) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 38.4:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the outer bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 40.4) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 39.6:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_count() -> int:
-	# ponytail: one worn step east of the strip past the outer stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 41.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 40.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the outer stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 42.2) > 0.2 or bell.global_position.x < 41.4:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the bell at the east end of the outer strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 43.4) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 42.6:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the outer-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 44.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 43.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the outer-strip stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 45.2) > 0.2 or bell.global_position.x < 44.4:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the bell at the east end of the outer-strip stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 46.4) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 45.6:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the strip-end bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 47.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 46.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the strip-end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 48.2) > 0.2 or bell.global_position.x < 47.4:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the bell at the east end of the strip-end stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 49.4) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 48.6:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the strip-end meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 50.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 49.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the strip-end meadowbell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 51.2) > 0.2 or bell.global_position.x < 50.4:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the meadow-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 52.4) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 51.6:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the meadow-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 53.6) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 52.8:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_count() -> int:
-	# ponytail: one low stone one pace east of the meadow-strip stone's strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 54.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 54.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the meadow-strip stone's strip.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 56.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 55.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the farther meadow stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 56.6) > 0.2 or bell.global_position.x < 55.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the farther-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 57.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 57.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the farther-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 59.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 58.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the farther-strip stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 59.6) > 0.2 or bell.global_position.x < 58.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the farther-stone bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 60.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 60.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the farther-stone bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 62.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 61.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the farther-stone's stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 62.6) > 0.2 or bell.global_position.x < 61.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the farther-stone's bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 63.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 63.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the farther-stone's bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 65.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 64.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the last bell stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 65.6) > 0.2 or bell.global_position.x < 64.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the last-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 66.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 66.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the last-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 68.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 67.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the last-strip stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 68.6) > 0.2 or bell.global_position.x < 67.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the last-strip's bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 69.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 69.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the last-strip's bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 71.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 70.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the last-strip's stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 71.6) > 0.2 or bell.global_position.x < 70.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the last-strip's stone bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 72.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 72.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the far bell stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 74.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 73.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() -> int:
-	# ponytail: one short bell at the east end of the strip past the far bell stone.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if absf(bell.global_position.x - 74.6) > 0.2 or bell.global_position.x < 73.8:
-			return -1
-		if bell.global_position.z > -18.6:
-			return -1
-		if absf(bell.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(bell.global_position.x, bell.global_position.z):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() -> int:
-	# ponytail: one low stone one pace east of the far-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		var size := (stone.mesh as BoxMesh).size
-		var north := stone.global_position.z + size.z * 0.5
-		if absf(stone.global_position.x - 75.8) > 0.2 or north > -18.5:
-			return -1
-		if stone.global_position.x < 75.0:
-			return -1
-		if size.x < 0.4 or size.x > 0.55 or size.y < 0.05 or size.y > 0.1 or size.z < 0.26 or size.z > 0.4:
-			return -1
-		if absf(stone.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(stone.global_position.x, stone.global_position.z):
-			return -1
-		var albedo := stone.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#4a4038")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone")
 
 func _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() -> int:
-	# ponytail: one worn step east of the stone past the far-strip bell.
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip"):
-		var path := node as MeshInstance3D
-		if path == null or not path.visible:
-			continue
-		var size := (path.mesh as BoxMesh).size
-		var north := path.global_position.z + size.z * 0.5
-		if absf(path.global_position.x - 77.0) > 0.2 or north > -18.5:
-			return -1
-		if path.global_position.x < 76.2:
-			return -1
-		if size.x < 1.05 or size.x > 1.35 or size.z < 0.9 or size.z > 1.2:
-			return -1
-		if absf(path.global_position.z + 19.35) > 0.2:
-			return -1
-		if GardenLayout.in_plots(path.global_position.x, path.global_position.z):
-			return -1
-		var albedo := path.material_override as StandardMaterial3D
-		if albedo == null or not albedo.albedo_color.is_equal_approx(Color("#6a5e4c")):
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip")
 
 func _road_bell_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_bell"):
-		var bell := node as PlantView
-		if bell == null or not bell.visible:
-			continue
-		if bell.plant_id != "meadowbell" or bell.scale.y < 0.4 or bell.scale.y > 0.6:
-			return -1
-		if bell.global_position.z >= -14.0:
-			return -1
-		if GardenLayout.world_to_cell(bell.global_position).x >= 0:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_bell")
 
 func _road_bench_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_bench"):
-		var bench := node as Node3D
-		if bench == null or not bench.visible:
-			continue
-		if bench.global_position.z >= -14.0 or bench.global_position.x < 0.4:
-			return -1
-		if bench.rotation.y > -1.4 or bench.rotation.y < -2.1:
-			return -1
-		var planks := 0
-		for child in bench.get_children():
-			if child is MeshInstance3D:
-				planks += 1
-			if child is VegPerson:
-				return -1
-		if planks < 4:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_bench")
 
 func _road_stone_count() -> int:
-	var count := 0
-	for node in get_tree().get_nodes_in_group("parish_road_stone"):
-		var stone := node as MeshInstance3D
-		if stone == null or not stone.visible:
-			continue
-		if stone.global_position.z >= GardenLayout.GATE.z:
-			return -1
-		count += 1
-	return count
+	return road.count("parish_road_stone")
 
 func _file_nessa() -> void:
 	Trust.file_notes("nessa", "Pollinator notes filed in the parish book. No external action.")
@@ -5885,7 +1633,7 @@ func apply_state(data: Dictionary) -> void:
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
-	_sync_road_stones()
+	road.sync(Trust.has_action("parish_road_rumour"))
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -10940,7 +6688,7 @@ func _run_smoke() -> void:
 		push_error("smoke: an unknown road was filed")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 0 or _road_path_count() != 0 or _road_inside_count() != 0 or _road_join_count() != 0 or _road_far_stone_count() != 0 or _road_far_path_count() != 0 or _road_south_stone_count() != 0 or _road_south_bench_count() != 0 or _road_past_bench_count() != 0 or _road_end_stone_count() != 0 or _road_end_bell_count() != 0 or _road_east_count() != 0 or _road_east_bell_count() != 0 or _road_east_past_count() != 0 or _road_east_far_count() != 0 or _road_east_far_stone_count() != 0 or _road_east_far_bench_count() != 0 or _road_east_return_count() != 0 or _road_east_near_count() != 0 or _road_east_closer_count() != 0 or _road_east_closer_bell_count() != 0 or _road_east_hedge_count() != 0 or _road_east_hedge_bell_count() != 0 or _road_east_hedge_past_count() != 0 or _road_east_hedge_onward_count() != 0 or _road_east_hedge_stone_count() != 0 or _road_east_hedge_face_bell_count() != 0 or _road_east_hedge_west_count() != 0 or _road_east_hedge_west_stone_count() != 0 or _road_east_hedge_west_bell_count() != 0 or _road_east_hedge_west_south_bell_count() != 0 or _road_east_hedge_west_south_count() != 0 or _road_east_hedge_west_further_count() != 0 or _road_east_hedge_west_further_bell_count() != 0 or _road_east_hedge_west_pace_count() != 0 or _road_east_hedge_west_pace_bell_count() != 0 or _road_east_hedge_west_pace_south_count() != 0 or _road_east_hedge_west_pace_south_bell_count() != 0 or _road_east_hedge_west_pace_far_count() != 0 or _road_east_hedge_west_pace_far_bell_count() != 0 or _road_east_hedge_west_pace_west_count() != 0 or _road_east_hedge_west_pace_on_count() != 0 or _road_east_hedge_west_pace_near_count() != 0 or _road_east_hedge_west_pace_north_count() != 0 or _road_east_hedge_west_pace_east_count() != 0 or _road_east_hedge_west_pace_east_bell_count() != 0 or _road_east_hedge_west_pace_east_on_count() != 0 or _road_east_hedge_west_pace_east_on_bell_count() != 0 or _road_east_hedge_west_pace_east_out_count() != 0 or _road_east_hedge_west_pace_east_out_bell_count() != 0 or _road_east_hedge_west_pace_east_beyond_count() != 0 or _road_east_hedge_west_pace_east_beyond_bell_count() != 0 or _road_east_hedge_west_pace_east_yonder_count() != 0 or _road_east_hedge_west_pace_east_yonder_bell_count() != 0 or _road_east_hedge_west_pace_east_outer_count() != 0 or _road_east_hedge_west_pace_east_outer_bell_count() != 0 or _road_east_hedge_west_pace_east_rim_count() != 0 or _road_east_hedge_west_pace_east_farther_count() != 0 or _road_east_hedge_west_pace_east_along_bell_count() != 0 or _road_east_hedge_west_pace_east_forth_count() != 0 or _road_east_hedge_west_pace_east_forth_bell_count() != 0 or _road_east_hedge_west_pace_east_span_count() != 0 or _road_east_hedge_west_pace_east_mark_bell_count() != 0 or _road_east_hedge_west_pace_east_reach_count() != 0 or _road_east_hedge_west_pace_east_reach_bell_count() != 0 or _road_east_hedge_west_pace_east_field_count() != 0 or _road_east_hedge_west_pace_east_lea_count() != 0 or _road_east_hedge_west_pace_east_lea_bell_count() != 0 or _road_east_hedge_west_pace_east_verge_count() != 0 or _road_east_hedge_west_pace_east_verge_bell_count() != 0 or _road_east_hedge_west_pace_east_brink_count() != 0 or _road_east_hedge_west_pace_east_edge_count() != 0 or _road_east_hedge_west_pace_east_edge_bell_count() != 0 or _road_east_hedge_west_pace_east_margin_count() != 0 or _road_east_hedge_west_pace_east_hem_count() != 0 or _hem_east_line() != "" or _hem_east_rumour_count() != 0 or _hem_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_count() != 0 or _hem_stone_line() != "" or _hem_stone_rumour_count() != 0 or _hem_stone_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_bell_count() != 0 or _hem_stone_bell_line() != "" or _hem_stone_bell_rumour_count() != 0 or _hem_stone_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_on_bell_count() != 0 or _hem_stone_on_bell_line() != "" or _hem_stone_on_bell_rumour_count() != 0 or _hem_stone_on_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_far_bell_count() != 0 or _hem_stone_far_bell_line() != "" or _hem_stone_far_bell_rumour_count() != 0 or _hem_stone_far_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_out_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _outer_strip_bell_stone_line() != "" or _meadow_strip_bell_line() != "" or _meadow_stone_strip_line() != "" or _farther_strip_bell_line() != "" or _last_bell_stone_line() != "" or _last_strip_bell_line() != "" or _end_strip_stone_line() != "" or _far_bell_stone_line() != "" or _far_stone_strip_line() != "" or _outer_stone_strip_line() != "" or _hem_stone_out_bell_line() != "" or _hem_stone_out_bell_rumour_count() != 0 or _meadow_stone_strip_rumour_count() != 0 or _last_bell_stone_rumour_count() != 0 or _end_strip_stone_rumour_count() != 0 or _far_stone_strip_rumour_count() != 0 or _hem_stone_out_bell_card_line() != "" or _meadow_stone_strip_card_line() != "" or _margin_east_line() != "" or _brink_east_line() != "" or _field_east_line() != "" or _reach_east_line() != "" or _span_east_line() != "" or _span_east_rumour_count() != 0 or _further_east_line() != "" or _further_east_rumour_count() != 0 or _outer_east_line() != "" or _end_step_line() != "" or _end_step_rumour_count() != 0 or _west_turn_line() != "" or _west_turn_rumour_count() != 0 or _south_step_line() != "" or _west_gate_bell_line() != "" or _west_gate_bell_rumour_count() != 0 or _east_closer_bell_line() != "" or _east_closer_bell_rumour_count() != 0 or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_near_line() != "" or _east_far_line() != "" or _east_past_line() != "" or _east_past_rumour_count() != 0 or _east_line() != "" or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "" or _join_line() != "" or _south_line() != "" or _lane_south_line() != "" or _end_line() != "" or _end_rumour_count() != 0 or _south_rumour_count() != 0 or _bell_rumour_count() != 0 or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0:
+	if not road.all_hidden() or _hem_east_line() != "" or _hem_east_rumour_count() != 0 or _hem_card_line() != "" or _hem_stone_line() != "" or _hem_stone_rumour_count() != 0 or _hem_stone_card_line() != "" or _hem_stone_bell_line() != "" or _hem_stone_bell_rumour_count() != 0 or _hem_stone_bell_card_line() != "" or _hem_stone_on_bell_line() != "" or _hem_stone_on_bell_rumour_count() != 0 or _hem_stone_on_bell_card_line() != "" or _hem_stone_far_bell_line() != "" or _hem_stone_far_bell_rumour_count() != 0 or _hem_stone_far_bell_card_line() != "" or _outer_strip_bell_stone_line() != "" or _meadow_strip_bell_line() != "" or _meadow_stone_strip_line() != "" or _farther_strip_bell_line() != "" or _last_bell_stone_line() != "" or _last_strip_bell_line() != "" or _end_strip_stone_line() != "" or _far_bell_stone_line() != "" or _far_stone_strip_line() != "" or _outer_stone_strip_line() != "" or _hem_stone_out_bell_line() != "" or _hem_stone_out_bell_rumour_count() != 0 or _meadow_stone_strip_rumour_count() != 0 or _last_bell_stone_rumour_count() != 0 or _end_strip_stone_rumour_count() != 0 or _far_stone_strip_rumour_count() != 0 or _hem_stone_out_bell_card_line() != "" or _meadow_stone_strip_card_line() != "" or _margin_east_line() != "" or _brink_east_line() != "" or _field_east_line() != "" or _reach_east_line() != "" or _span_east_line() != "" or _span_east_rumour_count() != 0 or _further_east_line() != "" or _further_east_rumour_count() != 0 or _outer_east_line() != "" or _end_step_line() != "" or _end_step_rumour_count() != 0 or _west_turn_line() != "" or _west_turn_rumour_count() != 0 or _south_step_line() != "" or _west_gate_bell_line() != "" or _west_gate_bell_rumour_count() != 0 or _east_closer_bell_line() != "" or _east_closer_bell_rumour_count() != 0 or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_near_line() != "" or _east_far_line() != "" or _east_past_line() != "" or _east_past_rumour_count() != 0 or _east_line() != "" or _far_bell_line() != "" or _join_line() != "" or _south_line() != "" or _lane_south_line() != "" or _end_line() != "" or _end_rumour_count() != 0 or _south_rumour_count() != 0 or _bell_rumour_count() != 0 or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0:
 		push_error("smoke: stones marked a road that was not filed")
 		get_tree().quit(1)
 		return
@@ -10991,7 +6739,7 @@ func _run_smoke() -> void:
 		push_error("smoke: the rumour was filed twice")
 		get_tree().quit(1)
 		return
-	if _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _road_east_hedge_count() != 1 or _road_east_hedge_bell_count() != 1 or _road_east_hedge_past_count() != 1 or _road_east_hedge_onward_count() != 1 or _road_east_hedge_stone_count() != 1 or _road_east_hedge_face_bell_count() != 1 or _road_east_hedge_west_count() != 1 or _road_east_hedge_west_stone_count() != 1 or _road_east_hedge_west_bell_count() != 1 or _road_east_hedge_west_south_bell_count() != 1 or _road_east_hedge_west_south_count() != 1 or _road_east_hedge_west_further_count() != 1 or _road_east_hedge_west_further_bell_count() != 1 or _road_east_hedge_west_pace_count() != 1 or _road_east_hedge_west_pace_bell_count() != 1 or _road_east_hedge_west_pace_south_count() != 1 or _road_east_hedge_west_pace_south_bell_count() != 1 or _road_east_hedge_west_pace_far_count() != 1 or _road_east_hedge_west_pace_far_bell_count() != 1 or _road_east_hedge_west_pace_west_count() != 1 or _road_east_hedge_west_pace_on_count() != 1 or _road_east_hedge_west_pace_near_count() != 1 or _road_east_hedge_west_pace_north_count() != 1 or _road_east_hedge_west_pace_east_count() != 1 or _road_east_hedge_west_pace_east_bell_count() != 1 or _road_east_hedge_west_pace_east_on_count() != 1 or _road_east_hedge_west_pace_east_on_bell_count() != 1 or _road_east_hedge_west_pace_east_out_count() != 1 or _road_east_hedge_west_pace_east_out_bell_count() != 1 or _road_east_hedge_west_pace_east_beyond_count() != 1 or _road_east_hedge_west_pace_east_beyond_bell_count() != 1 or _road_east_hedge_west_pace_east_yonder_count() != 1 or _road_east_hedge_west_pace_east_yonder_bell_count() != 1 or _road_east_hedge_west_pace_east_outer_count() != 1 or _road_east_hedge_west_pace_east_outer_bell_count() != 1 or _road_east_hedge_west_pace_east_rim_count() != 1 or _road_east_hedge_west_pace_east_farther_count() != 1 or _road_east_hedge_west_pace_east_along_bell_count() != 1 or _road_east_hedge_west_pace_east_forth_count() != 1 or _road_east_hedge_west_pace_east_forth_bell_count() != 1 or _road_east_hedge_west_pace_east_span_count() != 1 or _road_east_hedge_west_pace_east_mark_bell_count() != 1 or _road_east_hedge_west_pace_east_reach_count() != 1 or _road_east_hedge_west_pace_east_reach_bell_count() != 1 or _road_east_hedge_west_pace_east_field_count() != 1 or _road_east_hedge_west_pace_east_lea_count() != 1 or _road_east_hedge_west_pace_east_lea_bell_count() != 1 or _road_east_hedge_west_pace_east_verge_count() != 1 or _road_east_hedge_west_pace_east_verge_bell_count() != 1 or _road_east_hedge_west_pace_east_brink_count() != 1 or _road_east_hedge_west_pace_east_edge_count() != 1 or _road_east_hedge_west_pace_east_edge_bell_count() != 1 or _road_east_hedge_west_pace_east_margin_count() != 1 or _road_east_hedge_west_pace_east_hem_count() != 1 or _hem_east_line() != "The way steps past the margin strip." or _hem_east_rumour_count() != 1 or _hem_card_line() != "The way steps past the margin strip." or _road_east_hedge_west_pace_east_hem_stone_count() != 1 or _hem_stone_line() != "The way steps past the hem strip." or _hem_stone_rumour_count() != 1 or _hem_stone_card_line() != "The way steps past the hem strip." or _road_east_hedge_west_pace_east_hem_stone_bell_count() != 1 or _hem_stone_bell_line() != "The way steps east of the hem stone." or _hem_stone_bell_rumour_count() != 1 or _hem_stone_bell_card_line() != "The way steps east of the hem stone." or _road_east_hedge_west_pace_east_hem_stone_on_bell_count() != 1 or _hem_stone_on_bell_line() != "The way steps east of the hem-stone bell." or _hem_stone_on_bell_rumour_count() != 1 or _hem_stone_on_bell_card_line() != "The way steps east of the hem-stone bell." or _road_east_hedge_west_pace_east_hem_stone_far_bell_count() != 1 or _hem_stone_far_bell_line() != "The way steps past the hem-stone bell." or _hem_stone_far_bell_rumour_count() != 1 or _hem_stone_far_bell_card_line() != "The way steps past the hem-stone bell." or _road_east_hedge_west_pace_east_hem_stone_out_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _outer_strip_bell_stone_line() != "The way steps past the outer-strip bell." or _meadow_strip_bell_line() != "The way steps past the meadow-strip bell." or _meadow_stone_strip_line() != "The way steps east of the meadow-strip stone." or _farther_strip_bell_line() != "The way steps past the farther-strip bell." or _last_bell_stone_line() != "The way steps past the last bell stone." or _last_strip_bell_line() != "The way steps past the last-strip bell." or _end_strip_stone_line() != "The way steps east of the last-strip's stone." or _far_bell_stone_line() != "The way steps past the far bell stone." or _far_stone_strip_line() != "The way steps east of the far bell stone." or _outer_stone_strip_line() != "The way steps past the outer stone." or _hem_stone_out_bell_line() != "The way steps east of the far bell." or _hem_stone_out_bell_rumour_count() != 1 or _meadow_stone_strip_rumour_count() != 1 or _last_bell_stone_rumour_count() != 1 or _end_strip_stone_rumour_count() != 1 or _far_stone_strip_rumour_count() != 1 or _hem_stone_out_bell_card_line() != "The way steps east of the far bell." or _meadow_stone_strip_card_line() != "The way steps east of the meadow-strip stone." or _margin_east_line() != "The way steps past the edge-end bell." or _brink_east_line() != "The way steps past the verge-end bell." or _field_east_line() != "The way steps past the reach-end bell." or _reach_east_line() != "The way steps east of the reach-end bell." or _span_east_line() != "The way steps past the east-end bell." or _span_east_rumour_count() != 1 or _further_east_line() != "The way steps further east of the outer bell." or _further_east_rumour_count() != 1 or _outer_east_line() != "The way steps east of the outer-end bell." or _end_step_line() != "The way steps toward the end stone." or _end_step_rumour_count() != 1 or _west_turn_line() != "The way turns west of the far-south bell." or _west_turn_rumour_count() != 1 or _south_step_line() != "The way steps south of the gate-side bell." or _west_gate_bell_line() != "A bell stands beside the way toward the gate." or _west_gate_bell_rumour_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _bell_sale_line() != "" or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if not road.all_shown() or _hem_east_line() != "The way steps past the margin strip." or _hem_east_rumour_count() != 1 or _hem_card_line() != "The way steps past the margin strip." or _hem_stone_line() != "The way steps past the hem strip." or _hem_stone_rumour_count() != 1 or _hem_stone_card_line() != "The way steps past the hem strip." or _hem_stone_bell_line() != "The way steps east of the hem stone." or _hem_stone_bell_rumour_count() != 1 or _hem_stone_bell_card_line() != "The way steps east of the hem stone." or _hem_stone_on_bell_line() != "The way steps east of the hem-stone bell." or _hem_stone_on_bell_rumour_count() != 1 or _hem_stone_on_bell_card_line() != "The way steps east of the hem-stone bell." or _hem_stone_far_bell_line() != "The way steps past the hem-stone bell." or _hem_stone_far_bell_rumour_count() != 1 or _hem_stone_far_bell_card_line() != "The way steps past the hem-stone bell." or _outer_strip_bell_stone_line() != "The way steps past the outer-strip bell." or _meadow_strip_bell_line() != "The way steps past the meadow-strip bell." or _meadow_stone_strip_line() != "The way steps east of the meadow-strip stone." or _farther_strip_bell_line() != "The way steps past the farther-strip bell." or _last_bell_stone_line() != "The way steps past the last bell stone." or _last_strip_bell_line() != "The way steps past the last-strip bell." or _end_strip_stone_line() != "The way steps east of the last-strip's stone." or _far_bell_stone_line() != "The way steps past the far bell stone." or _far_stone_strip_line() != "The way steps east of the far bell stone." or _outer_stone_strip_line() != "The way steps past the outer stone." or _hem_stone_out_bell_line() != "The way steps east of the far bell." or _hem_stone_out_bell_rumour_count() != 1 or _meadow_stone_strip_rumour_count() != 1 or _last_bell_stone_rumour_count() != 1 or _end_strip_stone_rumour_count() != 1 or _far_stone_strip_rumour_count() != 1 or _hem_stone_out_bell_card_line() != "The way steps east of the far bell." or _meadow_stone_strip_card_line() != "The way steps east of the meadow-strip stone." or _margin_east_line() != "The way steps past the edge-end bell." or _brink_east_line() != "The way steps past the verge-end bell." or _field_east_line() != "The way steps past the reach-end bell." or _reach_east_line() != "The way steps east of the reach-end bell." or _span_east_line() != "The way steps past the east-end bell." or _span_east_rumour_count() != 1 or _further_east_line() != "The way steps further east of the outer bell." or _further_east_rumour_count() != 1 or _outer_east_line() != "The way steps east of the outer-end bell." or _end_step_line() != "The way steps toward the end stone." or _end_step_rumour_count() != 1 or _west_turn_line() != "The way turns west of the far-south bell." or _west_turn_rumour_count() != 1 or _south_step_line() != "The way steps south of the gate-side bell." or _west_gate_bell_line() != "A bell stands beside the way toward the gate." or _west_gate_bell_rumour_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _far_bell_line() != "Three bells stand on the far lawn." or _bell_sale_line() != "" or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: the filed rumour left the gate bare")
 		get_tree().quit(1)
 		return
@@ -11106,7 +6854,7 @@ func _run_smoke() -> void:
 		if str(entry.get("action", "")) != "parish_road_rumour":
 			wiped.append(entry)
 	Trust.audit = wiped
-	_sync_road_stones()
+	road.sync(Trust.has_action("parish_road_rumour"))
 	var quiet_sale_coins := Economy.coins
 	var quiet_sale_peach := Economy.count("peach")
 	var quiet_sale_day := Trust.lane_sale_day
@@ -11123,7 +6871,7 @@ func _run_smoke() -> void:
 	while Trust.audit.size() > quiet_sale_audit:
 		Trust.audit.pop_back()
 	events.pop_front()
-	if _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _road_stone_count() != 0 or _road_path_count() != 0 or _road_inside_count() != 0 or _road_join_count() != 0 or _road_far_stone_count() != 0 or _road_far_path_count() != 0 or _road_south_stone_count() != 0 or _road_south_bench_count() != 0 or _road_past_bench_count() != 0 or _road_end_stone_count() != 0 or _road_end_bell_count() != 0 or _road_east_count() != 0 or _road_east_bell_count() != 0 or _road_east_past_count() != 0 or _road_east_far_count() != 0 or _road_east_far_stone_count() != 0 or _road_east_far_bench_count() != 0 or _road_east_return_count() != 0 or _road_east_near_count() != 0 or _road_east_closer_count() != 0 or _road_east_closer_bell_count() != 0 or _road_east_hedge_count() != 0 or _road_east_hedge_bell_count() != 0 or _road_east_hedge_past_count() != 0 or _road_east_hedge_onward_count() != 0 or _road_east_hedge_stone_count() != 0 or _road_east_hedge_face_bell_count() != 0 or _road_east_hedge_west_count() != 0 or _road_east_hedge_west_stone_count() != 0 or _road_east_hedge_west_bell_count() != 0 or _road_east_hedge_west_south_bell_count() != 0 or _road_east_hedge_west_south_count() != 0 or _road_east_hedge_west_further_count() != 0 or _road_east_hedge_west_further_bell_count() != 0 or _road_east_hedge_west_pace_count() != 0 or _road_east_hedge_west_pace_bell_count() != 0 or _road_east_hedge_west_pace_south_count() != 0 or _road_east_hedge_west_pace_south_bell_count() != 0 or _road_east_hedge_west_pace_far_count() != 0 or _road_east_hedge_west_pace_far_bell_count() != 0 or _road_east_hedge_west_pace_west_count() != 0 or _road_east_hedge_west_pace_on_count() != 0 or _road_east_hedge_west_pace_near_count() != 0 or _road_east_hedge_west_pace_north_count() != 0 or _road_east_hedge_west_pace_east_count() != 0 or _road_east_hedge_west_pace_east_bell_count() != 0 or _road_east_hedge_west_pace_east_on_count() != 0 or _road_east_hedge_west_pace_east_on_bell_count() != 0 or _road_east_hedge_west_pace_east_out_count() != 0 or _road_east_hedge_west_pace_east_out_bell_count() != 0 or _road_east_hedge_west_pace_east_beyond_count() != 0 or _road_east_hedge_west_pace_east_beyond_bell_count() != 0 or _road_east_hedge_west_pace_east_yonder_count() != 0 or _road_east_hedge_west_pace_east_yonder_bell_count() != 0 or _road_east_hedge_west_pace_east_outer_count() != 0 or _road_east_hedge_west_pace_east_outer_bell_count() != 0 or _road_east_hedge_west_pace_east_rim_count() != 0 or _road_east_hedge_west_pace_east_farther_count() != 0 or _road_east_hedge_west_pace_east_along_bell_count() != 0 or _road_east_hedge_west_pace_east_forth_count() != 0 or _road_east_hedge_west_pace_east_forth_bell_count() != 0 or _road_east_hedge_west_pace_east_span_count() != 0 or _road_east_hedge_west_pace_east_mark_bell_count() != 0 or _road_east_hedge_west_pace_east_reach_count() != 0 or _road_east_hedge_west_pace_east_reach_bell_count() != 0 or _road_east_hedge_west_pace_east_field_count() != 0 or _road_east_hedge_west_pace_east_lea_count() != 0 or _road_east_hedge_west_pace_east_lea_bell_count() != 0 or _road_east_hedge_west_pace_east_verge_count() != 0 or _road_east_hedge_west_pace_east_verge_bell_count() != 0 or _road_east_hedge_west_pace_east_brink_count() != 0 or _road_east_hedge_west_pace_east_edge_count() != 0 or _road_east_hedge_west_pace_east_edge_bell_count() != 0 or _road_east_hedge_west_pace_east_margin_count() != 0 or _road_east_hedge_west_pace_east_hem_count() != 0 or _hem_east_line() != "" or _hem_east_rumour_count() != 0 or _hem_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_count() != 0 or _hem_stone_line() != "" or _hem_stone_rumour_count() != 0 or _hem_stone_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_bell_count() != 0 or _hem_stone_bell_line() != "" or _hem_stone_bell_rumour_count() != 0 or _hem_stone_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_on_bell_count() != 0 or _hem_stone_on_bell_line() != "" or _hem_stone_on_bell_rumour_count() != 0 or _hem_stone_on_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_far_bell_count() != 0 or _hem_stone_far_bell_line() != "" or _hem_stone_far_bell_rumour_count() != 0 or _hem_stone_far_bell_card_line() != "" or _road_east_hedge_west_pace_east_hem_stone_out_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 0 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 0 or _outer_strip_bell_stone_line() != "" or _meadow_strip_bell_line() != "" or _meadow_stone_strip_line() != "" or _farther_strip_bell_line() != "" or _last_bell_stone_line() != "" or _last_strip_bell_line() != "" or _end_strip_stone_line() != "" or _far_bell_stone_line() != "" or _far_stone_strip_line() != "" or _outer_stone_strip_line() != "" or _hem_stone_out_bell_line() != "" or _hem_stone_out_bell_rumour_count() != 0 or _meadow_stone_strip_rumour_count() != 0 or _last_bell_stone_rumour_count() != 0 or _end_strip_stone_rumour_count() != 0 or _far_stone_strip_rumour_count() != 0 or _hem_stone_out_bell_card_line() != "" or _meadow_stone_strip_card_line() != "" or _margin_east_line() != "" or _brink_east_line() != "" or _field_east_line() != "" or _reach_east_line() != "" or _span_east_line() != "" or _span_east_rumour_count() != 0 or _further_east_line() != "" or _further_east_rumour_count() != 0 or _outer_east_line() != "" or _end_step_line() != "" or _end_step_rumour_count() != 0 or _west_turn_line() != "" or _west_turn_rumour_count() != 0 or _south_step_line() != "" or _west_gate_bell_line() != "" or _west_gate_bell_rumour_count() != 0 or _east_closer_bell_line() != "" or _east_closer_bell_rumour_count() != 0 or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_near_line() != "" or _east_far_line() != "" or _east_past_line() != "" or _east_past_rumour_count() != 0 or _east_line() != "" or _road_lawn_count() != 0 or _road_bell_count() != 0 or _road_bench_count() != 0 or _far_bell_line() != "" or _join_line() != "" or _south_line() != "" or _lane_south_line() != "" or _end_line() != "" or _end_rumour_count() != 0 or _south_rumour_count() != 0 or _bell_rumour_count() != 0 or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0:
+	if not road.all_hidden() or _road_line() == "The book keeps the rumour of the road beyond the hedge." or _road_card_line() != "" or _hem_east_line() != "" or _hem_east_rumour_count() != 0 or _hem_card_line() != "" or _hem_stone_line() != "" or _hem_stone_rumour_count() != 0 or _hem_stone_card_line() != "" or _hem_stone_bell_line() != "" or _hem_stone_bell_rumour_count() != 0 or _hem_stone_bell_card_line() != "" or _hem_stone_on_bell_line() != "" or _hem_stone_on_bell_rumour_count() != 0 or _hem_stone_on_bell_card_line() != "" or _hem_stone_far_bell_line() != "" or _hem_stone_far_bell_rumour_count() != 0 or _hem_stone_far_bell_card_line() != "" or _outer_strip_bell_stone_line() != "" or _meadow_strip_bell_line() != "" or _meadow_stone_strip_line() != "" or _farther_strip_bell_line() != "" or _last_bell_stone_line() != "" or _last_strip_bell_line() != "" or _end_strip_stone_line() != "" or _far_bell_stone_line() != "" or _far_stone_strip_line() != "" or _outer_stone_strip_line() != "" or _hem_stone_out_bell_line() != "" or _hem_stone_out_bell_rumour_count() != 0 or _meadow_stone_strip_rumour_count() != 0 or _last_bell_stone_rumour_count() != 0 or _end_strip_stone_rumour_count() != 0 or _far_stone_strip_rumour_count() != 0 or _hem_stone_out_bell_card_line() != "" or _meadow_stone_strip_card_line() != "" or _margin_east_line() != "" or _brink_east_line() != "" or _field_east_line() != "" or _reach_east_line() != "" or _span_east_line() != "" or _span_east_rumour_count() != 0 or _further_east_line() != "" or _further_east_rumour_count() != 0 or _outer_east_line() != "" or _end_step_line() != "" or _end_step_rumour_count() != 0 or _west_turn_line() != "" or _west_turn_rumour_count() != 0 or _south_step_line() != "" or _west_gate_bell_line() != "" or _west_gate_bell_rumour_count() != 0 or _east_closer_bell_line() != "" or _east_closer_bell_rumour_count() != 0 or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_near_line() != "" or _east_far_line() != "" or _east_past_line() != "" or _east_past_rumour_count() != 0 or _east_line() != "" or _far_bell_line() != "" or _join_line() != "" or _south_line() != "" or _lane_south_line() != "" or _end_line() != "" or _end_rumour_count() != 0 or _south_rumour_count() != 0 or _bell_rumour_count() != 0 or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0:
 		push_error("smoke: the book line stayed after the filing was cleared")
 		get_tree().quit(1)
 		return
@@ -11133,12 +6881,12 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	Trust.apply_state(loaded_trust)
-	_sync_road_stones()
+	road.sync(Trust.has_action("parish_road_rumour"))
 	var nessa_reloaded := false
 	for row in _people_rows(world_snapshot()):
 		if str(row.get("name", "")) == "Nessa Pod" and str(row.get("road_line", "")) == "The road is only a rumour." and str(row.get("join_line", "")) == "One stone marks the gate opening." and str(row.get("parish_bell_line", "")) == "A bell stands at the parish end." and str(row.get("parish_sale_line", "x")) == "" and str(row.get("hem_card_line", "")) == "The way steps past the margin strip." and str(row.get("hem_stone_card_line", "")) == "The way steps past the hem strip." and str(row.get("hem_stone_bell_card_line", "")) == "The way steps east of the hem stone." and str(row.get("hem_stone_on_bell_card_line", "")) == "The way steps east of the hem-stone bell." and str(row.get("hem_stone_far_bell_card_line", "")) == "The way steps past the hem-stone bell." and str(row.get("hem_stone_out_bell_card_line", "")) == "The way steps east of the far bell." and str(row.get("meadow_stone_strip_card_line", "")) == "The way steps east of the meadow-strip stone." and not bool(row.get("can_road", false)):
 			nessa_reloaded = true
-	if _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _road_stone_count() != 3 or _road_path_count() != 1 or _road_inside_count() != 1 or _road_join_count() != 1 or _road_far_stone_count() != 1 or _road_far_path_count() != 1 or _road_south_stone_count() != 1 or _road_south_bench_count() != 1 or _road_past_bench_count() != 1 or _road_end_stone_count() != 1 or _road_end_bell_count() != 1 or _road_east_count() != 1 or _road_east_bell_count() != 1 or _road_east_past_count() != 1 or _road_east_far_count() != 1 or _road_east_far_stone_count() != 1 or _road_east_far_bench_count() != 1 or _road_east_return_count() != 1 or _road_east_near_count() != 1 or _road_east_closer_count() != 1 or _road_east_closer_bell_count() != 1 or _road_east_hedge_count() != 1 or _road_east_hedge_bell_count() != 1 or _road_east_hedge_past_count() != 1 or _road_east_hedge_onward_count() != 1 or _road_east_hedge_stone_count() != 1 or _road_east_hedge_face_bell_count() != 1 or _road_east_hedge_west_count() != 1 or _road_east_hedge_west_stone_count() != 1 or _road_east_hedge_west_bell_count() != 1 or _road_east_hedge_west_south_bell_count() != 1 or _road_east_hedge_west_south_count() != 1 or _road_east_hedge_west_further_count() != 1 or _road_east_hedge_west_further_bell_count() != 1 or _road_east_hedge_west_pace_count() != 1 or _road_east_hedge_west_pace_bell_count() != 1 or _road_east_hedge_west_pace_south_count() != 1 or _road_east_hedge_west_pace_south_bell_count() != 1 or _road_east_hedge_west_pace_far_count() != 1 or _road_east_hedge_west_pace_far_bell_count() != 1 or _road_east_hedge_west_pace_west_count() != 1 or _road_east_hedge_west_pace_on_count() != 1 or _road_east_hedge_west_pace_near_count() != 1 or _road_east_hedge_west_pace_north_count() != 1 or _road_east_hedge_west_pace_east_count() != 1 or _road_east_hedge_west_pace_east_bell_count() != 1 or _road_east_hedge_west_pace_east_on_count() != 1 or _road_east_hedge_west_pace_east_on_bell_count() != 1 or _road_east_hedge_west_pace_east_out_count() != 1 or _road_east_hedge_west_pace_east_out_bell_count() != 1 or _road_east_hedge_west_pace_east_beyond_count() != 1 or _road_east_hedge_west_pace_east_beyond_bell_count() != 1 or _road_east_hedge_west_pace_east_yonder_count() != 1 or _road_east_hedge_west_pace_east_yonder_bell_count() != 1 or _road_east_hedge_west_pace_east_outer_count() != 1 or _road_east_hedge_west_pace_east_outer_bell_count() != 1 or _road_east_hedge_west_pace_east_rim_count() != 1 or _road_east_hedge_west_pace_east_farther_count() != 1 or _road_east_hedge_west_pace_east_along_bell_count() != 1 or _road_east_hedge_west_pace_east_forth_count() != 1 or _road_east_hedge_west_pace_east_forth_bell_count() != 1 or _road_east_hedge_west_pace_east_span_count() != 1 or _road_east_hedge_west_pace_east_mark_bell_count() != 1 or _road_east_hedge_west_pace_east_reach_count() != 1 or _road_east_hedge_west_pace_east_reach_bell_count() != 1 or _road_east_hedge_west_pace_east_field_count() != 1 or _road_east_hedge_west_pace_east_lea_count() != 1 or _road_east_hedge_west_pace_east_lea_bell_count() != 1 or _road_east_hedge_west_pace_east_verge_count() != 1 or _road_east_hedge_west_pace_east_verge_bell_count() != 1 or _road_east_hedge_west_pace_east_brink_count() != 1 or _road_east_hedge_west_pace_east_edge_count() != 1 or _road_east_hedge_west_pace_east_edge_bell_count() != 1 or _road_east_hedge_west_pace_east_margin_count() != 1 or _road_east_hedge_west_pace_east_hem_count() != 1 or _hem_east_line() != "The way steps past the margin strip." or _hem_east_rumour_count() != 1 or _hem_card_line() != "The way steps past the margin strip." or _road_east_hedge_west_pace_east_hem_stone_count() != 1 or _hem_stone_line() != "The way steps past the hem strip." or _hem_stone_rumour_count() != 1 or _hem_stone_card_line() != "The way steps past the hem strip." or _road_east_hedge_west_pace_east_hem_stone_bell_count() != 1 or _hem_stone_bell_line() != "The way steps east of the hem stone." or _hem_stone_bell_rumour_count() != 1 or _hem_stone_bell_card_line() != "The way steps east of the hem stone." or _road_east_hedge_west_pace_east_hem_stone_on_bell_count() != 1 or _hem_stone_on_bell_line() != "The way steps east of the hem-stone bell." or _hem_stone_on_bell_rumour_count() != 1 or _hem_stone_on_bell_card_line() != "The way steps east of the hem-stone bell." or _road_east_hedge_west_pace_east_hem_stone_far_bell_count() != 1 or _hem_stone_far_bell_line() != "The way steps past the hem-stone bell." or _hem_stone_far_bell_rumour_count() != 1 or _hem_stone_far_bell_card_line() != "The way steps past the hem-stone bell." or _road_east_hedge_west_pace_east_hem_stone_out_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_count() != 1 or _road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_count() != 1 or _outer_strip_bell_stone_line() != "The way steps past the outer-strip bell." or _meadow_strip_bell_line() != "The way steps past the meadow-strip bell." or _meadow_stone_strip_line() != "The way steps east of the meadow-strip stone." or _farther_strip_bell_line() != "The way steps past the farther-strip bell." or _last_bell_stone_line() != "The way steps past the last bell stone." or _last_strip_bell_line() != "The way steps past the last-strip bell." or _end_strip_stone_line() != "The way steps east of the last-strip's stone." or _far_bell_stone_line() != "The way steps past the far bell stone." or _far_stone_strip_line() != "The way steps east of the far bell stone." or _outer_stone_strip_line() != "The way steps past the outer stone." or _hem_stone_out_bell_line() != "The way steps east of the far bell." or _hem_stone_out_bell_rumour_count() != 1 or _meadow_stone_strip_rumour_count() != 1 or _last_bell_stone_rumour_count() != 1 or _end_strip_stone_rumour_count() != 1 or _far_stone_strip_rumour_count() != 1 or _hem_stone_out_bell_card_line() != "The way steps east of the far bell." or _meadow_stone_strip_card_line() != "The way steps east of the meadow-strip stone." or _margin_east_line() != "The way steps past the edge-end bell." or _brink_east_line() != "The way steps past the verge-end bell." or _field_east_line() != "The way steps past the reach-end bell." or _reach_east_line() != "The way steps east of the reach-end bell." or _span_east_line() != "The way steps past the east-end bell." or _span_east_rumour_count() != 1 or _further_east_line() != "The way steps further east of the outer bell." or _further_east_rumour_count() != 1 or _outer_east_line() != "The way steps east of the outer-end bell." or _end_step_line() != "The way steps toward the end stone." or _end_step_rumour_count() != 1 or _west_turn_line() != "The way turns west of the far-south bell." or _west_turn_rumour_count() != 1 or _south_step_line() != "The way steps south of the gate-side bell." or _west_gate_bell_line() != "A bell stands beside the way toward the gate." or _west_gate_bell_rumour_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _road_lawn_count() != 1 or _road_bell_count() != 3 or _road_bench_count() != 1 or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or _lane_south_line() != "" or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+	if not road.all_shown() or _road_line() != "The book keeps the rumour of the road beyond the hedge." or not nessa_reloaded or Trust.level("nessa") != loam_trust or Economy.coins != kept_tin or _hem_east_line() != "The way steps past the margin strip." or _hem_east_rumour_count() != 1 or _hem_card_line() != "The way steps past the margin strip." or _hem_stone_line() != "The way steps past the hem strip." or _hem_stone_rumour_count() != 1 or _hem_stone_card_line() != "The way steps past the hem strip." or _hem_stone_bell_line() != "The way steps east of the hem stone." or _hem_stone_bell_rumour_count() != 1 or _hem_stone_bell_card_line() != "The way steps east of the hem stone." or _hem_stone_on_bell_line() != "The way steps east of the hem-stone bell." or _hem_stone_on_bell_rumour_count() != 1 or _hem_stone_on_bell_card_line() != "The way steps east of the hem-stone bell." or _hem_stone_far_bell_line() != "The way steps past the hem-stone bell." or _hem_stone_far_bell_rumour_count() != 1 or _hem_stone_far_bell_card_line() != "The way steps past the hem-stone bell." or _outer_strip_bell_stone_line() != "The way steps past the outer-strip bell." or _meadow_strip_bell_line() != "The way steps past the meadow-strip bell." or _meadow_stone_strip_line() != "The way steps east of the meadow-strip stone." or _farther_strip_bell_line() != "The way steps past the farther-strip bell." or _last_bell_stone_line() != "The way steps past the last bell stone." or _last_strip_bell_line() != "The way steps past the last-strip bell." or _end_strip_stone_line() != "The way steps east of the last-strip's stone." or _far_bell_stone_line() != "The way steps past the far bell stone." or _far_stone_strip_line() != "The way steps east of the far bell stone." or _outer_stone_strip_line() != "The way steps past the outer stone." or _hem_stone_out_bell_line() != "The way steps east of the far bell." or _hem_stone_out_bell_rumour_count() != 1 or _meadow_stone_strip_rumour_count() != 1 or _last_bell_stone_rumour_count() != 1 or _end_strip_stone_rumour_count() != 1 or _far_stone_strip_rumour_count() != 1 or _hem_stone_out_bell_card_line() != "The way steps east of the far bell." or _meadow_stone_strip_card_line() != "The way steps east of the meadow-strip stone." or _margin_east_line() != "The way steps past the edge-end bell." or _brink_east_line() != "The way steps past the verge-end bell." or _field_east_line() != "The way steps past the reach-end bell." or _reach_east_line() != "The way steps east of the reach-end bell." or _span_east_line() != "The way steps past the east-end bell." or _span_east_rumour_count() != 1 or _further_east_line() != "The way steps further east of the outer bell." or _further_east_rumour_count() != 1 or _outer_east_line() != "The way steps east of the outer-end bell." or _end_step_line() != "The way steps toward the end stone." or _end_step_rumour_count() != 1 or _west_turn_line() != "The way turns west of the far-south bell." or _west_turn_rumour_count() != 1 or _south_step_line() != "The way steps south of the gate-side bell." or _west_gate_bell_line() != "A bell stands beside the way toward the gate." or _west_gate_bell_rumour_count() != 1 or _east_closer_bell_line() != "A bell stands at the parish end." or _parish_sale_line() != "" or _gate_sale_line() != "" or _gate_sale_rumour_count() != 0 or _parish_sale_rumour_count() != 0 or _east_closer_bell_rumour_count() != 1 or _east_near_line() != "The way steps closer to the parish." or _east_far_line() != "A stone marks the east end." or _east_past_line() != "The way continues east past the bell." or _east_past_rumour_count() != 1 or _east_line() != "The way turns east at the end stone." or _far_bell_line() != "Three bells stand on the far lawn." or _join_line() != "One stone marks the gate opening." or _south_line() != "The way south ends at a stone." or _end_line() != "The way ends past the bench." or _end_rumour_count() != 1 or _south_rumour_count() != 1 or _bell_rumour_count() != 1 or _lane_south_line() != "" or _lane_busy_line() != "" or _busy_rumour_count() != 0 or _reached_rumour_count() != 0 or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
 		push_error("smoke: a reload lost the filed rumour")
 		get_tree().quit(1)
 		return
@@ -11306,6 +7054,86 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	cane_view.queue_free()
+	var ga: SoilCell = soil.get_cell(8, 6)
+	var gb: SoilCell = soil.get_cell(9, 6)
+	var gc: SoilCell = soil.get_cell(8, 7)
+	var g_side: SoilCell = soil.get_cell(7, 6)
+	var g_back: SoilCell = soil.get_cell(8, 5)
+	var gene_snap: Array = [ga.to_dict(), gb.to_dict(), gc.to_dict(), g_side.to_dict(), g_back.to_dict()]
+	var muted: Array = []
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "meadowbell" and plot.growth >= 1.0:
+			muted.append([plot, plot.growth])
+			plot.growth = 0.4
+	ga.tilled = true
+	gb.tilled = true
+	gc.tilled = true
+	g_side.tilled = false
+	g_back.tilled = false
+	g_side.plant_id = ""
+	g_back.plant_id = ""
+	ga.plant_id = "meadowbell"
+	gb.plant_id = "meadowbell"
+	gc.plant_id = ""
+	ga.growth = 1.0
+	gb.growth = 1.0
+	ga.hue = 0.2
+	gb.hue = 0.8
+	ga.stature = 0.7
+	gb.stature = 1.4
+	ga.crop_yield = 0.6
+	gb.crop_yield = 1.5
+	ga.moisture = 0.9
+	gb.moisture = 0.9
+	gc.moisture = 0.9
+	gc.fertility = 0.5
+	if soil.seed_from("meadowbell") != "meadowbell" or gc.plant_id != "meadowbell" or gc.hue <= 0.2 or gc.hue >= 0.8 or _cross_line() == "":
+		push_error("smoke: a cross did not take after both parents")
+		get_tree().quit(1)
+		return
+	if PlantGenetics.price(10, 1.5) != 15 or PlantGenetics.price(5, 1.0) != 5:
+		push_error("smoke: yield did not change the stall price")
+		get_tree().quit(1)
+		return
+	ga.apply_dict(gene_snap[0])
+	gb.apply_dict(gene_snap[1])
+	gc.apply_dict(gene_snap[2])
+	g_side.apply_dict(gene_snap[3])
+	g_back.apply_dict(gene_snap[4])
+	for pair in muted:
+		var plot: SoilCell = pair[0]
+		plot.growth = float(pair[1])
+	var settle := ecology.force_spawn("bellhelp")
+	settle.life = "visitor"
+	settle.site_time = 20.0
+	PetalDecide.forced = "keep visiting"
+	ecology.try_promote(settle)
+	if settle.life != "visitor":
+		push_error("smoke: a keep-visiting decide still settled")
+		get_tree().quit(1)
+		return
+	PetalDecide.forced = "settle"
+	ecology.try_promote(settle)
+	if settle.life != "settler":
+		push_error("smoke: a settle decide left the visitor")
+		get_tree().quit(1)
+		return
+	settle.queue_free()
+	var shop_coins := Economy.coins
+	var shop_peach := Economy.count("peach")
+	Economy.add("peach", 1)
+	var shopper := _person("nessa")
+	shopper.present = true
+	shopper.want = "peach"
+	PetalDecide.forced = "buy"
+	var deal := VillageShop.trade(shopper)
+	if str(deal.get("choice", "")) != "buy" or int(deal.get("price", 0)) != 12 or Economy.coins != shop_coins + 12 or Economy.count("peach") != shop_peach:
+		push_error("smoke: nessa did not buy the peach")
+		get_tree().quit(1)
+		return
+	PetalDecide.forced = ""
+	shopper.want = ""
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -12653,6 +8481,7 @@ func _tend(plot: SoilCell) -> void:
 		return
 	var name := str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
 	Economy.add(plot.plant_id, 1)
+	_store_yield(plot.plant_id, plot.crop_yield)
 	plot.growth = 0.32
 	plot.taken = true
 	plot.eaten_by = ""
@@ -13000,7 +8829,7 @@ func _sync_plants() -> void:
 			var center := GardenLayout.cell_center(plot.ix, plot.iz)
 			view.position = Vector3(center.x, 0.06, center.z) + _row_shift(plot.ix, plot.iz)
 			plant_views[key] = view
-		view.show_plant(plot.plant_id, plot.growth, plot.moisture, plot.fertility)
+		view.show_plant(plot.plant_id, plot.growth, plot.moisture, plot.fertility, PlantGenetics.from_cell(plot))
 	for key in plant_views.keys():
 		if not live.has(key) and is_instance_valid(plant_views[key]):
 			plant_views[key].free()
@@ -14457,6 +10286,17 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance_met": false,
 			"residents": 0,
 		})
+	if _cross_line() != "":
+		rows.append({
+			"name": "A rumour",
+			"status": "",
+			"met": PackedStringArray(),
+			"unmet": PackedStringArray(),
+			"blurb": _cross_line(),
+			"romance": "",
+			"romance_met": false,
+			"residents": 0,
+		})
 	return rows
 
 func _without_hidden_names(lines: PackedStringArray) -> PackedStringArray:
@@ -14581,6 +10421,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["far_stone_strip_line"] = _far_stone_strip_line()
 	stats["gate_sale_line"] = _gate_sale_line()
 	stats["parish_sale_line"] = _parish_sale_line()
+	stats["cross_line"] = _cross_line()
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

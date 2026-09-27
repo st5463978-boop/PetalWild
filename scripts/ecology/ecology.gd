@@ -81,6 +81,11 @@ func tick(delta: float, world: Dictionary) -> void:
 		_promote(jelly, definition)
 	_romance(world)
 
+func try_promote(jelly: Jelly) -> void:
+	if jelly == null or not is_instance_valid(jelly):
+		return
+	_promote(jelly, ContentDB.species_def(jelly.species_id))
+
 func force_spawn(id: String) -> Jelly:
 	var jelly := _spawn(ContentDB.species_def(id), false)
 	jelly.life = "visitor"
@@ -210,6 +215,12 @@ func _promote(jelly: Jelly, definition: Dictionary) -> void:
 		_raise(jelly.species_id, "settler")
 		event_happened.emit("%s is settling." % name)
 	elif jelly.life == "visitor" and jelly.site_time > 18.0:
+		var choice := PetalDecide.choose(
+			"%s has visited. The garden still fits. Settle or keep visiting?" % name,
+			["settle", "keep visiting"]
+		)
+		if choice != "settle":
+			return
 		jelly.life = "settler"
 		_raise(jelly.species_id, "settler")
 		event_happened.emit("%s is settling." % name)
