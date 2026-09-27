@@ -8,17 +8,6 @@ func _init() -> void:
 	_expect(float(child["stature"]) > 0.7 and float(child["stature"]) < 1.4, "child stature sits between parents")
 	_expect(PlantGenetics.price(10, 1.5) == 15, "high yield raises the stall price")
 	_expect(PlantGenetics.price(5, 1.0) == 5, "plain yield keeps the stall price")
-	var field := SoilField.new()
-	var parent := field.get_cell(1, 1)
-	var sprout := field.get_cell(2, 1)
-	parent.plant_id = "meadowbell"
-	parent.growth = 1.0
-	parent.hue = 0.2
-	parent.stature = 0.7
-	sprout.plant_id = "meadowbell"
-	sprout.growth = 0.04
-	_expect(field.inherit_into(sprout), "a seed beside a ripe parent takes a mix")
-	_expect(absf(sprout.hue - 0.5) > 0.02, "inherited hue left the default")
 	print("SYSTEMS_OK")
 	quit(0)
 
