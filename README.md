@@ -17,6 +17,15 @@ Headless smoke:
 
 ```bash
 "$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tests/smoke.gd
+"$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tests/test_systems.gd
+"$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tests/test_foundation.gd
+"$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tools/smoke.gd
+```
+
+Garden smoke (needs a display):
+
+```bash
+DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn
 ```
 
 Screenshot and quit (needs a display):
@@ -29,7 +38,7 @@ Modes: `overview`, `golden`, `creature`, `person`, `shop`, `night`, `rain`.
 
 ## Play
 
-1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug.
+1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly's face to meet them. Click the body and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug.
 
 The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plots you scoop yourself.
 
