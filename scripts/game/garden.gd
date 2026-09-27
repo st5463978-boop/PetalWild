@@ -9136,6 +9136,9 @@ func _update_creatures(delta: float) -> void:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly):
 			continue
+		if jelly.inspected:
+			jelly.leaving = false
+			jelly.wants_sleep = false
 		var resident := ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident")
 		jelly.wants_sleep = night and resident and not jelly.held
 		if jelly.wants_sleep and jelly.mood != "dizzy" and jelly.mood != "panic":
