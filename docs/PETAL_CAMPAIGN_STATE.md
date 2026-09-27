@@ -18,7 +18,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | Lane | Branch | Tip | In 08 | Acceptance |
 | --- | --- | --- | --- | --- |
 | 01 | `petal/01-foundation` | `7d5097e` | ported | face inspect, Space rest, yield save |
-| 02 | `petal/02-ecology` | `aab1eca` | ported | habitat, hunger, neighbour growth |
+| 02 | `petal/02-ecology` | `aab1eca` | ported | habitat tally, reed neighbour, crowd, hunger |
 | 03 | `petal/03-jelly` | `c3f55dd` | ported | grab, stretch, throw, bounce; land frame still missed |
 | 04 | `petal/04-residents` | `6b48d2e` | ported | needs, tea, memories, no porch overshoot |
 | 05 | `petal/05-economy` | `b5b90a6` | ported | kettle tea chain (peach+bell, cap 3, stop/restart) |
@@ -33,6 +33,8 @@ Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`.
 Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy.
 
 01 foundation (`7d5097e`, PR #6): inspect / Space rest / `crate_yields` already on 08. Did not replace merged `jelly.gd` with 01's tip (that would drop JellyFeel). `FOUNDATION_OK` (bus, yield save, inspect/clear) `SYSTEMS_OK` `PETAL_RULES_OK`. `PETAL_FACE_SHOT_OK` recaptured here: `wave1_face.png` (card Bellhelp, mood happy, bond 12%, Visitor; body under stall roof). Kenney `tests/smoke.gd` not used as a live check. Baseline leak warnings remain (`FOUNDATION_OK` also logs `!is_inside_tree()` on jelly setup plus 2 ObjectDB leaks). Qwen3-VL unused.
+
+02 ecology (`aab1eca`, PR #5): `ecology_rules.gd` / `tools/smoke.gd` match the tip. 08 `test_systems.gd` keeps mill tests plus habitat. `SYSTEMS_OK` (reed neighbour, crowd, `Habitats · Bank 1, Meadow 1`) `PETAL_RULES_OK`. Did not re-run `PETAL_CAPTURE` (it overwrites the 01 face plate). `ecology_parish.png` on this branch shows `The meadow leans on the bank.` and `Habitats · Bank 5, Cane 3, Dusk 1, Loam 1, Meadow 4`. Hungry journal line is in garden smoke (`mix_need`). 01–03 and 05–07 are on 08; 04 still queued. Qwen3-VL unused.
 
 05 kettle (`b5b90a6`, PR #7): mill APIs already on 08. `SYSTEMS_OK` mill cap-3 recover on this tree. `PETAL_KETTLE_SHOT_OK` recaptured here: `docs/screenshots/kettle_brew.png` (porch steam) and `kettle_crate.png` (stall: Hedge tea sits on the crate, Sell 22 (1)). Qwen3-VL unused.
 
