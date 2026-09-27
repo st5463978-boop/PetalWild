@@ -1,0 +1,74 @@
+# PETAL-06 · SimCity / Cities-scale town
+
+Updated 2026-09-27.
+
+## Task
+
+Settlement that grows past Hedge Hollow without hero-detail simulation for distant folk.
+
+## Branch / commit
+
+- Branch: `petal/06-town`
+- From: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
+- Commit: pending first test pass
+
+## Census (before this lane)
+
+| Piece | State |
+| --- | --- |
+| Garden plots | COMPLETE (soil cells) |
+| Town plots | MISSING |
+| Parish rooms | PARTIAL (meshes + 0/1 demand) |
+| Grove Park | MISSING (catalog stays inactive) |
+| Roads | PARTIAL (`data/road_pieces.json` décor; nobody walks the tail) |
+| Districts | PARTIAL (one parish record) |
+| Services | MISSING |
+| Town growth | MISSING |
+| Occupancy | PARTIAL (present-person flags) |
+| Transport | MISSING (ripe beds counted as passers) |
+| Town sim | MISSING in the live scene; DUPLICATE-LEGACY `game/sim/town_sim.gd` (Havenbrook, ignored) |
+| LOD L4 aggregate | MISSING (in-frustum clamp is a stand-in) |
+
+## Paths
+
+- `data/town.json`
+- `scripts/town/town_sim.gd`
+- `scripts/autoload/sim_lod.gd` (`note_aggregate`)
+- `scripts/autoload/trust.gd` (`file_park`)
+- `scripts/world/layout.gd` (`PARK`)
+- `scripts/world/props.gd` (hidden Grove Park lawn)
+- `scripts/game/garden.gd` (tick, save, C/M, accept_park)
+- `scripts/ui/hud.gd` (parish town lines, Grove Park proposal)
+- `tests/test_town.gd`
+
+Did not touch `data/venues.json` (PETAL-09) or `data/districts.json` (PETAL-14). Grove Park in the catalog stays `active: false` so existing smoke still holds.
+
+## Playable
+
+- Parish page (J → Parish, or C / M) shows town folk, lane houses, Grove Park, service cover, and a gate-to-park path as counts.
+- After the road rumour is filed, South Lane occupies houses at LOD 4. No bodies spawn.
+- Nessa then offers Grove Park. Filing it shows a lawn south of the gate and puts visitors on that lawn as a count.
+
+## Interface
+
+- `TownSim.tick({people, residents, quality, road, park, passers, hour, weather, near_park})`
+- `TownSim.aggregate()` distant folk (L4)
+- `Trust.file_park(person_id)` action `parish_park`
+- `SimLod.note_aggregate(n)` writes `tiers["4"]`
+- Save key `town`
+
+## Tests
+
+- `tests/test_town.gd` → `TOWN_OK`
+- Existing `SYSTEMS_OK`, `PETAL_RULES_OK`
+- Garden `PETAL_SMOKE_OK` (must keep Grove Park catalog inactive)
+
+## Blockers
+
+None yet.
+
+## Requests
+
+- PETAL-09: Grove Park in `data/venues.json` can stay inactive; town occupancy is the live park.
+- PETAL-05: park lawn is a placeholder; dress it if the hedge skyline work reaches south of the gate.
+- PETAL-00: no autoload added; TownSim is constructed by the garden.

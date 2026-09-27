@@ -1,0 +1,49 @@
+{
+  "width": 8,
+  "height": 5,
+  "gate": [3, 2],
+  "park_plot": [5, 4],
+  "districts": [
+    {
+      "id": "hollow",
+      "name": "Hedge Hollow",
+      "kind": "garden",
+      "open": true,
+      "x0": 0,
+      "y0": 0,
+      "x1": 7,
+      "y1": 1
+    },
+    {
+      "id": "lane",
+      "name": "South Lane",
+      "kind": "lane",
+      "need": "road",
+      "houses": 6,
+      "x0": 0,
+      "y0": 2,
+      "x1": 7,
+      "y1": 3
+    },
+    {
+      "id": "park",
+      "name": "Grove Park",
+      "kind": "park",
+      "need": "park",
+      "capacity": 8,
+      "x0": 0,
+      "y0": 4,
+      "x1": 7,
+      "y1": 4
+    }
+  ],
+  "buildings": [
+    {"id": "stall", "name": "Petal Stall", "district": "hollow", "plot": [1, 1], "kind": "shop", "jobs": 1, "service": "trade", "open": true},
+    {"id": "shed", "name": "Potting Shed", "district": "hollow", "plot": [0, 1], "kind": "work", "jobs": 1, "service": "care", "open": true},
+    {"id": "tea", "name": "Hedge Tea House", "district": "hollow", "plot": [4, 1], "kind": "venue", "jobs": 1, "service": "rest", "open": true},
+    {"id": "hut", "name": "Research Hut", "district": "hollow", "plot": [2, 1], "kind": "agent", "jobs": 1, "service": "notes", "open": true},
+    {"id": "foundry", "name": "Media Foundry", "district": "hollow", "plot": [3, 1], "kind": "studio", "jobs": 1, "service": "drafts", "open": true},
+    {"id": "hall", "name": "Town Hall", "district": "hollow", "plot": [3, 0], "kind": "civic", "jobs": 1, "service": "civic", "open": true},
+    {"id": "grove_park", "name": "Grove Park", "district": "park", "plot": [5, 4], "kind": "park", "jobs": 1, "service": "leisure", "need": "park", "capacity": 8}
+  ]
+}

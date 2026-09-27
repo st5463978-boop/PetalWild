@@ -37,3 +37,7 @@ func note_population(people: int, residents: int, quality: float, coins: int) ->
 	district_stats["garden_quality"] = quality
 	district_stats["coins"] = coins
 	district_stats["employed"] = 1 if people > 0 else 0
+
+func note_aggregate(n: int) -> void:
+	# ponytail: L4 is a count; promote a plot if the camera ever needs a body there.
+	tiers["4"] = n
