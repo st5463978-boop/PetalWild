@@ -97,11 +97,8 @@ func _process(delta: float) -> void:
 		waypoints.pop_front()
 		global_position.y = 0.0
 		return
-	var pace := 0.7
-	if tier >= 3:
-		pace = 2.2
 	var dir := delta_v / dist
-	global_position += dir * minf(pace * delta, dist)
+	global_position += dir * minf(0.7 * delta, dist)
 	if dir.length() > 0.01:
 		look_at(global_position + Vector3(dir.x, 0.0, dir.z), Vector3.UP)
 	_bob(delta, true)

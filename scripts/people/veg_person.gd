@@ -95,20 +95,19 @@ func _process(delta: float) -> void:
 	var target := chore if has_chore else waypoints[index]
 	var flat := Vector3(target.x, global_position.y, target.z) - global_position
 	flat.y = 0.0
-	if flat.length() < 0.18:
+	var gap := flat.length()
+	if gap < 0.18:
 		if has_chore:
 			return
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)
 		return
-	var step := flat.normalized() * delta * _speed()
+	var step := flat.normalized() * minf(delta * _speed(), gap)
 	global_position += step
 	if tier >= 3:
 		global_position.y = 0.0
 		if body:
 			body.scale = Vector3.ONE
-		if body:
-			body.visible = tier < 4
 		return
 	if body:
 		body.visible = true
@@ -126,12 +125,8 @@ func set_activity(text: String) -> void:
 		act_label.visible = text != ""
 
 func _speed() -> float:
-	var rate := 0.55
-	if energy < 0.35:
-		rate = 0.32
-	if tier >= 3:
-		rate *= 3.0
-	return rate
+	# ponytail: L3 skips bob instead of running faster; a 6s smoke tick overshoots the porch if we scale speed.
+	return 0.32 if energy < 0.35 else 0.55
 
 func _build_body() -> void:
 	body = Node3D.new()
