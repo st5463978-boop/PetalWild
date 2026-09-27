@@ -23,7 +23,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | 04 | `petal/04-residents` | `6b48d2e` | ported | needs, tea, memories, no porch overshoot |
 | 05 | `petal/05-economy` | `b5b90a6` | ported | kettle tea chain (peach+bell, cap 3, stop/restart) |
 | 06 | `petal/06-town` | `f4c63d3` | ported | South Lane, Grove Park, promote/demote, no spawned bodies |
-| 07 | `petal/07-region` | `cd45eb4` | ported | Petal Vale carts, world fidelity |
+| 07 | `petal/07-region` | `cd45eb4` | ported | Petal Vale 5 parishes, carts, district/settlement/region LOD |
 | 08 | `petal/08-integration` | `29e278b` | — | coherent Hedge Hollow |
 
 Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`.
@@ -36,11 +36,13 @@ Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`
 
 06 town (`f4c63d3`, PR #9): `town.json` / `town_sim.gd` / `test_town.gd` match the tip. `TOWN_OK` (promote/demote ids), `SYSTEMS_OK`, `PETAL_RULES_OK`. `PETAL_TOWN_SHOT_OK` recaptured here: `town_park.png` (Grove Park sign, lawn, benches, no bodies) and `town_parish.png` (Town folk 7, Lane 3/6, Park open · 2, Layers household 1 · individual 4 · district 0, Near Reed/Moss/Lawn still no body). Catalog Grove Park stays `active: false`.
 
+07 vale (`cd45eb4`, PR #11): `regions.json` / `region_sim.gd` / `test_region.gd` match the tip. `petal_qa` on this tree: `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` (six-day pulse) `PETAL_QA_SCRIPTS_OK`. Garden: `PETAL_INTEGRATE_OK` (5 parishes, save key `region`). `PETAL_VALE_SHOT_OK` recaptured here: `vale_tab.png` (Hollow district, Reedbank/Mossford/Lea settlement, Thatchmere region, 4 carts). Qwen3-VL unused.
+
 03 land frame: one new overhead pin (`_pin_overhead`, pitch 62) after the air shot. Follow-cam land was already 3-strike abandoned on 03. `JELLY_PLAY_OK` (`land_y` finite, feel `air` at 0.49). `docs/screenshots/jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants.
 
 ## Tests (`29e278b`, Godot 4.8-dev6 llvmpipe, dummy ALSA)
 
-`PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK`
+`PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK` `PETAL_VALE_SHOT_OK`
 
 Qwen3-VL is not operational. Frames under `docs/screenshots/`. Baseline leak warnings remain.
 
