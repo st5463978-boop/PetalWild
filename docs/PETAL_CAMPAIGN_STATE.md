@@ -19,7 +19,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | --- | --- | --- | --- | --- |
 | 01 | `petal/01-foundation` | `7d5097e` | ported | face inspect, Space rest, yield save |
 | 02 | `petal/02-ecology` | `aab1eca` | ported | habitat, hunger, neighbour growth |
-| 03 | `petal/03-jelly` | `c3f55dd` | ported | grab, stretch, throw, bounce |
+| 03 | `petal/03-jelly` | `c3f55dd` | ported | grab, stretch, throw, bounce; land frame still missed |
 | 04 | `petal/04-residents` | `6b48d2e` | ported | needs, tea, memories, no porch overshoot |
 | 05 | `petal/05-economy` | `b5b90a6` | ported | kettle tea chain (peach+bell, cap 3, stop/restart) |
 | 06 | `petal/06-town` | `f4c63d3` | ported | South Lane, Grove Park, promote/demote, no spawned bodies |
@@ -38,7 +38,7 @@ Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`
 
 07 vale (`cd45eb4`, PR #11): `regions.json` / `region_sim.gd` / `test_region.gd` match the tip. `petal_qa` on this tree: `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` (six-day pulse) `PETAL_QA_SCRIPTS_OK`. Garden: `PETAL_INTEGRATE_OK` (5 parishes, save key `region`). `PETAL_VALE_SHOT_OK` recaptured here: `vale_tab.png` (Hollow district, Reedbank/Mossford/Lea settlement, Thatchmere region, 4 carts). Qwen3-VL unused.
 
-03 land frame: one new overhead pin (`_pin_overhead`, pitch 62) after the air shot. Follow-cam land was already 3-strike abandoned on 03. `JELLY_PLAY_OK` (`land_y` finite, feel `air` at 0.49). `docs/screenshots/jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants.
+03 jelly (`c3f55dd`, PR #4): 08 keeps the merged `jelly.gd` (JellyFeel + 01 inspect). `JELLY_FEEL_OK` `SYSTEMS_OK` `PETAL_RULES_OK`. `JELLY_PLAY_OK` on this tree, offline decide `bellhelp`. Held/air frames: `jelly_held.png` (HUD playful · held), `jelly_air.png` (Bellhelp spins, dizzy). 03 follow-cam land was 3-strike abandoned. 08's one new approach: `_pin_overhead` pitch 62 on a fixed pad, not a follow cam. Physics: `land_y` 0.50 finite, feel `air`, not held, not under the lawn. `jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants. Qwen3-VL unused. 03's hef-dfc Berrypatch 0.834 was on that lane's host, not this run.
 
 ## Tests (`29e278b`, Godot 4.8-dev6 llvmpipe, dummy ALSA)
 
