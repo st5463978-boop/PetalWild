@@ -23,7 +23,7 @@ LOD: Hollow ticks as **district**, neighbours as **settlement**, Thatchmere as *
 ## Branch / commit
 
 - Branch: `petal/07-region`
-- Commit: (this checkpoint)
+- Commit: `6f4f799` Name vale LOD layers and wrap the vale page.
 
 ## Addendum
 
