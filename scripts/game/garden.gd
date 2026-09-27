@@ -863,18 +863,32 @@ func buy(item_id: String) -> void:
 	_person("lumen").say("In the pouch.")
 	refresh_panels()
 
+func _buyer_for(plant_id: String) -> VegPerson:
+	for id in ["nessa", "bram", "lumen"]:
+		var person := _person(id)
+		if person != null and person.present and person.want == plant_id:
+			return person
+	return null
+
 func sell(plant_id: String) -> void:
 	if not _stall_open():
 		_stall_shut()
 		return
 	if Economy.count(plant_id) <= 0:
 		return
-	var price := _sell_price(plant_id)
+	var buyer := _buyer_for(plant_id)
+	var extra := 1 if buyer != null else 0
+	if buyer:
+		buyer.want = ""
+	var price := _sell_price(plant_id) + extra
 	_take_yield(plant_id)
 	Economy.take(plant_id, 1)
 	Economy.earn(price)
 	audio.play_kind("coin")
-	toast("Sold %s for %d petal." % [ContentDB.plant(plant_id).get("name", plant_id), price])
+	if extra > 0:
+		toast("Sold %s for %d petal. %s was looking for that." % [ContentDB.plant(plant_id).get("name", plant_id), price, buyer.display_name])
+	else:
+		toast("Sold %s for %d petal." % [ContentDB.plant(plant_id).get("name", plant_id), price])
 	if _bell_rumour_count() == 1:
 		toast("Three bells stand on the far lawn.")
 		Trust.bell_named_day = Clock.day
@@ -7183,6 +7197,15 @@ func _run_smoke() -> void:
 	VillageShop.wish(shopper)
 	if shopper.want != "peach" or _want_line() != "Nessa Pod is looking for Peach.":
 		push_error("smoke: nessa did not ask for a peach")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	Economy.add("peach", 1)
+	var filled_coins := Economy.coins
+	var filled_price := _sell_price("peach")
+	sell("peach")
+	if Economy.coins != filled_coins + filled_price + 1 or shopper.want != "" or _want_line() != "":
+		push_error("smoke: selling the peach nessa wanted did not pay the extra petal")
 		get_tree().quit(1)
 		return
 	PetalDecide.forced = ""
