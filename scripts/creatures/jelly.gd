@@ -41,8 +41,12 @@ func setup(definition: Dictionary) -> void:
 	radius = float(definition.get("radius", 0.34))
 	life = "curious"
 	_build(definition)
-	attract = global_position
-	goal = global_position
+	if is_inside_tree():
+		attract = global_position
+		goal = global_position
+	else:
+		attract = Vector3.ZERO
+		goal = Vector3.ZERO
 
 func _build(definition: Dictionary) -> void:
 	mat = ShaderMaterial.new()

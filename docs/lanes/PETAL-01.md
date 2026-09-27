@@ -54,7 +54,15 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 
 ## Tests
 
-Recorded after the checkpoint run.
+| Check | Result |
+| --- | --- |
+| `tests/test_foundation.gd` | `FOUNDATION_OK` |
+| `tests/smoke.gd` | `SMOKE OK` |
+| `tests/test_systems.gd` | `SYSTEMS_OK` |
+| `tools/smoke.gd` | `PETAL_RULES_OK` |
+| `PETAL_SMOKE=1` garden | `PETAL_SMOKE_OK` (face, yield reload, time rest) |
+
+Commit after tests: recorded on this branch.
 
 ## Requests
 

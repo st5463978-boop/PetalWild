@@ -7260,7 +7260,6 @@ func _run_smoke() -> void:
 		push_error("smoke: a face stayed inspected")
 		get_tree().quit(1)
 		return
-	look.queue_free()
 	Clock.running = true
 	_toggle_time()
 	if Clock.running or bus.last_text("time") != "rest":
