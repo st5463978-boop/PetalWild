@@ -8135,18 +8135,24 @@ func _run_jelly_play() -> void:
 	jelly.tier = 0
 	jelly.hunger = 0.16
 	jelly.mood = "hungry"
-	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
+	jelly.global_position = GardenLayout.STALL + Vector3(1.55, 0.18, 1.4)
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	set_tool("hands")
 	focus = jelly
 	jelly._update_face()
 	jelly._apply_deform()
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 180.0
+		camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.4)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/jelly_hungry.png")
 	jelly.reduce_motion = false
+	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
+	jelly.vel = Vector3.ZERO
+	jelly.rotation.y = PI
 	held = jelly
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
 	await get_tree().create_timer(0.2).timeout
