@@ -161,6 +161,7 @@ func _process(delta: float) -> void:
 	ecology.tick(delta, world, minutes / 60.0)
 	_wire_jellies()
 	_update_creatures(delta)
+	ecology.bump()
 	_check_nessa(world)
 	_apply_shift(false)
 	_drift_people(delta, world)
@@ -7250,6 +7251,7 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+<<<<<<< HEAD
 	crate_yields = {"peach": [1.5]}
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: a harvest yield did not save")
@@ -7359,8 +7361,67 @@ func _run_smoke() -> void:
 		push_error("smoke: the journal hid a hungry bellhelp")
 		get_tree().quit(1)
 		return
+	if not _smoke_jelly_feel():
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
+
+func _smoke_jelly_feel() -> bool:
+	var jelly := ecology.force_spawn("bellhelp")
+	jelly.global_position = Vector3(0.0, 0.2, 0.0)
+	jelly.vel = Vector3.ZERO
+	jelly.reduce_motion = false
+	jelly.grab(Vector3(3.2, 1.7, 0.0))
+	jelly._full(0.05)
+	var grab_scale: Vector3 = jelly.body_root.scale if jelly.body_root else Vector3.ONE
+	if grab_scale.y >= grab_scale.x:
+		push_error("smoke: held jelly did not stretch")
+		get_tree().quit(1)
+		return false
+	for _hold in 10:
+		jelly._full(0.016)
+	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.35:
+		push_error("smoke: jelly grab did not lift")
+		get_tree().quit(1)
+		return false
+	jelly.sample_pos.clear()
+	jelly.sample_ms.clear()
+	jelly.sample_pos.append(Vector3(0.0, 1.15, 0.4))
+	jelly.sample_pos.append(Vector3(2.4, 1.6, 0.4))
+	jelly.sample_ms.append(0)
+	jelly.sample_ms.append(80)
+	jelly.release()
+	if jelly.held or JellyFeel.release_kind(jelly.vel.length()) != "throw":
+		push_error("smoke: jelly throw did not leave the hand")
+		get_tree().quit(1)
+		return false
+	jelly.vel = Vector3(8.0, -18.0, 0.0)
+	jelly.global_position = Vector3(0.0, 0.6, 0.0)
+	for _fly in 24:
+		jelly._full(0.016)
+	if jelly.global_position.y < -0.02 or jelly.global_position.y > 3.2 or not jelly.vel.is_finite():
+		push_error("smoke: jelly throw tunnelled or exploded")
+		get_tree().quit(1)
+		return false
+	var other := ecology.force_spawn("dusknip")
+	other.global_position = jelly.global_position
+	other.vel = Vector3.ZERO
+	ecology.bump()
+	if jelly.global_position.distance_to(other.global_position) < 0.28:
+		push_error("smoke: overlapping jellies did not separate")
+		get_tree().quit(1)
+		return false
+	var into_stall := Vector3(GardenLayout.STALL.x, 0.4, GardenLayout.STALL.z)
+	var bounced: Dictionary = JellyFeel.bounce_prop(into_stall, Vector3(2.0, 0.0, 0.0), 0.3, false)
+	var out_pos: Vector3 = bounced["pos"]
+	if out_pos.distance_to(into_stall) < 0.2:
+		push_error("smoke: stall did not bounce a jelly")
+		get_tree().quit(1)
+		return false
+	jelly.queue_free()
+	other.queue_free()
+	ecology._prune()
+	return true
 
 func _awning_matches(open_hours: bool) -> bool:
 	var stripes := get_tree().get_nodes_in_group("parish_awning")
@@ -8608,11 +8669,11 @@ func _primary_down() -> void:
 	if tool == "hands":
 		var jelly := _pick_jelly()
 		if jelly:
-			var point: Vector3 = hit if hit != null else jelly.global_position
-			point.y = 0.85
+			var point: Vector3 = _hold_point(jelly)
 			jelly.grab(point)
 			held = jelly
 			focus = jelly
+			toast("%s is in your hands." % jelly.display_name)
 			return
 		var person := _pick_person()
 		if person:
@@ -8819,7 +8880,7 @@ func _pick_jelly() -> Jelly:
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
-	var best_distance := 0.72
+	var best_distance := 8.0
 	for actor in ecology.actors:
 		var jelly: Jelly = actor
 		if not is_instance_valid(jelly) or not jelly.visible:
@@ -8828,8 +8889,8 @@ func _pick_jelly() -> Jelly:
 		var along := (center - origin).dot(direction)
 		if along < 0.0:
 			continue
-		var distance := origin.distance_to(center) if false else (origin + direction * along).distance_to(center)
-		if distance < best_distance:
+		var distance := (origin + direction * along).distance_to(center)
+		if distance < jelly.hit_radius() and distance < best_distance:
 			best = jelly
 			best_distance = distance
 	return best
@@ -8909,13 +8970,28 @@ func _pick_person() -> VegPerson:
 func _over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
+func _hold_point(jelly: Jelly) -> Vector3:
+	var mouse := get_viewport().get_mouse_position()
+	var size := get_viewport().get_visible_rect().size
+	var lift := clampf((1.0 - mouse.y / maxf(size.y, 1.0)) * 2.35, 0.48, 2.05)
+	var hit = _ground_hit()
+	if hit == null:
+		return jelly.global_position + Vector3(0.0, lift, 0.0)
+	var point: Vector3 = hit
+	point.y = lift
+	return point
+
 func _update_highlight() -> void:
 	if held:
-		var hit = _ground_hit()
-		if hit != null:
-			var point: Vector3 = hit
-			point.y = 0.9
-			held.hold_target = point
+		held.hold_target = _hold_point(held)
+	var hover: Jelly = null
+	if tool == "hands" and held == null:
+		hover = _pick_jelly()
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly):
+			continue
+		jelly.set_select(jelly == hover or jelly == held or jelly == focus, jelly == held)
 	if _over_ui():
 		highlight.visible = false
 		return
@@ -8945,6 +9021,10 @@ func _hover_text() -> String:
 	var face := _pick_face()
 	if face:
 		return "%s's face  ·  click" % face.display_name
+	if tool == "hands" or held != null:
+		var jelly: Jelly = held if held != null else _pick_jelly()
+		if jelly:
+			return "%s  ·  %s  ·  %s" % [jelly.display_name, jelly.mood, jelly.feel]
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
@@ -10886,7 +10966,12 @@ func _debug_text() -> String:
 	var look_name := "-"
 	if focus != null and is_instance_valid(focus) and focus.inspected:
 		look_name = focus.display_name
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s\nface %s\n%s" % [
+	var feel_line := tool
+	if held:
+		feel_line = "%s  %s %s" % [tool, held.display_name, held.feel]
+	elif focus:
+		feel_line = "%s  %s %s" % [tool, focus.display_name, focus.feel]
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\n%s\nface %s\n%s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10896,7 +10981,7 @@ func _debug_text() -> String:
 		str(SimLod.tiers),
 		Clock.clock_label(),
 		Clock.weather,
-		tool,
+		feel_line,
 		look_name,
 		PlayDirector.debug_block(),
 	]

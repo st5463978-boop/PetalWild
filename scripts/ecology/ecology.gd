@@ -311,6 +311,44 @@ func _count(id: String) -> int:
 func _resident_count(id: String) -> int:
 	return int(resident_counts().get(id, 0))
 
+func bump() -> void:
+	_prune()
+	var n := actors.size()
+	for i in n:
+		var a: Jelly = actors[i]
+		if not is_instance_valid(a) or a.tier >= 2:
+			continue
+		for j in range(i + 1, n):
+			var b: Jelly = actors[j]
+			if not is_instance_valid(b) or b.tier >= 2:
+				continue
+			if a.held and b.held:
+				continue
+			var split: Dictionary = JellyFeel.separate(
+				a.global_position,
+				a.touch_radius(),
+				a.vel,
+				a.held,
+				b.global_position,
+				b.touch_radius(),
+				b.vel,
+				b.held
+			)
+			if not bool(split["hit"]):
+				continue
+			var a_pos: Vector3 = split["a_pos"]
+			var b_pos: Vector3 = split["b_pos"]
+			var a_vel: Vector3 = split["a_vel"]
+			var b_vel: Vector3 = split["b_vel"]
+			a.global_position = a_pos
+			b.global_position = b_pos
+			a.vel = a_vel
+			b.vel = b_vel
+			if not a.held:
+				a.ripple = maxf(a.ripple, 0.25)
+			if not b.held:
+				b.ripple = maxf(b.ripple, 0.25)
+
 func _prune() -> void:
 	var keep: Array = []
 	for actor in actors:

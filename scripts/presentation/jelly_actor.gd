@@ -157,9 +157,8 @@ func _plan(cell: Vector2i) -> void:
 func _squash(amount: float, along: Vector3) -> void:
 	if body == null:
 		return
-	var wide := 1.0 + amount
-	var tall := 1.0 - amount * 0.8
-	body.scale = Vector3(wide, maxf(tall, 0.45), wide)
+	var deform := JellyFeel.body_scale(1.0 - clampf(amount, 0.0, 0.48), clampf(amount, 0.0, 0.7))
+	body.scale = deform
 	if material != null and along.length() > 0.01:
 		material.set_shader_parameter("push", along.normalized())
 
