@@ -40,6 +40,7 @@ var recover_t := 0.0
 var stretch := 0.0
 var selected := false
 var last_safe := Vector3.ZERO
+var bound := true
 var sample_pos: Array[Vector3] = []
 var sample_ms: Array[int] = []
 var body_root: Node3D
@@ -54,9 +55,12 @@ func setup(definition: Dictionary) -> void:
 	hunger = 1.0
 	add_to_group("jelly")
 	_build(definition)
-	attract = global_position
-	goal = global_position
-	last_safe = global_position
+	var here := Vector3.ZERO
+	if is_inside_tree():
+		here = global_position
+	attract = here
+	goal = here
+	last_safe = here
 
 func hit_radius() -> float:
 	var fit := _young_fit()
@@ -506,7 +510,10 @@ func _full(delta: float) -> void:
 			vel = bumped["vel"]
 			if bool(bumped["hit"]):
 				ripple = maxf(ripple, 0.45)
-		global_position = JellyFeel.clamp_pos(global_position, last_safe)
+		if bound:
+			global_position = JellyFeel.clamp_pos(global_position, last_safe)
+		elif not global_position.is_finite():
+			global_position = last_safe
 		vel = JellyFeel.clamp_vel(vel)
 	if landed:
 		reacted.emit("land", self)

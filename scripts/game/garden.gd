@@ -8081,6 +8081,9 @@ func _run_jelly_play() -> void:
 	Settings.reduce_motion = false
 	Clock.running = false
 	camera.snap_home()
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_sync_park()
 	var id := PetalDecide.choose(
 		"A player is about to pick up a jelly to feel squash, stretch, and bounce. Which species should they handle first?",
 		["bellhelp", "berrypatch", "cirlark"]
@@ -8092,8 +8095,14 @@ func _run_jelly_play() -> void:
 	jelly.life = "settler"
 	jelly.leaving = false
 	jelly.reduce_motion = false
+	jelly.bound = false
 	jelly.tier = 0
-	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
+	jelly.hop_wait = 99.0
+	var pad := GardenLayout.PARK + Vector3(0.2, 0.18, 0.15)
+	jelly.global_position = pad
+	jelly.attract = pad
+	jelly.goal = pad
+	jelly.last_safe = pad
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	set_tool("hands")
@@ -8102,7 +8111,7 @@ func _run_jelly_play() -> void:
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
-	jelly.grab(jelly.global_position + Vector3(1.2, 1.15, 0.1))
+	jelly.grab(jelly.global_position + Vector3(0.55, 1.05, 0.08))
 	for _i in 16:
 		jelly._full(0.016)
 	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.28:
@@ -8116,7 +8125,7 @@ func _run_jelly_play() -> void:
 	jelly.sample_pos.clear()
 	jelly.sample_ms.clear()
 	jelly.sample_pos.append(jelly.global_position)
-	jelly.sample_pos.append(jelly.global_position + Vector3(1.15, 0.85, 0.2))
+	jelly.sample_pos.append(jelly.global_position + Vector3(0.45, 0.95, 0.12))
 	jelly.sample_ms.append(0)
 	jelly.sample_ms.append(140)
 	jelly.release()
@@ -8130,19 +8139,21 @@ func _run_jelly_play() -> void:
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 2.6)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_air.png")
-	# Fixed overhead pad, not a follow cam: 03's three follow attempts hid the land in crest foliage.
-	var pad := Vector3(-9.4, 0.18, -1.1)
-	_pin_overhead(pad)
-	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	for _land in 36:
+	var grounded := false
+	for _land in 180:
 		jelly._full(0.016)
-		if jelly.global_position.y <= 0.12 and jelly.vel.y <= 0.45:
+		if not jelly.held and jelly.feel != "air" and jelly.global_position.y <= 0.14:
+			grounded = true
 			break
-	if jelly.held or not jelly.vel.is_finite() or jelly.global_position.y < -0.04 or jelly.global_position.y > 4.0:
+	if not grounded or jelly.held or not jelly.vel.is_finite() or jelly.global_position.y < -0.04 or jelly.global_position.y > 4.0:
 		push_error("jelly play: throw left a broken body")
 		get_tree().quit(1)
 		return
-	print("jelly_play land_y=%s feel=%s" % [jelly.global_position.y, jelly.feel])
+	print("jelly_play land_y=%s feel=%s pos=%s" % [jelly.global_position.y, jelly.feel, jelly.global_position])
+	hud.set_photo(true)
+	_pin_overhead(jelly.global_position)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().process_frame
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_land.png")
 	print("JELLY_PLAY_OK")
@@ -8218,10 +8229,11 @@ func _pin_overhead(point: Vector3) -> void:
 		return
 	camera.pitch = 62.0
 	camera.yaw = 180.0
-	camera.distance = 5.4
-	camera.target = point
+	camera.distance = 3.6
+	camera.target = Vector3(point.x, 0.22, point.z)
 	camera.user_moved = true
 	camera.intro = 1.0
+	camera._apply()
 
 func _opening_plants() -> void:
 	# ponytail: tall enough for the bells to read; ripe bells if Bellhelp should visit on the first day.

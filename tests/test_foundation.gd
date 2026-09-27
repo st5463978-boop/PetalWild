@@ -55,6 +55,8 @@ func _init() -> void:
 	jelly.clear_inspect()
 	_expect(not jelly.inspected, "clearing a face lets go")
 	jelly.free()
+	clock.free()
+	saver.free()
 
 	print("FOUNDATION_OK")
 	quit(0)
