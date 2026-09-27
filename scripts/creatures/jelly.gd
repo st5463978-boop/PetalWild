@@ -502,13 +502,13 @@ func _young_fit() -> float:
 	return lerpf(0.55, 1.0, clampf(site_time / 8.0, 0.0, 1.0))
 
 func _apply_deform() -> void:
-	scale = Vector3.ONE
+	var fit := _young_fit()
+	scale = Vector3(fit, fit, fit)
 	if body_root == null:
 		body_root = get_node_or_null("Body") as Node3D
 	if body_root == null:
 		return
-	var deform := JellyFeel.body_scale(squash, stretch)
-	body_root.scale = deform * _young_fit()
+	body_root.scale = JellyFeel.body_scale(squash, stretch)
 	if held:
 		var pull := hold_target - global_position
 		pull.y = 0.0
