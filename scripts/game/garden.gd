@@ -7474,11 +7474,13 @@ func _run_jelly_play() -> void:
 	await _shot("/workspace/docs/screenshots/jelly_air.png")
 	for _land in 36:
 		jelly._full(0.016)
+		if jelly.global_position.y <= 0.12 and jelly.vel.y <= 0.45:
+			break
 	if jelly.held or not jelly.vel.is_finite() or jelly.global_position.y < -0.04 or jelly.global_position.y > 4.0:
 		push_error("jelly play: throw left a broken body")
 		get_tree().quit(1)
 		return
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.34, 0.0), 2.3)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.28, 0.0), 3.1)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_land.png")
 	print("JELLY_PLAY_OK")
