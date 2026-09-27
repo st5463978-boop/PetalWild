@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://be6gu8c20nars"
-path="res://.godot/imported/wave1_residents.png-4302f5d4b6ee6ff5b8f2bfc5e87a1e03.ctex"
+uid="uid://cl25hm7j0tfvm"
+path="res://.godot/imported/residents_park.png-93259c699bb5482672b2f77481e46a0d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/screenshots/wave1_residents.png"
-dest_files=["res://.godot/imported/wave1_residents.png-4302f5d4b6ee6ff5b8f2bfc5e87a1e03.ctex"]
+source_file="res://docs/screenshots/residents_park.png"
+dest_files=["res://.godot/imported/residents_park.png-93259c699bb5482672b2f77481e46a0d.ctex"]
 
 [params]
 
