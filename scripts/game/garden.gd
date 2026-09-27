@@ -7435,7 +7435,7 @@ func _run_jelly_play() -> void:
 	jelly.leaving = false
 	jelly.reduce_motion = false
 	jelly.tier = 0
-	jelly.global_position = Vector3(-2.4, 0.18, -1.2)
+	jelly.global_position = Vector3(-10.2, 0.18, -1.2)
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	set_tool("hands")
@@ -7444,7 +7444,7 @@ func _run_jelly_play() -> void:
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
-	jelly.grab(jelly.global_position + Vector3(1.55, 1.25, 0.15))
+	jelly.grab(jelly.global_position + Vector3(1.2, 1.15, 0.1))
 	for _i in 16:
 		jelly._full(0.016)
 	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.28:
@@ -7453,24 +7453,24 @@ func _run_jelly_play() -> void:
 		return
 	jelly.set_select(true, true)
 	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_held.png")
 	jelly.sample_pos.clear()
 	jelly.sample_ms.clear()
 	jelly.sample_pos.append(jelly.global_position)
-	jelly.sample_pos.append(jelly.global_position + Vector3(2.6, 1.1, 0.4))
+	jelly.sample_pos.append(jelly.global_position + Vector3(1.15, 0.85, 0.2))
 	jelly.sample_ms.append(0)
-	jelly.sample_ms.append(90)
+	jelly.sample_ms.append(140)
 	jelly.release()
 	held = null
 	if jelly.held:
 		push_error("jelly play: release left a held body")
 		get_tree().quit(1)
 		return
-	for _fly in 14:
+	for _fly in 8:
 		jelly._full(0.016)
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.4, 0.0), 2.4)
-	await get_tree().create_timer(0.25).timeout
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 2.6)
+	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_air.png")
 	for _land in 36:
 		jelly._full(0.016)
@@ -7478,8 +7478,8 @@ func _run_jelly_play() -> void:
 		push_error("jelly play: throw left a broken body")
 		get_tree().quit(1)
 		return
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.32, 0.0), 2.2)
-	await get_tree().create_timer(0.3).timeout
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.34, 0.0), 2.3)
+	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_land.png")
 	print("JELLY_PLAY_OK")
 	get_tree().quit(0)
