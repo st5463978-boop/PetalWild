@@ -1698,7 +1698,38 @@ func _bind_watch(saved) -> void:
 			best = jelly
 	nessa_watch = best
 
+func _smoke_parish_day() -> bool:
+	_tick_parish(0.0)
+	var lumen_ok := false
+	var bram_ok := false
+	for row in _people_rows(world_snapshot()):
+		if str(row.get("name", "")) == "Lumen Peel":
+			lumen_ok = bool(row.get("present", false)) and str(row.get("household", "")) == "stall house" and str(row.get("state", "")) == "at their job" and str(row.get("motive", "")) != "" and float(row.get("hunger", 0.0)) > 0.4
+		if str(row.get("name", "")) == "Bram Cobble":
+			bram_ok = bool(row.get("present", false)) and str(row.get("household", "")) == "shed house" and str(row.get("state", "")) == "at their job"
+	if not lumen_ok or not bram_ok:
+		push_error("smoke: the directory hid the day's parish")
+		get_tree().quit(1)
+		return false
+	var spoken := parish.greet("lumen", Clock.day)
+	if spoken.find("trays") < 0 or parish.last_memory("lumen").find("Spoke with you") < 0:
+		push_error("smoke: a greeting left no memory")
+		get_tree().quit(1)
+		return false
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the greeting did not save")
+		get_tree().quit(1)
+		return false
+	apply_state(SaveGame.read_slot(1))
+	if parish.last_memory("lumen").find("Spoke with you") < 0:
+		push_error("smoke: a greeting did not reload")
+		get_tree().quit(1)
+		return false
+	return true
+
 func _run_smoke() -> void:
+	if not _smoke_parish_day():
+		return
 	var opening_peach := soil.get_cell(3, 2)
 	var opening_cane := soil.get_cell(4, 2)
 	var opening_far := soil.get_cell(5, 2)
@@ -7340,8 +7371,14 @@ func _run_capture() -> void:
 		await get_tree().create_timer(0.45).timeout
 		await _shot("/workspace/docs/screenshots/wave1_jelly.png")
 	camera.focus_on(_person("lumen").global_position + Vector3(0, 0.62, 0), 5.4)
+	_person("lumen").set_activity(parish.label_for("lumen"))
+	_person("lumen").say(parish.greeting("lumen"))
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_lumen.png")
+	show_directory("people")
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/wave1_residents.png")
+	hud.journal.visible = false
 	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 6.2)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_stall.png")
@@ -10573,6 +10610,7 @@ func _trust_lines() -> Array:
 func _place_stats(world: Dictionary) -> Dictionary:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 	var stats := SimLod.district_stats.duplicate()
+	stats["households"] = _household_count()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	stats["phase"] = ContentDB.district.get("phase", "A")
 	stats["bees"] = bees.bodies.size() if bees else 0
@@ -10697,6 +10735,18 @@ func _present_people() -> int:
 		if _person(id).present:
 			count += 1
 	return count
+
+func _household_count() -> int:
+	var houses := {}
+	for id in people.keys():
+		var person := _person(id)
+		if person == null or not person.present:
+			continue
+		var house := str(parish.lives.get(id, {}).get("household", id))
+		if house == "":
+			house = id
+		houses[house] = true
+	return houses.size()
 
 func _cycle_seed(step: int) -> void:
 	var ids := Economy.seed_ids()

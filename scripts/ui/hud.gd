@@ -127,6 +127,7 @@ func show_place(stats: Dictionary) -> void:
 	journal_box.add_child(ThemeKit.title(str(stats.get("name", "Hedge Hollow")), 22))
 	journal_box.add_child(ThemeKit.label("Phase %s · one parish. The lane beyond the hedge counts ripe beds." % str(stats.get("phase", "A")), 14))
 	journal_box.add_child(ThemeKit.label("Veg people  %s" % str(stats.get("veg_people", 0)), 16))
+	journal_box.add_child(ThemeKit.label("Households  %s" % str(stats.get("households", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Creature residents  %s" % str(stats.get("creature_residents", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Employed at the stall  %s" % str(stats.get("employed", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Garden care  %d%%" % int(float(stats.get("garden_quality", 0.0)) * 100.0), 16))
