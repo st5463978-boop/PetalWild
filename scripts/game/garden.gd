@@ -8199,6 +8199,7 @@ func _run_resident_shot() -> void:
 	Trust.file_park("nessa")
 	_sync_park()
 	Clock.set_hour(17.2)
+	Clock.weather = "mist"
 	for id in ["lumen", "bram"]:
 		var person: VegPerson = _person(id)
 		person.has_chore = false
@@ -11122,7 +11123,7 @@ func _tick_parish(delta: float) -> void:
 				best = other
 		near[id] = best
 	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
-	var shower := (Clock.weather == "rain" or Clock.weather == "mist") and not night
+	var shower := Clock.weather == "rain" and not night
 	var ctx := {
 		"hour": Clock.hour(),
 		"day": Clock.day,
@@ -11147,8 +11148,6 @@ func _tick_parish(delta: float) -> void:
 			continue
 		var dest: Vector3 = parish.destination(id)
 		if dest.x == INF:
-			continue
-		if person.waypoints.size() > 1:
 			continue
 		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
 			var route: Array[Vector3] = [dest]
@@ -11606,8 +11605,18 @@ func _people_rows(world: Dictionary) -> Array:
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
 			"can_park": person.present and id == "nessa" and Trust.has_action("parish_road_rumour") and not Trust.has_action("parish_park"),
-			"road_line": _road_card_line() if id == "nessa" and person.present else "",
-			"park_line": _park_card_line() if id == "nessa" and person.present else "",
+			"road_line": _road_card_line() if id == "nessa" else "",
+			"park_line": _park_card_line() if id == "nessa" else "",
+			"join_line": _join_line() if id == "nessa" else "",
+			"parish_bell_line": _east_closer_bell_line() if id == "nessa" else "",
+			"parish_sale_line": _parish_sale_line() if id == "nessa" else "",
+			"hem_card_line": _hem_card_line() if id == "nessa" else "",
+			"hem_stone_card_line": _hem_stone_card_line() if id == "nessa" else "",
+			"hem_stone_bell_card_line": _hem_stone_bell_card_line() if id == "nessa" else "",
+			"hem_stone_on_bell_card_line": _hem_stone_on_bell_card_line() if id == "nessa" else "",
+			"hem_stone_far_bell_card_line": _hem_stone_far_bell_card_line() if id == "nessa" else "",
+			"hem_stone_out_bell_card_line": _hem_stone_out_bell_card_line() if id == "nessa" else "",
+			"meadow_stone_strip_card_line": _meadow_stone_strip_card_line() if id == "nessa" else "",
 			"want_line": ("%s is looking for %s." % [person.display_name, ContentDB.plant(person.want).get("name", person.want)]) if person.want != "" else "",
 		})
 	return rows
