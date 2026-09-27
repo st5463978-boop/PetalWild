@@ -9,7 +9,10 @@
     "relationship": 0.2,
     "home_pad": 0,
     "personality": "Warm, exact, and protective of anything small enough to bounce.",
+    "household": "cara house",
+    "motive": "Keep the stall honest and anything small unbruised.",
     "schedule": {"dawn": "home", "day": "stall", "dusk": "path", "night": "home"},
+    "places": {"home": "home", "work": "stall", "leisure": "path", "eat": "stall", "social": "path", "rest": "home", "shelter": "stall"},
     "relations": {"mia": 0.4, "pod": 0.15, "bran": 0.05, "oshi": 0.1},
     "arrives": []
   },
@@ -20,7 +23,10 @@
     "job": "gardener",
     "voice": 640,
     "personality": "Easily delighted, keeps count of blooms, forgives slowly.",
+    "household": "mia house",
+    "motive": "Count every open face and forgive slowly.",
     "schedule": {"dawn": "path", "day": "path", "dusk": "home", "night": "home"},
+    "places": {"home": "home", "work": "path", "leisure": "path", "eat": "stall", "social": "path", "rest": "home", "shelter": "home"},
     "relations": {"cara": 0.45, "oshi": 0.2},
     "arrives": [
       {"op": "harvested", "item": "sunpetal_bloom", "count": 4}
@@ -33,7 +39,10 @@
     "job": "courier",
     "voice": 480,
     "personality": "Restless, polite, treats every path as a route.",
+    "household": "pod house",
+    "motive": "Keep a route open as far as the gate.",
     "schedule": {"dawn": "path", "day": "path", "dusk": "stall", "night": "home"},
+    "places": {"home": "home", "work": "path", "leisure": "path", "eat": "stall", "social": "stall", "rest": "home", "shelter": "stall"},
     "relations": {"cara": 0.25, "bran": 0.1},
     "arrives": [
       {"op": "sales", "count": 3}
@@ -46,7 +55,10 @@
     "job": "soil",
     "voice": 340,
     "personality": "Gruff about theft, tender about dirt.",
+    "household": "bran house",
+    "motive": "Keep the dirt sweeter than the gap Rendle leaves.",
     "schedule": {"dawn": "path", "day": "path", "dusk": "home", "night": "home"},
+    "places": {"home": "home", "work": "path", "leisure": "path", "eat": "stall", "social": "path", "rest": "home", "shelter": "home"},
     "relations": {"cara": 0.05, "rendle": -0.4},
     "arrives": [
       {"op": "species", "id": "rendle", "min": "resident"}
@@ -59,7 +71,10 @@
     "job": "scholar",
     "voice": 420,
     "personality": "Quiet, keeps proposals written down, does not touch the till.",
+    "household": "oshi house",
+    "motive": "Write only what the garden has already done.",
     "schedule": {"dawn": "home", "day": "home", "dusk": "path", "night": "path"},
+    "places": {"home": "home", "work": "home", "leisure": "path", "eat": "stall", "social": "path", "rest": "home", "shelter": "home"},
     "relations": {"cara": 0.15, "mia": 0.2},
     "arrives": [
       {"op": "harvested", "item": "nightbloom_cup", "count": 1}
