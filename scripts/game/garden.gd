@@ -72,6 +72,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_KETTLE_SHOT") == "1":
+		await _run_kettle_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -7355,6 +7358,10 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	Economy.add("meadowbell", 1)
+	if Economy.mill_line(true, false) != "The kettle is quiet.":
+		push_error("smoke: a ready kettle still waited")
+		get_tree().quit(1)
+		return
 	Clock.set_hour(10.0)
 	if not Economy.stock_kettle() or Economy.mill.brew != "hedge_tea" or Economy.count("peach") != mill_peach or Economy.count("meadowbell") != mill_bell:
 		push_error("smoke: the kettle did not take the fruit")
@@ -7588,6 +7595,35 @@ func _run_capture() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_kettle_shot() -> void:
+	Settings.reduce_motion = true
+	camera.snap_home()
+	Clock.set_hour(10.0)
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("kettle-shot: stock failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.TEA + Vector3(0, 0.7, -0.6), 4.2)
+	await get_tree().create_timer(0.55).timeout
+	await _shot("/workspace/docs/screenshots/kettle_brew.png")
+	Economy.mill.tick(18.0)
+	if not Economy.carry_tea():
+		push_error("kettle-shot: carry failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	hud.shop.visible = true
+	refresh_panels()
+	camera.focus_on(GardenLayout.STALL + Vector3(0, 0.8, 0), 5.8)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/kettle_crate.png")
+	print("PETAL_KETTLE_SHOT_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:
