@@ -7251,7 +7251,6 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
-<<<<<<< HEAD
 	crate_yields = {"peach": [1.5]}
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: a harvest yield did not save")
