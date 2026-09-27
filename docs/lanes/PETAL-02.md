@@ -39,7 +39,7 @@ Merged `petal/08-integration` @ `3402530` first. Three play-feel upgrades on tha
 - Paths: `data/species.json`, `scripts/ecology/ecology_rules.gd`, `scripts/ecology/ecology.gd`, `scripts/game/garden.gd`, `scripts/ui/hud.gd`, `tools/smoke.gd`, `tests/test_systems.gd`, `docs/screenshots/ecology_parish.png`
 - Interface: `EcologyRules.courtship_line`, `forage_line`, `nest_plot_bit`, `romance.nest`; `Ecology.taste_cart`, `Ecology.feed`; garden `feed_inspected`
 - Tests: nest/courtship/forage in `PETAL_RULES_OK` and `SYSTEMS_OK`; garden smoke feeds from the pouch, scents a Thatchmere cart, and nests Berrypatch
-- Visual QA: recapture `ecology_parish.png` with the courtship line on the Parish tab. Qwen3-VL is not operational here.
+- Visual QA: `docs/screenshots/ecology_parish.png` shows `The meadow leans on the bank.`, the habitat tally, and `Bellhelp is courting in the meadow.` Qwen3-VL is not operational here.
 - Did not edit `docs/PETAL_CAMPAIGN_STATE.md` (PETAL-08).
 
 ## Playable now
