@@ -7182,7 +7182,7 @@ func _run_smoke() -> void:
 	Economy.add("meadowbell_seed", 1)
 	Economy.selected_seed = "meadowbell_seed"
 	_plant(pa)
-	if pa.plant_id != "meadowbell" or absf(pa.hue - 0.5) <= 0.02:
+	if pa.plant_id != "meadowbell" or absf(pa.hue - 0.5) <= 0.02 or _plot_line(pa).find("Mixed.") == -1:
 		push_error("smoke: a seed beside a ripe parent stayed the default")
 		get_tree().quit(1)
 		return
@@ -8754,6 +8754,8 @@ func _plot_line(plot: SoilCell) -> String:
 	var definition: Dictionary = ContentDB.plant(plot.plant_id)
 	var name := str(definition.get("name", plot.plant_id))
 	var line := "%s  ·  %d%%  ·  water %d%%  ·  feed %d%%" % [name, int(plot.growth * 100.0), int(plot.moisture * 100.0), int(plot.fertility * 100.0)]
+	if absf(plot.hue - 0.5) > 0.05 or absf(plot.stature - 1.0) > 0.05 or absf(plot.crop_yield - 1.0) > 0.05:
+		line += "  ·  Mixed."
 	if plot.moisture < float(definition.get("water_need", 0.3)):
 		return line + "  ·  Needs water."
 	if plot.fertility < float(definition.get("fertility_need", 0.2)):
