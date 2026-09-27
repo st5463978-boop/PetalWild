@@ -79,5 +79,17 @@ func _initialize() -> void:
 		push_error("a hungry bellhelp should ask for meadowbells")
 		quit(1)
 		return
+	var habitat_beds: Array = [
+		{"plant_id": "meadowbell", "ix": 0, "iz": 0},
+		{"plant_id": "meadowbell", "ix": 1, "iz": 0},
+		{"plant_id": "meadowbell", "ix": 1, "iz": 1},
+		{"plant_id": "bramble", "ix": 4, "iz": 2},
+		{"plant_id": "reed", "ix": 7, "iz": 5},
+	]
+	var habitats: String = rules.habitat_line(habitat_beds, plants)
+	if habitats.find("Meadow 3") == -1 or habitats.find("Cane 1") == -1 or habitats.find("Bank 1") == -1:
+		push_error("the parish should tally meadow, cane, and bank")
+		quit(1)
+		return
 	print("PETAL_RULES_OK")
 	quit(0)

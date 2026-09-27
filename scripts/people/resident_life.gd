@@ -36,7 +36,8 @@ func tick(hours: float, ctx: Dictionary, chooser: Callable = Callable()) -> Arra
 	var present: Dictionary = ctx.get("present", {})
 	var busy: Dictionary = ctx.get("busy", {})
 	var bucket := int(hour)
-	for id in lives.keys():
+	for raw_id in lives.keys():
+		var id := str(raw_id)
 		if not bool(present.get(id, false)):
 			continue
 		var life: Dictionary = lives[id]
@@ -261,7 +262,8 @@ func _meet(ctx: Dictionary) -> void:
 	var day := int(ctx.get("day", 1))
 	var present: Dictionary = ctx.get("present", {})
 	var near: Dictionary = ctx.get("near", {})
-	for id in lives.keys():
+	for raw_id in lives.keys():
+		var id := str(raw_id)
 		if not bool(present.get(id, false)):
 			continue
 		var life: Dictionary = lives[id]
@@ -273,9 +275,9 @@ func _meet(ctx: Dictionary) -> void:
 			continue
 		if not bool(present.get(other_id, false)):
 			continue
-		var left := str(id)
-		var key: String = left if left < other_id else other_id
-		var pair := "%s|%s" % [key, other_id if key == left else left]
+		var key: String = id if id < other_id else other_id
+		var mate: String = other_id if key == id else id
+		var pair := "%s|%s" % [key, mate]
 		var met: Dictionary = life.get("met_day", {})
 		if int(met.get(pair, -1)) == day:
 			continue

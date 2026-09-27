@@ -18,10 +18,19 @@ Updated 2026-09-27.
 
 Press **M** for the Vale tab (or Parish **C**, which now names the vale). Five parishes exist: Hedge Hollow plus Reedbank, Mossford, Bramble Lea, and far Thatchmere. They grow a specialty, eat a need, trickle carts along routes, and once a day each NPC faction picks hold / send a cart / ask / keep using `PetalDecide`. A cart to Hollow adds that crop to the pouch. Incoming carts raise stall demand. You can send a cart from the pouch, share seed, or welcome a walker at the hedge. F5 keeps the vale.
 
+LOD: Hollow ticks as **district**, neighbours as **settlement**, Thatchmere as **region**. `RegionSim.fidelity()` rolls the world line. A cart warms stance when it arrives, not when it leaves.
+
 ## Branch / commit
 
 - Branch: `petal/07-region`
-- Commit: `557c369` Tick neighbouring parishes on a persistent vale.
+- Commit: `6f4f799` Name vale LOD layers and wrap the vale page.
+
+## Addendum
+
+- Decide is used only for bounded faction options. Architecture stayed in-lane.
+- Self-play: `tests/test_region.gd` pulses six days and checks trickle plus save.
+- Visual QA: `DISPLAY=:1 PETAL_VALE_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_VALE_SHOT_OK` and `docs/screenshots/vale_tab.png`. Qwen3-VL is not operational here; the frame was read directly.
+- Did not write `docs/PETAL_CAMPAIGN_STATE.md` (PETAL-08).
 
 ## Paths
 
@@ -35,17 +44,19 @@ Press **M** for the Vale tab (or Parish **C**, which now names the vale). Five p
 
 ## Interface
 
-- `RegionSim.boot(saved={})`, `pulse(day, hour, garden)`, `send_cart`, `welcome`, `share_seed`, `page()`, `headline()`, `traffic(id)`, `to_dict()`
+- `RegionSim.boot(saved={})`, `pulse(day, hour, garden)`, `send_cart`, `welcome`, `share_seed`, `page()`, `headline()`, `traffic(id)`, `fidelity()`, `to_dict()`
 - Garden save key `region`
 - Player: `send_vale_cart(to, crop)`, `welcome_vale()`, `share_vale_seed(to, crop)`
-- Decide question is bounded options. Offline default is `options[0]` (`hold stores`). Confidence is stored on the faction and shown on the Vale tab.
+- Shot: `PETAL_VALE_SHOT=1`
+- Decide question is bounded options. Offline default is `options[0]`. Hungry factions default to `ask for a crop`. Confidence is stored on the faction and shown on the Vale tab.
 
 ## Tests
 
-- `REGION_OK` pass — `tests/test_region.gd`
+- `REGION_OK` pass — `tests/test_region.gd` (includes a six-day self-play)
 - `SYSTEMS_OK` pass
 - `PETAL_RULES_OK` pass
 - `PETAL_SMOKE_OK` pass (`DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn`)
+- `PETAL_VALE_SHOT_OK` pass → `docs/screenshots/vale_tab.png`
 
 ## Assumptions for other lanes
 

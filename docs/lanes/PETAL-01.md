@@ -54,7 +54,19 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 
 ## Tests
 
-Recorded after the checkpoint run.
+| Check | Result |
+| --- | --- |
+| `tests/test_foundation.gd` | `FOUNDATION_OK` |
+| `tests/smoke.gd` | `SMOKE OK` |
+| `tests/test_systems.gd` | `SYSTEMS_OK` |
+| `tools/smoke.gd` | `PETAL_RULES_OK` |
+| `PETAL_SMOKE=1` garden | `PETAL_SMOKE_OK` (face, yield reload, time rest) |
+| `PETAL_CAPTURE=1` | `PETAL_CAPTURE_OK` (llvmpipe). Did **not** commit overwritten `wave1_overview` / jelly / night plates |
+| `PETAL_FACE_SHOT=1` | `PETAL_FACE_SHOT_OK` → `docs/screenshots/wave1_face.png` |
+
+Qwen3-VL is not operational in this repo (no assessor). Visual QA is the capture loop plus reading the face frame.
+
+Face frame evidence: inspect card shows Bellhelp, mood happy, bond 12%, Visitor. The body sits under the stall roof in this llvmpipe angle; the card is the player-facing proof. PETAL-05 owns dressing density.
 
 ## Requests
 

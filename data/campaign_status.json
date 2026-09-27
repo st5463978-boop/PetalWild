@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-27T19:30:25Z",
+  "checked_at": "2026-09-27T20:09:04Z",
   "baseline_commit": "f96457e8b78e443837b6e85d901af72362041229",
   "baseline_tag": "petal-campaign-baseline-20260927",
   "landed": 7,
@@ -9,49 +9,49 @@
     "01": {
       "branch": "petal/01-foundation",
       "present": true,
-      "commit": "327eb04fb4562201ac19d152f8ae16eb8df295ce",
+      "commit": "7d5097e767afce379197383d89e78eb0d829c3a2",
       "status": "landed",
       "name": "foundation"
     },
     "02": {
       "branch": "petal/02-ecology",
       "present": true,
-      "commit": "a7714130bd75aca6a5f3b21945ec12b4a81a6a8d",
+      "commit": "aab1ecafb3fa19a41a22f61d18cc1f5c351dd0d0",
       "status": "landed",
       "name": "ecology"
     },
     "03": {
       "branch": "petal/03-jelly",
       "present": true,
-      "commit": "965b46d8371bb17aea04a143fd5a589c1cb2a331",
+      "commit": "c3f55ddf1f698851cd136b5c6576c7dd6be810b3",
       "status": "landed",
       "name": "jelly"
     },
     "04": {
       "branch": "petal/04-residents",
       "present": true,
-      "commit": "6428c27e69cd114f038d2a977429d4024ef071ee",
+      "commit": "6b48d2ecea1513370ef66b886a4b9b5804e9fa0d",
       "status": "landed",
       "name": "residents"
     },
     "05": {
       "branch": "petal/05-economy",
       "present": true,
-      "commit": "a4d909b483521795feb14ab8cde257175d1cd472",
+      "commit": "b5b90a6d77e80104d2aa034ef345e3ef359e4480",
       "status": "landed",
       "name": "economy"
     },
     "06": {
       "branch": "petal/06-town",
       "present": true,
-      "commit": "fae30af76f1e5fa61f74a3588d222750ca4d05fd",
+      "commit": "f4c63d32e7a95f21dd361d184276fee61785f334",
       "status": "landed",
       "name": "town"
     },
     "07": {
       "branch": "petal/07-region",
       "present": true,
-      "commit": "bdac12779efe6c40c299c48d2b932ab49b3aa55c",
+      "commit": "cd45eb422e947c509f19d4eb11a1ada03d9b7f1a",
       "status": "landed",
       "name": "region"
     }

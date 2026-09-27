@@ -76,6 +76,22 @@ func _init() -> void:
 	send.boot()
 	var gift: Dictionary = send.send_cart("lea", "mossford", "bramble", 1)
 	_expect(bool(gift.get("ok", false)), "a player cart can leave bramble lea")
+	var play := RegionSim.new()
+	play.boot()
+	var reed_h := play.stock_of("hollow", "reed")
+	var lea_b := play.stock_of("lea", "bramble")
+	for d in range(1, 7):
+		for h in 24:
+			play.pulse(d, float(h), {})
+	_expect(play.stock_of("hollow", "reed") > reed_h, "six days of trickle feed hollow reed")
+	_expect(play.stock_of("lea", "bramble") != lea_b or play.traffic("mossford") > 0, "lea still moves bramble across the vale")
+	var fid: Dictionary = play.fidelity()
+	_expect(int(fid.get("settlements", 0)) == 5, "world rollup keeps five parishes")
+	_expect(int(fid.get("hands", 0)) >= 4, "world rollup counts hands")
+	var packed_play: Dictionary = play.to_dict()
+	var rest := RegionSim.new()
+	rest.boot(packed_play)
+	_expect(rest.stock_of("hollow", "reed") == play.stock_of("hollow", "reed"), "a week of vale state reloads")
 	print("REGION_OK")
 	quit(0)
 

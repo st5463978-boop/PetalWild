@@ -1,14 +1,17 @@
 class_name TownSim
 extends RefCounted
 
-# ponytail: one grid and occupancy counts; spawn actors if a distant plot ever needs a body.
+# ponytail: folk records plus counts; spawn a body only if a promoted plot is on screen.
+const LAYERS := ["world", "region", "settlement", "district", "property", "household", "individual", "garden", "creature"]
 var width := 8
 var height := 5
 var gate := Vector2i(3, 2)
 var park_plot := Vector2i(5, 4)
+var surnames: Array = ["Reed", "Moss", "Gate", "Bell", "Hem", "Lawn"]
 var districts: Dictionary = {}
 var buildings: Dictionary = {}
 var plots: Array = []
+var folk: Array = []
 var route: Array = []
 var stats: Dictionary = {}
 var lane_mode := "fill"
@@ -29,6 +32,9 @@ func boot(text: String = "") -> void:
 	var park_raw: Variant = data.get("park_plot", [5, 4])
 	gate = _cell(gate_raw)
 	park_plot = _cell(park_raw)
+	var names_raw: Variant = data.get("surnames", surnames)
+	if typeof(names_raw) == TYPE_ARRAY:
+		surnames = (names_raw as Array).duplicate()
 	districts.clear()
 	for entry in data.get("districts", []):
 		var row: Dictionary = entry
@@ -38,6 +44,7 @@ func boot(text: String = "") -> void:
 		var row: Dictionary = entry
 		buildings[str(row.get("id", ""))] = row.duplicate(true)
 	_build_plots()
+	folk.clear()
 	lane_mode = "fill"
 	chose_lane = false
 	stats = _blank_stats()
@@ -52,7 +59,17 @@ func tick(ctx: Dictionary) -> void:
 	_tally(ctx)
 
 func aggregate() -> int:
-	return int(stats.get("aggregate", 0))
+	return _count_layer_not("individual")
+
+func individuals() -> int:
+	return _count_layer("individual")
+
+func folk_ids() -> PackedStringArray:
+	var ids := PackedStringArray()
+	for row in folk:
+		var rec: Dictionary = row
+		ids.append(str(rec.get("id", "")))
+	return ids
 
 func occupancy(building_id: String) -> int:
 	var occ_raw: Variant = stats.get("occ", {})
@@ -80,9 +97,19 @@ func lod_counts() -> Dictionary:
 		"0": 0,
 		"1": 0,
 		"2": 0,
-		"3": int(stats.get("near_park", 0)),
-		"4": int(stats.get("aggregate", 0)) - int(stats.get("near_park", 0)),
+		"3": individuals(),
+		"4": aggregate(),
 	}
+
+func layer_counts() -> Dictionary:
+	var counts := {}
+	for name in LAYERS:
+		counts[str(name)] = 0
+	for row in folk:
+		var rec: Dictionary = row
+		var layer := str(rec.get("layer", "household"))
+		counts[layer] = int(counts.get(layer, 0)) + 1
+	return counts
 
 func page_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
@@ -98,18 +125,29 @@ func page_lines() -> PackedStringArray:
 		lines.append("Path  gate to park · %s steps · %s riders" % [str(route.size() - 1), str(stats.get("riders", 0))])
 	else:
 		lines.append("Path  the hedge still closes the way.")
+	var layers := layer_counts()
+	lines.append("Layers  household %s · individual %s · district %s" % [str(layers.get("household", 0)), str(layers.get("individual", 0)), str(layers.get("district", 0))])
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("layer", "")) != "individual":
+			continue
+		lines.append("Near  %s · %s · still no body" % [str(rec.get("name", "")), str(rec.get("district", ""))])
 	return lines
 
 func to_dict() -> Dictionary:
 	return {
 		"lane_mode": lane_mode,
 		"chose_lane": chose_lane,
+		"folk": folk.duplicate(true),
 		"stats": stats.duplicate(true),
 	}
 
 func from_dict(data: Dictionary) -> void:
 	lane_mode = str(data.get("lane_mode", "fill"))
 	chose_lane = bool(data.get("chose_lane", false))
+	var saved_folk: Variant = data.get("folk", [])
+	if typeof(saved_folk) == TYPE_ARRAY:
+		folk = (saved_folk as Array).duplicate(true)
 	var saved: Variant = data.get("stats", {})
 	if typeof(saved) == TYPE_DICTIONARY:
 		stats = (saved as Dictionary).duplicate(true)
@@ -203,14 +241,13 @@ func _occupy(ctx: Dictionary) -> void:
 		elif day:
 			park_n = mini(2, people)
 	_pour("park", "park", park_n)
-	var near := 0
-	if bool(ctx.get("near_park", false)):
-		near = mini(2, park_n)
-		park_n -= near
+	_sync_folk("house", "lane", "household", lane_n)
+	_sync_folk("visitor", "park", "district", park_n)
+	_set_layers(ctx)
 	stats["lane_occ"] = lane_n
-	stats["park_occ"] = park_n + near
-	stats["near_park"] = near
-	stats["occ"] = {"lane": lane_n, "grove_park": park_n + near}
+	stats["park_occ"] = park_n
+	stats["near_park"] = _count_layer("individual")
+	stats["occ"] = {"lane": lane_n, "grove_park": park_n}
 
 func _pour(ground: String, district: String, amount: int) -> void:
 	var left := amount
@@ -279,7 +316,7 @@ func _tally(ctx: Dictionary) -> void:
 		if typeof(cover_raw) == TYPE_ARRAY and (cover_raw as Array).size() > 0:
 			served += 1
 		var district := str(plot.get("district", ""))
-		plot["lod"] = 1 if district == "hollow" else (3 if int(plot.get("occ", 0)) > 0 and bool(ctx.get("near_park", false)) and district == "park" else 4)
+		plot["lod"] = 1 if district == "hollow" else (3 if _folk_layer_at(int(plot["x"]), int(plot["y"])) == "individual" else 4)
 	var jobs := 0
 	for id in buildings.keys():
 		var row: Dictionary = buildings[id]
@@ -296,7 +333,8 @@ func _tally(ctx: Dictionary) -> void:
 		headline = "South Lane holds houses beyond the hedge. They tick as counts."
 	stats["garden_pop"] = garden
 	stats["town_pop"] = garden + distant
-	stats["aggregate"] = distant
+	stats["aggregate"] = aggregate()
+	stats["individuals"] = individuals()
 	stats["jobs"] = jobs
 	stats["coverage"] = cover
 	stats["riders"] = riders
@@ -316,8 +354,85 @@ func _blank_stats() -> Dictionary:
 		"lane_occ": 0,
 		"park_occ": 0,
 		"near_park": 0,
+		"individuals": 0,
 		"occ": {},
 	}
+
+func _sync_folk(kind: String, district: String, far_layer: String, amount: int) -> void:
+	var mine: Array = []
+	var rest: Array = []
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("kind", "")) == kind:
+			mine.append(rec)
+		else:
+			rest.append(rec)
+	while mine.size() > amount:
+		mine.pop_back()
+	while mine.size() < amount:
+		var idx := mine.size()
+		var name := "Lane"
+		if kind == "house" and surnames.size() > 0:
+			name = str(surnames[idx % surnames.size()])
+		elif kind == "visitor":
+			name = "Lawn"
+		mine.append({
+			"id": "%s%d" % ["h" if kind == "house" else "v", idx + 1],
+			"name": name,
+			"kind": kind,
+			"district": district,
+			"people": 1,
+			"layer": far_layer,
+		})
+	folk = rest
+	for rec in mine:
+		folk.append(rec)
+
+func _set_layers(ctx: Dictionary) -> void:
+	var near_lane := bool(ctx.get("near_lane", false))
+	var near_park := bool(ctx.get("near_park", false))
+	var house_n := 0
+	var park_n := 0
+	for row in folk:
+		var rec: Dictionary = row
+		var kind := str(rec.get("kind", ""))
+		if kind == "house":
+			if near_lane and house_n < 2:
+				rec["layer"] = "individual"
+				house_n += 1
+			else:
+				rec["layer"] = "household"
+		elif kind == "visitor":
+			if near_park and park_n < 2:
+				rec["layer"] = "individual"
+				park_n += 1
+			else:
+				rec["layer"] = "district"
+
+func _count_layer(layer: String) -> int:
+	var n := 0
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("layer", "")) == layer:
+			n += 1
+	return n
+
+func _count_layer_not(layer: String) -> int:
+	var n := 0
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("layer", "")) != layer:
+			n += 1
+	return n
+
+func _folk_layer_at(x: int, y: int) -> String:
+	# ponytail: plots still hold occupancy; folk ids are enough until a plot needs a pinned person.
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("layer", "")) == "individual":
+			if str(rec.get("district", "")) == _district_at(x, y):
+				return "individual"
+	return ""
 
 func _cell(raw: Variant) -> Vector2i:
 	if typeof(raw) != TYPE_ARRAY:

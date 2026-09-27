@@ -31,6 +31,7 @@ func _init() -> void:
 	_expect(rules.garden_line(thicket, plants) == "The meadow is crowded.", "the parish names a crowded meadow")
 	_expect(rules.need_line({"food": "meadowbell"}, 0.2, {}, plants).find("Hungry") != -1, "hunger asks for food")
 	_expect(rules.food_of({"food": "meadowbell"}) == "meadowbell", "bellhelp food is meadowbell")
+	_expect(rules.habitat_line(pair, plants) == "Habitats  ·  Bank 1, Meadow 1", "a reed and a bell tally two habitats")
 	var mill := ParishChain.new()
 	mill.boot([{
 		"id": "hedge_tea",

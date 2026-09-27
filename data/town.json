@@ -3,6 +3,8 @@
   "height": 5,
   "gate": [3, 2],
   "park_plot": [5, 4],
+  "layers": ["world", "region", "settlement", "district", "property", "household", "individual", "garden", "creature"],
+  "surnames": ["Reed", "Moss", "Gate", "Bell", "Hem", "Lawn"],
   "districts": [
     {
       "id": "hollow",
