@@ -7480,9 +7480,7 @@ func _run_jelly_play() -> void:
 		push_error("jelly play: throw left a broken body")
 		get_tree().quit(1)
 		return
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.28, 0.0), 3.1)
-	await get_tree().process_frame
-	await _shot("/workspace/docs/screenshots/jelly_land.png")
+	print("jelly_play land_y=%s feel=%s" % [jelly.global_position.y, jelly.feel])
 	print("JELLY_PLAY_OK")
 	get_tree().quit(0)
 

@@ -20,7 +20,7 @@ Player can pick up, stretch, squash, throw, bounce, and recover representative j
 ## Branch / commit
 
 - Branch: `petal/03-jelly`
-- Last commit: `965b46d` Keep grab spring strength when the body substeps.
+- Last commit: this tree (jelly play capture + visual QA notes)
 - Baseline: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
 - PR: https://github.com/st5463978-boop/PetalWild/pull/4
 
@@ -51,7 +51,14 @@ Player can pick up, stretch, squash, throw, bounce, and recover representative j
 
 ## Visual QA
 
-`PETAL_JELLY_PLAY=1` runs a grab → stretch → throw → land loop and writes `docs/screenshots/jelly_held.png`, `jelly_air.png`, `jelly_land.png`. Species is a bounded `PetalDecide` choice (bellhelp / berrypatch / cirlark). Qwen3-VL is not used; it is not operational here. Wave1 capture is unchanged.
+`PETAL_JELLY_PLAY=1 PETAL_DECIDE=1` ran on this machine.
+
+- Decide: **hef-dfc CPU** llama.cpp Q8_0, choice `berrypatch`, confidence **0.83362**. Not an NPU path.
+- `docs/screenshots/jelly_held.png`: Berrypatch in hands, HUD `playful · held`.
+- `docs/screenshots/jelly_air.png`: body airborne and squashed, toast `Berrypatch spins, dizzy.`
+- Land still: **not committed**. Three camera follow attempts looked into crest foliage and missed the body. Physics check still passes (`land_y` finite, not held, not under the lawn). Qwen3-VL is not operational here.
+
+Wave1 capture is unchanged.
 
 ## Requests
 
