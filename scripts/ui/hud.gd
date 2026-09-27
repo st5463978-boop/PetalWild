@@ -133,6 +133,9 @@ func show_place(stats: Dictionary) -> void:
 	var ecology_line := str(stats.get("ecology_line", ""))
 	if ecology_line != "":
 		journal_box.add_child(ThemeKit.label(ecology_line, 14))
+	var habitat_line := str(stats.get("habitat_line", ""))
+	if habitat_line != "":
+		journal_box.add_child(ThemeKit.label(habitat_line, 14))
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))

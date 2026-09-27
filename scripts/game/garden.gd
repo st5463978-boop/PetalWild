@@ -1703,6 +1703,11 @@ func _run_smoke() -> void:
 		push_error("smoke: the opening bramble ripened the lane")
 		get_tree().quit(1)
 		return
+	var open_habitats: String = ecology.rules.habitat_line(soil.beds(), ContentDB.plants)
+	if open_habitats.find("Meadow 3") == -1 or open_habitats.find("Cane 2") == -1:
+		push_error("smoke: the opening parish hid the habitats")
+		get_tree().quit(1)
+		return
 	if not SaveGame.write_slot(1, to_state()):
 		push_error("smoke: the berry leaves did not save")
 		get_tree().quit(1)
@@ -7297,6 +7302,10 @@ func _run_smoke() -> void:
 		push_error("smoke: the journal hid a hungry bellhelp")
 		get_tree().quit(1)
 		return
+	if ecology.rules.habitat_line(mix_packed, ContentDB.plants) != "Habitats  ·  Meadow 5":
+		push_error("smoke: five meadowbells did not tally as meadow")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -7440,6 +7449,17 @@ func _run_capture() -> void:
 	camera.focus_on(GardenLayout.POND_CENTER, 8.5)
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
+	_force_plant(2, 0, "reed", 0.85)
+	_sync_plants()
+	hud.journal.visible = true
+	show_directory("place")
+	camera.snap_home()
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/ecology_parish.png")
+	hud.set_status(Clock.clock_label(), Clock.weather, Economy.coins, _plot_line(soil.get_cell(1, 0)), "Reed")
+	camera.focus_on(GardenLayout.cell_center(1, 0) + Vector3(0, 0.2, 0), 3.4)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/ecology_bed.png")
 	print("PETAL_CAPTURE_OK")
 	get_tree().quit(0)
 
@@ -10614,6 +10634,9 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["cross_line"] = _cross_line()
 	stats["want_line"] = _want_line()
 	stats["ecology_line"] = ecology.rules.garden_line(soil.beds(), ContentDB.plants)
+	var habitat_line: String = ecology.rules.habitat_line(soil.beds(), ContentDB.plants)
+	stats["habitat_line"] = habitat_line
+	SimLod.district_stats["habitats"] = habitat_line
 	stats["cane_line"] = _cane_line()
 	stats["bell_line"] = _bell_line()
 	stats["peach_line"] = _peach_line()

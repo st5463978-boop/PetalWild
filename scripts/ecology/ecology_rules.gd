@@ -175,3 +175,23 @@ func need_line(species: Dictionary, hunger: float, world: Dictionary, plants: Di
 		return "Hungry  ·  wants %s" % food_name
 	var counts: Dictionary = world.get("plant_counts", {})
 	return restless_line(species, counts, plants)
+
+func habitat_line(beds: Array, plants: Dictionary) -> String:
+	var counts := {}
+	for bed in beds:
+		var crop_id := str(bed.get("plant_id", ""))
+		if crop_id == "":
+			continue
+		var crop_def: Dictionary = plants.get(crop_id, {})
+		var stand := habitat_of(crop_def)
+		if stand == "":
+			continue
+		counts[stand] = int(counts.get(stand, 0)) + 1
+	if counts.is_empty():
+		return ""
+	var names: Array = counts.keys()
+	names.sort()
+	var parts: PackedStringArray = PackedStringArray()
+	for stand_name in names:
+		parts.append("%s %d" % [str(stand_name).capitalize(), int(counts[stand_name])])
+	return "Habitats  ·  " + ", ".join(parts)
