@@ -72,6 +72,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_JELLY_PLAY") == "1":
+		await _run_jelly_play()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -7414,6 +7417,71 @@ func _run_capture() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/wave1_pond.png")
 	print("PETAL_CAPTURE_OK")
+	get_tree().quit(0)
+
+func _run_jelly_play() -> void:
+	Settings.reduce_motion = false
+	Clock.running = false
+	camera.snap_home()
+	var id := PetalDecide.choose(
+		"A player is about to pick up a jelly to feel squash, stretch, and bounce. Which species should they handle first?",
+		["bellhelp", "berrypatch", "cirlark"]
+	)
+	print("jelly_play species=%s tier=%s confidence=%s" % [id, PetalDecide.last_tier, PetalDecide.last_confidence])
+	var jelly := ecology.first(id)
+	if jelly == null:
+		jelly = ecology.force_spawn(id)
+	jelly.life = "settler"
+	jelly.leaving = false
+	jelly.reduce_motion = false
+	jelly.tier = 0
+	jelly.global_position = Vector3(-2.4, 0.18, -1.2)
+	jelly.vel = Vector3.ZERO
+	jelly.rotation.y = PI
+	set_tool("hands")
+	held = jelly
+	focus = jelly
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.35).timeout
+	jelly.grab(jelly.global_position + Vector3(1.55, 1.25, 0.15))
+	for _i in 16:
+		jelly._full(0.016)
+	if not jelly.held or jelly.feel != "held" or jelly.global_position.y < 0.28:
+		push_error("jelly play: grab did not lift")
+		get_tree().quit(1)
+		return
+	jelly.set_select(true, true)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/jelly_held.png")
+	jelly.sample_pos.clear()
+	jelly.sample_ms.clear()
+	jelly.sample_pos.append(jelly.global_position)
+	jelly.sample_pos.append(jelly.global_position + Vector3(2.6, 1.1, 0.4))
+	jelly.sample_ms.append(0)
+	jelly.sample_ms.append(90)
+	jelly.release()
+	held = null
+	if jelly.held:
+		push_error("jelly play: release left a held body")
+		get_tree().quit(1)
+		return
+	for _fly in 14:
+		jelly._full(0.016)
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.4, 0.0), 2.4)
+	await get_tree().create_timer(0.25).timeout
+	await _shot("/workspace/docs/screenshots/jelly_air.png")
+	for _land in 36:
+		jelly._full(0.016)
+	if jelly.held or not jelly.vel.is_finite() or jelly.global_position.y < -0.04 or jelly.global_position.y > 4.0:
+		push_error("jelly play: throw left a broken body")
+		get_tree().quit(1)
+		return
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.32, 0.0), 2.2)
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/jelly_land.png")
+	print("JELLY_PLAY_OK")
 	get_tree().quit(0)
 
 func _shot(path: String) -> void:

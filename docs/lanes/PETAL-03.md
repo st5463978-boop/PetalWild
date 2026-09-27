@@ -49,9 +49,9 @@ Player can pick up, stretch, squash, throw, bounce, and recover representative j
 - `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → **PETAL_SMOKE_OK** (includes `_smoke_jelly_feel`: grab lift, stretch, throw, no tunnel, separate, stall bounce)
 - `tests/smoke.gd` is a pre-existing parse warning-as-error on Variant inference (line 89). Not this lane.
 
-## Blockers
+## Visual QA
 
-None yet.
+`PETAL_JELLY_PLAY=1` runs a grab → stretch → throw → land loop and writes `docs/screenshots/jelly_held.png`, `jelly_air.png`, `jelly_land.png`. Species is a bounded `PetalDecide` choice (bellhelp / berrypatch / cirlark). Qwen3-VL is not used; it is not operational here. Wave1 capture is unchanged.
 
 ## Requests
 
