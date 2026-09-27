@@ -42,5 +42,42 @@ func _initialize() -> void:
 		push_error("state ranks are inverted")
 		quit(1)
 		return
+	var plants := {}
+	var catalog = JSON.parse_string(FileAccess.get_file_as_string("res://data/plants.json"))
+	for entry in catalog:
+		plants[str(entry.get("id", ""))] = entry
+	var meadow: Dictionary = plants["meadowbell"]
+	if rules.growth_factor(meadow, ["reed"], 1) <= 1.0:
+		push_error("a reed neighbour should hurry a meadowbell")
+		quit(1)
+		return
+	if rules.growth_factor(meadow, [], 5) >= 1.0:
+		push_error("five meadowbells should crowd")
+		quit(1)
+		return
+	var beds: Array = [
+		{"plant_id": "meadowbell", "ix": 1, "iz": 1},
+		{"plant_id": "reed", "ix": 1, "iz": 2},
+	]
+	if rules.garden_line(beds, plants) != "The meadow leans on the bank.":
+		push_error("the parish should name a reed beside a meadowbell")
+		quit(1)
+		return
+	var packed: Array = []
+	for i in 5:
+		packed.append({"plant_id": "meadowbell", "ix": i, "iz": 0})
+	if rules.garden_line(packed, plants) != "The meadow is crowded.":
+		push_error("the parish should name a crowded meadow")
+		quit(1)
+		return
+	if rules.garden_line([], plants) != "":
+		push_error("an empty garden should stay quiet")
+		quit(1)
+		return
+	var hungry: String = rules.need_line(bell, 0.2, {"plant_counts": {}}, plants)
+	if hungry.find("Hungry") == -1 or hungry.find("Meadowbell") == -1:
+		push_error("a hungry bellhelp should ask for meadowbells")
+		quit(1)
+		return
 	print("PETAL_RULES_OK")
 	quit(0)

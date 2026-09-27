@@ -6,6 +6,7 @@ var seed_rain := 0.0
 var seeded := ""
 var sown_at := Vector3.ZERO
 var _mark_sown := false
+var eco := EcologyRules.new()
 
 func _init() -> void:
 	for ix in GardenLayout.BED_W:
@@ -75,7 +76,8 @@ func tick(game_minutes: float, weather: String) -> Array:
 		# ponytail: a bed can wait for a later day; moisture and feed still move.
 		if soil.grow_from_day > Clock.day:
 			continue
-		soil.growth = minf(1.0, soil.growth + hours / grow_hours)
+		var rate := eco.growth_factor(definition, neighbor_ids(soil), count_plant(soil.plant_id))
+		soil.growth = minf(1.0, soil.growth + hours / grow_hours * rate)
 		if soil.growth >= 1.0:
 			soil.taken = false
 			soil.eaten_by = ""
@@ -181,6 +183,33 @@ func _can_hold(plot: SoilCell, plant_id: String) -> bool:
 		return false
 	var chem_need := str(definition.get("chem", ""))
 	return chem_need == "" or plot.chem == chem_need
+
+func neighbor_ids(plot: SoilCell) -> Array:
+	var ids: Array = []
+	var offsets: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for off in offsets:
+		var other := get_cell(plot.ix + off.x, plot.iz + off.y)
+		if other == null or other.plant_id == "":
+			continue
+		ids.append(other.plant_id)
+	return ids
+
+func count_plant(plant_id: String) -> int:
+	var total := 0
+	for cell in all():
+		var soil: SoilCell = cell
+		if soil.plant_id == plant_id:
+			total += 1
+	return total
+
+func beds() -> Array:
+	var rows: Array = []
+	for cell in all():
+		var soil: SoilCell = cell
+		if soil.plant_id == "":
+			continue
+		rows.append({"plant_id": soil.plant_id, "ix": soil.ix, "iz": soil.iz})
+	return rows
 
 func apply_chem(chem: String, count: int) -> int:
 	var empties: Array[SoilCell] = []
