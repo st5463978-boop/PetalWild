@@ -27,7 +27,7 @@ Behaviour ideas we may reimplement cleanly, in our own simulation and presentati
 - hop
 - a face that reacts while the body is stretched or in motion
 
-Those are interaction goals for a close-up creature. The Jelly-Baby implementation is not a dependency.
+Those are interaction goals for a close-up creature. The Jelly-Baby implementation is not a dependency. The file-by-file split, and the original spring that came out of it, is `JELLY_BABY_PORT_ANALYSIS.md`.
 
 ## 2. openage
 

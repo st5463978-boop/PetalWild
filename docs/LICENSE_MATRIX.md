@@ -11,7 +11,14 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 | OpenGameArt Forest Ambience, Slobad | GREEN | CC0 1.0 | `assets/third_party/opengameart/Forest_Ambience.mp3` |
 | Asset Quest Stylized Garden demo | GREEN | CC0 1.0 | In the running garden via `scripts/world/dressing.gd`. Files stay in `third_party/incoming/assetquest-stylized-garden-demo/` |
 | Inter font | GREEN | SIL OFL 1.1 | `assets/fonts/`. Reserved for the Hedge Hollow UI |
-| Jelly-Baby | REVIEW | GPL-3.0-only | Not imported. Behaviour reference only |
+| Jelly-Baby | REVIEW | GPL-3.0-only | Not imported. Original spring in `scripts/creatures/jelly_deform.gd` |
+| godot-jigglebones, WiggleBone | GREEN, unused | MIT | Skeleton addons. Not imported. Jellies have no skeleton |
+| OpenCityMaker | GREEN, unused | MIT | City 2048. Study only |
+| claude-code-game-studios, one-button game creation | GREEN, unused | MIT | Agent kits. Not imported |
+| Godot-MCP | GREEN, unused | Apache-2.0 | Editor bridge. Not imported |
+| game-creator | RED | no licence file | Not fetched into the tree |
+| Melon Lab | RED | no source licence | Hosted page only |
+| Catalogue lists (Astra, open-source-games, awesome-ai-built-games) | GREEN as lists | CC0-1.0 | Indexes only. Linked projects keep their own licences |
 | openage | REVIEW | GPL-3.0-or-later | Not imported. Architecture notes only |
 | redplanethq/town | REVIEW | AGPL-3.0-or-later plus Commons Clause | Not imported |
 | VivaPinataPlus | GREEN as a repo, unused | MIT | Systems research only. No content copied |
@@ -21,4 +28,4 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 
 YELLOW (CC-BY) : none accepted this wave.
 
-No GPL program code is linked into the game. A future decision to do that has to be explicit. The Hailo wrapper escalates tasks that ask to paste GPL source.
+No GPL program code is linked into the game. A future decision to do that has to be explicit. The Hailo wrapper escalates tasks that ask to paste GPL source. On 27 September 2026 the Pi decide service (`Qwen3-1.7B.hef`, not an RLCD policy) returned `DIRECT_IMPORT` for Jelly-Baby, openage, and town. Those answers were overridden. The jelly stretch in `scripts/creatures/jelly_deform.gd` is original MIT code.
