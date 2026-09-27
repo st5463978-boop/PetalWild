@@ -7214,31 +7214,31 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
-	var bell_bed := soil.get_cell(8, 6)
-	var reed_bed := soil.get_cell(8, 7)
-	var lone_bed := soil.get_cell(9, 0)
-	bell_bed.tilled = true
-	bell_bed.plant_id = "meadowbell"
-	bell_bed.growth = 0.2
-	bell_bed.moisture = 0.9
-	bell_bed.fertility = 0.5
-	bell_bed.wilt = 0.0
-	bell_bed.grow_from_day = 1
-	reed_bed.tilled = true
-	reed_bed.plant_id = "reed"
-	reed_bed.growth = 0.4
-	reed_bed.moisture = 0.9
-	reed_bed.fertility = 0.5
-	reed_bed.wilt = 0.0
-	reed_bed.grow_from_day = 1
-	lone_bed.tilled = true
-	lone_bed.plant_id = "meadowbell"
-	lone_bed.growth = 0.2
-	lone_bed.moisture = 0.9
-	lone_bed.fertility = 0.5
-	lone_bed.wilt = 0.0
-	lone_bed.grow_from_day = 1
-	if _plot_line(bell_bed).find("Reed nearby.") == -1:
+	var mix_bell := soil.get_cell(8, 6)
+	var mix_reed := soil.get_cell(8, 7)
+	var mix_lone := soil.get_cell(9, 0)
+	mix_bell.tilled = true
+	mix_bell.plant_id = "meadowbell"
+	mix_bell.growth = 0.2
+	mix_bell.moisture = 0.9
+	mix_bell.fertility = 0.5
+	mix_bell.wilt = 0.0
+	mix_bell.grow_from_day = 1
+	mix_reed.tilled = true
+	mix_reed.plant_id = "reed"
+	mix_reed.growth = 0.4
+	mix_reed.moisture = 0.9
+	mix_reed.fertility = 0.5
+	mix_reed.wilt = 0.0
+	mix_reed.grow_from_day = 1
+	mix_lone.tilled = true
+	mix_lone.plant_id = "meadowbell"
+	mix_lone.growth = 0.2
+	mix_lone.moisture = 0.9
+	mix_lone.fertility = 0.5
+	mix_lone.wilt = 0.0
+	mix_lone.grow_from_day = 1
+	if _plot_line(mix_bell).find("Reed nearby.") == -1:
 		push_error("smoke: a reed beside a meadowbell stayed quiet")
 		get_tree().quit(1)
 		return
@@ -7247,18 +7247,18 @@ func _run_smoke() -> void:
 		get_tree().quit(1)
 		return
 	soil.tick(60.0, "clear")
-	if bell_bed.growth <= lone_bed.growth:
+	if mix_bell.growth <= mix_lone.growth:
 		push_error("smoke: a reed neighbour did not hurry the bell")
 		get_tree().quit(1)
 		return
-	for ix in 5:
-		var crowd_bed := soil.get_cell(ix, 7)
-		crowd_bed.tilled = true
-		crowd_bed.plant_id = "meadowbell"
-		crowd_bed.growth = 0.5
-		crowd_bed.moisture = 0.9
-		crowd_bed.fertility = 0.5
-		crowd_bed.grow_from_day = 1
+	for mix_ix in 5:
+		var mix_crowd := soil.get_cell(mix_ix, 7)
+		mix_crowd.tilled = true
+		mix_crowd.plant_id = "meadowbell"
+		mix_crowd.growth = 0.5
+		mix_crowd.moisture = 0.9
+		mix_crowd.fertility = 0.5
+		mix_crowd.grow_from_day = 1
 	if _plot_line(soil.get_cell(0, 7)).find("Crowded.") == -1:
 		push_error("smoke: five meadowbells did not crowd")
 		get_tree().quit(1)
@@ -7267,22 +7267,22 @@ func _run_smoke() -> void:
 		push_error("smoke: a crowded meadow hid the bank neighbour")
 		get_tree().quit(1)
 		return
-	var guest := ecology.force_spawn("bellhelp")
-	guest.hunger = 0.2
+	var mix_jelly := ecology.force_spawn("bellhelp")
+	mix_jelly.hunger = 0.2
 	ecology.tick(0.2, world_snapshot(), 0.0)
-	if guest.mood != "hungry":
+	if mix_jelly.mood != "hungry":
 		push_error("smoke: a hungry bellhelp stayed content")
 		get_tree().quit(1)
 		return
-	var saw_need := false
+	var mix_need := false
 	ecology.states["bellhelp"] = "sighted"
 	for row in _journal_rows(world_snapshot()):
-		var card: Dictionary = row
-		if str(card.get("name", "")) != "Bellhelp":
+		var mix_card: Dictionary = row
+		if str(mix_card.get("name", "")) != "Bellhelp":
 			continue
-		if str(card.get("need", "")).find("Hungry") != -1:
-			saw_need = true
-	if not saw_need:
+		if str(mix_card.get("need", "")).find("Hungry") != -1:
+			mix_need = true
+	if not mix_need:
 		push_error("smoke: the journal hid a hungry bellhelp")
 		get_tree().quit(1)
 		return
