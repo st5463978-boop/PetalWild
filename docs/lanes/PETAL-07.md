@@ -21,7 +21,7 @@ Press **M** for the Vale tab (or Parish **C**, which now names the vale). Five p
 ## Branch / commit
 
 - Branch: `petal/07-region`
-- Commit: (this checkpoint)
+- Commit: `557c369` Tick neighbouring parishes on a persistent vale.
 
 ## Paths
 
