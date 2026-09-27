@@ -1,17 +1,59 @@
 {
-  "checked_at": "2026-09-27T19:30:00Z",
+  "checked_at": "2026-09-27T19:30:25Z",
   "baseline_commit": "f96457e8b78e443837b6e85d901af72362041229",
   "baseline_tag": "petal-campaign-baseline-20260927",
-  "landed": 0,
+  "landed": 7,
   "needed": 7,
   "complete": false,
   "lanes": {
-    "01": {"branch": "petal/01-foundation", "present": false, "commit": "", "status": "waiting"},
-    "02": {"branch": "petal/02-ecology", "present": false, "commit": "", "status": "waiting"},
-    "03": {"branch": "petal/03-jelly", "present": false, "commit": "", "status": "waiting"},
-    "04": {"branch": "petal/04-residents", "present": false, "commit": "", "status": "waiting"},
-    "05": {"branch": "petal/05-economy", "present": false, "commit": "", "status": "waiting"},
-    "06": {"branch": "petal/06-town", "present": false, "commit": "", "status": "waiting"},
-    "07": {"branch": "petal/07-region", "present": false, "commit": "", "status": "waiting"}
+    "01": {
+      "branch": "petal/01-foundation",
+      "present": true,
+      "commit": "327eb04fb4562201ac19d152f8ae16eb8df295ce",
+      "status": "landed",
+      "name": "foundation"
+    },
+    "02": {
+      "branch": "petal/02-ecology",
+      "present": true,
+      "commit": "a7714130bd75aca6a5f3b21945ec12b4a81a6a8d",
+      "status": "landed",
+      "name": "ecology"
+    },
+    "03": {
+      "branch": "petal/03-jelly",
+      "present": true,
+      "commit": "965b46d8371bb17aea04a143fd5a589c1cb2a331",
+      "status": "landed",
+      "name": "jelly"
+    },
+    "04": {
+      "branch": "petal/04-residents",
+      "present": true,
+      "commit": "6428c27e69cd114f038d2a977429d4024ef071ee",
+      "status": "landed",
+      "name": "residents"
+    },
+    "05": {
+      "branch": "petal/05-economy",
+      "present": true,
+      "commit": "a4d909b483521795feb14ab8cde257175d1cd472",
+      "status": "landed",
+      "name": "economy"
+    },
+    "06": {
+      "branch": "petal/06-town",
+      "present": true,
+      "commit": "fae30af76f1e5fa61f74a3588d222750ca4d05fd",
+      "status": "landed",
+      "name": "town"
+    },
+    "07": {
+      "branch": "petal/07-region",
+      "present": true,
+      "commit": "bdac12779efe6c40c299c48d2b932ab49b3aa55c",
+      "status": "landed",
+      "name": "region"
+    }
   }
 }

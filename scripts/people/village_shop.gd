@@ -20,7 +20,7 @@ static func wish(person: VegPerson) -> String:
 	if person.want != "" and PRODUCE.has(person.want):
 		return person.want
 	var options: Array = likes(person)
-	var choice := PetalDecide.choose(
+	var choice: String = PetalDecide.choose(
 		"%s is looking over the stall. What crop do they want?" % person.display_name,
 		options,
 		"want %s" % person.person_id
@@ -47,7 +47,7 @@ static func trade(person: VegPerson) -> Dictionary:
 	var pick := held[0]
 	if person.want != "" and held.has(person.want):
 		pick = person.want
-	var choice := PetalDecide.choose(
+	var choice: String = PetalDecide.choose(
 		"%s is at Petal Stall with %s on the counter. Buy or wait?" % [person.display_name, pick],
 		["wait", "buy"],
 		"stall %s" % person.person_id

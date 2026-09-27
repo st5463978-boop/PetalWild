@@ -33,7 +33,7 @@ func _catalogs() -> void:
 	for row in people:
 		who.append(str(row.get("id", "")))
 	_expect(who.has("lumen") and who.has("bram") and who.has("nessa") and not who.has("cara"), "live people, not Cara")
-	var produce: Array = VillageShop.PRODUCE
+	var produce := ["meadowbell", "peach", "reed", "bramble", "mosspear", "nightlantern"]
 	for id in produce:
 		_expect(ids.has(str(id)), "shop produce " + str(id))
 	var seed_ok := false
@@ -94,23 +94,25 @@ func _soil() -> void:
 	_expect(other.plant_id == "meadowbell" and absf(other.hue - 0.33) < 0.001 and absf(other.stature - 1.1) < 0.001, "cell traits roundtrip")
 
 func _save() -> void:
-	_expect(SaveGame.VERSION == 1, "save version 1")
+	var saver = load("res://scripts/autoload/save_game.gd").new()
+	_expect(int(saver.VERSION) == 1, "save version 1")
 	var payload := {"name": "Hedge Hollow", "clock": {"day": 2}, "economy": {"coins": 41}}
-	_expect(SaveGame.write_slot(8, payload), "write slot 8")
-	var loaded: Dictionary = SaveGame.read_slot(8)
+	_expect(saver.write_slot(8, payload), "write slot 8")
+	var loaded: Dictionary = saver.read_slot(8)
 	_expect(int(loaded.get("economy", {}).get("coins", 0)) == 41, "reload coins")
 
 func _decide() -> void:
-	var body: Dictionary = PetalDecide.body_for("Settle?", ["settle", "keep visiting"], "visitor")
+	var decide = load("res://scripts/autoload/petal_decide.gd").new()
+	var body: Dictionary = decide.body_for("Settle?", ["settle", "keep visiting"], "visitor")
 	_expect(body.has("question") and body.has("context") and body.has("options"), "decide schema keys")
 	_expect((body["options"] as Array).size() == 2, "decide options")
-	PetalDecide.forced = ""
-	var pick := PetalDecide.choose("x", ["wait", "buy"], "stall")
+	decide.forced = ""
+	var pick: String = decide.choose("x", ["wait", "buy"], "stall")
 	_expect(pick == "wait", "offline first option")
-	_expect(PetalDecide.last_tier == "offline", "offline tier")
-	PetalDecide.forced = "buy"
-	_expect(PetalDecide.choose("x", ["wait", "buy"]) == "buy", "forced buy")
-	PetalDecide.forced = ""
+	_expect(decide.last_tier == "offline", "offline tier")
+	decide.forced = "buy"
+	_expect(decide.choose("x", ["wait", "buy"]) == "buy", "forced buy")
+	decide.forced = ""
 
 func _campaign() -> void:
 	_expect(CampaignBoard.needed() == 7, "seven lanes")

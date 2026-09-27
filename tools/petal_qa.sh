@@ -22,6 +22,11 @@ run_script() {
     echo "FAIL $script" >&2
     exit 1
   fi
+  if grep -E "SCRIPT ERROR|Parse Error|FAIL " "$log" >/dev/null; then
+    cat "$log"
+    echo "errors in $script" >&2
+    exit 1
+  fi
   if ! grep -q "$token" "$log"; then
     cat "$log"
     echo "missing $token from $script" >&2

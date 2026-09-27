@@ -138,7 +138,8 @@ func _try_post(url: String, question: String, options: Array, context: String, t
 	var parsed = JSON.parse_string(raw)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
-	return parsed
+	var row: Dictionary = parsed
+	return row
 
 func _http(method: String, url: String, body: String, timeout: float) -> String:
 	if url == "":
@@ -202,14 +203,14 @@ func _http(method: String, url: String, body: String, timeout: float) -> String:
 			break
 	client.close()
 	var text := raw.get_string_from_utf8()
-	if method == "POST":
+	if method != "POST":
+		return text
 	var parsed = JSON.parse_string(text)
-	if typeof(parsed) == TYPE_DICTIONARY:
-		var row: Dictionary = parsed
-		row["_code"] = code
-		return JSON.stringify(row)
-	return JSON.stringify({"_code": code})
-	return text
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return JSON.stringify({"_code": code})
+	var row: Dictionary = parsed
+	row["_code"] = code
+	return JSON.stringify(row)
 
 func _log() -> void:
 	print("decide tier=%s confidence=%s margin=%s mode=%s p_yes=%s choice=%s q=%s" % [

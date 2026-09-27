@@ -78,7 +78,7 @@ static func run_integrate(garden: Node) -> void:
 	settle.queue_free()
 	PetalDecide.forced = ""
 	shopper.want = ""
-	var debug := garden._debug_text()
+	var debug: String = garden._debug_text()
 	if debug.find("decide") < 0 or debug.find("lanes") < 0:
 		push_error("integrate: F3 is missing decide/lanes")
 		tree.quit(1)
