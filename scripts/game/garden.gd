@@ -55,6 +55,7 @@ var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 var crate_yields := {}
 var last_shop_hour := -1.0
+var bus := GardenBus.new()
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -234,6 +235,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_cycle_seed(-1)
 			KEY_BRACKETRIGHT:
 				_cycle_seed(1)
+			KEY_SPACE:
+				_toggle_time()
 		return
 	if photo:
 		return
@@ -1361,6 +1364,7 @@ func self_play_beat() -> void:
 
 func quick_save() -> void:
 	if SaveGame.write_slot(SaveGame.active_slot, to_state()):
+		bus.note("save", "Saved slot %d." % SaveGame.active_slot)
 		toast("Saved slot %d." % SaveGame.active_slot)
 		audio.play_kind("ui", -12)
 	else:
@@ -1372,6 +1376,7 @@ func quick_load() -> void:
 		toast("Slot %d is empty." % SaveGame.active_slot)
 		return
 	apply_state(data)
+	bus.note("load", "Garden restored.")
 	toast("Garden restored.")
 
 func resume() -> void:
@@ -1444,8 +1449,16 @@ func toast(text: String) -> void:
 	events.push_front(text)
 	if events.size() > 24:
 		events.resize(24)
+	bus.note("toast", text)
 	if hud:
 		hud.toast(text)
+
+func _toggle_time() -> void:
+	if photo or get_tree().paused:
+		return
+	Clock.running = not Clock.running
+	bus.note("time", "rest" if not Clock.running else "move")
+	toast("Time rests." if not Clock.running else "Time moves.")
 
 func _ring_bells(world: Dictionary) -> void:
 	# ponytail: one quiet chime a day, and that chime carries one meadowbell seed.
@@ -1606,6 +1619,7 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
+		"crate_yields": crate_yields.duplicate(true),
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1665,6 +1679,17 @@ func apply_state(data: Dictionary) -> void:
 	var flower = data.get("bee_flower", [])
 	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
 		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
+	crate_yields = {}
+	var saved_yields = data.get("crate_yields", {})
+	if typeof(saved_yields) == TYPE_DICTIONARY:
+		for key in saved_yields.keys():
+			var row = saved_yields[key]
+			var copied: Array = []
+			if typeof(row) == TYPE_ARRAY:
+				for value in row:
+					copied.append(float(value))
+			crate_yields[str(key)] = copied
+	_clear_inspect()
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -7221,6 +7246,43 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+	crate_yields = {"peach": [1.5]}
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: a harvest yield did not save")
+		get_tree().quit(1)
+		return
+	crate_yields = {}
+	apply_state(SaveGame.read_slot(1))
+	var kept_yield = crate_yields.get("peach", [])
+	if typeof(kept_yield) != TYPE_ARRAY or kept_yield.is_empty() or absf(float(kept_yield[0]) - 1.5) > 0.001:
+		push_error("smoke: a harvest yield did not survive a reload")
+		get_tree().quit(1)
+		return
+	crate_yields = {}
+	var look := ecology.force_spawn("bellhelp")
+	look.global_position = GardenLayout.cell_center(2, 2)
+	_inspect_face(look)
+	if not look.inspected or look.mood != "happy" or str(events[0]).find("looks back") == -1 or bus.last_text("inspect") != "Bellhelp":
+		push_error("smoke: a face click did not look back")
+		get_tree().quit(1)
+		return
+	_clear_inspect()
+	if look.inspected:
+		push_error("smoke: a face stayed inspected")
+		get_tree().quit(1)
+		return
+	look.queue_free()
+	Clock.running = true
+	_toggle_time()
+	if Clock.running or bus.last_text("time") != "rest":
+		push_error("smoke: time would not rest")
+		get_tree().quit(1)
+		return
+	_toggle_time()
+	if not Clock.running:
+		push_error("smoke: time would not move")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -8460,7 +8522,11 @@ func _person(id: String) -> VegPerson:
 	return people.get(id)
 
 func _primary_down() -> void:
-	if _over_ui():
+	if _over_ui() or held:
+		return
+	var face := _pick_face()
+	if face:
+		_inspect_face(face)
 		return
 	var hit = _ground_hit()
 	if tool == "hands":
@@ -8692,6 +8758,58 @@ func _pick_jelly() -> Jelly:
 			best_distance = distance
 	return best
 
+func _pick_face() -> Jelly:
+	if camera == null or ecology == null:
+		return null
+	var mouse := get_viewport().get_mouse_position()
+	var origin := camera.project_ray_origin(mouse)
+	var direction := camera.project_ray_normal(mouse)
+	var best: Jelly
+	var best_distance := 0.28
+	for actor in ecology.actors:
+		var jelly: Jelly = actor
+		if not is_instance_valid(jelly) or not jelly.visible:
+			continue
+		var center := jelly.face_point()
+		var along := (center - origin).dot(direction)
+		if along < 0.0:
+			continue
+		var distance := (origin + direction * along).distance_to(center)
+		if distance < best_distance:
+			best = jelly
+			best_distance = distance
+	return best
+
+func _inspect_face(jelly: Jelly) -> void:
+	if jelly == null or not is_instance_valid(jelly):
+		return
+	if focus != null and focus != jelly and is_instance_valid(focus):
+		focus.clear_inspect()
+	focus = jelly
+	jelly.inspect_face()
+	if camera:
+		camera.focus_on(jelly.face_point(), 3.6)
+	bus.note("inspect", jelly.display_name)
+	toast("%s looks back." % jelly.display_name)
+	if hud:
+		hud.show_inspect(_inspect_card(jelly))
+	if audio:
+		audio.play_kind("squish", -18)
+
+func _inspect_card(jelly: Jelly) -> Dictionary:
+	return {
+		"name": jelly.display_name,
+		"mood": jelly.mood,
+		"life": jelly.life,
+		"bond": jelly.bond,
+	}
+
+func _clear_inspect() -> void:
+	if focus != null and is_instance_valid(focus):
+		focus.clear_inspect()
+	if hud:
+		hud.hide_inspect()
+
 func _pick_person() -> VegPerson:
 	var mouse := get_viewport().get_mouse_position()
 	var origin := camera.project_ray_origin(mouse)
@@ -8725,6 +8843,9 @@ func _update_highlight() -> void:
 	if _over_ui():
 		highlight.visible = false
 		return
+	if _pick_face() != null:
+		highlight.visible = false
+		return
 	var hit = _ground_hit()
 	if hit == null:
 		highlight.visible = false
@@ -8745,6 +8866,9 @@ func _update_status() -> void:
 	hud.set_status(Clock.clock_label(), Clock.weather, Economy.coins, _hover_text(), seed_name)
 
 func _hover_text() -> String:
+	var face := _pick_face()
+	if face:
+		return "%s's face  ·  click" % face.display_name
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
@@ -9212,6 +9336,8 @@ func _on_jelly(kind: String, jelly: Jelly) -> void:
 		toast("%s looks unimpressed." % jelly.display_name)
 	elif kind == "pet":
 		toast("%s bounces." % jelly.display_name)
+		audio.play_kind("squish", -18)
+	elif kind == "poke":
 		audio.play_kind("squish", -18)
 
 func _farewell_name(text: String) -> String:
@@ -10644,6 +10770,9 @@ func _esc() -> void:
 	if photo:
 		_toggle_photo()
 		return
+	if focus != null and is_instance_valid(focus) and focus.inspected:
+		_clear_inspect()
+		return
 	if get_tree().paused:
 		resume()
 	else:
@@ -10657,7 +10786,10 @@ func _debug_text() -> String:
 	var memory := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
 	var frame := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var vram := Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s\n%s" % [
+	var look_name := "-"
+	if focus != null and is_instance_valid(focus) and focus.inspected:
+		look_name = focus.display_name
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s\nface %s\n%s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10668,5 +10800,6 @@ func _debug_text() -> String:
 		Clock.clock_label(),
 		Clock.weather,
 		tool,
+		look_name,
 		PlayDirector.debug_block(),
 	]

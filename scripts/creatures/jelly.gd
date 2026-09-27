@@ -32,6 +32,8 @@ var eye_r: Node3D
 var mouth: Node3D
 var face_z := 0.0
 var eye_scale := 1.0
+var inspected := false
+var poke_time := 0.0
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -250,6 +252,28 @@ func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
 	mouth = _eye(root, Vector3(0, mouth_y, mouth_z), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))
 	mouth.scale = Vector3(0.7, 0.14, 0.2)
 
+func face_point() -> Vector3:
+	if mouth != null and is_instance_valid(mouth):
+		return mouth.global_position
+	if eye_l != null and is_instance_valid(eye_l):
+		return eye_l.global_position
+	return global_position + Vector3(0.0, radius * 0.45, face_z)
+
+func poke() -> void:
+	mood = "happy"
+	bond = minf(1.0, bond + 0.04)
+	ripple = 0.85
+	poke_time = 0.7
+	reacted.emit("poke", self)
+
+func inspect_face() -> void:
+	inspected = true
+	tier = 0
+	poke()
+
+func clear_inspect() -> void:
+	inspected = false
+
 func _eye(root: Node3D, at: Vector3, color: Color) -> Node3D:
 	var pivot := Node3D.new()
 	pivot.position = at
@@ -320,6 +344,10 @@ func release() -> void:
 	reacted.emit(kind, self)
 
 func _process(delta: float) -> void:
+	if poke_time > 0.0:
+		poke_time = maxf(0.0, poke_time - delta)
+	if inspected:
+		tier = 0
 	if tier >= 3:
 		visible = false
 		_coast(delta)
@@ -460,6 +488,13 @@ func _clamp_inside() -> void:
 
 func _update_face() -> void:
 	if eye_l == null:
+		return
+	if poke_time > 0.0:
+		eye_l.scale.y = 0.12
+		if eye_r:
+			eye_r.scale.y = 1.05
+		if mouth:
+			mouth.scale.y = 0.72
 		return
 	var shut := 1.0
 	if wants_sleep or mood == "sleepy":

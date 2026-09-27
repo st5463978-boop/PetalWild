@@ -15,6 +15,8 @@ var hover_label: Label
 var toast_label: Label
 var hint_label: Label
 var photo_label: Label
+var inspect_panel: Panel
+var inspect_box: VBoxContainer
 var journal_box: VBoxContainer
 var shop_box: VBoxContainer
 var people_box: VBoxContainer
@@ -43,7 +45,7 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   J journal   B stall   F8 play", 14, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   click a face   Space time   F8 play   J journal   B stall", 14, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
 	hint_label.offset_left = -420
@@ -56,6 +58,41 @@ func build(owner: Node) -> void:
 	photo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	photo_label.visible = false
 	add_child(photo_label)
+	_inspect_card(theme)
+
+func _inspect_card(theme: Theme) -> void:
+	inspect_panel = Panel.new()
+	inspect_panel.theme = theme
+	inspect_panel.visible = false
+	inspect_panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	inspect_panel.offset_left = 16
+	inspect_panel.offset_top = 92
+	inspect_panel.offset_right = 292
+	inspect_panel.offset_bottom = 268
+	add_child(inspect_panel)
+	inspect_box = VBoxContainer.new()
+	inspect_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inspect_box.offset_left = 10
+	inspect_box.offset_top = 8
+	inspect_box.offset_right = -10
+	inspect_box.offset_bottom = -8
+	inspect_box.add_theme_constant_override("separation", 4)
+	inspect_panel.add_child(inspect_box)
+
+func show_inspect(row: Dictionary) -> void:
+	if inspect_panel == null:
+		return
+	inspect_panel.visible = true
+	_clear(inspect_box)
+	inspect_box.add_child(ThemeKit.title(str(row.get("name", "")), 18))
+	inspect_box.add_child(ThemeKit.label("Mood  ·  %s" % str(row.get("mood", "")), 14))
+	inspect_box.add_child(ThemeKit.label("Bond  ·  %d%%" % int(float(row.get("bond", 0.0)) * 100.0), 14))
+	inspect_box.add_child(ThemeKit.label(str(row.get("life", "")).capitalize(), 13, ThemeKit.MOSS_DEEP))
+	inspect_box.add_child(ThemeKit.label("The face looks back. Esc lets go.", 12))
+
+func hide_inspect() -> void:
+	if inspect_panel:
+		inspect_panel.visible = false
 
 func _process(delta: float) -> void:
 	if _toast_time > 0.0:
@@ -270,6 +307,8 @@ func set_photo(on: bool) -> void:
 		shop.visible = false
 		pause_panel.visible = false
 		proposal.visible = false
+		if inspect_panel:
+			inspect_panel.visible = false
 
 func show_pause(on: bool) -> void:
 	pause_panel.visible = on
