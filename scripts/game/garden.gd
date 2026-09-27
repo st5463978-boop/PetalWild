@@ -9372,6 +9372,8 @@ func _farewell_name(text: String) -> String:
 	return ""
 
 func _on_ecology(text: String) -> void:
+	if ("hedge" in text) and focus != null and is_instance_valid(focus) and focus.inspected:
+		return
 	toast(text)
 	var nessa := _person("nessa")
 	if "turns back" in text:
