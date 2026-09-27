@@ -101,6 +101,10 @@ func _init() -> void:
 	_expect(lawn.distance_to(Vector3(0.0, 0.0, -16.6)) < 0.01, "leisure destination is Grove Park")
 	_expect(life.label_for("lumen") == "on the Grove Park lawn", "label names the park")
 	_expect(life.last_memory("lumen").find("Grove Park") >= 0, "a park walk is remembered")
+	_expect(ResourceLoader.exists("res://assets/characters/leek.glb"), "leek mesh is in the tree")
+	_expect(ResourceLoader.exists("res://assets/characters/carrot.glb"), "carrot mesh is in the tree")
+	_expect(ResourceLoader.exists("res://assets/characters/tomato.glb"), "tomato mesh is in the tree")
+	_expect(ResourceLoader.exists("res://assets/characters/human.glb"), "clay human mesh is in the tree")
 	print("RESIDENT_LIFE_OK")
 	quit(0)
 

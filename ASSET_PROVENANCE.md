@@ -17,6 +17,7 @@ Downloaded bytes kept: 26,864,773 (25.62 MiB) before Godot import sidecars.
 | Forest Ambience | Slobad | https://opengameart.org/content/forest-ambience | CC0 1.0 | 2026-09-22 | None | Music bed in the running garden (`scripts/audio/garden_audio.gd`) and in `petal_audio.gd` when the mp3 loads | None |
 | Stylized Garden demo | Asset Quest (Melissa) | https://assetquest.itch.io/stylized-garden-asset-pack | CC0 1.0 | 2026-09-22 | Plant cards use the basecolor and opacity atlases. Bench, planter, table, and umbrella use `Props_Basecolor.png` | `third_party/incoming/assetquest-stylized-garden-demo/`, instanced by `scripts/world/dressing.gd`. Credit is optional | None. Credit kept in CREDITS.md |
 | Inter | The Inter Project Authors | https://github.com/rsms/inter | SIL OFL 1.1 | 2026-09-22 | None | `assets/fonts/`. Brought in with the Hedge Hollow scene | Keep `assets/fonts/OFL-Inter.txt` with the fonts |
+| Veg folk and clay human | original PetalWild art | `art/characters` salvage | original | 2026-09-27 | Knee-height GLB export | `assets/characters/` on Lumen (leek), Bram (carrot), Nessa (tomato). Clay human is the unknown-family fallback. Town still does not spawn distant bodies | None |
 
 Poly Haven's licence page states that assets on the site are CC0: https://polyhaven.com/license
 

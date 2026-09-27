@@ -38,6 +38,7 @@ var poke_time := 0.0
 var feel := "idle"
 var recover_t := 0.0
 var stretch := 0.0
+var deform := JellyDeform.new()
 var selected := false
 var last_safe := Vector3.ZERO
 var bound := true
@@ -419,6 +420,8 @@ func grab(point: Vector3) -> void:
 func release() -> void:
 	held = false
 	vel = JellyFeel.throw_from_samples(sample_pos, sample_ms, vel)
+	vel += deform.release_flick(hold_target - global_position)
+	vel = JellyFeel.clamp_vel(vel)
 	var speed := vel.length()
 	var kind := JellyFeel.release_kind(speed)
 	if kind == "throw":
@@ -461,6 +464,7 @@ func _full(delta: float) -> void:
 		ripple = 0.0
 		squash = 1.0
 		stretch = 0.0
+		deform.reset()
 		feel = "idle"
 		_apply_deform()
 		if mat:
@@ -565,6 +569,8 @@ func _full(delta: float) -> void:
 		last_safe = global_position
 	var pull_len := global_position.distance_to(hold_target) if held else 0.0
 	stretch = JellyFeel.stretch_amount(pull_len, vel.length(), held, feel_stretch)
+	var spring_pull: Vector3 = (hold_target - global_position) if held else vel
+	deform.advance(delta, held, spring_pull, landed, not reduce_motion)
 	if held:
 		var pets: Dictionary = JellyFeel.pet_hold(pet_time, stretch, delta)
 		pet_time = float(pets["pet_time"])
@@ -601,20 +607,26 @@ func _apply_deform() -> void:
 		body_root = get_node_or_null("Body") as Node3D
 	if body_root == null:
 		return
-	body_root.scale = JellyFeel.body_scale(squash * (0.9 if is_hungry() and not held else 1.0), stretch)
+	var feel_scale := JellyFeel.body_scale(squash * (0.9 if is_hungry() and not held else 1.0), stretch)
+	if deform.stretch > 0.01 or deform.lag.length() > 0.001:
+		body_root.position = deform.lag
+		body_root.basis = deform.basis_for(deform.axis, deform.stretch).scaled(feel_scale)
+	else:
+		body_root.position = Vector3.ZERO
+		body_root.scale = feel_scale
 	if held:
 		var pull := hold_target - global_position
 		pull.y = 0.0
-		if pull.length() > 0.08:
+		if pull.length() > 0.08 and deform.stretch <= 0.08:
 			var lean := clampf(pull.length() * 0.12, 0.0, 0.35)
 			body_root.rotation.z = clampf(-pull.x * lean, -0.4, 0.4)
 			body_root.rotation.x = clampf(pull.z * lean, -0.4, 0.4)
-		else:
+		elif deform.stretch <= 0.08:
 			body_root.rotation.x = 0.0
 			body_root.rotation.z = 0.0
 	elif feel == "dizzy" or mood == "dizzy":
 		body_root.rotation.z = sin(Time.get_ticks_msec() * 0.012) * 0.22
-	else:
+	elif deform.stretch <= 0.08:
 		body_root.rotation.x = move_toward(body_root.rotation.x, 0.0, 0.08)
 		body_root.rotation.z = move_toward(body_root.rotation.z, 0.0, 0.08)
 	if halo:
@@ -667,6 +679,7 @@ func _coast(delta: float) -> void:
 		_pick_goal()
 	global_position.y = _stand_y()
 	stretch = 0.0
+	deform.reset()
 	squash = 1.0
 	_apply_deform()
 	site_time += delta

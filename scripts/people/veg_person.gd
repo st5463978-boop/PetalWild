@@ -29,6 +29,7 @@ var speech_time := 0.0
 var act_label: Label3D
 var body: Node3D
 var want := ""
+var mesh_root: Node3D
 
 func setup(definition: Dictionary) -> void:
 	person_id = str(definition.get("id", ""))
@@ -132,6 +133,8 @@ func _speed() -> float:
 func _build_body() -> void:
 	body = Node3D.new()
 	add_child(body)
+	if _mount_mesh():
+		return
 	match family:
 		"beet":
 			_beet()
@@ -139,6 +142,55 @@ func _build_body() -> void:
 			_pea()
 		_:
 			_leek()
+
+func _mesh_path() -> String:
+	match family:
+		"leek":
+			return "res://assets/characters/leek.glb"
+		"beet":
+			return "res://assets/characters/carrot.glb"
+		"pea":
+			return "res://assets/characters/tomato.glb"
+		_:
+			return "res://assets/characters/human.glb"
+
+func _mount_mesh() -> bool:
+	var path := _mesh_path()
+	if not ResourceLoader.exists(path):
+		return false
+	var packed: PackedScene = load(path) as PackedScene
+	if packed == null:
+		return false
+	mesh_root = packed.instantiate() as Node3D
+	if mesh_root == null:
+		return false
+	mesh_root.name = "FolkMesh"
+	body.add_child(mesh_root)
+	_skin(mesh_root)
+	return true
+
+func _skin(node: Node) -> void:
+	if not ResourceLoader.exists("res://shaders/veg_skin.gdshader"):
+		return
+	if node is MeshInstance3D:
+		var mesh_node := node as MeshInstance3D
+		var n := mesh_node.name.to_lower()
+		if "leaf" in n or "eye" in n or "face" in n or "mouth" in n or "hat" in n or "can" in n:
+			pass
+		else:
+			var mat := ShaderMaterial.new()
+			mat.shader = load("res://shaders/veg_skin.gdshader") as Shader
+			mat.set_shader_parameter("skin_tint", Color(1, 1, 1))
+			mat.set_shader_parameter("roughness", 0.42)
+			mat.set_shader_parameter("sss_strength", 0.35)
+			var imported: Material = mesh_node.get_active_material(0)
+			if imported is StandardMaterial3D:
+				var std := imported as StandardMaterial3D
+				if std.albedo_texture != null:
+					mat.set_shader_parameter("albedo_tex", std.albedo_texture)
+			mesh_node.material_override = mat
+	for child in node.get_children():
+		_skin(child)
 
 func _leek() -> void:
 	_stalk()

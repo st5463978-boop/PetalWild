@@ -29,12 +29,8 @@ New work branches use the prefix `cursor/` and the suffix `-5bfd`. This integrat
 
 Do not copy GPL or AGPL implementation into any of these directories. TiP-Recomp is not a source.
 
-## Concept art
+## Art desk
 
-Hailo produces every PetalWild image with its built-in generator. Do not generate concept art or visual assets in this repo (no image-generation tools or APIs, and no Higgsfield).
+When a pass needs art, file a YAML request in `art_desk/requests/` (schema in `art_desk/README.md`). Do not make placeholder art. Do not call paid image APIs, Hailo's generator, OpenRouter, or Higgsfield (0 authorized). The Game Art Director watches that folder, generates the files, and commits them to `assets/art/` (`res://assets/art/`). Delivery is `art_desk/done/<id>/request.yaml` with `status: delivered` and the files at `target`.
 
-To request art, add `art_requests/<yyyymmdd>-<short-slug>.md` with what the asset is for, the subject, the composition, the aspect ratio (`1:1`, `4:3`, `3:4`, `16:9`, or `9:16`), the number of images, and the target path in the repo. End the turn with a final-report section headed exactly `ART REQUEST` that lists those files. Hailo generates the images and returns them as attachments under `uploads/`. Move them to the target path and commit.
-
-House style: a dreamy but photographic 3D render; a blue-green forget-me-not palette with gold trim; soft Ghibli-style veg people mixed with Grok buddies (small rounded chrome-and-teal robots) and real people; a psychedelic, agentic motif of glowing gold threads connecting stars, like Astra's logo.
-
-Caps, Scott's own: 30 images per rolling hour and 150 per rolling day, warning at 80%. Batch requests and ask only for the images the work needs. If a request would exceed a cap, Hailo refuses it or defers it until the window rolls over.
+House style: **Viva Piñata-style, painterly, saturated, chunky and toy-like.**

@@ -13,6 +13,7 @@ func _init() -> void:
 	_hungry()
 	_nuzzle()
 	_park_land()
+	_deform()
 	print("JELLY_FEEL_OK")
 	quit(0)
 
@@ -147,6 +148,30 @@ func _park_land() -> void:
 	_expect(pos.z < -14.0, "the land stays on the park lawn")
 	var clamped: Vector3 = JellyFeel.clamp_pos(pad, Vector3.ZERO)
 	_expect(clamped.z >= JellyFeel.GARDEN_MIN.z - 0.01, "garden clamp cannot rest on the park")
+
+func _deform() -> void:
+	var spring := JellyDeform.new()
+	for _i in 30:
+		spring.advance(1.0 / 60.0, true, Vector3(1.2, 0.2, 0.0), false, true)
+	_expect(spring.stretch > 0.08, "a pull builds stretch")
+	_expect(spring.axis.x > 0.8, "stretch follows the pull")
+	var peak := spring.stretch
+	var basis := spring.basis_for(Vector3(1.0, 0.0, 0.0), 0.4)
+	var along := basis * Vector3(1.0, 0.0, 0.0)
+	var side := basis * Vector3(0.0, 1.0, 0.0)
+	_expect(along.x > 1.3, "the pull axis lengthens")
+	_expect(side.length() < 0.9, "the waist pinches")
+	for _j in 90:
+		spring.advance(1.0 / 60.0, false, Vector3.ZERO, false, true)
+	_expect(spring.stretch < peak * 0.35, "stretch settles after release")
+	spring.advance(1.0 / 60.0, false, Vector3.ZERO, true, true)
+	_expect(spring.impact > 0.5, "a landing kicks the body")
+	var pet := spring.release_flick(Vector3(0.05, 0.0, 0.0))
+	_expect(pet == Vector3.ZERO, "a small release stays a pet")
+	var thrown := spring.release_flick(Vector3(2.0, 0.4, 0.0))
+	_expect(thrown.length() > 0.2 and thrown.length() <= 0.81, "a flick adds a capped shove")
+	spring.advance(1.0 / 60.0, false, Vector3.ZERO, false, false)
+	_expect(spring.stretch == 0.0 and spring.impact == 0.0, "reduced motion clears the spring")
 
 func _expect(ok: bool, label: String) -> void:
 	if ok:
