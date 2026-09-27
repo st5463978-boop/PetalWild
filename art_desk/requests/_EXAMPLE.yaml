@@ -1,0 +1,12 @@
+# Template: copy to requests/<id>.yaml. Files starting with _ are ignored.
+id: PETAL-01-001
+pass: PETAL-01
+kind: texture
+subject: "Cobblestone garden path, seamless"
+style: "Viva Piñata-style, painterly, saturated, chunky and toy-like. Warm pastel, soft AO, no hard shadows."
+size: 1024x1024
+count: 2
+priority: normal
+target: assets/art/textures/PETAL-01-001/cobblestone_path.png
+status: requested
+due: 2026-10-01

@@ -92,13 +92,7 @@ Commit messages for a Hailo world change name the piece in the subject and put i
 
 ## Art requests
 
-Hailo generates every image with its built-in generator. Do not call image-generation tools, image APIs, or Higgsfield.
-
-Write `art_requests/<yyyymmdd>-<short-slug>.md` with: what the asset is for, subject, composition, aspect ratio (`1:1`, `4:3`, `3:4`, `16:9`, or `9:16`), number of images, and the target path in the repo. End the turn with a section headed exactly `ART REQUEST` listing those files. Hailo returns attachments under `uploads/`. Move them to the target path and commit.
-
-House style: a dreamy but photographic 3D render; a blue-green forget-me-not palette with gold trim; soft Ghibli-style veg people mixed with Grok buddies (small rounded chrome-and-teal robots) and real people; glowing gold threads connecting stars, like Astra's logo.
-
-Caps are Scott's, not the vendor's: 30 images per rolling hour, 150 per rolling day, warn at 80%. Batch, and ask only for images the work needs. Hailo refuses or defers a request that would exceed a cap.
+Superseded by `art_desk/README.md`. File YAML in `art_desk/requests/`. Do not make placeholder art or call paid image APIs / Higgsfield. House style: Viva Piñata-style, painterly, saturated, chunky and toy-like. The Game Art Director commits into `assets/art/`.
 
 ## Last 15 commits on main before this handoff
 
