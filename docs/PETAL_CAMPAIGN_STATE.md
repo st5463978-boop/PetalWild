@@ -30,15 +30,15 @@ Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`.
 
 ## Integration
 
-Playable canonical build on this branch. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy.
+Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy.
 
-03 landing frame: one new overhead pin (`_pin_overhead`, pitch 62) after the air shot. Follow-cam land was abandoned on 03 (3 strikes). Result recorded after `PETAL_JELLY_PLAY`.
+03 land frame: one new overhead pin (`_pin_overhead`, pitch 62) after the air shot. Follow-cam land was already 3-strike abandoned on 03. `JELLY_PLAY_OK` (`land_y` finite, feel `air` at 0.49). `docs/screenshots/jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants.
 
-## Tests (last green on `a35d281`; re-run after this port)
+## Tests (this tree, Godot 4.8-dev6 llvmpipe, dummy ALSA)
 
-Pending on this tree. Do not treat as passed until `petal_qa`, `PETAL_INTEGRATE`, `PETAL_SMOKE`, and `PETAL_SELFPLAY` are re-run here.
+`PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` `JELLY_PLAY_OK`
 
-Qwen3-VL visual assessor is not operational here. Lane capture frames live under `docs/screenshots/`.
+Qwen3-VL is not operational. Frames under `docs/screenshots/`. Baseline leak warnings remain.
 
 ## Remaining
 
