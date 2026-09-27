@@ -14,5 +14,13 @@
     "lock_reason": "Nightlantern seed stays wrapped until night-loam appears in the beds."
   },
   {"id": "fertilizer", "name": "Fertiliser", "price": 6, "kind": "feed"},
-  {"id": "home_kit", "name": "Home kit", "price": 20, "kind": "kit"}
+  {"id": "home_kit", "name": "Home kit", "price": 20, "kind": "kit"},
+  {
+    "id": "hedge_tea",
+    "name": "Hedge tea",
+    "price": 22,
+    "kind": "goods",
+    "sell_price": 22,
+    "blurb": "A cup from the tea-house kettle. Peach and meadowbell, carried to the stall crate."
+  }
 ]

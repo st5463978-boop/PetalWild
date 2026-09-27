@@ -39,5 +39,13 @@ func note_population(people: int, residents: int, quality: float, coins: int) ->
 	district_stats["coins"] = coins
 	district_stats["employed"] = 1 if people > 0 else 0
 
+func note_aggregate(n: int) -> void:
+	note_town(0, n)
+
+func note_town(individuals: int, distant: int) -> void:
+	# ponytail: L3 is named folk in view; L4 is the rest of the settlement.
+	tiers["3"] = int(tiers.get("3", 0)) + individuals
+	tiers["4"] = distant
+
 func note_vale(data: Dictionary) -> void:
 	vale_lod = data

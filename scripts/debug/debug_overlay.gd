@@ -16,7 +16,7 @@ func build(owner: Node) -> void:
 	panel.offset_left = -360
 	panel.offset_right = -16
 	panel.offset_top = 90
-	panel.offset_bottom = 560
+	panel.offset_bottom = 620
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -34,6 +34,7 @@ func build(owner: Node) -> void:
 	_button(box, "Next hour", func(): host.debug_hour(1.0))
 	_button(box, "Force rain", func(): host.debug_weather("rain"))
 	_button(box, "Make resident", func(): host.debug_resident())
+	_button(box, "Self-play beat", func(): host.self_play_beat())
 	_button(box, "Save", func(): host.quick_save())
 	_button(box, "Load", func(): host.quick_load())
 
