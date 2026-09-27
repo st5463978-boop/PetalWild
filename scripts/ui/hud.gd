@@ -68,7 +68,7 @@ func _inspect_card(theme: Theme) -> void:
 	inspect_panel.offset_left = 16
 	inspect_panel.offset_top = 92
 	inspect_panel.offset_right = 292
-	inspect_panel.offset_bottom = 268
+	inspect_panel.offset_bottom = 348
 	add_child(inspect_panel)
 	inspect_box = VBoxContainer.new()
 	inspect_box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -87,8 +87,14 @@ func show_inspect(row: Dictionary) -> void:
 	inspect_box.add_child(ThemeKit.title(str(row.get("name", "")), 18))
 	inspect_box.add_child(ThemeKit.label("Mood  ·  %s" % str(row.get("mood", "")), 14))
 	inspect_box.add_child(ThemeKit.label("Bond  ·  %d%%" % int(float(row.get("bond", 0.0)) * 100.0), 14))
+	var hunger_line := str(row.get("hunger_line", ""))
+	if hunger_line != "":
+		inspect_box.add_child(ThemeKit.label(hunger_line, 14))
+	var place := str(row.get("place", ""))
+	if place != "":
+		inspect_box.add_child(ThemeKit.label(place, 13, ThemeKit.MOSS_DEEP))
 	inspect_box.add_child(ThemeKit.label(str(row.get("life", "")).capitalize(), 13, ThemeKit.MOSS_DEEP))
-	inspect_box.add_child(ThemeKit.label("The face looks back. Esc lets go.", 12))
+	inspect_box.add_child(ThemeKit.label(str(row.get("hint", "The face looks back. Esc lets go.")), 12))
 
 func hide_inspect() -> void:
 	if inspect_panel:

@@ -34,6 +34,7 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 - Space rests or moves garden time.
 - Harvest yields survive F5/F9.
 - Hover over a face reads `Bellhelp's face · click`.
+- Click again while they are hungry beside ripe food: you share that bed.
 
 ## Paths
 
@@ -47,8 +48,8 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 
 ## Interface
 
-- `Jelly.inspect_face()` / `clear_inspect()` / `poke()` / `face_point()`
-- `Garden._inspect_face()` — any tool, before bed tools
+- `Jelly.inspect_face()` / `clear_inspect()` / `poke()` / `face_point()` / `snack()`
+- `Garden._inspect_face()` — any tool, before bed tools. A second click shares ripe food.
 - `GardenBus.note(kind, text)`
 - Save payload key `crate_yields`
 
@@ -67,6 +68,23 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 Qwen3-VL is not operational in this repo (no assessor). Visual QA is the capture loop plus reading the face frame.
 
 Face frame evidence: inspect card shows Bellhelp, mood happy, bond 12%, Visitor. The body sits under the stall roof in this llvmpipe angle; the card is the player-facing proof. PETAL-05 owns dressing density.
+
+## Pass 2
+
+Merged `petal/08-integration` @ `3402530` so this lane builds on the seven-lane garden.
+
+Highest-value garden-rung work:
+
+1. **Inspect card names the garden.** Hunger, food plant, habitat, and the bed they stand on. A second click shares ripe food when they are empty enough.
+2. **Share a snack.** Visitor or resident. Uses the existing bite soil write (`growth` 0.55, `eaten_by`, `bite_wait`). Connects inspect (01) to ecology feeding (02).
+3. **Rest names the hour, and the face shot stands on a meadow bed** instead of under the stall.
+
+| Check | Result |
+| --- | --- |
+| `tests/test_foundation.gd` | pending |
+| `PETAL_SMOKE=1` garden | pending (card fields + snack share) |
+| existing markers | keep green |
+| `PETAL_FACE_SHOT=1` | pending → `docs/screenshots/wave1_face.png` |
 
 ## Requests
 

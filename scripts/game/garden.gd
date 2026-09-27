@@ -60,6 +60,7 @@ var last_shop_hour := -1.0
 var bus := GardenBus.new()
 var region := RegionSim.new()
 var region_stamp := -1
+var inspect_key := ""
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -199,6 +200,7 @@ func _process(delta: float) -> void:
 		visual_timer = 0.0
 		_sync_plants()
 		_refresh_soil_colors()
+		_refresh_inspect()
 	_update_highlight()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	_lamps()
@@ -1741,7 +1743,10 @@ func _toggle_time() -> void:
 		return
 	Clock.running = not Clock.running
 	bus.note("time", "rest" if not Clock.running else "move")
-	toast("Time rests." if not Clock.running else "Time moves.")
+	_refresh_soil_colors()
+	_refresh_inspect()
+	var beat := Clock.clock_label()
+	toast("Time rests.  %s." % beat if not Clock.running else "Time moves.  %s." % beat)
 
 func _ring_bells(world: Dictionary) -> void:
 	# ponytail: one quiet chime a day, and that chime carries one meadowbell seed.
@@ -7629,6 +7634,42 @@ func _run_smoke() -> void:
 		push_error("smoke: time would not move")
 		get_tree().quit(1)
 		return
+	var snack_plot := soil.get_cell(2, 2)
+	var keep_id := snack_plot.plant_id
+	var keep_g := snack_plot.growth
+	var keep_till := snack_plot.tilled
+	var keep_m := snack_plot.moisture
+	var keep_f := snack_plot.fertility
+	var keep_taken := snack_plot.taken
+	var keep_who := snack_plot.eaten_by
+	var keep_wilt := snack_plot.wilt
+	_force_plant(2, 2, "meadowbell", 1.0)
+	look.hunger = 0.2
+	look.mood = "hungry"
+	look.bite_wait = 0.0
+	look.global_position = GardenLayout.cell_center(2, 2)
+	_inspect_face(look)
+	var snack_card := _inspect_card(look)
+	if str(snack_card.get("hunger_line", "")).find("Meadowbell") == -1 or str(snack_card.get("place", "")).find("Meadow") == -1 or str(snack_card.get("hint", "")).find("share") == -1:
+		push_error("smoke: the inspect card hid the garden")
+		get_tree().quit(1)
+		return
+	_inspect_face(look)
+	if look.hunger < 0.99 or snack_plot.eaten_by != look.display_name or snack_plot.growth > 0.6 or bus.last_text("snack") != "Meadowbell" or str(events[0]).find("share") == -1:
+		push_error("smoke: sharing a snack did not feed them")
+		get_tree().quit(1)
+		return
+	_clear_inspect()
+	snack_plot.plant_id = keep_id
+	snack_plot.growth = keep_g
+	snack_plot.tilled = keep_till
+	snack_plot.moisture = keep_m
+	snack_plot.fertility = keep_f
+	snack_plot.taken = keep_taken
+	snack_plot.eaten_by = keep_who
+	snack_plot.wilt = keep_wilt
+	look.hunger = 1.0
+	look.bite_wait = 2.0
 	var mix_bell := soil.get_cell(8, 6)
 	var mix_reed := soil.get_cell(8, 7)
 	var mix_lone := soil.get_cell(9, 0)
@@ -8062,12 +8103,15 @@ func _run_capture() -> void:
 
 func _run_face_shot() -> void:
 	Settings.reduce_motion = true
+	_force_plant(1, 1, "meadowbell", 1.0)
+	_sync_plants()
 	var jelly := ecology.first("bellhelp")
 	if jelly == null:
 		jelly = ecology.force_spawn("bellhelp")
 	jelly.reduce_motion = true
 	jelly.leaving = false
-	jelly.global_position = GardenLayout.STALL + Vector3(1.6, 0.15, 1.35)
+	jelly.hunger = 0.22
+	jelly.global_position = GardenLayout.cell_center(1, 1) + Vector3(0.0, 0.12, 0.0)
 	jelly.rotation.y = PI
 	jelly.vel = Vector3.ZERO
 	_inspect_face(jelly)
@@ -9597,6 +9641,8 @@ func _pick_face() -> Jelly:
 func _inspect_face(jelly: Jelly) -> void:
 	if jelly == null or not is_instance_valid(jelly):
 		return
+	if jelly.inspected and _offer_snack(jelly):
+		return
 	if focus != null and focus != jelly and is_instance_valid(focus):
 		focus.clear_inspect()
 	focus = jelly
@@ -9606,22 +9652,87 @@ func _inspect_face(jelly: Jelly) -> void:
 		camera.focus_on(jelly.global_position + Vector3(0.0, 0.45, 0.0), 7.4)
 	bus.note("inspect", jelly.display_name)
 	toast("%s looks back." % jelly.display_name)
+	inspect_key = ""
 	if hud:
 		hud.show_inspect(_inspect_card(jelly))
 	if audio:
 		audio.play_kind("squish", -18)
 
 func _inspect_card(jelly: Jelly) -> Dictionary:
+	var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+	var food_id := _feed_plant(jelly.species_id)
+	var food_name := str(ContentDB.plant(food_id).get("name", food_id))
+	var habitat := ecology.rules.habitat_of(definition)
+	var cell := GardenLayout.world_to_cell(jelly.global_position)
+	var bed := ""
+	if cell.x >= 0:
+		var plot := soil.get_cell(cell.x, cell.y)
+		if plot != null and plot.plant_id != "":
+			bed = str(ContentDB.plant(plot.plant_id).get("name", plot.plant_id))
+	var can_share := jelly.hunger < 0.85 and food_id != "" and _ripe_near(jelly.global_position, food_id, 2.2) != null
+	var hunger_line := "Hunger  ·  %d%%" % int(jelly.hunger * 100.0)
+	if food_name != "":
+		hunger_line += "  ·  wants %s" % food_name
+	var place := ""
+	if habitat != "" and bed != "":
+		place = "%s  ·  on the %s" % [habitat.capitalize(), bed]
+	elif habitat != "":
+		place = habitat.capitalize()
+	elif bed != "":
+		place = "On the %s" % bed
+	var hint := "The face looks back. Esc lets go."
+	if can_share:
+		hint = "Click again to share the %s." % food_name
 	return {
 		"name": jelly.display_name,
 		"mood": jelly.mood,
 		"life": jelly.life,
 		"bond": jelly.bond,
+		"hunger_line": hunger_line,
+		"place": place,
+		"hint": hint,
 	}
+
+func _offer_snack(jelly: Jelly) -> bool:
+	# ponytail: one ripe food bed in reach; visitors can take a share before they settle.
+	if jelly.hunger >= 0.85:
+		return false
+	var plant_id := _feed_plant(jelly.species_id)
+	if plant_id == "":
+		return false
+	var plot := _ripe_near(jelly.global_position, plant_id, 2.2)
+	if plot == null:
+		return false
+	plot.growth = 0.55
+	plot.taken = true
+	plot.eaten_by = jelly.display_name
+	jelly.snack()
+	var food_name := str(ContentDB.plant(plant_id).get("name", plant_id))
+	bus.note("snack", food_name)
+	toast("You share the %s." % food_name)
+	inspect_key = ""
+	if hud:
+		hud.show_inspect(_inspect_card(jelly))
+	if audio:
+		audio.play_kind("squish", -16)
+	_sync_plants()
+	return true
+
+func _refresh_inspect() -> void:
+	if focus == null or not is_instance_valid(focus) or not focus.inspected or hud == null:
+		inspect_key = ""
+		return
+	var row := _inspect_card(focus)
+	var key := "%s|%s|%s|%s|%s" % [row.get("mood", ""), row.get("hunger_line", ""), row.get("place", ""), row.get("hint", ""), str(int(float(row.get("bond", 0.0)) * 100.0))]
+	if key == inspect_key:
+		return
+	inspect_key = key
+	hud.show_inspect(row)
 
 func _clear_inspect() -> void:
 	if focus != null and is_instance_valid(focus):
 		focus.clear_inspect()
+	inspect_key = ""
 	if hud:
 		hud.hide_inspect()
 
@@ -9698,6 +9809,10 @@ func _update_status() -> void:
 func _hover_text() -> String:
 	var face := _pick_face()
 	if face:
+		if face.inspected:
+			var food_id := _feed_plant(face.species_id)
+			if face.hunger < 0.85 and food_id != "" and _ripe_near(face.global_position, food_id, 2.2) != null:
+				return "%s's face  ·  click to share" % face.display_name
 		return "%s's face  ·  click" % face.display_name
 	if tool == "hands" or held != null:
 		var jelly: Jelly = held if held != null else _pick_jelly()

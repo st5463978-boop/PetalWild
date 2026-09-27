@@ -5,10 +5,12 @@ func _init() -> void:
 	bus.note("inspect", "Bellhelp")
 	bus.note("save", "Saved slot 1.")
 	bus.note("time", "rest")
+	bus.note("snack", "Meadowbell")
 	_expect(bus.last_text("inspect") == "Bellhelp", "inspect stays on the bus")
 	_expect(bus.last_text("save") == "Saved slot 1.", "save stays on the bus")
 	_expect(bus.last_text("time") == "rest", "time rest stays on the bus")
-	_expect(bus.log.size() == 3, "bus keeps three notes")
+	_expect(bus.last_text("snack") == "Meadowbell", "snack stays on the bus")
+	_expect(bus.log.size() == 4, "bus keeps four notes")
 
 	var saver = load("res://scripts/autoload/save_game.gd").new()
 	var payload := {
@@ -52,6 +54,11 @@ func _init() -> void:
 	_expect(jelly.mood == "happy", "a poked face is happy")
 	_expect(jelly.bond > 0.08, "a poked face gains bond")
 	_expect(jelly.mouth != null, "a face has a mouth")
+	jelly.hunger = 0.2
+	jelly.snack()
+	_expect(jelly.hunger > 0.99, "a snack fills hunger")
+	_expect(jelly.bite_wait >= 3.0, "a snack waits before the next bite")
+	_expect(jelly.mood == "happy", "a snack is happy")
 	jelly.clear_inspect()
 	_expect(not jelly.inspected, "clearing a face lets go")
 	jelly.free()
