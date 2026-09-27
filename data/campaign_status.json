@@ -1,57 +1,58 @@
 {
-  "checked_at": "2026-09-27T20:09:04Z",
+  "checked_at": "2026-09-27T23:30:49Z",
   "baseline_commit": "f96457e8b78e443837b6e85d901af72362041229",
   "baseline_tag": "petal-campaign-baseline-20260927",
   "landed": 7,
   "needed": 7,
   "complete": true,
+  "pass": 2,
   "lanes": {
     "01": {
       "branch": "petal/01-foundation",
       "present": true,
-      "commit": "7d5097e767afce379197383d89e78eb0d829c3a2",
+      "commit": "68b126bb4a1d0f336c96632c493ea4a35f9d4235",
       "status": "landed",
       "name": "foundation"
     },
     "02": {
       "branch": "petal/02-ecology",
       "present": true,
-      "commit": "aab1ecafb3fa19a41a22f61d18cc1f5c351dd0d0",
+      "commit": "71573f6988f01222ade521c622d2dec49c46e772",
       "status": "landed",
       "name": "ecology"
     },
     "03": {
       "branch": "petal/03-jelly",
       "present": true,
-      "commit": "c3f55ddf1f698851cd136b5c6576c7dd6be810b3",
+      "commit": "7e32d11939b940cfb674bb5b40b3e0d504305960",
       "status": "landed",
       "name": "jelly"
     },
     "04": {
       "branch": "petal/04-residents",
       "present": true,
-      "commit": "6b48d2ecea1513370ef66b886a4b9b5804e9fa0d",
+      "commit": "5105b63e05ee9505689411f010e5814cc03e8c17",
       "status": "landed",
       "name": "residents"
     },
     "05": {
       "branch": "petal/05-economy",
       "present": true,
-      "commit": "b5b90a6d77e80104d2aa034ef345e3ef359e4480",
+      "commit": "3259c490a09396e5a7b6d03822465a5c066ec2cc",
       "status": "landed",
       "name": "economy"
     },
     "06": {
       "branch": "petal/06-town",
       "present": true,
-      "commit": "f4c63d32e7a95f21dd361d184276fee61785f334",
+      "commit": "bfff0066ca9e21c5f1c12d8512eb0545a3e52740",
       "status": "landed",
       "name": "town"
     },
     "07": {
       "branch": "petal/07-region",
       "present": true,
-      "commit": "cd45eb422e947c509f19d4eb11a1ada03d9b7f1a",
+      "commit": "ca5049503f36023a61cbd4e6b884b69aebeebb73",
       "status": "landed",
       "name": "region"
     }

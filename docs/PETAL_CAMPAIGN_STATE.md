@@ -13,49 +13,51 @@ Owned by PETAL-08 on `petal/08-integration`. Durable facts only.
 
 Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, context, options[]}` → `choice, index, scores, confidence, margin, mode, p_yes`. Offline unless `PETAL_DECIDE=1`. Chip HEF path not used. Details: `docs/PETAL_CAMPAIGN_DECISION_LAYER.md`.
 
-## Lanes
+## Lanes (pass 2)
 
-| Lane | Branch | Tip | In 08 | Acceptance |
+| Lane | Branch | Tip | In 08 | Pass-2 slice |
 | --- | --- | --- | --- | --- |
-| 01 | `petal/01-foundation` | `7d5097e` | ported | face inspect, Space rest, yield save |
-| 02 | `petal/02-ecology` | `aab1eca` | ported | habitat tally, reed neighbour, crowd, hunger |
-| 03 | `petal/03-jelly` | `c3f55dd` | ported | grab, stretch, throw, bounce; land frame still missed |
-| 04 | `petal/04-residents` | `6b48d2e` | ported | households, hunger, company, ties, jobs; no porch overshoot |
-| 05 | `petal/05-economy` | `b5b90a6` | ported | kettle tea chain (peach+bell, cap 3, stop/restart) |
-| 06 | `petal/06-town` | `f4c63d3` | ported | South Lane, Grove Park, promote/demote, no spawned bodies |
-| 07 | `petal/07-region` | `cd45eb4` | ported | Petal Vale 5 parishes, carts, district/settlement/region LOD |
-| 08 | `petal/08-integration` | `29e278b` | — | all 7 lanes; full suite re-run |
+| 01 | `petal/01-foundation` | `68b126b` | ported | inspect names hunger/habitat; second click shares a ripe snack |
+| 02 | `petal/02-ecology` | `71573f6` | ported | nest more species; pouch/vale feed |
+| 03 | `petal/03-jelly` | `7e32d11` | ported | hungry face, nuzzle on still hold, wobble sets give |
+| 04 | `petal/04-residents` | `5105b63` | ported | dusk Grove Park leisure, mist stroll, lawn spacing |
+| 05 | `petal/05-economy` | `3259c49` | ported | jam + tea servings, shortage line, larger steam |
+| 06 | `petal/06-town` | `bfff006` | ported | lawn count, tea porch, vale carts as counts |
+| 07 | `petal/07-region` | `ca50495` | ported | hex map, ask-first sends, gate crate |
+| 08 | `petal/08-integration` | `831bbfd` | — | park land + leak drop + all 7 pass-2 ports |
 
-Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`.
+Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`, `vale_crate_crop`.
 
 ## Integration
 
-Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy.
+Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy. Ports are surgical; do not git-merge whole 01–07 branches onto 08 (those tips still carry already-ported pass-1 commits).
 
-01 foundation (`7d5097e`, PR #6): inspect / Space rest / `crate_yields` already on 08. Did not replace merged `jelly.gd` with 01's tip (that would drop JellyFeel). `FOUNDATION_OK` (bus, yield save, inspect/clear) `SYSTEMS_OK` `PETAL_RULES_OK`. `PETAL_FACE_SHOT_OK` recaptured here: `wave1_face.png` (card Bellhelp, mood happy, bond 12%, Visitor; body under stall roof). Kenney `tests/smoke.gd` not used as a live check. Baseline leak warnings remain (`FOUNDATION_OK` also logs `!is_inside_tree()` on jelly setup plus 2 ObjectDB leaks). Qwen3-VL unused.
+Pass-2 land: Grove Park pad, `bound=false` so `JellyFeel.clamp_pos` does not yank the body (PARK z is outside `GARDEN_MIN.z`), wait until `feel!=air` and `y<=0.14`, `_pin_overhead` pitch 62 yaw 180 distance 3.6 on the actual body, photo HUD. `JELLY_PLAY_OK` land_y=0.043 feel=bounce pos≈(3.12, 0.043, -14.94). `jelly_land.png` shows the cream body on the lawn, Photo · Esc.
 
-02 ecology (`aab1eca`, PR #5): `ecology_rules.gd` / `tools/smoke.gd` match the tip. 08 `test_systems.gd` keeps mill tests plus habitat. `SYSTEMS_OK` (reed neighbour, crowd, `Habitats · Bank 1, Meadow 1`) `PETAL_RULES_OK`. Did not re-run `PETAL_CAPTURE` (it overwrites the 01 face plate). `ecology_parish.png` on this branch shows `The meadow leans on the bank.` and `Habitats · Bank 5, Cane 3, Dusk 1, Loam 1, Meadow 4`. Hungry journal line is in garden smoke (`mix_need`). Qwen3-VL unused.
+Leaks: unused HUD `people_box`/`trust_box`/`place_box` were the baseline 3 CanvasItem RIDs + 6 ObjectDB. Dropped. Foundation test frees extra Clock/SaveGame. Garden smoke / integrate / selfplay / jelly-play quit with no ObjectDB or CanvasItem warnings. One `PETAL_RESIDENT_SHOT` quit printed 2 ObjectDB; a `--verbose` rerun did not dump them. Dummy ALSA `ERR_CANT_OPEN` is expected.
 
-05 kettle (`b5b90a6`, PR #7): mill APIs already on 08. `SYSTEMS_OK` mill cap-3 recover on this tree. `PETAL_KETTLE_SHOT_OK` recaptured here: `docs/screenshots/kettle_brew.png` (porch steam) and `kettle_crate.png` (stall: Hedge tea sits on the crate, Sell 22 (1)). Qwen3-VL unused.
+01 snack (`d6ced43`): inspect card names hunger, food, habitat; second face click feeds from a ripe bed; pouch Feed button stays. `FOUNDATION_OK` snack bus + `jelly.snack()`. Garden smoke shares Meadowbell. `wave1_face.png`: Hunger 22% wants Meadowbell, Meadow on the Meadowbell, Click again to share.
 
-06 town (`f4c63d3`, PR #9): `town.json` / `town_sim.gd` / `test_town.gd` match the tip. `TOWN_OK` (promote/demote ids), `SYSTEMS_OK`, `PETAL_RULES_OK`. `PETAL_TOWN_SHOT_OK` recaptured here: `town_park.png` (Grove Park sign, lawn, benches, no bodies) and `town_parish.png` (Town folk 7, Lane 3/6, Park open · 2, Layers household 1 · individual 4 · district 0, Near Reed/Moss/Lawn still no body). Catalog Grove Park stays `active: false`.
+07 gate (`7606999`/`9de1589`): delivered Hollow carts become a clickable crate; Vale tab draws spaced hexes; named asks sit above generic sends; town riders pick up vale traffic without extra house counts. `vale_tab.png` hexes + Parish asks. `vale_gate.png` reed crate at the south gate.
 
-07 vale (`cd45eb4`, PR #11): `regions.json` / `region_sim.gd` / `test_region.gd` match the tip. `petal_qa` on this tree: `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` (six-day pulse) `PETAL_QA_SCRIPTS_OK`. Garden: `PETAL_INTEGRATE_OK` (5 parishes, save key `region`). `PETAL_VALE_SHOT_OK` recaptured here: `vale_tab.png` (Hollow district, Reedbank/Mossford/Lea settlement, Thatchmere region, 4 carts). Qwen3-VL unused.
+03 hungry plate is shot at the stall then the body moves to Grove Park for nuzzle/land. `jelly_hungry.png` still clips under the stall roof (HUD Bellhelp · hungry · idle). `jelly_nuzzle.png` body + “Bellhelp nuzzles your hands” on the park lawn.
 
-03 jelly (`c3f55dd`, PR #4): 08 keeps the merged `jelly.gd` (JellyFeel + 01 inspect). `JELLY_FEEL_OK` `SYSTEMS_OK` `PETAL_RULES_OK`. `JELLY_PLAY_OK` on this tree, offline decide `bellhelp`. Held/air frames: `jelly_held.png` (HUD playful · held), `jelly_air.png` (Bellhelp spins, dizzy). 03 follow-cam land was 3-strike abandoned. 08's one new approach: `_pin_overhead` pitch 62 on a fixed pad, not a follow cam. Physics: `land_y` 0.50 finite, feel `air`, not held, not under the lawn. `jelly_land.png` still looks into crest foliage; body not in frame. No further camera variants. Qwen3-VL unused. 03's hef-dfc Berrypatch 0.834 was on that lane's host, not this run.
+04 dusk park: mist is a stroll; rain stays cover; Lumen/Bram stand apart; one leisure line. `residents_park.png` two bodies, Grove Park, 2 on the lawn. Directory still names household/hunger/company/ties.
 
-04 residents (`6b48d2e`, PR #10): `resident_life.gd` / `test_resident_life.gd` match the tip. 08 keeps `set_route` clearing `pause` (04 tip dropped it; porch walk overshoots without it). `RESIDENT_LIFE_OK`. Directory/HUD name household, hunger, company, ties, job. `_smoke_parish_day` plus greeting memory round-trip live in garden smoke. `wave1_residents.png`: Lumen stall house / Bram shed house, hunger 63, company 47, ties. Did not re-run `PETAL_CAPTURE` (overwrites 01 face plate). Qwen3-VL unused.
+05 jam pan camera still reads as the shed wall, not the pan. Steam puffs are larger.
 
-## Tests (full suite this turn, Godot 4.8-dev6 llvmpipe, dummy ALSA)
+Qwen3-VL unused. Frames read directly.
+
+## Tests (Godot 4.8-dev6 llvmpipe, DISPLAY=:1, dummy ALSA) on `831bbfd`
 
 `petal_qa`: `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK`
 
-Garden: `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `PETAL_SMOKE_OK` (exit 0, no SCRIPT ERROR). Baseline leaks: 3 CanvasItem RIDs, 6 ObjectDB. Prior recaptures still stand: `PETAL_FACE_SHOT_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK` `PETAL_VALE_SHOT_OK`. Playable code `29e278b`.
-
-All 7 feature lanes accepted (PRs #4 #5 #6 #7 #9 #10 #11). No blockers. Qwen3-VL not operational.
+Garden: `PETAL_SMOKE_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK` `PETAL_VALE_SHOT_OK` `PETAL_FACE_SHOT_OK` `PETAL_RESIDENT_SHOT_OK`
 
 ## Remaining
 
 - `data/venues.json` still marks tea house / hut / foundry / hall `active: false` while the garden builds them (catalog vs scene; Grove Park stays unbuilt until filed).
+- `jam_pan.png` still shows the shed wall.
+- `jelly_hungry.png` still crops under the stall roof.
 - Dummy ALSA audio on headless hosts.
 - Do not push `main` or other lane branches.
