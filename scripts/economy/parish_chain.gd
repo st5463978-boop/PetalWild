@@ -34,7 +34,7 @@ func recipe(id: String = TEA) -> Dictionary:
 func hopper_count(id: String) -> int:
 	return int(hopper.get(id, 0))
 
-func crate_count(id: String) -> int:
+func crate_count(id: String = TEA) -> int:
 	return int(crate.get(id, 0))
 
 func pot_count(id: String = TEA) -> int:
