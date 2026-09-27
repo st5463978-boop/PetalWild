@@ -74,7 +74,7 @@ func _initialize() -> void:
 		push_error("an empty garden should stay quiet")
 		quit(1)
 		return
-	var hungry := rules.need_line(bell, 0.2, {"plant_counts": {}}, plants)
+	var hungry: String = rules.need_line(bell, 0.2, {"plant_counts": {}}, plants)
 	if hungry.find("Hungry") == -1 or hungry.find("Meadowbell") == -1:
 		push_error("a hungry bellhelp should ask for meadowbells")
 		quit(1)
