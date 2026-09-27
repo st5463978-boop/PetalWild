@@ -217,7 +217,8 @@ func _promote(jelly: Jelly, definition: Dictionary) -> void:
 	elif jelly.life == "visitor" and jelly.site_time > 18.0:
 		var choice := PetalDecide.choose(
 			"%s has visited. The garden still fits. Settle or keep visiting?" % name,
-			["settle", "keep visiting"]
+			["settle", "keep visiting"],
+			"settle %s" % jelly.species_id
 		)
 		if choice != "settle":
 			return

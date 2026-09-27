@@ -69,6 +69,12 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_SMOKE") == "1":
 		_run_smoke()
 		return
+	if OS.get_environment("PETAL_INTEGRATE") == "1":
+		PlayDirector.run_integrate(self)
+		return
+	if OS.get_environment("PETAL_SELFPLAY") == "1":
+		PlayDirector.run_selfplay(self)
+		return
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
@@ -220,6 +226,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				debug_overlay.toggle()
 			KEY_F5:
 				quick_save()
+			KEY_F8:
+				self_play_beat()
 			KEY_F9:
 				quick_load()
 			KEY_BRACKETLEFT:
@@ -1347,6 +1355,9 @@ func accept_nessa() -> void:
 	nessa.has_chore = true
 	nessa.say("I will file these at the hut.")
 	refresh_panels()
+
+func self_play_beat() -> void:
+	toast(PlayDirector.beat(self))
 
 func quick_save() -> void:
 	if SaveGame.write_slot(SaveGame.active_slot, to_state()):
@@ -10646,7 +10657,7 @@ func _debug_text() -> String:
 	var memory := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
 	var frame := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var vram := Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s" % [
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s\n%s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10657,4 +10668,5 @@ func _debug_text() -> String:
 		Clock.clock_label(),
 		Clock.weather,
 		tool,
+		PlayDirector.debug_block(),
 	]

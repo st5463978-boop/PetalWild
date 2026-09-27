@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-09-27T19:30:00Z",
+  "baseline_commit": "f96457e8b78e443837b6e85d901af72362041229",
+  "baseline_tag": "petal-campaign-baseline-20260927",
+  "landed": 0,
+  "needed": 7,
+  "complete": false,
+  "lanes": {
+    "01": {"branch": "petal/01-foundation", "present": false, "commit": "", "status": "waiting"},
+    "02": {"branch": "petal/02-ecology", "present": false, "commit": "", "status": "waiting"},
+    "03": {"branch": "petal/03-jelly", "present": false, "commit": "", "status": "waiting"},
+    "04": {"branch": "petal/04-residents", "present": false, "commit": "", "status": "waiting"},
+    "05": {"branch": "petal/05-economy", "present": false, "commit": "", "status": "waiting"},
+    "06": {"branch": "petal/06-town", "present": false, "commit": "", "status": "waiting"},
+    "07": {"branch": "petal/07-region", "present": false, "commit": "", "status": "waiting"}
+  }
+}

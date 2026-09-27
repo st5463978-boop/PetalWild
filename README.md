@@ -13,11 +13,14 @@ chmod +x tools/run.sh
 ./tools/run.sh
 ```
 
-Headless smoke:
+Headless QA (live garden). `tests/smoke.gd` is the sidelined Kenney grove and does not match live catalogs.
 
 ```bash
-"$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64" --headless --path . --script res://tests/smoke.gd
+chmod +x tools/petal_qa.sh
+./tools/petal_qa.sh
 ```
+
+Tokens: `PETAL_RULES_OK`, `SYSTEMS_OK`, `PETAL_CONTRACTS_OK`. Garden east-chain smoke is still `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` (`PETAL_SMOKE_OK`). Cross-lane save/shop/settle/self-play: `PETAL_INTEGRATE=1 tools/run.sh res://scenes/garden.tscn` (`PETAL_INTEGRATE_OK`). F8 or F3 → Self-play beat plants a Meadowbell on an empty bed.
 
 Screenshot and quit (needs a display):
 
@@ -29,7 +32,7 @@ Modes: `overview`, `golden`, `creature`, `person`, `shop`, `night`, `rain`.
 
 ## Play
 
-1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug.
+1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug, F8 self-play beat (plants a Meadowbell on an empty bed).
 
 The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plots you scoop yourself.
 
