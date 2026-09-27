@@ -9,7 +9,7 @@ End-to-end hedge-tea chain on the existing stall tin, pouch, and crop harvest: g
 ## Branch / commit
 
 - Branch: `petal/05-economy`
-- Last commit: `a4d909b` Capture the kettle steam and the stall crate.
+- Last commit: pass-2 mill (jam, sip, lane shortage) on `petal/08-integration` `3402530`
 - Baseline: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
 - PR: https://github.com/st5463978-boop/PetalWild/pull/7
 
@@ -98,4 +98,17 @@ Merged `petal/08-integration` (`3402530`) into `petal/05-economy` first. Three p
 
 ### Tests (this pass)
 
-Markers recorded after the run. Qwen3-VL unused. Campaign state stays PETAL-08.
+Godot 4.8-dev6, llvmpipe, dummy ALSA.
+
+- `tools/petal_qa.sh` — PETAL_RULES_OK SYSTEMS_OK PETAL_CONTRACTS_OK FOUNDATION_OK JELLY_FEEL_OK RESIDENT_LIFE_OK TOWN_OK REGION_OK PETAL_QA_SCRIPTS_OK
+- `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` — PETAL_SMOKE_OK (tea chain, sip from crate, pan steam, jam on crate, save/load, vale 5)
+- `DISPLAY=:1 PETAL_KETTLE_SHOT=1 tools/run.sh res://scenes/garden.tscn` — PETAL_KETTLE_SHOT_OK
+- Frames: `kettle_brew.png` (hover: The kettle is brewing hedge tea), `jam_pan.png` (shed while the pan runs), `kettle_crate.png` (stall: Sell hedge tea 22 (1), Pan, Sell cane jam 16 (1))
+- Expected leaks: 3 CanvasItem RIDs, 6 ObjectDB
+- Qwen3-VL unused. Campaign state stays PETAL-08.
+
+### Requests
+
+- PETAL-04: `sip` is the mill taking a crate cup; eating still walks without auto-buy from the pouch.
+- PETAL-06: lane tea line only after `parish_road_rumour`.
+- PETAL-08: jam `sell_price` 16 lives on the recipe. Do not duplicate the mill.

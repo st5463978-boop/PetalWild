@@ -24,13 +24,13 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | 05 | `petal/05-economy` | `3259c49` | ported | jam + tea servings, shortage line, larger steam |
 | 06 | `petal/06-town` | `bfff006` | ported | lawn count, tea porch, vale carts as counts |
 | 07 | `petal/07-region` | `ca50495` | ported | hex map, ask-first sends, gate crate |
-| 08 | `petal/08-integration` | `831bbfd` | — | park land + leak drop + all 7 pass-2 ports |
+| 08 | `petal/08-integration` | `c1a2e9a` | — | park land + leak drop + all 7 pass-2 ports |
 
 Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`, `vale_crate_crop`.
 
 ## Integration
 
-Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy. Ports are surgical; do not git-merge whole 01–07 branches onto 08 (those tips still carry already-ported pass-1 commits).
+Playable canonical build. Kenney grove (`scripts/main.gd`, `scripts/sim/petal_*`, `tests/smoke.gd`) and `game/` stay duplicate-legacy. Ports are surgical; do not git-merge whole 01–07 branches onto 08 (those tips still carry already-ported pass-1 commits). Cross-lane hooks kept together: inspect snack (01) plus pouch feed (02), hungry `shown_mood` (02/03), tea/jam servings into parish snacks (04/05), vale carts scent jellies (02/07) and sit as a gate crate that fills lane riders without extra houses (06/07). 08 still clears `set_route` pause so porch walks do not overshoot.
 
 Pass-2 land: Grove Park pad, `bound=false` so `JellyFeel.clamp_pos` does not yank the body (PARK z is outside `GARDEN_MIN.z`), wait until `feel!=air` and `y<=0.14`, `_pin_overhead` pitch 62 yaw 180 distance 3.6 on the actual body, photo HUD. `JELLY_PLAY_OK` land_y=0.043 feel=bounce pos≈(3.12, 0.043, -14.94). `jelly_land.png` shows the cream body on the lawn, Photo · Esc.
 

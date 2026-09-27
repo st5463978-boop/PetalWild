@@ -1,6 +1,6 @@
 # PETAL-01 Foundation / Garden
 
-Updated 2026-09-27.
+Updated 2026-09-27. Pass 2.
 
 | | |
 | --- | --- |
@@ -34,6 +34,7 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 - Space rests or moves garden time.
 - Harvest yields survive F5/F9.
 - Hover over a face reads `Bellhelp's face · click`.
+- Click again while they are hungry beside ripe food: you share that bed.
 
 ## Paths
 
@@ -47,8 +48,8 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 
 ## Interface
 
-- `Jelly.inspect_face()` / `clear_inspect()` / `poke()` / `face_point()`
-- `Garden._inspect_face()` — any tool, before bed tools
+- `Jelly.inspect_face()` / `clear_inspect()` / `poke()` / `face_point()` / `snack()`
+- `Garden._inspect_face()` — any tool, before bed tools. A second click shares ripe food.
 - `GardenBus.note(kind, text)`
 - Save payload key `crate_yields`
 
@@ -67,6 +68,26 @@ Extend, do not recreate. The Hedge Hollow garden (`scenes/garden.tscn`, `scripts
 Qwen3-VL is not operational in this repo (no assessor). Visual QA is the capture loop plus reading the face frame.
 
 Face frame evidence: inspect card shows Bellhelp, mood happy, bond 12%, Visitor. The body sits under the stall roof in this llvmpipe angle; the card is the player-facing proof. PETAL-05 owns dressing density.
+
+## Pass 2
+
+Merged `petal/08-integration` @ `3402530` so this lane builds on the seven-lane garden.
+
+Highest-value garden-rung work:
+
+1. **Inspect card names the garden.** Hunger, food plant, habitat, and the bed they stand on. A second click shares ripe food when they are empty enough.
+2. **Share a snack.** Visitor or resident. Uses the existing bite soil write (`growth` 0.55, `eaten_by`, `bite_wait`). Connects inspect (01) to ecology feeding (02).
+3. **Rest names the hour, and the face shot stands on a meadow bed** instead of under the stall.
+
+| Check | Result |
+| --- | --- |
+| `tests/test_foundation.gd` | `FOUNDATION_OK` (bus snack note, `Jelly.snack()` fills hunger) |
+| `tools/petal_qa.sh` | `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` |
+| `PETAL_SMOKE=1` garden | `PETAL_SMOKE_OK` (card fields + snack share). Leaks match baseline: 3 CanvasItem, 6 ObjectDB |
+| `PETAL_INTEGRATE=1` | `PETAL_INTEGRATE_OK` |
+| `PETAL_FACE_SHOT=1` | `PETAL_FACE_SHOT_OK` → `docs/screenshots/wave1_face.png` |
+
+Qwen3-VL is not operational here; the face frame was read directly. The card shows Bellhelp, mood hungry, bond 12%, Hunger 22% wants Meadowbell, Meadow on the Meadowbell, Visitor, Click again to share the Meadowbell. The body is a cream-green blob in the meadow foliage in this llvmpipe angle; the card is the player-facing proof. One placement change (stall → meadow bed). No further camera variants.
 
 ## Requests
 
