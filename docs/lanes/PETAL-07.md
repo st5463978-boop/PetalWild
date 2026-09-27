@@ -34,7 +34,7 @@ Frames: `docs/screenshots/vale_tab.png` (hex map + asks), `docs/screenshots/vale
 
 - Branch: `petal/07-region`
 - Merge: `898155b` Merge petal/08-integration into the vale lane.
-- Pass 2: (this commit)
+- Pass 2: `7606999` Sit a vale cart at the gate and ask first.
 
 ## Addendum
 

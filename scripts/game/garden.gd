@@ -8233,8 +8233,8 @@ func _run_vale_shot() -> void:
 	await _shot("/workspace/docs/screenshots/vale_tab.png")
 	if hud.journal:
 		hud.journal.visible = false
-	camera.focus_on(GardenLayout.GATE + Vector3(0.4, 0.1, 0.4), 7.2)
-	camera.pitch = 22.0
+	camera.focus_on(GardenLayout.GATE + Vector3(0.6, 0.05, 0.2), 6.4)
+	camera.pitch = 18.0
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.5).timeout
 	await _shot("/workspace/docs/screenshots/vale_gate.png")

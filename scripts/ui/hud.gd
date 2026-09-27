@@ -352,7 +352,7 @@ func show_vale(report: Dictionary) -> void:
 
 func _vale_map(report: Dictionary) -> Control:
 	var board := Control.new()
-	board.custom_minimum_size = Vector2(380, 168)
+	board.custom_minimum_size = Vector2(380, 196)
 	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var asked := {}
 	for spec in report.get("ask_rows", []):
@@ -362,8 +362,8 @@ func _vale_map(report: Dictionary) -> Control:
 	for spec in report.get("cart_rows", []):
 		var cart: Dictionary = spec
 		inbound[str(cart.get("to", ""))] = true
-	var origin := Vector2(190, 78)
-	var size := 34.0
+	var origin := Vector2(190, 92)
+	var size := 48.0
 	for row in report.get("settlements", []):
 		var hamlet: Dictionary = row
 		var q := float(int(hamlet.get("q", 0)))
@@ -381,18 +381,28 @@ func _vale_map(report: Dictionary) -> Control:
 			fill = ThemeKit.TERRACOTTA
 		var cell := ColorRect.new()
 		cell.color = fill
-		cell.position = at - Vector2(28, 16)
-		cell.size = Vector2(56, 32)
+		cell.position = at - Vector2(30, 14)
+		cell.size = Vector2(60, 28)
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		board.add_child(cell)
-		var name := str(hamlet.get("name", ""))
-		var bits := name.split(" ")
-		var short := str(bits[bits.size() - 1]) if bits.size() > 0 else name
-		if inbound.has(str(hamlet.get("id", ""))):
-			short = "cart · " + short
+		var id := str(hamlet.get("id", ""))
+		var short := id
+		match id:
+			"hollow":
+				short = "Hollow"
+			"reedbank":
+				short = "Reed"
+			"mossford":
+				short = "Moss"
+			"lea":
+				short = "Lea"
+			"thatch":
+				short = "Thatch"
+		if inbound.has(id):
+			short = "· " + short
 		var caption := ThemeKit.label(short, 11, ThemeKit.CREAM)
-		caption.position = at - Vector2(26, 12)
-		caption.size = Vector2(52, 24)
+		caption.position = at - Vector2(28, 10)
+		caption.size = Vector2(56, 20)
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		board.add_child(caption)
