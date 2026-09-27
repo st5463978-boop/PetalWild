@@ -1,5 +1,8 @@
 shader_type spatial;
 
+uniform sampler2D grass_tex : source_color, hint_default_white;
+uniform sampler2D dirt_tex : source_color, hint_default_white;
+
 varying vec3 world_pos;
 
 void vertex() {
@@ -7,15 +10,12 @@ void vertex() {
 }
 
 void fragment() {
+	vec2 uv = world_pos.xz * 0.22;
+	vec3 grass = texture(grass_tex, uv).rgb;
+	vec3 dirt = texture(dirt_tex, uv * 0.9).rgb;
 	vec3 base = COLOR.rgb;
-	float fine = sin(world_pos.x * 17.0) * sin(world_pos.z * 15.0);
-	float blot = sin(world_pos.x * 2.1 + world_pos.z * 1.6);
-	float moss = smoothstep(0.35, 0.95, blot * 0.5 + 0.5);
-	vec3 col = base * (0.86 + 0.18 * fine);
 	float soil = smoothstep(0.0, 0.08, base.r - base.g);
-	col = mix(col, col * vec3(0.72, 1.08, 0.68), moss * 0.28 * (1.0 - soil));
-	float furrow = sin(world_pos.x * 9.0);
-	col = mix(col, col * 0.86, soil * (0.5 - furrow * 0.5) * 0.35);
+	vec3 col = mix(grass * base * 1.12, dirt * base * 1.2, soil);
 	ALBEDO = col;
-	ROUGHNESS = 0.94;
+	ROUGHNESS = 0.92;
 }

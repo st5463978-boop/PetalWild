@@ -21,6 +21,8 @@ var bed_blades: MultiMeshInstance3D
 var bed_frame: MultiMeshInstance3D
 var soil_lid: BoxMesh
 var bed_lid: BoxMesh
+var soil_grass: Texture2D
+var soil_dirt: Texture2D
 var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
@@ -103,6 +105,9 @@ func _ready() -> void:
 		return
 	if OS.get_environment("PETAL_RESIDENT_SHOT") == "1":
 		await _run_resident_shot()
+		return
+	if OS.get_environment("PETAL_GARDEN_LOOK") == "1":
+		await _run_garden_look_shot()
 		return
 	Clock.running = true
 	if Settings.reduce_motion:
@@ -8724,6 +8729,36 @@ func _run_kettle_shot() -> void:
 	print("PETAL_KETTLE_SHOT_OK")
 	get_tree().quit(0)
 
+func _run_garden_look_shot() -> void:
+	Settings.reduce_motion = true
+	DisplayServer.window_set_size(Vector2i(1440, 900))
+	if debug_overlay:
+		debug_overlay.visible = false
+	for person in people.values():
+		if person is VegPerson:
+			(person as VegPerson).set_activity("")
+	Clock.set_hour(10.5)
+	_sync_plants()
+	_refresh_soil_colors()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.snap_home()
+	camera.intro = 1.0
+	camera.user_moved = true
+	await get_tree().create_timer(0.7).timeout
+	await _shot("/workspace/docs/screenshots/garden_overview.png")
+	camera.yaw = 176.0
+	camera.pitch = 34.0
+	camera.focus_on(GardenLayout.cell_center(3, 2) + Vector3(0.0, 0.05, 0.2), 4.4)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/garden_beds.png")
+	camera.yaw = 176.0
+	camera.pitch = 18.0
+	camera.focus_on(GardenLayout.STALL + Vector3(0.0, 0.35, 0.2), 6.0)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/garden_stall.png")
+	print("PETAL_GARDEN_LOOK_OK")
+	get_tree().quit(0)
+
 func _shot(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
@@ -8790,6 +8825,10 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float, grow_day: i
 	plot.grow_from_day = grow_day
 
 func _build_patches() -> void:
+	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"):
+		soil_grass = load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg") as Texture2D
+	if ResourceLoader.exists("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"):
+		soil_dirt = load("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg") as Texture2D
 	soil_lid = BoxMesh.new()
 	soil_lid.size = Vector3(GardenLayout.CELL_W * 0.9, 0.03, GardenLayout.CELL_D * 0.88)
 	# ponytail: overlapping lids hide the seam; one mesh per plot if the join still reads.
@@ -8802,6 +8841,8 @@ func _build_patches() -> void:
 		var material := StandardMaterial3D.new()
 		material.roughness = 0.95
 		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		material.uv1_scale = Vector3(1.8, 1.8, 1)
+		_bind_soil_tex(material, plot)
 		node.material_override = material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
@@ -10542,6 +10583,7 @@ func _refresh_soil_colors() -> void:
 		else:
 			patch.mesh = soil_lid
 			material.albedo_color = _soil_color(plot)
+		_bind_soil_tex(material, plot)
 	_fill_bed_meadow()
 
 func _meadow_cell(plot: SoilCell) -> bool:
@@ -10571,6 +10613,14 @@ func _soil_color(plot: SoilCell) -> Color:
 	if plot.fertility > 0.62 and plot.tilled:
 		color = color.lerp(Color("#5d6b32"), 0.22)
 	return color
+
+func _bind_soil_tex(material: StandardMaterial3D, plot: SoilCell) -> void:
+	if material == null:
+		return
+	if plot.tilled and not _joined_bed(plot):
+		material.albedo_texture = soil_dirt
+	else:
+		material.albedo_texture = soil_grass
 
 func _wire_jellies() -> void:
 	for actor in ecology.actors:

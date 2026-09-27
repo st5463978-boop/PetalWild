@@ -124,7 +124,7 @@ func set_activity(text: String) -> void:
 	activity = text
 	if act_label:
 		act_label.text = text
-		act_label.visible = text != ""
+		act_label.visible = false
 
 func _speed() -> float:
 	# ponytail: L3 skips bob instead of running faster; a 6s smoke tick overshoots the porch if we scale speed.
@@ -518,7 +518,7 @@ func apply_state(data: Dictionary) -> void:
 		memories = saved_mem.duplicate()
 	if act_label:
 		act_label.text = activity
-		act_label.visible = activity != ""
+		act_label.visible = false
 	var pos = data.get("position", null)
 	if typeof(pos) == TYPE_ARRAY and pos.size() == 3:
 		global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))

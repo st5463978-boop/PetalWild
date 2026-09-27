@@ -1,6 +1,8 @@
 class_name GardenDressing
 extends RefCounted
 
+const Kit = preload("res://scripts/presentation/prop_kit.gd")
+
 var _rng := RandomNumberGenerator.new()
 
 func build(parent: Node3D) -> void:
@@ -54,6 +56,10 @@ func _terrain(parent: Node3D) -> void:
 	node.mesh = mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/terrain.gdshader")
+	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"):
+		material.set_shader_parameter("grass_tex", load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"))
+	if ResourceLoader.exists("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"):
+		material.set_shader_parameter("dirt_tex", load("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"))
 	node.material_override = material
 	node.name = "Terrain"
 	parent.add_child(node)
@@ -1031,6 +1037,7 @@ func _shrubs(parent: Node3D) -> void:
 
 func _trees(parent: Node3D) -> void:
 	# Backdrop and side frame only. The south approach stays open for the garden camera.
+	var files: Array[String] = ["tree_oak.fbx", "tree_default.fbx", "tree_detailed.fbx", "tree_fat.fbx"]
 	var spots: Array[Vector2] = [
 		Vector2(-17.4, -11.2),
 		Vector2(-18.6, -3.4),
@@ -1047,16 +1054,6 @@ func _trees(parent: Node3D) -> void:
 		Vector2(-14.8, -14.4),
 		Vector2(13.8, -14.2),
 	]
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.08
-	trunk_mesh.bottom_radius = 0.15
-	trunk_mesh.height = 1.7
-	trunk_mesh.radial_segments = 7
-	var cone_mesh := CylinderMesh.new()
-	cone_mesh.top_radius = 0.015
-	cone_mesh.bottom_radius = 1.05
-	cone_mesh.height = 1.5
-	cone_mesh.radial_segments = 8
 	var index := 0
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
@@ -1068,27 +1065,12 @@ func _trees(parent: Node3D) -> void:
 				if absf(spot.x - center) < absf(spot.x - nearest):
 					nearest = center
 			spot.x = nearest + (4.2 if spot.x >= nearest else -4.2)
-		var height := (1.05 if behind else 1.7) + float(index % 4) * (0.1 if behind else 0.32)
-		var trunk := MeshInstance3D.new()
-		trunk.mesh = trunk_mesh
-		trunk.material_override = _standard(Color("#6a4530").lerp(Color("#8a5a3c"), float(index % 3) / 3.0), 0.9)
-		trunk.position = Vector3(spot.x, y + height * 0.45, spot.y)
-		trunk.scale = Vector3(1, height / 1.7, 1)
-		trunk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		parent.add_child(trunk)
-		for layer in 3:
-			var cone := MeshInstance3D.new()
-			cone.mesh = cone_mesh
-			# ponytail: backdrop cones lift pale under this sun; raise if the far trees go black.
-			var bright := Color("#9bc45a") if not behind else Color("#4e6e2c")
-			var leaf := Color("#1f5a2c").lerp(bright, 0.18 + float(layer) * 0.22)
-			cone.material_override = _standard(leaf, 0.8)
-			var scale := (0.48 if behind else 1.05) - float(layer) * (0.08 if behind else 0.22)
-			var step := 0.2 if behind else 0.62
-			cone.position = Vector3(spot.x, y + height * 0.48 + float(layer) * step, spot.y)
-			cone.scale = Vector3(scale, 0.78, scale)
-			cone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-			parent.add_child(cone)
+		var height := (2.4 if behind else 3.6) + float(index % 4) * 0.35
+		var tree: Node3D = Kit.spawn(files[index % files.size()], height)
+		if tree:
+			tree.position = Vector3(spot.x, y, spot.y)
+			tree.rotation.y = float(index) * 0.7
+			parent.add_child(tree)
 		index += 1
 
 func _gap_fill(parent: Node3D) -> void:
