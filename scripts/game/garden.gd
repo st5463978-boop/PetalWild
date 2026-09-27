@@ -55,6 +55,8 @@ var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 var crate_yields := {}
 var last_shop_hour := -1.0
+var region := RegionSim.new()
+var region_stamp := -1
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -121,6 +123,8 @@ func _build() -> void:
 	add_child(hud)
 	hud.build(self)
 	hud.set_tool(tool)
+	region.boot()
+	region.decide_cb = Callable(self, "_vale_decide")
 	debug_overlay = DebugOverlay.new()
 	add_child(debug_overlay)
 	debug_overlay.build(self)
@@ -172,6 +176,7 @@ func _process(delta: float) -> void:
 	_lamps()
 	audio.set_weather(Clock.weather)
 	_tick_shop()
+	_tick_region()
 	_update_status()
 	panel_timer += delta
 	if panel_timer > 0.45 and (hud.journal.visible or hud.shop.visible):
@@ -208,6 +213,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_tool("hands")
 			KEY_J:
 				hud.toggle_journal()
+			KEY_M:
+				show_directory("vale")
+			KEY_C:
+				show_directory("place")
 			KEY_B:
 				hud.toggle_shop()
 			KEY_F:
@@ -257,6 +266,8 @@ func refresh_panels() -> void:
 		hud.show_trust(_trust_lines(), Trust.audit)
 	elif directory_page == "place":
 		hud.show_place(_place_stats(world))
+	elif directory_page == "vale":
+		hud.show_vale(region.page())
 	else:
 		hud.show_journal(_journal_rows(world), events, ecology.resident_total(), _bite_lines())
 	if hud.shop.visible:
@@ -321,6 +332,75 @@ func _tick_shop() -> void:
 		toast("%s bought %s for %d petal." % [person.display_name, ContentDB.plant(crop).get("name", crop), int(deal.get("price", 0))])
 		person.say("I'll take that.")
 		refresh_panels()
+
+func _vale_decide(question: String, options: Array) -> String:
+	var choice := PetalDecide.choose(question, options)
+	region.last_pick_confidence = PetalDecide.last_confidence
+	return choice
+
+func _tick_region() -> void:
+	if not Clock.running:
+		return
+	var stamp := Clock.day * 24 + int(Clock.hour())
+	if stamp == region_stamp:
+		return
+	region_stamp = stamp
+	var notes: Array = region.pulse(Clock.day, Clock.hour(), _vale_garden())
+	for note in notes:
+		if typeof(note) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = note
+		if str(row.get("type", "")) == "deliver" and str(row.get("to", "")) == "hollow":
+			Economy.add(str(row.get("crop", "")), int(row.get("qty", 1)))
+		var text := str(row.get("text", ""))
+		if text != "":
+			toast(text)
+
+func _vale_garden() -> Dictionary:
+	var bag := {}
+	for crop in ["meadowbell", "peach", "reed", "bramble", "mosspear", "nightlantern"]:
+		bag[crop] = Economy.count(crop)
+	var world := world_snapshot()
+	return {
+		"bag": bag,
+		"ripe": world.get("mature", {}),
+		"quality": float(world.get("garden_quality", 0.0)),
+		"hands": _present_people() + ecology.resident_total(),
+	}
+
+func send_vale_cart(to_id: String, crop: String) -> void:
+	if Economy.count(crop) < 1:
+		toast("The pouch has no %s to send." % crop)
+		refresh_panels()
+		return
+	var result: Dictionary = region.send_cart("hollow", to_id, crop, 1)
+	if not bool(result.get("ok", false)):
+		toast(str(result.get("text", "The cart did not leave.")))
+		refresh_panels()
+		return
+	Economy.take(crop, 1)
+	toast(str(result.get("text", "")))
+	refresh_panels()
+
+func welcome_vale() -> void:
+	var result: Dictionary = region.welcome()
+	toast(str(result.get("text", "")))
+	refresh_panels()
+
+func share_vale_seed(to_id: String, crop: String) -> void:
+	var seed_id := "%s_seed" % crop
+	if Economy.count(seed_id) < 1:
+		toast("The pouch has no %s seed to share." % crop)
+		refresh_panels()
+		return
+	var result: Dictionary = region.share_seed("hollow", to_id, crop)
+	if not bool(result.get("ok", false)):
+		toast(str(result.get("text", "")))
+		refresh_panels()
+		return
+	Economy.take(seed_id, 1)
+	toast(str(result.get("text", "")))
+	refresh_panels()
 
 func _note_lane_afternoon() -> void:
 	# ponytail: three distinct afternoons; a clock if a partial afternoon should count.
@@ -1595,6 +1675,8 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
+		"region": region.to_dict(),
+		"region_stamp": region_stamp,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1654,6 +1736,10 @@ func apply_state(data: Dictionary) -> void:
 	var flower = data.get("bee_flower", [])
 	if typeof(flower) == TYPE_ARRAY and flower.size() == 3:
 		bee_flower = Vector3(float(flower[0]), float(flower[1]), float(flower[2]))
+	var saved_region = data.get("region", {})
+	if typeof(saved_region) == TYPE_DICTIONARY:
+		region.boot(saved_region)
+	region_stamp = int(data.get("region_stamp", -1))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -7210,6 +7296,10 @@ func _run_smoke() -> void:
 		return
 	PetalDecide.forced = ""
 	shopper.want = ""
+	if region.ids().size() != 5:
+		push_error("smoke: the vale is missing")
+		get_tree().quit(1)
+		return
 	print("PETAL_SMOKE_OK")
 	get_tree().quit(0)
 
@@ -10459,8 +10549,10 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["bees"] = bees.bodies.size() if bees else 0
 	stats["birds"] = birds.bodies.size() if birds else 0
 	stats["bird_state"] = "perched" if Clock.hour() >= 19.5 or Clock.weather == "rain" else "crossing"
-	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers()
+	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow")
 	stats["lane_passers"] = _lane_passers()
+	stats["vale_line"] = region.headline()
+	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
 	stats["far_bell_line"] = _far_bell_line()
@@ -10535,6 +10627,14 @@ func _place_stats(world: Dictionary) -> Dictionary:
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
 	stats["venues"] = venue_lines
+	var vale_rows: Array = []
+	var vale_page: Dictionary = region.page()
+	for entry in vale_page.get("settlements", []):
+		var town: Dictionary = entry
+		if bool(town.get("player", false)):
+			continue
+		vale_rows.append("%s · %s · lod %d" % [str(town.get("name", "")), str(town.get("stance", "")), int(town.get("lod", 4))])
+	stats["vale_rows"] = vale_rows
 	return stats
 
 func _stock(world: Dictionary) -> Array:
@@ -10646,7 +10746,7 @@ func _debug_text() -> String:
 	var memory := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
 	var frame := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var vram := Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s" % [
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\ntool %s\nvale %s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10657,4 +10757,6 @@ func _debug_text() -> String:
 		Clock.clock_label(),
 		Clock.weather,
 		tool,
+		region.headline(),
 	]
+
