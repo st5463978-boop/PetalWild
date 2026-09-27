@@ -91,5 +91,34 @@ func _initialize() -> void:
 		push_error("the parish should tally meadow, cane, and bank")
 		quit(1)
 		return
+	var berry := {}
+	for entry in species:
+		if str(entry.get("id", "")) == "berrypatch":
+			berry = entry
+	var nest_world := {
+		"resident_count": {"berrypatch": 2},
+		"mature": {"bramble": 2},
+	}
+	if rules.romance_met(berry, nest_world):
+		push_error("berrypatch should wait for a bramble nest")
+		quit(1)
+		return
+	nest_world["mature"]["bramble"] = 3
+	if not rules.romance_met(berry, nest_world):
+		push_error("berrypatch should nest in three brambles")
+		quit(1)
+		return
+	if rules.romance_label(berry).find("bramble nest") == -1:
+		push_error("berrypatch romance should name the nest")
+		quit(1)
+		return
+	if rules.courtship_line({"berrypatch": "breeding"}, {"berrypatch": berry}) != "Berrypatch is courting in the canes.":
+		push_error("the parish should name a cane courtship")
+		quit(1)
+		return
+	if rules.forage_line({"bellhelp": bell}, {"meadowbell": 0}, {}, {"meadowbell": 1}, plants) != "The kettle is steeping the Meadowbell Bellhelp wants.":
+		push_error("the kettle should name the bells bellhelp wants")
+		quit(1)
+		return
 	print("PETAL_RULES_OK")
 	quit(0)

@@ -76,13 +76,23 @@ func romance_met(species: Dictionary, world: Dictionary) -> bool:
 	var romance: Dictionary = species.get("romance", {})
 	if romance.is_empty():
 		return false
-	return requirement_met(romance, world)
+	if not requirement_met(romance, world):
+		return false
+	var nest := str(romance.get("nest", ""))
+	if nest == "":
+		return true
+	var mature: Dictionary = world.get("mature", {})
+	return int(mature.get(nest, 0)) >= int(romance.get("nest_min", 1))
 
 func romance_label(species: Dictionary) -> String:
 	var romance: Dictionary = species.get("romance", {})
 	if romance.is_empty():
 		return ""
-	return str(romance.get("label", "Romance"))
+	var label := str(romance.get("label", "Romance"))
+	var nest_label := str(romance.get("nest_label", ""))
+	if nest_label == "":
+		return label
+	return "%s, and %s" % [label, nest_label]
 
 func food_of(species: Dictionary) -> String:
 	return str(species.get("food", ""))
@@ -195,3 +205,62 @@ func habitat_line(beds: Array, plants: Dictionary) -> String:
 	for stand_name in names:
 		parts.append("%s %d" % [str(stand_name).capitalize(), int(counts[stand_name])])
 	return "Habitats  ·  " + ", ".join(parts)
+
+func habitat_place(habitat: String) -> String:
+	match habitat:
+		"meadow":
+			return "in the meadow"
+		"bank":
+			return "on the bank"
+		"cane":
+			return "in the canes"
+		"dusk":
+			return "at dusk"
+		"loam":
+			return "in the loam"
+		"orchard":
+			return "in the orchard"
+		_:
+			return "in the parish"
+
+func courtship_line(states: Dictionary, catalog: Dictionary) -> String:
+	var names: Array = catalog.keys()
+	names.sort()
+	for id in names:
+		if str(states.get(str(id), "")) != "breeding":
+			continue
+		var definition: Dictionary = catalog.get(str(id), {})
+		var who := str(definition.get("name", id))
+		return "%s is courting %s." % [who, habitat_place(habitat_of(definition))]
+	return ""
+
+func nest_plot_bit(plant_id: String, growth: float, states: Dictionary, catalog: Dictionary) -> String:
+	if plant_id == "" or growth < 1.0:
+		return ""
+	for id in catalog.keys():
+		if str(states.get(str(id), "")) != "breeding":
+			continue
+		var definition: Dictionary = catalog.get(str(id), {})
+		var romance: Dictionary = definition.get("romance", {})
+		var nest := str(romance.get("nest", ""))
+		if plant_id == nest or plant_id == food_of(definition):
+			return "Nest."
+	return ""
+
+func forage_line(catalog: Dictionary, mature: Dictionary, pouch: Dictionary, kettle: Dictionary, plants: Dictionary) -> String:
+	var names: Array = catalog.keys()
+	names.sort()
+	for id in names:
+		var definition: Dictionary = catalog.get(str(id), {})
+		var food_id := food_of(definition)
+		if food_id == "":
+			continue
+		var standing := int(mature.get(food_id, 0))
+		var food: Dictionary = plants.get(food_id, {})
+		var food_name := str(food.get("name", food_id))
+		var who := str(definition.get("name", id))
+		if int(kettle.get(food_id, 0)) > 0 and standing < 2:
+			return "The kettle is steeping the %s %s wants." % [food_name, who]
+		if int(pouch.get(food_id, 0)) > 0 and standing < 1:
+			return "The pouch holds the %s %s wanted." % [food_name, who]
+	return ""

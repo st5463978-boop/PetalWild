@@ -46,6 +46,14 @@ var sample_ms: Array[int] = []
 var body_root: Node3D
 var halo: MeshInstance3D
 var halo_mat: StandardMaterial3D
+var feel_spring := JellyFeel.HOLD_SPRING
+var feel_damp := JellyFeel.HOLD_DAMP
+var feel_bounce := JellyFeel.RESTITUTION
+var feel_stretch := JellyFeel.STRETCH_GAIN
+var pet_time := 0.0
+var nuzzled := false
+var iris_color := Color(1.0, 1.0, 0.85)
+var iris_mats: Array[StandardMaterial3D] = []
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -53,6 +61,7 @@ func setup(definition: Dictionary) -> void:
 	radius = float(definition.get("radius", 0.34))
 	life = "curious"
 	hunger = 1.0
+	_apply_tune(definition)
 	add_to_group("jelly")
 	_build(definition)
 	var here := Vector3.ZERO
@@ -80,6 +89,10 @@ func set_select(on: bool, grabbed := false) -> void:
 		halo_mat.albedo_color = Color(1.0, 0.92, 0.45, 0.9)
 		halo_mat.emission = Color(0.95, 0.82, 0.28)
 		halo_mat.emission_energy_multiplier = 0.55
+	elif is_hungry():
+		halo_mat.albedo_color = Color(1.0, 0.72, 0.38, 0.85)
+		halo_mat.emission = Color(0.95, 0.55, 0.2)
+		halo_mat.emission_energy_multiplier = 0.42
 	else:
 		halo_mat.albedo_color = Color(0.85, 0.98, 0.7, 0.7)
 		halo_mat.emission = Color(0.55, 0.85, 0.4)
@@ -283,13 +296,31 @@ func _organ(root: Node3D, definition: Dictionary, height: float) -> void:
 	node.position = Vector3(0, height, 0)
 	root.add_child(node)
 
+func _apply_tune(definition: Dictionary) -> void:
+	var tuned: Dictionary = JellyFeel.tune(definition)
+	feel_spring = float(tuned["spring"])
+	feel_damp = float(tuned["damp"])
+	feel_bounce = float(tuned["bounce"])
+	feel_stretch = float(tuned["stretch"])
+
+func is_hungry() -> bool:
+	return JellyFeel.hungry(hunger, mood)
+
+func shown_mood() -> String:
+	if nuzzled and held:
+		return "happy"
+	if is_hungry() and mood != "panic" and mood != "dizzy" and mood != "annoyed":
+		return "hungry"
+	return mood
+
 func _face(root: Node3D, definition: Dictionary, eye_y: float) -> void:
-	var eye_color := Color(str(definition.get("eye", "#fff4c8")))
+	iris_mats.clear()
+	iris_color = Color(str(definition.get("eye", "#fff4c8")))
 	var z := face_z if face_z != 0.0 else radius * 1.05
 	var bell := str(definition.get("shape", "")) == "bell"
 	var spread := radius * 0.2 if bell else minf(radius * 0.26, maxf(absf(z) * 0.38, radius * 0.12))
-	eye_l = _eye(root, Vector3(-spread, eye_y, z), eye_color)
-	eye_r = _eye(root, Vector3(spread, eye_y, z), eye_color)
+	eye_l = _eye(root, Vector3(-spread, eye_y, z), iris_color, true)
+	eye_r = _eye(root, Vector3(spread, eye_y, z), iris_color, true)
 	var mouth_y := radius * 0.05 if bell else eye_y - radius * 0.22
 	var mouth_z := radius * 0.7 if bell else z
 	mouth = _eye(root, Vector3(0, mouth_y, mouth_z), Color(str(definition.get("deep", "#1d6b38"))).darkened(0.15))
@@ -317,7 +348,7 @@ func inspect_face() -> void:
 func clear_inspect() -> void:
 	inspected = false
 
-func _eye(root: Node3D, at: Vector3, color: Color) -> Node3D:
+func _eye(root: Node3D, at: Vector3, color: Color, keep_iris := false) -> Node3D:
 	var pivot := Node3D.new()
 	pivot.position = at
 	root.add_child(pivot)
@@ -347,6 +378,8 @@ func _eye(root: Node3D, at: Vector3, color: Color) -> Node3D:
 	material.roughness = 0.25
 	node.material_override = material
 	pivot.add_child(node)
+	if keep_iris:
+		iris_mats.append(material)
 	var pupil := MeshInstance3D.new()
 	var pupil_mesh := SphereMesh.new()
 	pupil_mesh.radius = radius * 0.038
@@ -369,6 +402,8 @@ func grab(point: Vector3) -> void:
 	recover_t = 0.0
 	sample_pos.clear()
 	sample_ms.clear()
+	pet_time = 0.0
+	nuzzled = false
 	_note_sample(point)
 	set_select(true, true)
 
@@ -483,13 +518,13 @@ func _full(delta: float) -> void:
 	var landed := false
 	for _i in steps:
 		if held:
-			vel = JellyFeel.hold_follow(global_position, hold_target, vel, dt)
+			vel = JellyFeel.hold_follow(global_position, hold_target, vel, dt, feel_spring, feel_damp)
 		elif not leaving and not heading_home:
 			vel = JellyFeel.fall(vel, dt)
 		global_position += vel * dt
 		if not held:
 			var floor_y := _stand_y()
-			var landed_step: Dictionary = JellyFeel.land(global_position, vel, floor_y, dt)
+			var landed_step: Dictionary = JellyFeel.land(global_position, vel, floor_y, dt, feel_bounce)
 			global_position = landed_step["pos"]
 			vel = landed_step["vel"]
 			if bool(landed_step["hit"]):
@@ -505,7 +540,7 @@ func _full(delta: float) -> void:
 					feel = "idle"
 		if not held and (feel == "air" or feel == "bounce"):
 			var water_ok := species_id == "bulrush" or species_id == "reedic"
-			var bumped: Dictionary = JellyFeel.bounce_prop(global_position, vel, touch_radius(), water_ok)
+			var bumped: Dictionary = JellyFeel.bounce_prop(global_position, vel, touch_radius(), water_ok, feel_bounce)
 			global_position = bumped["pos"]
 			vel = bumped["vel"]
 			if bool(bumped["hit"]):
@@ -520,7 +555,18 @@ func _full(delta: float) -> void:
 	if not held and global_position.y <= _stand_y() + 0.03 and vel.length() < 1.4:
 		last_safe = global_position
 	var pull_len := global_position.distance_to(hold_target) if held else 0.0
-	stretch = JellyFeel.stretch_amount(pull_len, vel.length(), held)
+	stretch = JellyFeel.stretch_amount(pull_len, vel.length(), held, feel_stretch)
+	if held:
+		var pets: Dictionary = JellyFeel.pet_hold(pet_time, stretch, delta)
+		pet_time = float(pets["pet_time"])
+		if bool(pets["cancel"]):
+			nuzzled = false
+		elif bool(pets["nuzzle"]) and not nuzzled:
+			nuzzled = true
+			bond = minf(1.0, bond + 0.08)
+			mood = "happy"
+			ripple = maxf(ripple, 0.4)
+			reacted.emit("nuzzle", self)
 	_apply_deform()
 	if not reduce_motion:
 		rotation.z = sin(Time.get_ticks_msec() * 0.004) * 0.07
@@ -546,7 +592,7 @@ func _apply_deform() -> void:
 		body_root = get_node_or_null("Body") as Node3D
 	if body_root == null:
 		return
-	body_root.scale = JellyFeel.body_scale(squash, stretch)
+	body_root.scale = JellyFeel.body_scale(squash * (0.9 if is_hungry() and not held else 1.0), stretch)
 	if held:
 		var pull := hold_target - global_position
 		pull.y = 0.0
@@ -584,6 +630,8 @@ func _halo() -> void:
 	halo_mat.emission_energy_multiplier = 0.28
 	halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	halo_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	halo_mat.no_depth_test = true
+	halo_mat.render_priority = 1
 	halo.material_override = halo_mat
 	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	halo.visible = false
@@ -653,24 +701,50 @@ func _update_face() -> void:
 		if eye_r:
 			eye_r.scale.y = 1.05
 		if mouth:
-			mouth.scale.y = 0.72
+			mouth.scale = Vector3(0.7, 0.72, 0.2)
+		_tint_iris(false)
 		return
 	var shut := 1.0
+	var grin := mood == "happy" or mood == "playful" or nuzzled
+	var hungry_look := (
+		is_hungry()
+		and mood != "panic"
+		and mood != "dizzy"
+		and not nuzzled
+		and not (held and stretch > 0.22)
+	)
 	if wants_sleep or mood == "sleepy":
 		shut = 0.18
+		grin = false
+		hungry_look = false
 	elif mood == "dizzy":
 		shut = 0.35
+		grin = false
 	elif mood == "annoyed" or mood == "panic":
 		shut = 0.55
+		grin = false
+		hungry_look = false
 	elif held and stretch > 0.28:
 		shut = 0.62
+		grin = true
+		hungry_look = false
+	elif hungry_look:
+		shut = 0.42
+		grin = false
 	eye_l.scale.y = shut
 	eye_r.scale.y = shut
 	if mouth:
-		var grin := mood == "happy" or mood == "playful"
-		if held and stretch > 0.22:
-			grin = true
-		mouth.scale.y = 0.55 if grin else 0.22
+		if hungry_look:
+			mouth.scale = Vector3(0.52, 0.08, 0.2)
+		else:
+			mouth.scale = Vector3(0.7, 0.55 if grin else 0.22, 0.2)
+	_tint_iris(hungry_look)
+
+func _tint_iris(hungry_look: bool) -> void:
+	var tint := iris_color.lerp(Color(1.0, 0.58, 0.22), 0.58) if hungry_look else iris_color
+	for iris in iris_mats:
+		iris.albedo_color = tint
+		iris.emission = tint
 
 func to_state() -> Dictionary:
 	return {

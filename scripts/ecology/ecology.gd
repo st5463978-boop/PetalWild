@@ -82,6 +82,37 @@ func tick(delta: float, world: Dictionary, hours := 0.0) -> void:
 		_promote(jelly, definition)
 	_romance(world)
 
+func taste_cart(crop: String, from_name: String) -> String:
+	# ponytail: a vale cart of their food fills them a little; a second crop if a parish sends mixed loads.
+	var who := ""
+	for actor in actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if jelly.leaving or jelly.held:
+			continue
+		var definition: Dictionary = ContentDB.species_def(jelly.species_id)
+		if rules.food_of(definition) != crop:
+			continue
+		jelly.hunger = minf(1.0, jelly.hunger + 0.45)
+		if jelly.mood == "hungry":
+			jelly.mood = "content"
+		if who == "":
+			who = jelly.display_name
+	if who == "":
+		return ""
+	var crop_name := str(ContentDB.plant(crop).get("name", crop))
+	var text := "%s tasted the %s from %s." % [who, crop_name, from_name]
+	event_happened.emit(text)
+	return text
+
+func feed(jelly: Jelly) -> void:
+	if jelly == null or not is_instance_valid(jelly):
+		return
+	jelly.hunger = 1.0
+	if jelly.mood == "hungry":
+		jelly.mood = "content"
+
 func _needs(hours: float, world: Dictionary) -> void:
 	# ponytail: hunger follows game hours so a smoke tick of 0.2s does not starve them.
 	for actor in actors:

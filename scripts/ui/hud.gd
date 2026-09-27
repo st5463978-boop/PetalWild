@@ -64,7 +64,7 @@ func _inspect_card(theme: Theme) -> void:
 	inspect_panel.offset_left = 16
 	inspect_panel.offset_top = 92
 	inspect_panel.offset_right = 292
-	inspect_panel.offset_bottom = 268
+	inspect_panel.offset_bottom = 340
 	add_child(inspect_panel)
 	inspect_box = VBoxContainer.new()
 	inspect_box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -84,7 +84,15 @@ func show_inspect(row: Dictionary) -> void:
 	inspect_box.add_child(ThemeKit.label("Mood  ·  %s" % str(row.get("mood", "")), 14))
 	inspect_box.add_child(ThemeKit.label("Bond  ·  %d%%" % int(float(row.get("bond", 0.0)) * 100.0), 14))
 	inspect_box.add_child(ThemeKit.label(str(row.get("life", "")).capitalize(), 13, ThemeKit.MOSS_DEEP))
+	var hunger := float(row.get("hunger", 1.0))
+	if hunger < 0.28:
+		inspect_box.add_child(ThemeKit.label("Hungry  ·  wants %s" % str(row.get("food", "food")), 13, ThemeKit.TERRACOTTA))
 	inspect_box.add_child(ThemeKit.label("The face looks back. Esc lets go.", 12))
+	if bool(row.get("can_feed", false)):
+		var feed := Button.new()
+		feed.text = "Feed from the pouch"
+		feed.pressed.connect(func(): host.feed_inspected())
+		inspect_box.add_child(feed)
 
 func hide_inspect() -> void:
 	if inspect_panel:
@@ -172,6 +180,12 @@ func show_place(stats: Dictionary) -> void:
 	var habitat_line := str(stats.get("habitat_line", ""))
 	if habitat_line != "":
 		journal_box.add_child(ThemeKit.label(habitat_line, 14))
+	var courtship_line := str(stats.get("courtship_line", ""))
+	if courtship_line != "":
+		journal_box.add_child(ThemeKit.label(courtship_line, 14))
+	var forage_line := str(stats.get("forage_line", ""))
+	if forage_line != "":
+		journal_box.add_child(ThemeKit.label(forage_line, 14, ThemeKit.TERRACOTTA))
 	journal_box.add_child(ThemeKit.label("Petal coins  %s" % str(stats.get("coins", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Bees over the beds  %s" % str(stats.get("bees", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Birds  %s · %s" % [str(stats.get("birds", 0)), str(stats.get("bird_state", "crossing"))], 16))
@@ -181,6 +195,12 @@ func show_place(stats: Dictionary) -> void:
 	var kettle_line := str(stats.get("kettle_line", ""))
 	if kettle_line != "":
 		journal_box.add_child(ThemeKit.label(kettle_line, 16))
+	var lane_tea := str(stats.get("lane_tea_line", ""))
+	if lane_tea != "":
+		journal_box.add_child(ThemeKit.label(lane_tea, 14))
+	var town_tea := int(stats.get("town_tea", 0))
+	if town_tea > 0:
+		journal_box.add_child(ThemeKit.label("Lane cups at the porch  %s" % str(town_tea), 16))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
@@ -348,6 +368,9 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: b
 			shop_box.add_child(ThemeKit.label(lock, 12, ThemeKit.TERRACOTTA))
 	shop_box.add_child(ThemeKit.title("Kettle", 16))
 	shop_box.add_child(ThemeKit.label(str(mill.get("line", "The kettle is quiet.")), 14))
+	var left := int(mill.get("left", 0))
+	if left > 0:
+		shop_box.add_child(ThemeKit.label("Left  ·  %d min" % left, 13))
 	var brew := Button.new()
 	brew.text = "Stock the kettle  ·  peach + meadowbell"
 	brew.disabled = not bool(mill.get("can_stock", false))
@@ -364,6 +387,23 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: b
 	if stall_open:
 		tea.pressed.connect(func(): host.sell_tea())
 	shop_box.add_child(tea)
+	shop_box.add_child(ThemeKit.title("Pan", 16))
+	var jam := Button.new()
+	jam.text = "Stock the pan  ·  bramble"
+	jam.disabled = not bool(mill.get("can_jam", false))
+	jam.pressed.connect(func(): host.stock_jam())
+	shop_box.add_child(jam)
+	var jam_carry := Button.new()
+	jam_carry.text = "Carry jam to the crate"
+	jam_carry.disabled = not bool(mill.get("can_carry_jam", false))
+	jam_carry.pressed.connect(func(): host.carry_jam())
+	shop_box.add_child(jam_carry)
+	var jam_sell := Button.new()
+	jam_sell.text = "Sell cane jam  ·  %d  (%d)" % [int(mill.get("jam_price", 16)), int(mill.get("jam_crate", 0))]
+	jam_sell.disabled = not stall_open or int(mill.get("jam_crate", 0)) <= 0
+	if stall_open:
+		jam_sell.pressed.connect(func(): host.sell_jam())
+	shop_box.add_child(jam_sell)
 	shop_box.add_child(ThemeKit.title("Sell", 16))
 	var any := false
 	for item in produce:
@@ -710,7 +750,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	box.add_child(ThemeKit.title(str(row.get("name", "")), 16))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("role", ""), row.get("state", "")], 13, ThemeKit.MOSS_DEEP))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("home", ""), row.get("job", "")], 13))
-	box.add_child(ThemeKit.label(str(row.get("blurb", "")), 13))
+	var blurb := str(row.get("blurb", ""))
+	if blurb != "":
+		box.add_child(_wrap(blurb, 13))
 	if bool(row.get("present", false)):
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("Hunger %.0f   company %.0f" % [float(row.get("hunger", 0)) * 100, float(row.get("social", 0)) * 100], 13))
@@ -720,13 +762,13 @@ func _person_card(row: Dictionary) -> PanelContainer:
 			box.add_child(ThemeKit.label("Household  %s" % house, 13))
 		var motive := str(row.get("motive", ""))
 		if motive != "":
-			box.add_child(ThemeKit.label(motive, 13))
+			box.add_child(_wrap(motive, 13))
 		var ties := str(row.get("ties", ""))
 		if ties != "":
 			box.add_child(ThemeKit.label("With neighbours  %s" % ties, 13))
 		var memory := str(row.get("memory", ""))
 		if memory != "":
-			box.add_child(ThemeKit.label(memory, 13))
+			box.add_child(_wrap(memory, 13))
 		var want_line := str(row.get("want_line", ""))
 		if want_line != "":
 			box.add_child(ThemeKit.label(want_line, 13))
@@ -740,7 +782,7 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		box.add_child(button)
 	var kept := str(row.get("road_line", ""))
 	if kept != "":
-		box.add_child(ThemeKit.label(kept, 13))
+		box.add_child(_wrap(kept, 13))
 	var park_kept := str(row.get("park_line", ""))
 	if park_kept != "":
 		box.add_child(ThemeKit.label(park_kept, 13))

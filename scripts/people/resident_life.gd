@@ -70,7 +70,7 @@ func tick(hours: float, ctx: Dictionary, chooser: Callable = Callable()) -> Arra
 				life["activity"] = activity
 				var line := _line(id, activity)
 				changed.append({"id": id, "activity": activity, "text": line})
-				remember(id, _memory_for(activity, int(ctx.get("day", 1))))
+				remember(id, _memory_for(activity, int(ctx.get("day", 1)), id))
 			else:
 				life["activity"] = activity
 		else:
@@ -115,9 +115,41 @@ func destination(id: String) -> Vector3:
 		return Vector3.INF
 	return places[tag]
 
+func open_park() -> void:
+	# ponytail: leisure remaps onto the filed lawn; tea stays the social cup.
+	if not places.has("park"):
+		return
+	for raw_id in lives.keys():
+		var id := str(raw_id)
+		var life: Dictionary = lives[id]
+		var spots: Dictionary = life.get("places", {})
+		spots["leisure"] = "park"
+		life["places"] = spots
+		lives[id] = life
+
+func snack(id: String, crop: String) -> String:
+	var life: Dictionary = lives.get(id, {})
+	if life.is_empty() or str(life.get("activity", "")) != "eat":
+		return ""
+	var hour := int(life.get("pick_hour", -1))
+	if int(life.get("snack_hour", -99)) == hour:
+		return ""
+	life["snack_hour"] = hour
+	var needs: Dictionary = life["needs"]
+	needs["hunger"] = clampf(float(needs.get("hunger", 0.5)) + 0.35, 0.0, 1.0)
+	life["needs"] = needs
+	lives[id] = life
+	if crop != "":
+		remember(id, "Ate %s at the stall." % crop)
+		return _line(id, "eat")
+	remember(id, "The stall was bare.")
+	return "Nothing on the trays."
+
 func label_for(id: String) -> String:
 	var life: Dictionary = lives.get(id, {})
 	var activity := str(life.get("activity", "work"))
+	if activity == "leisure" and str(life.get("places", {}).get("leisure", "")) == "park":
+		return "on the Grove Park lawn"
 	return str(LABELS.get(activity, activity))
 
 func greeting(id: String) -> String:
@@ -125,6 +157,18 @@ func greeting(id: String) -> String:
 	if typeof(lines) == TYPE_ARRAY and lines.size() > 0:
 		return str(lines[0])
 	return "Hello."
+
+func sip(id: String, day: int) -> bool:
+	var life: Dictionary = lives.get(id, {})
+	if life.is_empty():
+		return false
+	var needs: Dictionary = life["needs"]
+	needs["hunger"] = clampf(float(needs.get("hunger", 0.5)) + 0.22, 0.0, 1.0)
+	needs["social"] = clampf(float(needs.get("social", 0.5)) + 0.18, 0.0, 1.0)
+	life["needs"] = needs
+	remember(id, "Drank hedge tea on day %d." % day)
+	lives[id] = life
+	return true
 
 func greet(id: String, day: int) -> String:
 	var life: Dictionary = lives.get(id, {})
@@ -232,6 +276,7 @@ func _fresh(definition: Dictionary) -> Dictionary:
 		"relations": ties,
 		"met_day": {},
 		"pick_hour": -1,
+		"snack_hour": -99,
 		"with_you": float(definition.get("relation", 0.1)),
 		"decide_tier": "offline",
 		"decide_confidence": 0.0,
@@ -303,13 +348,15 @@ func _mood(needs: Dictionary) -> String:
 		return "bright"
 	return "steady"
 
-func _memory_for(activity: String, day: int) -> String:
+func _memory_for(activity: String, day: int, id: String = "") -> String:
 	match activity:
 		"eat":
 			return "Stopped by the stall on day %d." % day
 		"social":
 			return "Took tea on day %d." % day
 		"leisure":
+			if str(lives.get(id, {}).get("places", {}).get("leisure", "")) == "park":
+				return "Walked Grove Park on day %d." % day
 			return "Walked the south lawn on day %d." % day
 		"rest", "home":
 			return "Went home on day %d." % day
@@ -321,7 +368,8 @@ func _memory_for(activity: String, day: int) -> String:
 func _line(id: String, activity: String) -> String:
 	var bank = dialogue.get(id, {}).get(activity, [])
 	if typeof(bank) == TYPE_ARRAY and bank.size() > 0:
-		return str(bank[0])
+		var hour: int = absi(int(lives.get(id, {}).get("pick_hour", 0)))
+		return str(bank[hour % bank.size()])
 	match activity:
 		"eat":
 			return "The stall will do."

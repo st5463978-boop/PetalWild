@@ -38,6 +38,9 @@ func _stall(parent: Node3D) -> void:
 	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
 	cup.add_to_group("parish_cup")
 	cup.visible = false
+	var jar := _sphere(root, Vector3(1.25, 0.42, 0.62), 0.07, Color("#8a3a48"))
+	jar.add_to_group("parish_jar")
+	jar.visible = false
 	# ponytail: three flats beside the spur; the worn center stays |x+4.55|<0.42.
 	for at in [Vector3(-0.72, 0.06, -0.72), Vector3(0.78, 0.06, -0.66), Vector3(-0.82, 0.06, -1.05)]:
 		var stone := _box(root, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
@@ -84,6 +87,11 @@ func _shed(parent: Node3D) -> void:
 	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
 	_cylinder(root, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
 	_sphere(root, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
+	var pan := _cylinder(root, Vector3(0.0, 0.2, 1.08), 0.1, 0.12, 0.18, Color("#3a322c"))
+	pan.add_to_group("parish_pan")
+	var jam_steam := _sphere(root, Vector3(0.0, 0.42, 1.08), 0.06, Color("#e8dcc8"))
+	jam_steam.add_to_group("parish_jam_steam")
+	jam_steam.visible = false
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.2, 0.2)
 	light.light_color = Color("ffc98a")
@@ -184,20 +192,34 @@ func _park(parent: Node3D) -> void:
 	root.add_to_group("grove_park")
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.02, 0), Vector3(4.6, 0.04, 3.2), Color("#3f6a32"))
+	_box(root, Vector3(0, 0.035, 1.5), Vector3(0.72, 0.03, 2.6), Color("#6b5340"))
 	_box(root, Vector3(-1.6, 0.04, -1.1), Vector3(0.7, 0.08, 0.5), Color("#4a4038"))
 	_box(root, Vector3(1.5, 0.04, 0.9), Vector3(0.6, 0.07, 0.42), Color("#4a4038"))
 	_bench(root, Vector3(-1.2, 0.0, 0.6))
 	_bench(root, Vector3(1.1, 0.0, -0.7))
+	_bench(root, Vector3(0.15, 0.0, -1.15))
 	var sign := Label3D.new()
+	sign.name = "ParkSign"
 	sign.text = "Grove Park"
 	sign.font_size = 48
 	sign.pixel_size = 0.004
-	sign.position = Vector3(0, 1.15, 0)
+	sign.position = Vector3(0, 1.28, 0)
 	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sign.shaded = false
 	sign.modulate = Color("#8d6a45")
 	sign.outline_modulate = Color("2a2118")
 	root.add_child(sign)
+	var count := Label3D.new()
+	count.name = "ParkCount"
+	count.text = "the lawn is quiet"
+	count.font_size = 28
+	count.pixel_size = 0.004
+	count.position = Vector3(0, 0.92, 0)
+	count.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	count.shaded = false
+	count.modulate = Color("#f3ead8")
+	count.outline_modulate = Color("2a2118")
+	root.add_child(count)
 
 func _bench(parent: Node3D, at: Vector3) -> void:
 	var root := Node3D.new()

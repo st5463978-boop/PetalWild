@@ -2,6 +2,7 @@ class_name ParishChain
 extends RefCounted
 
 const TEA := "hedge_tea"
+const JAM := "cane_jam"
 const CAP := 3
 
 var recipes: Dictionary = {}
@@ -90,7 +91,13 @@ func tick(minutes: float) -> bool:
 	pot[out] = pot_count(out) + int(rec.get("output_count", 1))
 	brew = ""
 	left = 0.0
+	_relight()
 	return true
+
+func _relight() -> void:
+	for key in recipes.keys():
+		if _light(str(key)):
+			return
 
 func deliver(id: String = TEA) -> bool:
 	if pot_count(id) < 1:
@@ -138,23 +145,36 @@ func can_stock(bag: Dictionary, id: String = TEA) -> bool:
 	return true
 
 func line(bag: Dictionary, stall_open: bool, worker: bool) -> String:
-	if brewing():
+	if brew == TEA:
 		return "The kettle is brewing hedge tea."
-	if pot_count() > 0:
-		if crate_count() >= int(recipe().get("crate_cap", CAP)):
+	if brew == JAM:
+		return "The pan is making cane jam."
+	if pot_count(TEA) > 0:
+		if crate_count(TEA) >= int(recipe(TEA).get("crate_cap", CAP)):
 			return "The crate is full."
 		if not stall_open:
 			return "The stall is shut. Tea waits."
-		if not worker:
-			return "Tea is waiting on the porch."
 		return "Tea is waiting on the porch."
-	if crate_count() > 0:
+	if pot_count(JAM) > 0:
+		if crate_count(JAM) >= int(recipe(JAM).get("crate_cap", CAP)):
+			return "The jam crate is full."
+		return "Jam is waiting at the shed."
+	if crate_count(TEA) > 0:
 		return "Hedge tea sits on the crate."
+	if crate_count(JAM) > 0:
+		return "Cane jam sits on the crate."
+	if hopper_count("peach") > 0 or hopper_count("meadowbell") > 0:
+		return "The kettle is ready."
+	if can_stock(bag, TEA):
+		return "The kettle is quiet."
 	var lack := missing(bag, TEA)
 	if lack != "":
 		return "Kettle waits for %s." % lack
-	if hopper_count("peach") > 0 or hopper_count("meadowbell") > 0:
-		return "The kettle is ready."
+	if hopper_count("bramble") > 0 or can_stock(bag, JAM):
+		return "The pan is ready."
+	var jam_lack := missing(bag, JAM)
+	if jam_lack != "":
+		return "Pan waits for %s." % jam_lack
 	return "The kettle is quiet."
 
 func to_state() -> Dictionary:

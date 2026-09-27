@@ -125,13 +125,22 @@ func page_lines() -> PackedStringArray:
 		lines.append("Path  gate to park · %s steps · %s riders" % [str(route.size() - 1), str(stats.get("riders", 0))])
 	else:
 		lines.append("Path  the hedge still closes the way.")
+	var tea_n := occupancy("tea")
+	if tea_n > 0:
+		lines.append("Tea porch  %s with a cup · still no body" % str(tea_n))
+	var traffic := int(stats.get("traffic", 0))
+	if traffic > 0:
+		lines.append("Vale carts  %s bound here · they fill the lane as counts" % str(traffic))
 	var layers := layer_counts()
-	lines.append("Layers  household %s · individual %s · district %s" % [str(layers.get("household", 0)), str(layers.get("individual", 0)), str(layers.get("district", 0))])
+	lines.append("Layers  household %s · individual %s · district %s · porch %s" % [str(layers.get("household", 0)), str(layers.get("individual", 0)), str(layers.get("district", 0)), str(layers.get("property", 0))])
 	for row in folk:
 		var rec: Dictionary = row
 		if str(rec.get("layer", "")) != "individual":
 			continue
-		lines.append("Near  %s · %s · still no body" % [str(rec.get("name", "")), str(rec.get("district", ""))])
+		var place := str(rec.get("district", ""))
+		if str(rec.get("errand", "")) == "tea":
+			place = "tea porch"
+		lines.append("Near  %s · %s · still no body" % [str(rec.get("name", "")), place])
 	return lines
 
 func to_dict() -> Dictionary:
@@ -220,6 +229,8 @@ func _occupy(ctx: Dictionary) -> void:
 	var people := int(ctx.get("people", 0))
 	var residents := int(ctx.get("residents", 0))
 	var passers := int(ctx.get("passers", 0))
+	var traffic := int(ctx.get("traffic", 0))
+	var tea := int(ctx.get("tea", 0))
 	var hour := float(ctx.get("hour", 10.0))
 	var weather := str(ctx.get("weather", "clear"))
 	var day := hour >= 5.0 and hour < 19.5
@@ -227,7 +238,7 @@ func _occupy(ctx: Dictionary) -> void:
 	var lane_n := 0
 	if bool(districts.get("lane", {}).get("now_open", false)):
 		var cap := int(districts.get("lane", {}).get("houses", 6))
-		lane_n = mini(cap, 1 + residents + people + int(passers / 2))
+		lane_n = mini(cap, 1 + residents + people + int(passers / 2) + traffic)
 		if lane_mode == "sparse":
 			lane_n = maxi(1, int(lane_n / 2))
 		if not day:
@@ -237,17 +248,23 @@ func _occupy(ctx: Dictionary) -> void:
 	if bool(districts.get("park", {}).get("now_open", false)):
 		var cap := int(districts.get("park", {}).get("capacity", 8))
 		if day and fair:
-			park_n = mini(cap, passers + people)
+			park_n = mini(cap, passers + people + traffic)
 		elif day:
-			park_n = mini(2, people)
+			park_n = mini(2, people + traffic)
 	_pour("park", "park", park_n)
+	var tea_n := 0
+	if bool(buildings.get("tea", {}).get("now_open", false)) and tea > 0:
+		tea_n = mini(tea, lane_n)
 	_sync_folk("house", "lane", "household", lane_n)
 	_sync_folk("visitor", "park", "district", park_n)
+	_set_errands(tea_n)
 	_set_layers(ctx)
 	stats["lane_occ"] = lane_n
 	stats["park_occ"] = park_n
+	stats["tea_occ"] = tea_n
+	stats["traffic"] = traffic
 	stats["near_park"] = _count_layer("individual")
-	stats["occ"] = {"lane": lane_n, "grove_park": park_n}
+	stats["occ"] = {"lane": lane_n, "grove_park": park_n, "tea": tea_n}
 
 func _pour(ground: String, district: String, amount: int) -> void:
 	var left := amount
@@ -325,10 +342,12 @@ func _tally(ctx: Dictionary) -> void:
 	var cover := float(served) / maxf(float(live), 1.0)
 	var riders := 0
 	if route.size() > 1 and bool(districts.get("lane", {}).get("now_open", false)):
-		riders = int(ctx.get("passers", 0))
+		riders = int(ctx.get("passers", 0)) + int(ctx.get("traffic", 0))
 	var headline := "Hedge Hollow stands alone."
 	if bool(districts.get("park", {}).get("now_open", false)):
 		headline = "Grove Park is a public lawn. The lane holds houses. Nobody walks them in hero detail."
+	elif int(stats.get("tea_occ", 0)) > 0:
+		headline = "Hedge tea draws the lane to the porch. They sit as a count."
 	elif bool(districts.get("lane", {}).get("now_open", false)):
 		headline = "South Lane holds houses beyond the hedge. They tick as counts."
 	stats["garden_pop"] = garden
@@ -353,6 +372,8 @@ func _blank_stats() -> Dictionary:
 		"bodies": 0,
 		"lane_occ": 0,
 		"park_occ": 0,
+		"tea_occ": 0,
+		"traffic": 0,
 		"near_park": 0,
 		"individuals": 0,
 		"occ": {},
@@ -388,14 +409,36 @@ func _sync_folk(kind: String, district: String, far_layer: String, amount: int) 
 	for rec in mine:
 		folk.append(rec)
 
+func _set_errands(tea_n: int) -> void:
+	var left := tea_n
+	for row in folk:
+		var rec: Dictionary = row
+		if str(rec.get("kind", "")) != "house":
+			rec["errand"] = ""
+			continue
+		if left > 0:
+			rec["errand"] = "tea"
+			left -= 1
+		else:
+			rec["errand"] = "home"
+
 func _set_layers(ctx: Dictionary) -> void:
 	var near_lane := bool(ctx.get("near_lane", false))
 	var near_park := bool(ctx.get("near_park", false))
+	var near_tea := bool(ctx.get("near_tea", false))
 	var house_n := 0
 	var park_n := 0
+	var tea_n := 0
 	for row in folk:
 		var rec: Dictionary = row
 		var kind := str(rec.get("kind", ""))
+		if str(rec.get("errand", "")) == "tea":
+			if near_tea and tea_n < 2:
+				rec["layer"] = "individual"
+				tea_n += 1
+			else:
+				rec["layer"] = "property"
+			continue
 		if kind == "house":
 			if near_lane and house_n < 2:
 				rec["layer"] = "individual"

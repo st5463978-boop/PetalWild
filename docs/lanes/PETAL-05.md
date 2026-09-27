@@ -1,6 +1,6 @@
 # PETAL-05 Factorio / production / economy
 
-Updated 2026-09-27.
+Updated 2026-09-27. Pass 2 on `petal/08-integration` `3402530`.
 
 ## Task
 
@@ -73,3 +73,29 @@ Director rules applied: tests are the acceptance evidence; capture complements t
 ## Blockers
 
 None.
+
+## Pass 2
+
+Merged `petal/08-integration` (`3402530`) into `petal/05-economy` first. Three playable upgrades on the integrated mill:
+
+1. **Cane jam at the shed.** Ripe bramble into Bram's pan (12 min), jar to the stall crate (cap 3, 16 petals). A second station shares the mill hopper and one brew slot; the pan queues after the kettle. Click the shed, or stall → Pan.
+2. **Tea feeds residents.** A present person on `eat` or `social` takes one crate cup an hour (`ParishLife.sip`). Hunger and company rise; a memory records the drink. Empty crate is the new bottleneck for 04's stall visit.
+3. **South Lane shortage.** After the road rumour, parish shows `South Lane waits for tea.` or `South Lane has tea on the crate.` Stall HUD names remaining brew minutes.
+
+### Player
+
+7. Harvest a bramble, click the shed pan (or Stock the pan).
+8. Watch pan steam; click the crate (or Carry jam) when the jar is ready.
+9. Sell cane jam while the stall is open.
+10. Leave a cup on the crate when Lumen is stopping at the stall; she drinks it.
+
+### Interface
+
+- `Economy.stock_jam()`, `carry_jam()`, `sell_jam()`
+- `ParishChain.JAM`, `_relight()` after a finish
+- `ParishLife.sip(id, day)`
+- Save key still `economy.mill` (hopper / pot / crate hold jam counts)
+
+### Tests (this pass)
+
+Markers recorded after the run. Qwen3-VL unused. Campaign state stays PETAL-08.
