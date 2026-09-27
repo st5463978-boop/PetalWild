@@ -57,6 +57,7 @@ var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 var crate_yields := {}
 var last_shop_hour := -1.0
+var last_sip_hour := -1
 var bus := GardenBus.new()
 var region := RegionSim.new()
 var region_stamp := -1
@@ -1056,11 +1057,57 @@ func sell_tea() -> void:
 	_sync_mill()
 	refresh_panels()
 
+func stock_jam() -> void:
+	if not Economy.stock_jam():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Bramble went into the pan.")
+	var bram := _person("bram")
+	if bram != null and bram.present:
+		bram.say("I will watch the pan.")
+	_sync_mill()
+	refresh_panels()
+
+func carry_jam() -> void:
+	if not Economy.carry_jam():
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	audio.play_kind("coin")
+	toast("Cane jam sat down on the crate.")
+	_person("lumen").say("A jar beside the cups.")
+	_sync_mill()
+	refresh_panels()
+
+func sell_jam() -> void:
+	if not _stall_open():
+		_stall_shut()
+		return
+	var extra := 1 if _lane_passers() > 0 else 0
+	var price := Economy.sell_jam()
+	if price <= 0:
+		toast("The crate has no jam.")
+		return
+	if extra > 0:
+		Economy.earn(extra)
+	audio.play_kind("coin")
+	toast("Sold cane jam for %d petal." % (price + extra))
+	_person("lumen").say("The lane likes the dark fruit.")
+	_sync_mill()
+	refresh_panels()
+
 func _tick_mill(minutes: float) -> void:
+	var was := Economy.mill.brew
 	if Economy.mill.tick(minutes):
-		toast("The kettle finished a cup.")
-		_person("lumen").say("I can smell the tea.")
+		if was == ParishChain.JAM:
+			toast("The pan finished a jar.")
+			_person("bram").say("The jam is set.")
+		else:
+			toast("The kettle finished a cup.")
+			_person("lumen").say("I can smell the tea.")
 	_try_carry()
+	_try_jam()
+	_serve_cups()
 	_sync_mill()
 
 func _try_carry() -> void:
@@ -1085,11 +1132,67 @@ func _try_carry() -> void:
 		nessa.chore = GardenLayout.STALL
 		nessa.has_chore = true
 
+func _try_jam() -> void:
+	if Economy.mill.pot_count(ParishChain.JAM) < 1:
+		return
+	if Economy.mill.crate_count(ParishChain.JAM) >= int(Economy.mill.recipe(ParishChain.JAM).get("crate_cap", 3)):
+		return
+	if not _jam_worker():
+		return
+	var choice := PetalDecide.choose(
+		"Bram has a jar of cane jam. Carry it to the stall crate, or leave it by the pan?",
+		["carry", "wait"]
+	)
+	if choice != "carry":
+		return
+	if not Economy.carry_jam():
+		return
+	toast("Bram carried cane jam to the crate.")
+	var bram := _person("bram")
+	bram.say("The jar is on the crate.")
+	if not bram.has_chore:
+		bram.chore = GardenLayout.STALL
+		bram.has_chore = true
+
+func _serve_cups() -> void:
+	var bucket := int(Clock.hour())
+	if bucket == last_sip_hour:
+		return
+	if Economy.mill.crate_count() < 1:
+		return
+	for id in ["lumen", "bram", "nessa"]:
+		var life: Dictionary = parish.lives.get(id, {})
+		if life.is_empty():
+			continue
+		var act := str(life.get("activity", ""))
+		if act != "eat" and act != "social":
+			continue
+		var person := _person(id)
+		if person == null or not person.present:
+			continue
+		if not Economy.mill.take_crate():
+			return
+		parish.sip(id, Clock.day)
+		parish.apply_to(person)
+		last_sip_hour = bucket
+		toast("%s drank hedge tea." % person.display_name)
+		person.say("That cup helps.")
+		_sync_mill()
+		return
+
 func _tea_worker() -> bool:
 	var nessa := _person("nessa")
 	if nessa == null or not nessa.present:
 		return false
 	if nessa_filing or nessa_drafting or nessa_farewell or nessa_bees:
+		return false
+	return _stall_open()
+
+func _jam_worker() -> bool:
+	var bram := _person("bram")
+	if bram == null or not bram.present:
+		return false
+	if bram.has_chore:
 		return false
 	return _stall_open()
 
@@ -1099,44 +1202,75 @@ func _near_tea(hit: Vector3) -> bool:
 func _near_stall(hit: Vector3) -> bool:
 	return Vector2(hit.x - GardenLayout.STALL.x, hit.z - GardenLayout.STALL.z).length() < 1.55
 
+func _near_shed(hit: Vector3) -> bool:
+	return Vector2(hit.x - GardenLayout.SHED.x, hit.z - GardenLayout.SHED.z).length() < 1.55
+
 func _use_kettle() -> void:
-	if Economy.mill.brewing() or Economy.mill.pot_count() > 0:
+	if Economy.mill.brew == ParishChain.TEA or Economy.mill.pot_count() > 0:
 		toast(Economy.mill_line(_stall_open(), _tea_worker()))
 		return
 	stock_kettle()
+
+func _use_pan() -> void:
+	if Economy.mill.brew == ParishChain.JAM or Economy.mill.pot_count(ParishChain.JAM) > 0:
+		toast(Economy.mill_line(_stall_open(), _tea_worker()))
+		return
+	stock_jam()
 
 func _use_crate() -> void:
 	if Economy.mill.pot_count() > 0:
 		carry_tea()
 		return
+	if Economy.mill.pot_count(ParishChain.JAM) > 0:
+		carry_jam()
+		return
 	if Economy.mill.crate_count() > 0:
 		sell_tea()
+		return
+	if Economy.mill.crate_count(ParishChain.JAM) > 0:
+		sell_jam()
 		return
 	toast(Economy.mill_line(_stall_open(), _tea_worker()))
 
 func _sync_mill() -> void:
-	var steaming := Economy.mill.brewing()
+	var tea_steam := Economy.mill.brew == ParishChain.TEA
 	for node in get_tree().get_nodes_in_group("parish_steam"):
-		node.visible = steaming
+		node.visible = tea_steam
+	var jam_steam := Economy.mill.brew == ParishChain.JAM
+	for node in get_tree().get_nodes_in_group("parish_jam_steam"):
+		node.visible = jam_steam
 	var cups := Economy.mill.crate_count() > 0
 	for node in get_tree().get_nodes_in_group("parish_cup"):
 		node.visible = cups
+	var jars := Economy.mill.crate_count(ParishChain.JAM) > 0
+	for node in get_tree().get_nodes_in_group("parish_jar"):
+		node.visible = jars
 
 func _mill_row() -> Dictionary:
+	var extra := 1 if _lane_passers() > 0 else 0
 	return {
 		"line": Economy.mill_line(_stall_open(), _tea_worker()),
-		"can_stock": Economy.mill.can_stock(Economy.bag),
+		"left": int(ceil(Economy.mill.left)) if Economy.mill.brewing() else 0,
+		"can_stock": Economy.mill.can_stock(Economy.bag, ParishChain.TEA),
 		"can_carry": Economy.mill.pot_count() > 0 and Economy.mill.crate_count() < int(Economy.mill.recipe().get("crate_cap", 3)),
 		"crate": Economy.mill.crate_count(),
-		"price": Economy.mill.price() + (1 if _lane_passers() > 0 else 0),
+		"price": Economy.mill.price() + extra,
+		"can_jam": Economy.mill.can_stock(Economy.bag, ParishChain.JAM),
+		"can_carry_jam": Economy.mill.pot_count(ParishChain.JAM) > 0 and Economy.mill.crate_count(ParishChain.JAM) < int(Economy.mill.recipe(ParishChain.JAM).get("crate_cap", 3)),
+		"jam_crate": Economy.mill.crate_count(ParishChain.JAM),
+		"jam_price": Economy.mill.price(ParishChain.JAM) + extra,
 	}
 
 func _job_line(id: String, definition: Dictionary) -> String:
-	if id == "nessa" and Economy.mill.brewing():
+	if id == "nessa" and Economy.mill.brew == ParishChain.TEA:
 		return "Watches the kettle"
 	if id == "nessa" and Economy.mill.pot_count() > 0:
 		return "Carries tea to the crate"
-	if id == "lumen" and Economy.mill.crate_count() > 0:
+	if id == "bram" and Economy.mill.brew == ParishChain.JAM:
+		return "Watches the pan"
+	if id == "bram" and Economy.mill.pot_count(ParishChain.JAM) > 0:
+		return "Carries jam to the crate"
+	if id == "lumen" and (Economy.mill.crate_count() > 0 or Economy.mill.crate_count(ParishChain.JAM) > 0):
 		return "Keeps the tea crate"
 	return str(definition.get("job", ""))
 
@@ -1219,6 +1353,13 @@ func _sync_park() -> void:
 		var body := node as Node3D
 		if body:
 			body.visible = show
+
+func _lane_tea_line() -> String:
+	if not Trust.has_action("parish_road_rumour"):
+		return ""
+	if Economy.mill.crate_count() > 0:
+		return "South Lane has tea on the crate."
+	return "South Lane waits for tea."
 
 func _park_card_line() -> String:
 	if Trust.has_action("parish_park"):
@@ -7829,6 +7970,44 @@ func _run_smoke() -> void:
 		push_error("smoke: the kettle did not reload")
 		get_tree().quit(1)
 		return
+	last_sip_hour = -1
+	parish.lives["lumen"]["activity"] = "eat"
+	_serve_cups()
+	if Economy.mill.crate_count() != 2 or parish.last_memory("lumen").find("Drank hedge tea") == -1:
+		push_error("smoke: a stall visit did not drink the tea")
+		get_tree().quit(1)
+		return
+	Economy.add("bramble", 1)
+	if not Economy.stock_jam() or Economy.mill.brew != "cane_jam":
+		push_error("smoke: the pan did not take the bramble")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var pan_on := 0
+	for node in get_tree().get_nodes_in_group("parish_jam_steam"):
+		if node.visible:
+			pan_on += 1
+	if pan_on < 1 or Economy.mill_line(true, false) != "The pan is making cane jam.":
+		push_error("smoke: the pan did not steam")
+		get_tree().quit(1)
+		return
+	if not Economy.mill.tick(12.0) or Economy.mill.pot_count("cane_jam") != 1:
+		push_error("smoke: the pan did not finish a jar")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_jam() or Economy.mill.crate_count("cane_jam") != 1:
+		push_error("smoke: jam did not reach the crate")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	var jars_on := 0
+	for node in get_tree().get_nodes_in_group("parish_jar"):
+		if node.visible:
+			jars_on += 1
+	if jars_on < 1:
+		push_error("smoke: the crate hid the jar")
+		get_tree().quit(1)
+		return
 	if region.ids().size() != 5:
 		push_error("smoke: the vale is missing")
 		get_tree().quit(1)
@@ -8189,7 +8368,8 @@ func _run_kettle_shot() -> void:
 		return
 	_sync_mill()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.focus_on(GardenLayout.TEA + Vector3(0, 0.7, -0.6), 4.2)
+	camera.pitch = 28.0
+	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.2, -0.95), 3.6)
 	await get_tree().create_timer(0.55).timeout
 	await _shot("/workspace/docs/screenshots/kettle_brew.png")
 	Economy.mill.tick(18.0)
@@ -8197,6 +8377,18 @@ func _run_kettle_shot() -> void:
 		push_error("kettle-shot: carry failed")
 		get_tree().quit(1)
 		return
+	Economy.add("bramble", 1)
+	if not Economy.stock_jam():
+		push_error("kettle-shot: jam stock failed")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	camera.pitch = 22.0
+	camera.focus_on(GardenLayout.SHED + Vector3(0.0, 0.35, 1.0), 4.4)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/jam_pan.png")
+	Economy.mill.tick(12.0)
+	Economy.carry_jam()
 	_sync_mill()
 	hud.shop.visible = true
 	refresh_panels()
@@ -9367,6 +9559,9 @@ func _primary_down() -> void:
 	if _near_tea(hit):
 		_use_kettle()
 		return
+	if _near_shed(hit):
+		_use_pan()
+		return
 	if _near_stall(hit):
 		_use_crate()
 		return
@@ -9706,9 +9901,9 @@ func _hover_text() -> String:
 	var hit = _ground_hit()
 	if hit == null or _over_ui():
 		return SaveGame.garden_name
-	if _near_tea(hit):
+	if _near_tea(hit) or _near_shed(hit):
 		return Economy.mill_line(_stall_open(), _tea_worker())
-	if _near_stall(hit) and (Economy.mill.crate_count() > 0 or Economy.mill.pot_count() > 0):
+	if _near_stall(hit) and (Economy.mill.crate_count() > 0 or Economy.mill.pot_count() > 0 or Economy.mill.crate_count(ParishChain.JAM) > 0 or Economy.mill.pot_count(ParishChain.JAM) > 0):
 		return Economy.mill_line(_stall_open(), _tea_worker())
 	var cell_id := GardenLayout.world_to_cell(hit)
 	if cell_id.x < 0:
@@ -11622,6 +11817,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["shed_demand"] = 1 if _person("bram").present else 0
 	stats["tea_demand"] = 1 if _person("nessa").present else 0
 	stats["kettle_line"] = Economy.mill_line(_stall_open(), _tea_worker())
+	stats["lane_tea_line"] = _lane_tea_line()
 	stats["hut_demand"] = 1 if Trust.level("nessa") >= 1 else 0
 	stats["foundry_demand"] = 1 if Trust.has_action("parish_draft") else 0
 	var notices := Trust.notices()

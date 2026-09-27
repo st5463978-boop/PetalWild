@@ -29,6 +29,7 @@ func reset_new() -> void:
 		"mosspear": 0,
 		"nightlantern": 0,
 		"hedge_tea": 0,
+		"cane_jam": 0,
 	}
 	selected_seed = "meadowbell_seed"
 	mill.reset()
@@ -74,6 +75,25 @@ func carry_tea() -> bool:
 func sell_tea() -> int:
 	var price := mill.price()
 	if not mill.take_crate():
+		return 0
+	earn(price)
+	return price
+
+func stock_jam() -> bool:
+	if not mill.stock(bag, ParishChain.JAM):
+		return false
+	changed.emit()
+	return true
+
+func carry_jam() -> bool:
+	if not mill.deliver(ParishChain.JAM):
+		return false
+	changed.emit()
+	return true
+
+func sell_jam() -> int:
+	var price := mill.price(ParishChain.JAM)
+	if not mill.take_crate(ParishChain.JAM):
 		return 0
 	earn(price)
 	return price

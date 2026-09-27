@@ -38,6 +38,9 @@ func _stall(parent: Node3D) -> void:
 	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
 	cup.add_to_group("parish_cup")
 	cup.visible = false
+	var jar := _sphere(root, Vector3(1.25, 0.42, 0.62), 0.07, Color("#8a3a48"))
+	jar.add_to_group("parish_jar")
+	jar.visible = false
 	# ponytail: three flats beside the spur; the worn center stays |x+4.55|<0.42.
 	for at in [Vector3(-0.72, 0.06, -0.72), Vector3(0.78, 0.06, -0.66), Vector3(-0.82, 0.06, -1.05)]:
 		var stone := _box(root, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
@@ -84,6 +87,11 @@ func _shed(parent: Node3D) -> void:
 	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
 	_cylinder(root, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
 	_sphere(root, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
+	var pan := _cylinder(root, Vector3(0.0, 0.2, 1.08), 0.1, 0.12, 0.18, Color("#3a322c"))
+	pan.add_to_group("parish_pan")
+	var jam_steam := _sphere(root, Vector3(0.0, 0.42, 1.08), 0.06, Color("#e8dcc8"))
+	jam_steam.add_to_group("parish_jam_steam")
+	jam_steam.visible = false
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.2, 0.2)
 	light.light_color = Color("ffc98a")

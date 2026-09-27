@@ -185,6 +185,9 @@ func show_place(stats: Dictionary) -> void:
 	var kettle_line := str(stats.get("kettle_line", ""))
 	if kettle_line != "":
 		journal_box.add_child(ThemeKit.label(kettle_line, 16))
+	var lane_tea := str(stats.get("lane_tea_line", ""))
+	if lane_tea != "":
+		journal_box.add_child(ThemeKit.label(lane_tea, 14))
 	journal_box.add_child(ThemeKit.label("Research Hut demand  %s" % str(stats.get("hut_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Media Foundry demand  %s" % str(stats.get("foundry_demand", 0)), 16))
 	journal_box.add_child(ThemeKit.label("Town Hall demand  %s" % str(stats.get("hall_demand", 0)), 16))
@@ -352,6 +355,9 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: b
 			shop_box.add_child(ThemeKit.label(lock, 12, ThemeKit.TERRACOTTA))
 	shop_box.add_child(ThemeKit.title("Kettle", 16))
 	shop_box.add_child(ThemeKit.label(str(mill.get("line", "The kettle is quiet.")), 14))
+	var left := int(mill.get("left", 0))
+	if left > 0:
+		shop_box.add_child(ThemeKit.label("Left  ·  %d min" % left, 13))
 	var brew := Button.new()
 	brew.text = "Stock the kettle  ·  peach + meadowbell"
 	brew.disabled = not bool(mill.get("can_stock", false))
@@ -368,6 +374,23 @@ func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: b
 	if stall_open:
 		tea.pressed.connect(func(): host.sell_tea())
 	shop_box.add_child(tea)
+	shop_box.add_child(ThemeKit.title("Pan", 16))
+	var jam := Button.new()
+	jam.text = "Stock the pan  ·  bramble"
+	jam.disabled = not bool(mill.get("can_jam", false))
+	jam.pressed.connect(func(): host.stock_jam())
+	shop_box.add_child(jam)
+	var jam_carry := Button.new()
+	jam_carry.text = "Carry jam to the crate"
+	jam_carry.disabled = not bool(mill.get("can_carry_jam", false))
+	jam_carry.pressed.connect(func(): host.carry_jam())
+	shop_box.add_child(jam_carry)
+	var jam_sell := Button.new()
+	jam_sell.text = "Sell cane jam  ·  %d  (%d)" % [int(mill.get("jam_price", 16)), int(mill.get("jam_crate", 0))]
+	jam_sell.disabled = not stall_open or int(mill.get("jam_crate", 0)) <= 0
+	if stall_open:
+		jam_sell.pressed.connect(func(): host.sell_jam())
+	shop_box.add_child(jam_sell)
 	shop_box.add_child(ThemeKit.title("Sell", 16))
 	var any := false
 	for item in produce:

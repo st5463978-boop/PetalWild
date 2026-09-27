@@ -42,6 +42,15 @@ func _init() -> void:
 		"minutes": 18,
 		"sell_price": 22,
 		"crate_cap": 3,
+	}, {
+		"id": "cane_jam",
+		"name": "Cane jam",
+		"inputs": {"bramble": 1},
+		"output": "cane_jam",
+		"output_count": 1,
+		"minutes": 12,
+		"sell_price": 16,
+		"crate_cap": 3,
 	}])
 	var bag := {"peach": 1, "meadowbell": 0}
 	_expect(mill.line(bag, true, false) == "Kettle waits for meadowbell.", "missing bell is the bottleneck")
@@ -67,6 +76,22 @@ func _init() -> void:
 	_expect(mill.take_crate() and mill.crate_count() == 2, "a sale opens a slot")
 	_expect(mill.deliver() and mill.crate_count() == 3 and mill.pot_count() == 0, "the chain recovers")
 	_expect(mill.line(bag, true, true) == "Hedge tea sits on the crate.", "crate readout")
+	bag["bramble"] = 1
+	_expect(mill.stock(bag, "cane_jam"), "stocking lights the pan")
+	_expect(mill.brew == "cane_jam", "jam starts after the tea crate is full")
+	_expect(mill.tick(12.0) and mill.pot_count("cane_jam") == 1, "a jar finishes")
+	_expect(mill.deliver("cane_jam") and mill.crate_count("cane_jam") == 1, "jam on the crate")
+	var life := ParishLife.new()
+	life.boot([{
+		"id": "lumen",
+		"name": "Lumen Peel",
+		"household": "stall house",
+		"places": {"eat": "stall", "social": "tea"},
+	}], {"stall": Vector3.ZERO, "tea": Vector3.ZERO})
+	life.lives["lumen"]["needs"]["hunger"] = 0.2
+	_expect(life.sip("lumen", 2), "a cup can be served")
+	_expect(float(life.lives["lumen"]["needs"]["hunger"]) > 0.3, "tea fills hunger")
+	_expect(life.last_memory("lumen").find("Drank hedge tea") != -1, "tea writes a memory")
 	print("SYSTEMS_OK")
 	quit(0)
 

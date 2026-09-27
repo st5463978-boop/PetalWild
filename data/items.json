@@ -22,5 +22,13 @@
     "kind": "goods",
     "sell_price": 22,
     "blurb": "A cup from the tea-house kettle. Peach and meadowbell, carried to the stall crate."
+  },
+  {
+    "id": "cane_jam",
+    "name": "Cane jam",
+    "price": 16,
+    "kind": "goods",
+    "sell_price": 16,
+    "blurb": "A jar from the shed pan. One ripe bramble, carried to the stall crate."
   }
 ]

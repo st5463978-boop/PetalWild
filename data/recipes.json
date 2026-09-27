@@ -10,5 +10,17 @@
     "sell_price": 22,
     "crate_cap": 3,
     "blurb": "Peach and meadowbell steep in the tea-house kettle. Nessa carries a cup to the stall crate when she is here."
+  },
+  {
+    "id": "cane_jam",
+    "name": "Cane jam",
+    "station": "pan",
+    "inputs": {"bramble": 1},
+    "output": "cane_jam",
+    "output_count": 1,
+    "minutes": 12,
+    "sell_price": 16,
+    "crate_cap": 3,
+    "blurb": "Bramble boiled in the shed pan. Bram carries a jar to the stall crate when he is free."
   }
 ]

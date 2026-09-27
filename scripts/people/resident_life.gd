@@ -126,6 +126,18 @@ func greeting(id: String) -> String:
 		return str(lines[0])
 	return "Hello."
 
+func sip(id: String, day: int) -> bool:
+	var life: Dictionary = lives.get(id, {})
+	if life.is_empty():
+		return false
+	var needs: Dictionary = life["needs"]
+	needs["hunger"] = clampf(float(needs.get("hunger", 0.5)) + 0.22, 0.0, 1.0)
+	needs["social"] = clampf(float(needs.get("social", 0.5)) + 0.18, 0.0, 1.0)
+	life["needs"] = needs
+	remember(id, "Drank hedge tea on day %d." % day)
+	lives[id] = life
+	return true
+
 func greet(id: String, day: int) -> String:
 	var life: Dictionary = lives.get(id, {})
 	if life.is_empty():
