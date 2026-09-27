@@ -105,6 +105,21 @@ func file_road_rumour(person_id: String) -> void:
 		"at": Time.get_datetime_string_from_system(),
 	})
 
+func file_park(person_id: String) -> void:
+	# ponytail: one lawn in the book; a second park if the parish ever keeps two.
+	if has_action("parish_park"):
+		return
+	audit.append({
+		"person": person_id,
+		"action": "parish_park",
+		"result": "kept in the parish book",
+		"impact": "simulation only",
+		"external": false,
+		"cost": 0,
+		"note": "Grove Park is a public lawn beyond the hedge. Nobody was spawned.",
+		"at": Time.get_datetime_string_from_system(),
+	})
+
 func file_bee_note(person_id: String, note: String = "Bees on the bed. Nothing was spent.") -> void:
 	# ponytail: one bee line; file_notes if a note should raise trust.
 	audit.append({

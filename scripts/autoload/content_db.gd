@@ -11,6 +11,8 @@ var people_order: Array[String] = []
 var shop: Dictionary = {}
 var district: Dictionary = {}
 var venues: Dictionary = {}
+var recipes: Dictionary = {}
+var recipe_order: Array[String] = []
 
 func _ready() -> void:
 	_load_plants()
@@ -20,6 +22,7 @@ func _ready() -> void:
 	shop = _load_object("res://data/shop.json")
 	district = _load_object("res://data/district.json")
 	venues = _load_object("res://data/venues.json")
+	_load_recipes()
 
 func plant(id: String) -> Dictionary:
 	return plants.get(id, {})
@@ -32,6 +35,15 @@ func item(id: String) -> Dictionary:
 
 func person(id: String) -> Dictionary:
 	return people.get(id, {})
+
+func recipe(id: String) -> Dictionary:
+	return recipes.get(id, {})
+
+func recipe_rows() -> Array:
+	var rows: Array = []
+	for id in recipe_order:
+		rows.append(recipes[id])
+	return rows
 
 func _load_plants() -> void:
 	for entry in _load_array("res://data/plants.json"):
@@ -52,6 +64,11 @@ func _load_people() -> void:
 	for entry in _load_array("res://data/people.json"):
 		people[str(entry["id"])] = entry
 		people_order.append(str(entry["id"]))
+
+func _load_recipes() -> void:
+	for entry in _load_array("res://data/recipes.json"):
+		recipes[str(entry["id"])] = entry
+		recipe_order.append(str(entry["id"]))
 
 func _load_array(path: String) -> Array:
 	var text := FileAccess.get_file_as_string(path)
