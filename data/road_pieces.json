@@ -1,0 +1,2037 @@
+{
+  "pieces": [
+    {
+      "id": "gate_stones",
+      "kind": "stone",
+      "group": "parish_road_stone",
+      "pos": [
+        0.18,
+        0.07,
+        -12.05
+      ],
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "rot_y": 0.36,
+      "albedo": "#4a4038",
+      "expected": 3
+    },
+    {
+      "id": "gate_stones",
+      "kind": "stone",
+      "group": "parish_road_stone",
+      "pos": [
+        -0.22,
+        0.06,
+        -12.72
+      ],
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "rot_y": -0.44,
+      "albedo": "#4a4038",
+      "expected": 3
+    },
+    {
+      "id": "gate_stones",
+      "kind": "stone",
+      "group": "parish_road_stone",
+      "pos": [
+        0.08,
+        0.07,
+        -13.4
+      ],
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "rot_y": 0.16,
+      "albedo": "#4a4038",
+      "expected": 3
+    },
+    {
+      "id": "lawn_bells",
+      "kind": "bell",
+      "group": "parish_road_bell",
+      "pos": [
+        0.28,
+        0.04,
+        -14.25
+      ],
+      "expected": 3,
+      "page": "Three bells stand on the far lawn."
+    },
+    {
+      "id": "lawn_bells",
+      "kind": "bell",
+      "group": "parish_road_bell",
+      "pos": [
+        -0.32,
+        0.04,
+        -14.55
+      ],
+      "expected": 3,
+      "page": "Three bells stand on the far lawn."
+    },
+    {
+      "id": "lawn_bells",
+      "kind": "bell",
+      "group": "parish_road_bell",
+      "pos": [
+        0.05,
+        0.04,
+        -14.75
+      ],
+      "expected": 3,
+      "page": "Three bells stand on the far lawn."
+    },
+    {
+      "id": "gate_path",
+      "kind": "strip",
+      "group": "parish_road_path",
+      "pos": [
+        0.0,
+        0.02,
+        -11.775
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        3.55
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "inside_path",
+      "kind": "strip",
+      "group": "parish_road_inside",
+      "pos": [
+        0.0,
+        0.02,
+        -9.675
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        0.75
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "join_stone",
+      "kind": "stone",
+      "group": "parish_road_join",
+      "pos": [
+        0.16,
+        0.07,
+        -10.02
+      ],
+      "rot_y": 0.4,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "One stone marks the gate opening.",
+      "card": true
+    },
+    {
+      "id": "lawn_south_stone",
+      "kind": "stone",
+      "group": "parish_road_far_stone",
+      "pos": [
+        0.12,
+        0.07,
+        -15.55
+      ],
+      "rot_y": 0.6,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "lawn_south_path",
+      "kind": "strip",
+      "group": "parish_road_far_path",
+      "pos": [
+        0.12,
+        0.02,
+        -16.15
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "south_stone",
+      "kind": "stone",
+      "group": "parish_road_south_stone",
+      "pos": [
+        0.12,
+        0.07,
+        -16.9
+      ],
+      "rot_y": -0.4,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way south ends at a stone."
+    },
+    {
+      "id": "south_bench",
+      "kind": "bench",
+      "group": "parish_road_south_bench",
+      "pos": [
+        0.85,
+        0.0,
+        -16.9
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "past_bench_path",
+      "kind": "strip",
+      "group": "parish_road_past_bench",
+      "pos": [
+        0.12,
+        0.02,
+        -17.65
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "albedo": "#6a5e4c",
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ]
+    },
+    {
+      "id": "end_stone",
+      "kind": "stone",
+      "group": "parish_road_end_stone",
+      "pos": [
+        0.12,
+        0.07,
+        -18.4
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way ends past the bench."
+    },
+    {
+      "id": "end_bell",
+      "kind": "bell",
+      "group": "parish_road_end_bell",
+      "pos": [
+        0.48,
+        0.04,
+        -18.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "east_turn",
+      "kind": "strip",
+      "group": "parish_road_east",
+      "pos": [
+        0.72,
+        0.02,
+        -18.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way turns east at the end stone."
+    },
+    {
+      "id": "east_bell",
+      "kind": "bell",
+      "group": "parish_road_east_bell",
+      "pos": [
+        1.48,
+        0.04,
+        -18.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "east_past",
+      "kind": "strip",
+      "group": "parish_road_east_past",
+      "pos": [
+        2.3,
+        0.02,
+        -18.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way continues east past the bell."
+    },
+    {
+      "id": "east_far",
+      "kind": "strip",
+      "group": "parish_road_east_far",
+      "pos": [
+        3.5,
+        0.02,
+        -18.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "east_end_stone",
+      "kind": "stone",
+      "group": "parish_road_east_far_stone",
+      "pos": [
+        4.28,
+        0.07,
+        -18.4
+      ],
+      "rot_y": 0.25,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "A stone marks the east end."
+    },
+    {
+      "id": "east_bench",
+      "kind": "bench",
+      "group": "parish_road_east_far_bench",
+      "pos": [
+        4.95,
+        0.0,
+        -18.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "east_return",
+      "kind": "strip",
+      "group": "parish_road_east_return",
+      "pos": [
+        4.28,
+        0.02,
+        -17.8
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "east_near",
+      "kind": "strip",
+      "group": "parish_road_east_near",
+      "pos": [
+        4.28,
+        0.02,
+        -16.6
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps closer to the parish."
+    },
+    {
+      "id": "east_closer",
+      "kind": "strip",
+      "group": "parish_road_east_closer",
+      "pos": [
+        4.28,
+        0.02,
+        -15.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "parish_end_bell",
+      "kind": "bell",
+      "group": "parish_road_east_closer_bell",
+      "pos": [
+        4.55,
+        0.04,
+        -14.8
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "A bell stands at the parish end.",
+      "card": true
+    },
+    {
+      "id": "hedge_path",
+      "kind": "strip",
+      "group": "parish_road_east_hedge",
+      "pos": [
+        4.28,
+        0.02,
+        -14.2
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "hedge_bell",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_bell",
+      "pos": [
+        4.55,
+        0.04,
+        -13.6
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "hedge_past",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_past",
+      "pos": [
+        4.28,
+        0.02,
+        -13.0
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "hedge_onward",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_onward",
+      "pos": [
+        4.28,
+        0.02,
+        -11.8
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "hedge_face_stone",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_stone",
+      "pos": [
+        4.28,
+        0.07,
+        -10.95
+      ],
+      "rot_y": 0.25,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "hedge_face_bell",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_face_bell",
+      "pos": [
+        4.83,
+        0.04,
+        -10.95
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "hedge_west",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west",
+      "pos": [
+        3.6,
+        0.02,
+        -10.95
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "west_stone",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_stone",
+      "pos": [
+        3.25,
+        0.07,
+        -10.95
+      ],
+      "rot_y": -0.2,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "west_gate_bell",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -10.95
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "A bell stands beside the way toward the gate."
+    },
+    {
+      "id": "south_step_bell",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_south_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -12.15
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "south_step",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_south",
+      "pos": [
+        3.8,
+        0.02,
+        -13.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps south of the gate-side bell."
+    },
+    {
+      "id": "spur_01",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_further",
+      "pos": [
+        3.8,
+        0.02,
+        -14.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_02",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_further_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -15.15
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_03",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace",
+      "pos": [
+        3.8,
+        0.02,
+        -16.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_04",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -16.95
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_05",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_south",
+      "pos": [
+        3.8,
+        0.02,
+        -18.15
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_06",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_south_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -18.75
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_07",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_far",
+      "pos": [
+        3.8,
+        0.02,
+        -19.95
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_08",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_far_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -20.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_09",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_west",
+      "pos": [
+        2.6,
+        0.02,
+        -20.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way turns west of the far-south bell."
+    },
+    {
+      "id": "spur_10",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_on",
+      "pos": [
+        1.4,
+        0.02,
+        -20.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_11",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_near",
+      "pos": [
+        0.2,
+        0.02,
+        -20.55
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_12",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_north",
+      "pos": [
+        0.2,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.05,
+        0.03,
+        1.2
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps toward the end stone."
+    },
+    {
+      "id": "spur_13",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east",
+      "pos": [
+        1.4,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_14",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_bell",
+      "pos": [
+        2.0,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_15",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_on",
+      "pos": [
+        3.2,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_16",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_on_bell",
+      "pos": [
+        3.8,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_17",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_out",
+      "pos": [
+        5.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_18",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_out_bell",
+      "pos": [
+        5.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_19",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_beyond",
+      "pos": [
+        6.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_20",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_beyond_bell",
+      "pos": [
+        7.4,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_21",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_yonder",
+      "pos": [
+        8.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_22",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_yonder_bell",
+      "pos": [
+        9.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_23",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_outer",
+      "pos": [
+        10.4,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_24",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_outer_bell",
+      "pos": [
+        11.0,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_25",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_rim",
+      "pos": [
+        12.2,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps east of the outer-end bell."
+    },
+    {
+      "id": "spur_26",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_farther",
+      "pos": [
+        13.4,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps further east of the outer bell."
+    },
+    {
+      "id": "spur_27",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_along_bell",
+      "pos": [
+        14.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_28",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_forth",
+      "pos": [
+        15.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_29",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_forth_bell",
+      "pos": [
+        16.4,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_30",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_span",
+      "pos": [
+        17.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the east-end bell."
+    },
+    {
+      "id": "spur_31",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_mark_bell",
+      "pos": [
+        18.8,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_32",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_reach",
+      "pos": [
+        20.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_33",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_reach_bell",
+      "pos": [
+        20.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps east of the reach-end bell."
+    },
+    {
+      "id": "spur_34",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_field",
+      "pos": [
+        21.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the reach-end bell."
+    },
+    {
+      "id": "spur_35",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_lea",
+      "pos": [
+        23.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_36",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_lea_bell",
+      "pos": [
+        23.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_37",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_verge",
+      "pos": [
+        24.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_38",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_verge_bell",
+      "pos": [
+        25.4,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_39",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_brink",
+      "pos": [
+        26.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the verge-end bell."
+    },
+    {
+      "id": "spur_40",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_edge",
+      "pos": [
+        27.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_41",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_edge_bell",
+      "pos": [
+        28.4,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_42",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_margin",
+      "pos": [
+        29.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the edge-end bell."
+    },
+    {
+      "id": "spur_43",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem",
+      "pos": [
+        30.8,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the margin strip.",
+      "card": true
+    },
+    {
+      "id": "spur_44",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone",
+      "pos": [
+        32.0,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way steps past the hem strip.",
+      "card": true
+    },
+    {
+      "id": "spur_45",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_bell",
+      "pos": [
+        33.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps east of the hem stone.",
+      "card": true
+    },
+    {
+      "id": "spur_46",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_on_bell",
+      "pos": [
+        34.4,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps east of the hem-stone bell.",
+      "card": true
+    },
+    {
+      "id": "spur_47",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_far_bell",
+      "pos": [
+        35.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps past the hem-stone bell.",
+      "card": true
+    },
+    {
+      "id": "spur_48",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_bell",
+      "pos": [
+        36.8,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps east of the far bell.",
+      "card": true
+    },
+    {
+      "id": "spur_49",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell",
+      "pos": [
+        38.0,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_50",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone",
+      "pos": [
+        39.2,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_51",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_strip",
+      "pos": [
+        40.4,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps past the outer stone."
+    },
+    {
+      "id": "spur_52",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east",
+      "pos": [
+        41.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_53",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell",
+      "pos": [
+        42.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_54",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone",
+      "pos": [
+        43.4,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way steps past the outer-strip bell."
+    },
+    {
+      "id": "spur_55",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip",
+      "pos": [
+        44.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_56",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell",
+      "pos": [
+        45.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_57",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone",
+      "pos": [
+        46.4,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_58",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        47.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_59",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        48.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_60",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        49.4,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_61",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        50.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_62",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        51.2,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps past the meadow-strip bell."
+    },
+    {
+      "id": "spur_63",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        52.4,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_64",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        53.6,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps east of the meadow-strip stone.",
+      "card": true
+    },
+    {
+      "id": "spur_65",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone",
+      "pos": [
+        54.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_66",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip",
+      "pos": [
+        56.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_67",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell",
+      "pos": [
+        56.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps past the farther-strip bell."
+    },
+    {
+      "id": "spur_68",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone",
+      "pos": [
+        57.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_69",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip",
+      "pos": [
+        59.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_70",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        59.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_71",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        60.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_72",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        62.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_73",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        62.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_74",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        63.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way steps past the last bell stone."
+    },
+    {
+      "id": "spur_75",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        65.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_76",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        65.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "page": "The way steps past the last-strip bell."
+    },
+    {
+      "id": "spur_77",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        66.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_78",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        68.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "spur_79",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        68.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_80",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        69.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_81",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        71.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps east of the last-strip's stone."
+    },
+    {
+      "id": "spur_82",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        71.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_83",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        72.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038",
+      "page": "The way steps past the far bell stone."
+    },
+    {
+      "id": "spur_84",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        74.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c",
+      "page": "The way steps east of the far bell stone."
+    },
+    {
+      "id": "spur_85",
+      "kind": "bell",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell",
+      "pos": [
+        74.6,
+        0.04,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1
+    },
+    {
+      "id": "spur_86",
+      "kind": "stone",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone",
+      "pos": [
+        75.8,
+        0.07,
+        -19.35
+      ],
+      "rot_y": 0.3,
+      "expected": 1,
+      "size": [
+        0.46,
+        0.07,
+        0.32
+      ],
+      "albedo": "#4a4038"
+    },
+    {
+      "id": "spur_87",
+      "kind": "strip",
+      "group": "parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip",
+      "pos": [
+        77.0,
+        0.02,
+        -19.35
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "size": [
+        1.2,
+        0.03,
+        1.05
+      ],
+      "albedo": "#6a5e4c"
+    },
+    {
+      "id": "far_lawn",
+      "kind": "lawn",
+      "group": "parish_road_lawn",
+      "pos": [
+        0.0,
+        0.02,
+        -14.45
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "albedo": "#3f6a32",
+      "radius": 0.85
+    },
+    {
+      "id": "lawn_bench",
+      "kind": "bench",
+      "group": "parish_road_bench",
+      "pos": [
+        0.62,
+        0.0,
+        -14.4
+      ],
+      "rot_y": 0.0,
+      "expected": 1,
+      "face": "bells"
+    }
+  ]
+}

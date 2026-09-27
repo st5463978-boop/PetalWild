@@ -92,6 +92,22 @@ func tick(game_minutes: float, weather: String) -> Array:
 		seed_rain = 0.0
 	return died
 
+func inherit_into(plot: SoilCell) -> bool:
+	if plot == null or plot.plant_id == "":
+		return false
+	var parent: SoilCell = null
+	var offsets: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for off in offsets:
+		var neighbor := get_cell(plot.ix + off.x, plot.iz + off.y)
+		if neighbor == null or neighbor.plant_id != plot.plant_id or neighbor.growth < 1.0:
+			continue
+		parent = neighbor
+		break
+	if parent == null:
+		return false
+	PlantGenetics.apply_cell(plot, PlantGenetics.mix(PlantGenetics.from_cell(parent), PlantGenetics.from_cell(_mate(parent)), plot.ix * 10 + plot.iz))
+	return true
+
 func seed_from(plant_id: String) -> String:
 	# ponytail: the bell ring reuses the rain neighbor; a scatter if one chime should fill the row.
 	_mark_sown = true
@@ -116,10 +132,22 @@ func _seed_one(only: String = "") -> String:
 			spot.taken = false
 			spot.eaten_by = ""
 			spot.moisture = maxf(spot.moisture, 0.74)
+			var mate := _mate(parent)
+			PlantGenetics.apply_cell(spot, PlantGenetics.mix(PlantGenetics.from_cell(parent), PlantGenetics.from_cell(mate), parent.ix * 10 + parent.iz))
 			if _mark_sown:
 				sown_at = GardenLayout.cell_center(spot.ix, spot.iz)
 			return parent.plant_id
 	return ""
+
+func _mate(parent: SoilCell) -> SoilCell:
+	for cell in all():
+		var other: SoilCell = cell
+		if other == parent:
+			continue
+		if other.plant_id != parent.plant_id or other.growth < 1.0:
+			continue
+		return other
+	return parent
 
 func _seed_spot(ix: int, iz: int, plant_id: String) -> SoilCell:
 	var best: SoilCell = null
@@ -192,6 +220,9 @@ func apply_state(saved: Array) -> void:
 			soil.growth = 0.0
 			soil.wilt = 0.0
 			soil.eaten_by = ""
+			soil.hue = 0.5
+			soil.stature = 1.0
+			soil.crop_yield = 1.0
 	for entry in saved:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue

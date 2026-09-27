@@ -2,7 +2,7 @@
 
 This directory is the PetalWild development foreman. It is not part of the Godot game. `scripts/`, `scenes/`, `data/`, and `shaders/` do not reference it. `.gdignore` keeps Godot from importing it.
 
-System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `http://100.126.22.71:8766/v1/decide`. MagicDNS `http://piai-1:8766/v1/decide` is the same service. `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` with at least two options. The client waits 75s. The wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. Set `HAILO_DECIDE_URL` to override the default.
+System-1 routing calls the trained Qwen3-1.7B DPO CPU decide service. Primary is hef-dfc CPU (discovery `HAILO_DECIDE_PRIMARY_DISCOVERY_URL`, URL `HAILO_DECIDE_PRIMARY_URL`, ~15s). Fallback is Pi CPU (`HAILO_DECIDE_FALLBACK_DISCOVERY_URL` / `HAILO_DECIDE_FALLBACK_URL`, ~60s). Last resort is the existing hailo-decision hop (`HAILO_DECIDE_DISCOVERY_URL` / `HAILO_DECIDE_LAST_URL`, then Tailscale `:8766`). `GET /health` and `POST /decide` (then `/v1/decide`) are unchanged. A 503 while the model is loading moves to the next tier. The response adds `confidence`, `margin`, `mode`, and `p_yes`. HIGH / MEDIUM / LOW labels on the wrapper are still not those probabilities. No auth. `eval "$(python3 tools/hailo_decide_url.py --export)"` at startup.
 
 ## What this machine showed
 

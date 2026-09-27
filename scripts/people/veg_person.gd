@@ -22,6 +22,7 @@ var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
 var body: Node3D
+var want := ""
 
 func setup(definition: Dictionary) -> void:
 	person_id = str(definition.get("id", ""))
@@ -403,6 +404,7 @@ func to_state() -> Dictionary:
 		"position": [global_position.x, global_position.y, global_position.z],
 		"has_chore": has_chore,
 		"chore": [chore.x, chore.y, chore.z],
+		"want": want,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -420,3 +422,4 @@ func apply_state(data: Dictionary) -> void:
 	var job = data.get("chore", null)
 	if typeof(job) == TYPE_ARRAY and job.size() == 3:
 		chore = Vector3(float(job[0]), float(job[1]), float(job[2]))
+	want = str(data.get("want", want))

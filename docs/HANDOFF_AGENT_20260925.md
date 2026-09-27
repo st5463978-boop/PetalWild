@@ -16,7 +16,8 @@ What is still untrue:
 - Trust levels are specified 0–5. Only 0 and 1 exist. External actions never execute. Legendary is not a rank.
 - Simulation LOD (L0 hero/held through L4 aggregate) is mandatory. See `docs/SIMULATION_LAYERS.md`.
 
-The current construction wave is the Road Rumour east chain, south of the end stone, along `z = -19.35`. Pieces appear only while `Trust.has_action("parish_road_rumour")` is set, via `_sync_road_stones()`. Nobody walks there. The tail on `main` is a low stone at `Vector3(75.8, 0.07, -19.35)`, variable `pace_east_far_end_bell_stone`, same box as the end stone (`0.46 × 0.07 × 0.32`, albedo `#4a4038`, `rotation.y = 0.3`). Its group is `parish_road_east_hedge_west_pace_east_hem_stone_out_on_bell_stone_east_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone_strip_bell_stone`. No new parish page line. Smoke printed `PETAL_SMOKE_OK` after that commit.
+The east-chain construction wave is closed. Road décor is data in `data/road_pieces.json` and `RoadDressing`. Do not add another worn strip. Genetics, a creature settle decide, and a villager shop/want loop are in. Grove Park stays unbuilt.
+
 
 ## Build and run
 
@@ -120,21 +121,8 @@ Caps are Scott's, not the vendor's: 30 images per rolling hour, 150 per rolling 
 
 ## Open tasks and next step
 
-Immediate next step, already decided, not built. Hailo index 1, latency 1461.2 ms, raw `B`, model `Qwen3-1.7B.hef`, shuffle `[0, 1]`, presented_index 1. The index is a worn strip, not the page line.
+Do not continue the east-chain pace. Build player-facing systems: genetics on cross-pollination, one creature that visits or settles when garden conditions are met, and a shop loop where villagers buy or sell produce. Each change needs a test.
 
-Question: "A low stone stands one pace east of the meadowbell at the east end of the far-bell strip, still south of the end stone, while the road rumour is filed. Grove Park stays unbuilt. What should change next?"
-
-Chosen option: "A worn strip one pace east of that stone, still south of the end stone, same worn strip as the road, only while the road rumour is filed. Nobody walks there. No new page line."
-
-Place it at `x = 77.0`, `y = 0.02`, `z = -19.35` (one 1.2 m pace east of the stone at 75.8). Copy the previous worn strip: size `Vector3(1.2, 0.03, 1.05)`, albedo `#6a5e4c`, roughness 0.96, specular disabled, shadow off, `visible = false` until the rumour sync. Append `_strip` to the stone's group. Add the count function (x within 0.2 of 77.0, x not below 76.2, north edge not south of the end stone, z within 0.2 of -19.35, not inside plots, albedo match). Thread `!= 0` and `!= 1` into the four smoke lines next to the stone count. Extend the unique far-bell sentence in `docs/PETALWILD_MASTER_STATE.md` (2 copies) and `docs/SIMULATION_LAYERS.md` (1 copy), not every meadowbell sentence in those files. Append the decide receipt. Smoke, commit, push `main`.
-
-This receipt was not written yet. The stone receipt is the last line of `decide-receipts.jsonl`.
-
-After that strip, ask Hailo again. The usual fork is a parish page line while the new piece is showing, versus the next physical pace (meadowbell at the east end, about `x = 77.6`). Keep Grove Park unbuilt. One Hailo choice per wave.
-
-The larger goal remains: one playable original-IP world from this garden toward town, city, and agent civilisation, with causal ecology, life states, trust, and the lush garden art direction. Do not shrink that to the east-chain pace.
-
-WIP that was not on `main`: Godot `.import` sidecars for six screenshots and `.uid` files for presentation scripts plus `tests/probe_mesh.gd`. They are on `wip/handoff-20260925` only. Do not merge that branch unless you mean to keep those generated files. `scripts/game/garden.gd` had no uncommitted diff at handoff; the stone is already in `6d218f4`.
 
 ## Known pitfalls
 

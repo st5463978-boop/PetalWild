@@ -1,11 +1,11 @@
-"""Pi Hailo decide client for system-1 routing.
+"""System-1 decide client.
 
-High-frequency choices go to the Pi `hailo-decision` service.
-`HAILO_DECIDE_URL` is resolved at startup from the ntfy discovery topic
-(health-checked tunnel), then the existing env value, then the Pi on
-Tailscale. A decide failure resolves again. This module does not call
-MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
-It does not download or recompile HEFs.
+High-frequency choices go to the trained Qwen3-1.7B DPO CPU service:
+hef-dfc primary, Pi CPU fallback, then the existing hailo-decision hop.
+URLs come from ntfy discovery (health-checked), then env. A 503 while the
+model is loading, a timeout, or a 502 moves to the next tier. This module
+does not call MinoJEV, an RLCD policy, a local Ollama tag, or
+`/v1/chat/completions`. It does not download or recompile HEFs.
 """
 
 from __future__ import annotations
@@ -21,16 +21,22 @@ _TOOLS = Path(__file__).resolve().parents[2]
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
-from hailo_decide_url import resolve_decide_url  # noqa: E402
+from hailo_decide_url import (  # noqa: E402
+    FALLBACK_TIMEOUT,
+    LAST_RESORT_TIMEOUT,
+    PRIMARY_TIMEOUT,
+    resolve_decide_tiers,
+    resolve_decide_url,
+)
 from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
 
-# Pi Tailscale. MagicDNS http://piai-1:8766/v1/decide is the same service.
+# Last-resort Pi Tailscale. MagicDNS http://piai-1:8766/v1/decide is the same hop.
 DEFAULT_DECIDE_URL = "http://100.126.22.71:8766/v1/decide"
 MAGICDNS_DECIDE_URL = "http://piai-1:8766/v1/decide"
-DECIDE_MODEL = "Qwen3-1.7B.hef"
-DECIDE_TIMEOUT = 75.0
+DECIDE_MODEL = "HailoJEV-Qwen3-1.7B-DPO"
+DECIDE_TIMEOUT = PRIMARY_TIMEOUT + FALLBACK_TIMEOUT + LAST_RESORT_TIMEOUT
 
 
 class HailoGenAIBackend(Backend):
@@ -77,13 +83,17 @@ def list_models(base_url: str, timeout: float = 2.0) -> list[str]:
 
 
 def decide_url() -> str:
-    """Startup resolve: discovery, then existing HAILO_DECIDE_URL, then Tailscale."""
+    """Startup resolve: first healthy DPO/Hailo tier."""
     return resolve_decide_url().rstrip("/")
 
 
 def refresh_decide_url() -> str:
-    """After a decide failure, fetch the discovery topic again."""
+    """After a decide failure, fetch discovery topics again."""
     return resolve_decide_url(force=True).rstrip("/")
+
+
+def decide_tiers(force: bool = False) -> list[tuple[str, str, float]]:
+    return [(name, url.rstrip("/"), timeout) for name, url, timeout in resolve_decide_tiers(force)]
 
 
 def decide_origin(url: str) -> str:
@@ -133,6 +143,20 @@ def choice_from_payload(payload: dict, options: list[str]) -> str:
     raise ValueError("decide choice did not match an option")
 
 
+def _log_decide(tier: str, payload: dict) -> None:
+    print(
+        "decide "
+        f"tier={tier} "
+        f"confidence={payload.get('confidence')} "
+        f"margin={payload.get('margin')} "
+        f"latency_ms={payload.get('latency_ms')} "
+        f"mode={payload.get('mode')} "
+        f"model={payload.get('model')}",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
 def _post_json(url: str, body: dict, timeout: float) -> dict:
     request = urllib.request.Request(
         url,
@@ -164,16 +188,58 @@ def _post_decide_once(base_url: str, question: str, options: list[str], timeout:
     raise RuntimeError("decide endpoint missing: " + ", ".join(errors))
 
 
+def _tier_for_url(url: str, tiers: list[tuple[str, str, float]]) -> tuple[str, float]:
+    origin = decide_origin(url)
+    for name, tier_url, timeout in tiers:
+        if decide_origin(tier_url) == origin:
+            return name, timeout
+    return "given", PRIMARY_TIMEOUT
+
+
 def post_decide(base_url: str, question: str, options: list[str], timeout: float) -> dict:
     if len(options) < 2:
         raise ValueError("decide needs at least two options")
+    last_error: BaseException | None = None
+    seen: set[str] = set()
+    chain: list[tuple[str, str, float]] = []
     try:
-        return _post_decide_once(base_url, question, options, timeout)
+        tiers = decide_tiers()
     except Exception:
-        fresh = refresh_decide_url()
-        if decide_origin(fresh) == decide_origin(base_url):
-            raise
-        return _post_decide_once(fresh, question, options, timeout)
+        tiers = []
+    if base_url:
+        name, tier_timeout = _tier_for_url(base_url, tiers)
+        chain.append((name, base_url.rstrip("/"), timeout if name == "given" else tier_timeout))
+    for name, url, tier_timeout in tiers:
+        chain.append((name, url, tier_timeout))
+    for name, url, tier_timeout in chain:
+        origin = decide_origin(url)
+        if origin in seen:
+            continue
+        seen.add(origin)
+        try:
+            payload = _post_decide_once(url, question, options, tier_timeout)
+        except Exception as exc:  # noqa: BLE001 — walk the next DPO/Hailo tier
+            last_error = exc
+            continue
+        payload = dict(payload)
+        payload["_tier"] = name
+        payload["_decide_url"] = url
+        _log_decide(name, payload)
+        return payload
+    if last_error is not None:
+        fresh = decide_tiers(force=True)
+        for name, url, tier_timeout in fresh:
+            origin = decide_origin(url)
+            if origin in seen:
+                continue
+            payload = _post_decide_once(url, question, options, tier_timeout)
+            payload = dict(payload)
+            payload["_tier"] = name
+            payload["_decide_url"] = url
+            _log_decide(name, payload)
+            return payload
+        raise last_error
+    raise RuntimeError("no decide tier resolved")
 
 
 def get_health(base_url: str, timeout: float = 5.0) -> dict:
@@ -186,7 +252,7 @@ def get_health(base_url: str, timeout: float = 5.0) -> dict:
 
 
 class HailoDecideBackend(Backend):
-    """System-1 owner choice via the Pi HEF. Chat completions are not used."""
+    """System-1 owner choice via DPO CPU, Hailo last resort. Chat completions are not used."""
 
     def __init__(self, base_url: str | None = None):
         self.base_url = (base_url or decide_url()).rstrip("/")

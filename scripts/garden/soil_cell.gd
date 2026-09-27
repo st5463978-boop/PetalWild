@@ -13,6 +13,9 @@ var wilt: float = 0.0
 var taken: bool = false
 var eaten_by: String = ""
 var grow_from_day: int = 1
+var hue: float = 0.5
+var stature: float = 1.0
+var crop_yield: float = 1.0
 
 func to_dict() -> Dictionary:
 	return {
@@ -28,6 +31,9 @@ func to_dict() -> Dictionary:
 		"taken": taken,
 		"eaten_by": eaten_by,
 		"grow_from_day": grow_from_day,
+		"hue": hue,
+		"stature": stature,
+		"crop_yield": crop_yield,
 	}
 
 func apply_dict(data: Dictionary) -> void:
@@ -41,3 +47,6 @@ func apply_dict(data: Dictionary) -> void:
 	taken = bool(data.get("taken", false))
 	eaten_by = str(data.get("eaten_by", ""))
 	grow_from_day = int(data.get("grow_from_day", 1))
+	hue = float(data.get("hue", 0.5))
+	stature = float(data.get("stature", 1.0))
+	crop_yield = float(data.get("crop_yield", 1.0))
