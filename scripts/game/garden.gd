@@ -11,6 +11,7 @@ var audio: GardenAudio
 var bees: GardenBees
 var birds: GardenBirds
 var people := {}
+var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
 var bed_inside: Array[MultiMeshInstance3D] = []
@@ -192,7 +193,7 @@ func _process(delta: float) -> void:
 		if gossip_timer <= 0.0:
 			gossip_done = true
 			_person("bram").say("The stall is loud. The beds were quieter.")
-	SimLod.recount(ecology.actors)
+	SimLod.recount(_lod_actors())
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1625,6 +1626,7 @@ func to_state() -> Dictionary:
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 		"crate_yields": crate_yields.duplicate(true),
+		"parish": parish.to_state(),
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -1695,6 +1697,13 @@ func apply_state(data: Dictionary) -> void:
 					copied.append(float(value))
 			crate_yields[str(key)] = copied
 	_clear_inspect()
+	var parish_saved = data.get("parish", {})
+	if typeof(parish_saved) == TYPE_DICTIONARY:
+		parish.apply_state(parish_saved)
+	for id in people.keys():
+		parish.apply_to(people[id])
+		if _person(id).present:
+			_person(id).set_activity(parish.label_for(id))
 	_clear_plants()
 	_sync_plants()
 	_refresh_soil_colors()
@@ -8596,7 +8605,28 @@ func _spawn_people() -> void:
 		add_child(person)
 		person.setup(ContentDB.person(id))
 		people[id] = person
+	_boot_parish()
 	_apply_shift(true)
+
+func _boot_parish() -> void:
+	var defs: Array = []
+	for id in ContentDB.people_order:
+		var row: Dictionary = ContentDB.person(id)
+		row["id"] = id
+		defs.append(row)
+	var lines = JSON.parse_string(FileAccess.get_file_as_string("res://data/dialogue.json"))
+	if typeof(lines) != TYPE_DICTIONARY:
+		lines = {}
+	parish.boot(defs, {
+		"stall": GardenLayout.STALL + Vector3(0, 0, 0.95),
+		"shed": GardenLayout.SHED + Vector3(1.1, 0, -0.6),
+		"tea": GardenLayout.TEA + Vector3(0, 0, -1.15),
+		"hut": GardenLayout.HUT + Vector3(0, 0, -1.05),
+		"foundry": GardenLayout.FOUNDRY + Vector3(0, 0, -0.95),
+		"gate": GardenLayout.GATE,
+		"pond": GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
+		"plots": GardenLayout.cell_center(2, 2),
+	}, lines)
 
 func _apply_shift(snap: bool) -> void:
 	# ponytail: mist uses the rain routes; a separate mist round if the rooms should differ.
@@ -8681,7 +8711,7 @@ func _primary_down() -> void:
 				return
 			person.relation = minf(1.0, person.relation + 0.04)
 			person.belonging = minf(1.0, person.belonging + 0.03)
-			person.say(_greet(person.person_id))
+			person.say(parish.greet(person.person_id, Clock.day))
 			return
 		return
 	if hit == null:
@@ -10186,6 +10216,7 @@ func _check_nessa(world: Dictionary) -> void:
 		nessa.global_position = GardenLayout.GATE
 		nessa.say("A Bellhelp lives here. I brought a notebook and nothing else.")
 		toast("Nessa Pod walked in from the lane.")
+		parish.remember("nessa", "Walked in from the lane.")
 
 func _ask_bram() -> void:
 	var bram := _person("bram")
@@ -10350,6 +10381,81 @@ func _drift_people(delta: float, world: Dictionary) -> void:
 	if nessa.present:
 		nessa.belonging = move_toward(nessa.belonging, 0.75 if ecology.resident_total() > 0 else 0.4, delta * 0.03)
 		nessa.purpose = move_toward(nessa.purpose, 0.8, delta * 0.02)
+	_tick_parish(delta)
+
+func _tick_parish(delta: float) -> void:
+	var hours := (delta * Clock.scale) / 60.0
+	var present := {}
+	var busy := {}
+	var near := {}
+	var spots := {}
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		present[id] = person.present
+		busy[id] = person.has_chore
+		if person.present:
+			spots[id] = person.global_position
+	for id in spots.keys():
+		var best := ""
+		var best_d := 2.2
+		var here: Vector3 = spots[id]
+		for other in spots.keys():
+			if other == id:
+				continue
+			var there: Vector3 = spots[other]
+			var dist := Vector2(here.x - there.x, here.z - there.z).length()
+			if dist < best_d:
+				best_d = dist
+				best = other
+		near[id] = best
+	var night := Clock.hour() >= 19.5 or Clock.hour() < 5.0
+	var shower := (Clock.weather == "rain" or Clock.weather == "mist") and not night
+	var ctx := {
+		"hour": Clock.hour(),
+		"day": Clock.day,
+		"weather": Clock.weather,
+		"night": night,
+		"shower": shower,
+		"present": present,
+		"busy": busy,
+		"near": near,
+		"decide_tier": PetalDecide.last_tier,
+		"decide_confidence": PetalDecide.last_confidence,
+	}
+	var changed: Array = parish.tick(hours, ctx, Callable(self, "_choose_activity"))
+	var cam_at := camera.global_position if camera else Vector3.ZERO
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		parish.apply_to(person)
+		if person.present:
+			person.set_activity(parish.label_for(id))
+			person.tier = SimLod.classify(person.global_position.distance_to(cam_at), false, false)
+		else:
+			person.set_activity("")
+		if person.has_chore or not person.present:
+			continue
+		var dest: Vector3 = parish.destination(id)
+		if dest.x == INF:
+			continue
+		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
+			var route: Array[Vector3] = [dest]
+			person.set_route(route, false)
+	if Clock.running:
+		for row in changed:
+			var speaker := _person(str(row.get("id", "")))
+			if speaker and speaker.present:
+				speaker.say(str(row.get("text", "")))
+
+func _choose_activity(question: String, options: Array) -> String:
+	return PetalDecide.choose(question, options)
+
+func _lod_actors() -> Array:
+	var actors: Array = []
+	for id in people.keys():
+		actors.append(people[id])
+	for actor in ecology.actors:
+		actors.append(actor)
+	return actors
 
 func _has_young(id: String) -> bool:
 	for actor in ecology.actors:
@@ -10723,12 +10829,18 @@ func _people_rows(world: Dictionary) -> Array:
 			home = "The research hut"
 		elif id == "nessa" and person.present and int(structures.get("home_kit", 0)) >= 1:
 			home = "A placed home kit"
+		var life: Dictionary = parish.card(id)
+		var state := "not arrived"
+		if person.present:
+			state = str(life.get("state", "at their job"))
 		rows.append({
 			"name": person.display_name,
 			"role": person.role,
 			"home": home,
 			"job": definition.get("job", ""),
-			"state": "not arrived" if not person.present else ("home for the night" if shift.begins_with("night") else "at their job"),
+			"state": state,
+			"household": str(life.get("household", "")),
+			"motive": str(life.get("motive", "")),
 			"blurb": definition.get("blurb", ""),
 			"present": person.present,
 			"mood": person.mood,
@@ -10736,6 +10848,10 @@ func _people_rows(world: Dictionary) -> Array:
 			"belonging": person.belonging,
 			"purpose": person.purpose,
 			"relation": person.relation,
+			"hunger": float(life.get("hunger", person.hunger)),
+			"social": float(life.get("social", person.social)),
+			"memory": str(life.get("memory", "")),
+			"ties": str(life.get("ties", "")),
 			"unmet": unmet,
 			"can_file": person.present and id == "nessa",
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
@@ -10970,7 +11086,7 @@ func _debug_text() -> String:
 		feel_line = "%s  %s %s" % [tool, held.display_name, held.feel]
 	elif focus:
 		feel_line = "%s  %s %s" % [tool, focus.display_name, focus.feel]
-	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\n%s\nface %s\n%s" % [
+	return "FPS %d\nprocess %.2f ms\ndraws %d\nprims %d\nRAM %.0f MB\nVRAM %.0f MB\ntiers %s\n%s · %s\n%s\nface %s\n%s\n%s" % [
 		Engine.get_frames_per_second(),
 		frame,
 		int(draw),
@@ -10983,4 +11099,14 @@ func _debug_text() -> String:
 		feel_line,
 		look_name,
 		PlayDirector.debug_block(),
+		_parish_debug(),
 	]
+
+func _parish_debug() -> String:
+	var bits: PackedStringArray = PackedStringArray()
+	for id in ContentDB.people_order:
+		var person := _person(id)
+		if person == null or not person.present:
+			continue
+		bits.append("%s %s t%d" % [person.display_name, parish.label_for(id), person.tier])
+	return "\n".join(bits)

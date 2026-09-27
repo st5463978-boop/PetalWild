@@ -615,7 +615,20 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	box.add_child(ThemeKit.label(str(row.get("blurb", "")), 13))
 	if bool(row.get("present", false)):
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))
+		box.add_child(ThemeKit.label("Hunger %.0f   company %.0f" % [float(row.get("hunger", 0)) * 100, float(row.get("social", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("With you  %.0f" % (float(row.get("relation", 0)) * 100), 13))
+		var house := str(row.get("household", ""))
+		if house != "":
+			box.add_child(ThemeKit.label("Household  %s" % house, 13))
+		var motive := str(row.get("motive", ""))
+		if motive != "":
+			box.add_child(ThemeKit.label(motive, 13))
+		var ties := str(row.get("ties", ""))
+		if ties != "":
+			box.add_child(ThemeKit.label("With neighbours  %s" % ties, 13))
+		var memory := str(row.get("memory", ""))
+		if memory != "":
+			box.add_child(ThemeKit.label(memory, 13))
 		var want_line := str(row.get("want_line", ""))
 		if want_line != "":
 			box.add_child(ThemeKit.label(want_line, 13))
