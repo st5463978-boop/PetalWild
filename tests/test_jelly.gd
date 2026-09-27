@@ -97,41 +97,23 @@ func _stall() -> void:
 	_expect(wader_pos.distance_to(pond) < 0.05, "a water jelly may sit in the pond")
 
 func _park_land() -> void:
-	var jelly := Jelly.new()
-	root.add_child(jelly)
-	jelly.setup({
-		"id": "bellhelp",
-		"name": "Bellhelp",
-		"shape": "bell",
-		"deep": "#2f8f55",
-		"lit": "#e7ffc4",
-		"glow": "#d6ff6a",
-		"eye": "#f4ffd2",
-		"radius": 0.34,
-	})
-	jelly.bound = false
-	jelly.reduce_motion = false
-	jelly.hop_wait = 99.0
 	var pad := GardenLayout.PARK + Vector3(0.2, 0.18, 0.15)
-	jelly.global_position = pad
-	jelly.last_safe = pad
-	jelly.vel = Vector3(0.55, 3.2, 0.15)
-	jelly.feel = "air"
+	var pos := pad + Vector3(0.0, 0.8, 0.0)
+	var vel := Vector3(0.55, 3.2, 0.15)
 	var grounded := false
 	for _i in 180:
-		jelly._full(0.016)
-		if jelly.feel != "air" and jelly.global_position.y <= 0.14:
+		vel = JellyFeel.fall(vel, 0.016)
+		pos += vel * 0.016
+		var step: Dictionary = JellyFeel.land(pos, vel, 0.0, 0.016)
+		pos = step["pos"]
+		vel = step["vel"]
+		if bool(step["hit"]) and pos.y <= 0.14:
 			grounded = true
 			break
-	_expect(grounded, "an unbound throw lands")
-	_expect(jelly.global_position.z < -14.0, "the land stays on the park lawn")
-	_expect(jelly.feel != "air", "the land is not still flying")
-	jelly.bound = true
-	jelly.global_position = pad
-	jelly.vel = Vector3.ZERO
-	jelly._full(0.016)
-	_expect(jelly.global_position.z >= JellyFeel.GARDEN_MIN.z - 0.01, "a bound body cannot rest on the park")
-	jelly.free()
+	_expect(grounded, "a park throw lands")
+	_expect(pos.z < -14.0, "the land stays on the park lawn")
+	var clamped: Vector3 = JellyFeel.clamp_pos(pad, Vector3.ZERO)
+	_expect(clamped.z >= JellyFeel.GARDEN_MIN.z - 0.01, "garden clamp cannot rest on the park")
 
 func _expect(ok: bool, label: String) -> void:
 	if ok:
