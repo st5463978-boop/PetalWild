@@ -8215,11 +8215,12 @@ func _run_resident_shot() -> void:
 		var dest: Vector3 = parish.destination(id)
 		if dest.x == INF:
 			continue
+		dest += _life_offset(id)
 		_person(id).global_position = dest
 		var stay: Array[Vector3] = [dest]
 		_person(id).set_route(stay, true)
 		_person(id).set_activity(parish.label_for(id))
-		_person(id).say(parish._line(id, "leisure"))
+	_person("bram").say(parish._line("bram", "leisure"))
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	camera.focus_on(GardenLayout.PARK + Vector3(0.4, 0.5, 0.6), 6.4)
 	await get_tree().create_timer(0.45).timeout
@@ -11149,6 +11150,7 @@ func _tick_parish(delta: float) -> void:
 		var dest: Vector3 = parish.destination(id)
 		if dest.x == INF:
 			continue
+		dest += _life_offset(str(id))
 		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
 			var route: Array[Vector3] = [dest]
 			person.set_route(route, false)
@@ -11158,6 +11160,17 @@ func _tick_parish(delta: float) -> void:
 			var speaker := _person(str(row.get("id", "")))
 			if speaker and speaker.present:
 				speaker.say(str(row.get("text", "")))
+
+func _life_offset(id: String) -> Vector3:
+	match id:
+		"lumen":
+			return Vector3(-1.05, 0, 0.25)
+		"bram":
+			return Vector3(1.1, 0, 0.4)
+		"nessa":
+			return Vector3(0.15, 0, 1.15)
+		_:
+			return Vector3.ZERO
 
 func _serve_eat() -> void:
 	if not Clock.running:

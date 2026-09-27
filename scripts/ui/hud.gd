@@ -724,10 +724,10 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	box.add_child(ThemeKit.title(str(row.get("name", "")), 16))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("role", ""), row.get("state", "")], 13, ThemeKit.MOSS_DEEP))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("home", ""), row.get("job", "")], 13))
-	var blurb := str(row.get("blurb", ""))
-	if blurb != "":
-		box.add_child(_wrap(blurb, 13))
 	if bool(row.get("present", false)):
+		var blurb := str(row.get("blurb", ""))
+		if blurb != "":
+			box.add_child(_wrap(blurb, 13))
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("Hunger %.0f   company %.0f" % [float(row.get("hunger", 0)) * 100, float(row.get("social", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("With you  %.0f" % (float(row.get("relation", 0)) * 100), 13))
