@@ -20,7 +20,9 @@ Player can pick up, stretch, squash, throw, bounce, and recover representative j
 ## Branch / commit
 
 - Branch: `petal/03-jelly`
+- Last commit: `965b46d` Keep grab spring strength when the body substeps.
 - Baseline: `cursor/dpo-cpu-decide-9cb0` (`petal-campaign-baseline-20260927`)
+- PR: https://github.com/st5463978-boop/PetalWild/pull/4
 
 ## Paths
 
@@ -41,9 +43,11 @@ Player can pick up, stretch, squash, throw, bounce, and recover representative j
 
 ## Tests
 
-- `tests/test_jelly.gd` → `JELLY_FEEL_OK`
-- Garden smoke `_smoke_jelly_feel` inside `PETAL_SMOKE=1`
-- Existing `PETAL_RULES_OK` / `SYSTEMS_OK` still required
+- `tests/test_jelly.gd` → **JELLY_FEEL_OK**
+- `tests/test_systems.gd` → **SYSTEMS_OK**
+- `tools/smoke.gd` → **PETAL_RULES_OK**
+- `DISPLAY=:1 PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → **PETAL_SMOKE_OK** (includes `_smoke_jelly_feel`: grab lift, stretch, throw, no tunnel, separate, stall bounce)
+- `tests/smoke.gd` is a pre-existing parse warning-as-error on Variant inference (line 89). Not this lane.
 
 ## Blockers
 
