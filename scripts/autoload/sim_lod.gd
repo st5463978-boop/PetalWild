@@ -11,6 +11,7 @@ var district_stats := {
 	"garden_quality": 0.0,
 	"coins": 0,
 }
+var vale_lod := {}
 
 func classify(distance: float, held: bool, inspected: bool) -> int:
 	if held or inspected:
@@ -37,3 +38,6 @@ func note_population(people: int, residents: int, quality: float, coins: int) ->
 	district_stats["garden_quality"] = quality
 	district_stats["coins"] = coins
 	district_stats["employed"] = 1 if people > 0 else 0
+
+func note_vale(data: Dictionary) -> void:
+	vale_lod = data

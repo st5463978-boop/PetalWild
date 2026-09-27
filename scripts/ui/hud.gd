@@ -212,38 +212,41 @@ func show_place(stats: Dictionary) -> void:
 func show_vale(report: Dictionary) -> void:
 	_clear(journal_box)
 	journal_box.add_child(ThemeKit.title(str(report.get("title", "Petal Vale")), 22))
-	journal_box.add_child(ThemeKit.label("Parishes beyond the hedge. Carts, walkers, and seed. Not a war map.", 14, ThemeKit.MOSS_DEEP))
+	journal_box.add_child(_wrap("Parishes beyond the hedge. Carts, walkers, and seed. Not a war map.", 14, ThemeKit.MOSS_DEEP))
+	var world_line := str(report.get("world_line", ""))
+	if world_line != "":
+		journal_box.add_child(_wrap(world_line, 14))
 	for row in report.get("settlements", []):
 		var town: Dictionary = row
 		var lod := int(town.get("lod", 4))
-		var lod_name := "far"
+		var lod_name := "region"
 		if lod <= 2:
-			lod_name = "here"
+			lod_name = "district"
 		elif lod == 3:
-			lod_name = "near"
+			lod_name = "settlement"
 		var choice := str(town.get("choice", ""))
 		var conf := float(town.get("confidence", 0.0))
-		var extra := ""
-		if choice != "":
-			extra = " · %s (%.2f)" % [choice, conf]
 		journal_box.add_child(ThemeKit.title("%s · %s" % [str(town.get("name", "")), str(town.get("stance", ""))], 16))
-		journal_box.add_child(ThemeKit.label("grows %s · needs %s · %s · %d hands%s" % [str(town.get("specialty", "")), str(town.get("need", "")), lod_name, int(town.get("hands", 0)), extra], 14))
-		journal_box.add_child(ThemeKit.label(str(town.get("stock_line", "")), 13))
+		journal_box.add_child(_wrap("grows %s · needs %s · %s · %d hands" % [str(town.get("specialty", "")), str(town.get("need", "")), lod_name, int(town.get("hands", 0))], 14))
+		if choice != "":
+			journal_box.add_child(_wrap("%s (%.2f)" % [choice, conf], 13, ThemeKit.MOSS_DEEP))
+		journal_box.add_child(_wrap(str(town.get("stock_line", "")), 13))
 	var carts_raw = report.get("carts", [])
 	var carts: Array = carts_raw if typeof(carts_raw) == TYPE_ARRAY else []
 	if not carts.is_empty():
 		journal_box.add_child(ThemeKit.title("Carts on the lane", 16))
 		for line in carts:
-			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+			journal_box.add_child(_wrap("· " + str(line), 14))
 	var walks_raw = report.get("migrants", [])
 	var walks: Array = walks_raw if typeof(walks_raw) == TYPE_ARRAY else []
 	if not walks.is_empty():
 		journal_box.add_child(ThemeKit.title("Walkers", 16))
 		for line in walks:
-			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+			journal_box.add_child(_wrap("· " + str(line), 14))
 	if bool(report.get("can_welcome", false)):
 		var welcome := Button.new()
 		welcome.text = "Welcome the walker at the hedge"
+		welcome.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		welcome.pressed.connect(func(): host.welcome_vale())
 		journal_box.add_child(welcome)
 	journal_box.add_child(ThemeKit.title("Send a cart", 16))
@@ -251,6 +254,7 @@ func show_vale(report: Dictionary) -> void:
 		var send: Dictionary = spec
 		var button := Button.new()
 		button.text = str(send.get("label", "Send"))
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var to_id := str(send.get("to", ""))
 		var crop := str(send.get("crop", ""))
 		button.pressed.connect(func(): host.send_vale_cart(to_id, crop))
@@ -260,18 +264,19 @@ func show_vale(report: Dictionary) -> void:
 		var send: Dictionary = spec
 		var button := Button.new()
 		button.text = "Share %s seed with %s" % [str(send.get("crop", "")), str(send.get("name", send.get("to", "")))]
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var to_id := str(send.get("to", ""))
 		var crop := str(send.get("crop", ""))
 		button.pressed.connect(func(): host.share_vale_seed(to_id, crop))
 		journal_box.add_child(button)
 	for line in report.get("asks", []):
-		journal_box.add_child(ThemeKit.label(str(line), 14, ThemeKit.TERRACOTTA))
+		journal_box.add_child(_wrap(str(line), 14, ThemeKit.TERRACOTTA))
 	var log_raw = report.get("log", [])
 	var log: Array = log_raw if typeof(log_raw) == TYPE_ARRAY else []
 	if not log.is_empty():
 		journal_box.add_child(ThemeKit.title("Vale book", 16))
 		for line in log:
-			journal_box.add_child(ThemeKit.label("· " + str(line), 14))
+			journal_box.add_child(_wrap("· " + str(line), 14))
 
 func show_shop(stock: Array, produce: Array, proposal_ready: bool, stall_open: bool = true) -> void:
 	_clear(shop_box)
@@ -670,6 +675,12 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		draft.pressed.connect(show_draft)
 		box.add_child(draft)
 	return card
+
+func _wrap(text: String, px: int, color: Color = ThemeKit.INK) -> Label:
+	var node := ThemeKit.label(text, px, color)
+	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	node.custom_minimum_size = Vector2(380, 0)
+	return node
 
 func _clear(box: VBoxContainer) -> void:
 	if box == null:

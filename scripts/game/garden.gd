@@ -74,6 +74,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_CAPTURE") == "1":
 		await _run_capture()
 		return
+	if OS.get_environment("PETAL_VALE_SHOT") == "1":
+		await _run_vale_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -191,6 +194,7 @@ func _process(delta: float) -> void:
 			_person("bram").say("The stall is loud. The beds were quieter.")
 	SimLod.recount(ecology.actors)
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	SimLod.note_vale(region.fidelity())
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -7446,6 +7450,18 @@ func _run_capture() -> void:
 	print("PETAL_CAPTURE_OK")
 	get_tree().quit(0)
 
+func _run_vale_shot() -> void:
+	Settings.reduce_motion = true
+	camera.snap_home()
+	region.pulse(Clock.day, Clock.hour(), _vale_garden())
+	region.send_cart("reedbank", "hollow", "reed", 1)
+	show_directory("vale")
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.5).timeout
+	await _shot("/workspace/docs/screenshots/vale_tab.png")
+	print("PETAL_VALE_SHOT_OK")
+	get_tree().quit(0)
+
 func _shot(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
@@ -10543,6 +10559,7 @@ func _trust_lines() -> Array:
 
 func _place_stats(world: Dictionary) -> Dictionary:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	SimLod.note_vale(region.fidelity())
 	var stats := SimLod.district_stats.duplicate()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	stats["phase"] = ContentDB.district.get("phase", "A")

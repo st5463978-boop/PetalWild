@@ -195,7 +195,38 @@ func page() -> Dictionary:
 		"asks": state.get("asks", []),
 		"sends": _send_options(),
 		"can_welcome": _hollow_migrant() >= 0,
+		"world_line": str(fidelity().get("line", "")),
 	}
+
+
+func fidelity() -> Dictionary:
+	_refresh_lod()
+	var hands := 0
+	var near: Array = []
+	var far: Array = []
+	var towns: Dictionary = state.get("settlements", {})
+	for id in towns.keys():
+		var row: Dictionary = towns[id]
+		hands += int(row.get("hands", 0))
+		if int(row.get("lod", 4)) <= 3:
+			near.append(str(row.get("name", id)))
+		else:
+			far.append(str(row.get("name", id)))
+	var carts_raw = state.get("carts", [])
+	var carts: Array = carts_raw if typeof(carts_raw) == TYPE_ARRAY else []
+	var summary := {
+		"world": str(state.get("vale", "Petal Vale")),
+		"region": str(state.get("vale", "Petal Vale")),
+		"district": "Hedge Hollow",
+		"settlements": ids().size(),
+		"hands": hands,
+		"carts": carts.size(),
+		"near": near,
+		"far": far,
+		"line": "%s · %d parishes · %d hands · %d carts" % [str(state.get("vale", "Petal Vale")), ids().size(), hands, carts.size()],
+	}
+	state["world"] = summary
+	return summary
 
 
 func pulse(day: int, hour: float, garden: Dictionary) -> Array:
@@ -205,12 +236,14 @@ func pulse(day: int, hour: float, garden: Dictionary) -> Array:
 	if last_day < 0:
 		events.append_array(_day(day, garden))
 		events.append_array(_hour(day, hour))
+		fidelity()
 		_stamp(day, hour)
 		return events
 	if day != last_day:
 		events.append_array(_day(day, garden))
 	if int(hour) != int(last_hour) or day != last_day:
 		events.append_array(_hour(day, hour))
+	fidelity()
 	_stamp(day, hour)
 	return events
 
@@ -227,7 +260,6 @@ func send_cart(from_id: String, to_id: String, crop: String, qty: int = 1) -> Di
 	var carts: Array = state.get("carts", [])
 	carts.append({"from": from_id, "to": to_id, "crop": crop, "qty": qty, "eta": eta})
 	state["carts"] = carts
-	_warm(from_id, to_id, 1)
 	var text := "A %s cart left %s for %s." % [_crop_name(crop), _town_name(from_id), _town_name(to_id)]
 	_note(text)
 	return {"ok": true, "text": text, "eta": eta}
