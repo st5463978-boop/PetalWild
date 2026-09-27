@@ -86,6 +86,10 @@ Play-feel on the town rung:
 
 Still no distant bodies. Catalog `grove_park.active` stays false. C = town, M = vale.
 
+Frames recaptured: `town_park.png` (Grove Park, path, three benches, `3 on the lawn`, no bodies) and `town_parish.png` (Vale tab, Lane 4/6, Tea porch 1, Vale carts 1, porch layer, Near names still no body).
+
+Tests this pass: `TOWN_OK` `SYSTEMS_OK` `PETAL_RULES_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` `PETAL_TOWN_SHOT_OK` `PETAL_SMOKE_OK` (3 CanvasItem RIDs, 6 ObjectDB).
+
 ## Requests
 
 - PETAL-09: Grove Park in `data/venues.json` can stay inactive; town occupancy is the live park.
