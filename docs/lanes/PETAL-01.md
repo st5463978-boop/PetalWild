@@ -1,6 +1,6 @@
 # PETAL-01 Foundation / Garden
 
-Updated 2026-09-27.
+Updated 2026-09-27. Pass 2.
 
 | | |
 | --- | --- |
@@ -81,10 +81,13 @@ Highest-value garden-rung work:
 
 | Check | Result |
 | --- | --- |
-| `tests/test_foundation.gd` | pending |
-| `PETAL_SMOKE=1` garden | pending (card fields + snack share) |
-| existing markers | keep green |
-| `PETAL_FACE_SHOT=1` | pending → `docs/screenshots/wave1_face.png` |
+| `tests/test_foundation.gd` | `FOUNDATION_OK` (bus snack note, `Jelly.snack()` fills hunger) |
+| `tools/petal_qa.sh` | `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK` |
+| `PETAL_SMOKE=1` garden | `PETAL_SMOKE_OK` (card fields + snack share). Leaks match baseline: 3 CanvasItem, 6 ObjectDB |
+| `PETAL_INTEGRATE=1` | `PETAL_INTEGRATE_OK` |
+| `PETAL_FACE_SHOT=1` | `PETAL_FACE_SHOT_OK` → `docs/screenshots/wave1_face.png` |
+
+Qwen3-VL is not operational here; the face frame was read directly. The card shows Bellhelp, mood hungry, bond 12%, Hunger 22% wants Meadowbell, Meadow on the Meadowbell, Visitor, Click again to share the Meadowbell. The body is a cream-green blob in the meadow foliage in this llvmpipe angle; the card is the player-facing proof. One placement change (stall → meadow bed). No further camera variants.
 
 ## Requests
 
