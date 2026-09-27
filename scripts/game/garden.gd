@@ -7375,6 +7375,8 @@ func _run_capture() -> void:
 	Clock.set_hour(15.3)
 	ecology.tick(0.2, world_snapshot())
 	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
 	if jelly:
 		jelly.reduce_motion = true
 		jelly.global_position = GardenLayout.cell_center(1, 1) + Vector3(0.55, 0.15, 0.2)
@@ -7391,6 +7393,10 @@ func _run_capture() -> void:
 		camera.focus_on(jelly.global_position + Vector3(0, 0.28, 0), 2.15)
 		await get_tree().create_timer(0.45).timeout
 		await _shot("/workspace/docs/screenshots/wave1_jelly.png")
+		_inspect_face(jelly)
+		await get_tree().create_timer(0.45).timeout
+		await _shot("/workspace/docs/screenshots/wave1_face.png")
+		_clear_inspect()
 	camera.focus_on(_person("lumen").global_position + Vector3(0, 0.62, 0), 5.4)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/wave1_lumen.png")
