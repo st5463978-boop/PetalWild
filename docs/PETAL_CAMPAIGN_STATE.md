@@ -24,7 +24,7 @@ Qwen3-1.7B DPO-merged Q8_0 GGUF on llama.cpp CPU. `POST /decide {question, conte
 | 05 | `petal/05-economy` | `3259c49` | ported | jam + tea servings, shortage line, larger steam |
 | 06 | `petal/06-town` | `bfff006` | ported | lawn count, tea porch, vale carts as counts |
 | 07 | `petal/07-region` | `ca50495` | ported | hex map, ask-first sends, gate crate |
-| 08 | `petal/08-integration` | `c1a2e9a` | — | park land + leak drop + all 7 pass-2 ports |
+| 08 | `petal/08-integration` | `79e3123` | — | park land + 01–07 ports + salvage (folk meshes, grab spring, firewall, art desk) |
 
 Keys: **M** vale, **C** town. Save: `crate_yields`, `parish`, `town`, `region`, `vale_crate_crop`.
 
@@ -42,17 +42,29 @@ Leaks: unused HUD `people_box`/`trust_box`/`place_box` were the baseline 3 Canva
 
 03 hungry plate is shot at the stall then the body moves to Grove Park for nuzzle/land. `jelly_hungry.png` still clips under the stall roof (HUD Bellhelp · hungry · idle). `jelly_nuzzle.png` body + “Bellhelp nuzzles your hands” on the park lawn.
 
-04 dusk park: mist is a stroll; rain stays cover; Lumen/Bram stand apart; one leisure line. `residents_park.png` two bodies, Grove Park, 2 on the lawn. Directory still names household/hunger/company/ties.
+04 dusk park: mist is a stroll; rain stays cover; Lumen/Bram stand apart; one leisure line. `residents_park.png` two bodies, Grove Park, 2 on the lawn. Directory still names household/hunger/company/ties. Salvage GLBs: Bram is the carrot folk; Lumen is the leek folk. Town still does not spawn distant bodies.
 
-05 jam pan camera still reads as the shed wall, not the pan. Steam puffs are larger.
+## Salvage (director add-on, `79e3123`)
 
-Qwen3-VL unused. Frames read directly.
+Took, no GPL:
 
-## Tests (Godot 4.8-dev6 llvmpipe, DISPLAY=:1, dummy ALSA) on `831bbfd`
+- PR #1 `art/characters`: `assets/characters/{leek,carrot,tomato,human}.glb` plus `veg_skin`/`veg_jelly`. `VegPerson` mounts them (leek/carrot/tomato; human fallback). Procedural primitives stay if a mesh is missing.
+- PR #3 `cursor/open-source-jelly-port-08dc`: original `JellyDeform` directional spring on the existing `JellyFeel` grab/throw. Test folded into `JELLY_FEEL_OK`. Jelly-Baby source not copied.
+- PR #12 `cursor/wave0-recovery-dc1d`: reuse map `docs/research/PETAL_RECOVERY_MAP.md`, LICENSE_MATRIX wave-0 table, `tools/orchestration/petal_decision_layer.py`.
+- PR #13 `cursor/art-desk-request-system-48c9`: `art_desk/` YAML desk. AGENT_CONTRACTS art section points at it. Decide-layer paragraph on 08 kept.
+
+Skipped:
+
+- Kenney Starter Kit City Builder / `scenes/parish.tscn` — empty-grid boot fights Hedge Hollow town, Grove Park, and the no-distant-bodies rule.
+- Blender character pipeline, `art_preview/`, OPEN_SOURCE_CANDIDATES catalogue, KANBAN cards, Jelly-Baby analysis dump.
+
+## Tests (Godot 4.8-dev6 llvmpipe, DISPLAY=:1, dummy ALSA) on `79e3123`
 
 `petal_qa`: `PETAL_RULES_OK` `SYSTEMS_OK` `PETAL_CONTRACTS_OK` `FOUNDATION_OK` `JELLY_FEEL_OK` `RESIDENT_LIFE_OK` `TOWN_OK` `REGION_OK` `PETAL_QA_SCRIPTS_OK`
 
-Garden: `PETAL_SMOKE_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `JELLY_PLAY_OK` `PETAL_KETTLE_SHOT_OK` `PETAL_TOWN_SHOT_OK` `PETAL_VALE_SHOT_OK` `PETAL_FACE_SHOT_OK` `PETAL_RESIDENT_SHOT_OK`
+Garden: `PETAL_SMOKE_OK` `PETAL_INTEGRATE_OK` `PETAL_SELFPLAY_OK` `JELLY_PLAY_OK` land_y=0.029 feel=bounce pos≈(3.14, 0.029, -14.19) `PETAL_RESIDENT_SHOT_OK`
+
+Pass-2 kettle/town/vale/face plates were already green on `831bbfd` and were not recaptured.
 
 ## Remaining
 
