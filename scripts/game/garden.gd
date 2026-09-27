@@ -7456,10 +7456,6 @@ func _run_capture() -> void:
 	camera.snap_home()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/ecology_parish.png")
-	hud.set_status(Clock.clock_label(), Clock.weather, Economy.coins, _plot_line(soil.get_cell(1, 0)), "Reed")
-	camera.focus_on(GardenLayout.cell_center(1, 0) + Vector3(0, 0.2, 0), 3.4)
-	await get_tree().create_timer(0.45).timeout
-	await _shot("/workspace/docs/screenshots/ecology_bed.png")
 	print("PETAL_CAPTURE_OK")
 	get_tree().quit(0)
 
