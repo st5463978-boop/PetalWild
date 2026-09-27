@@ -469,12 +469,13 @@ func _full(delta: float) -> void:
 					recover_t = JellyFeel.RECOVER_TIME
 				elif feel == "air":
 					feel = "idle"
-		var water_ok := species_id == "bulrush" or species_id == "reedic"
-		var bumped: Dictionary = JellyFeel.bounce_prop(global_position, vel, touch_radius(), water_ok)
-		global_position = bumped["pos"]
-		vel = bumped["vel"]
-		if bool(bumped["hit"]) and not held:
-			ripple = maxf(ripple, 0.45)
+		if not held and (feel == "air" or feel == "bounce"):
+			var water_ok := species_id == "bulrush" or species_id == "reedic"
+			var bumped: Dictionary = JellyFeel.bounce_prop(global_position, vel, touch_radius(), water_ok)
+			global_position = bumped["pos"]
+			vel = bumped["vel"]
+			if bool(bumped["hit"]):
+				ripple = maxf(ripple, 0.45)
 		global_position = JellyFeel.clamp_pos(global_position, last_safe)
 		vel = JellyFeel.clamp_vel(vel)
 	if landed:
@@ -571,7 +572,6 @@ func _coast(delta: float) -> void:
 	if not use_berth and along.length() < 0.5:
 		_pick_goal()
 	global_position.y = _stand_y()
-	global_position = JellyFeel.clamp_pos(global_position, last_safe)
 	stretch = 0.0
 	squash = 1.0
 	_apply_deform()
