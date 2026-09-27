@@ -2,7 +2,7 @@
 
 Directory ownership for parallel work. Stay inside the owned paths. Integration (`PETAL_00`) is the only lane that edits `project.godot`, `scenes/main.tscn`, and `scripts/main.gd`.
 
-The Hailo foreman in `tools/orchestration/` is studio tooling. It must not be imported by the game. That directory is owned by the executive lane, not by a creature or town agent. System-1 choices call the Pi decide service at `HAILO_DECIDE_URL` (default `http://100.126.22.71:8766/v1/decide`; MagicDNS `http://piai-1:8766/v1/decide` is the same Pi), model `Qwen3-1.7B.hef`. See `tools/orchestration/STATUS.md`.
+The Hailo foreman in `tools/orchestration/` is studio tooling. It must not be imported by the game. That directory is owned by the executive lane, not by a creature or town agent. System-1 choices call the trained Qwen3-1.7B DPO CPU decide service (hef-dfc primary, Pi CPU fallback, hailo-decision last resort). Discovery and URL env names: `HAILO_DECIDE_PRIMARY_DISCOVERY_URL`, `HAILO_DECIDE_PRIMARY_URL`, `HAILO_DECIDE_FALLBACK_DISCOVERY_URL`, `HAILO_DECIDE_FALLBACK_URL`, plus the existing hailo hop via `tools/hailo_decide_url.py`. See `tools/orchestration/STATUS.md`.
 
 | Lane | Owns | Does not touch |
 | --- | --- | --- |

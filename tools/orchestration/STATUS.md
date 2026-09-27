@@ -1,17 +1,17 @@
 # Hailo decide status
 
-System-1 routes call the Pi `hailo-decision` service on Tailscale.
+System-1 routes call the trained Qwen3-1.7B DPO CPU decide service.
 
-- `HAILO_DECIDE_URL` default: `http://100.126.22.71:8766/v1/decide`
-- MagicDNS equivalent: `http://piai-1:8766/v1/decide`
+- Primary: hef-dfc CPU. Discovery `HAILO_DECIDE_PRIMARY_DISCOVERY_URL`, URL `HAILO_DECIDE_PRIMARY_URL`. Timeout ~15s.
+- Fallback: Pi CPU. Discovery `HAILO_DECIDE_FALLBACK_DISCOVERY_URL`, URL `HAILO_DECIDE_FALLBACK_URL`. Timeout ~60s. Used when the primary errors, times out, or returns 503 while the model is loading.
+- Last resort: existing hailo-decision hop. Discovery `HAILO_DECIDE_DISCOVERY_URL`, URL `HAILO_DECIDE_LAST_URL`, then `http://100.126.22.71:8766/v1/decide`.
 - Health: `GET /health`
 - Choice: `POST /decide` with `{"question","options"}` (at least two options), then `/v1/decide` if that path is missing
-- Client timeout on decide: 75s
-- Model: `Qwen3-1.7B.hef` on Hailo-10H (`qwen3:1.7b`)
+- Response: existing keys plus `confidence` (Platt-calibrated), `margin`, `mode`, `p_yes`. No option shuffle.
 - No auth
-- Not used: MinoJEV, 0.6B RLCD, local CPU Qwen, HEF recompile
+- Not used: MinoJEV, 0.6B RLCD, HEF recompile
 
-`HAILO_DECIDE_URL` still overrides the default. MagicDNS `http://piai-1:8766/v1/decide` is the same Pi.
+Quick-tunnel hosts are not hardcoded. `eval "$(python3 tools/hailo_decide_url.py --export)"` at startup.
 
 ## Earlier smoke (2026-09-24)
 
