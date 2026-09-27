@@ -75,6 +75,32 @@ func _init() -> void:
 	_expect(str(life.lives["lumen"]["activity"]) == "social", "lonely dusk picks tea")
 	_expect(life.last_memory("lumen").find("Bram") >= 0, "a shared hour is remembered")
 	_expect(float(life.lives["lumen"]["relations"]["bram"]) > 0.4, "shared tea raises the tie")
+	life.lives["lumen"]["activity"] = "eat"
+	life.lives["lumen"]["pick_hour"] = 11
+	life.lives["lumen"]["needs"]["hunger"] = 0.2
+	var ate := life.snack("lumen", "peach")
+	_expect(ate != "", "a stall snack speaks")
+	_expect(float(life.lives["lumen"]["needs"]["hunger"]) > 0.5, "a snack fills hunger")
+	_expect(life.last_memory("lumen").find("peach") >= 0, "a snack is remembered")
+	_expect(life.snack("lumen", "peach") == "", "one snack per hour")
+	life.places["park"] = Vector3(0.0, 0.0, -16.6)
+	life.open_park()
+	life.lives["lumen"]["needs"]["hunger"] = 0.7
+	life.lives["lumen"]["needs"]["energy"] = 0.7
+	life.lives["lumen"]["needs"]["social"] = 0.7
+	life.lives["lumen"]["pick_hour"] = -1
+	life.lives["bram"]["needs"]["hunger"] = 0.7
+	life.lives["bram"]["needs"]["energy"] = 0.7
+	life.lives["bram"]["needs"]["social"] = 0.7
+	life.lives["bram"]["pick_hour"] = -1
+	ctx["hour"] = 17.2
+	ctx["near"] = {}
+	life.tick(0.2, ctx)
+	_expect(str(life.lives["lumen"]["activity"]) == "leisure", "dusk leisure walks the park")
+	var lawn: Vector3 = life.destination("lumen")
+	_expect(lawn.distance_to(Vector3(0.0, 0.0, -16.6)) < 0.01, "leisure destination is Grove Park")
+	_expect(life.label_for("lumen") == "on the Grove Park lawn", "label names the park")
+	_expect(life.last_memory("lumen").find("Grove Park") >= 0, "a park walk is remembered")
 	print("RESIDENT_LIFE_OK")
 	quit(0)
 

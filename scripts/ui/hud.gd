@@ -724,7 +724,9 @@ func _person_card(row: Dictionary) -> PanelContainer:
 	box.add_child(ThemeKit.title(str(row.get("name", "")), 16))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("role", ""), row.get("state", "")], 13, ThemeKit.MOSS_DEEP))
 	box.add_child(ThemeKit.label("%s  ·  %s" % [row.get("home", ""), row.get("job", "")], 13))
-	box.add_child(ThemeKit.label(str(row.get("blurb", "")), 13))
+	var blurb := str(row.get("blurb", ""))
+	if blurb != "":
+		box.add_child(_wrap(blurb, 13))
 	if bool(row.get("present", false)):
 		box.add_child(ThemeKit.label("Mood %s   care %.0f   belonging %.0f   purpose %.0f" % [row.get("mood", ""), float(row.get("energy", 0)) * 100, float(row.get("belonging", 0)) * 100, float(row.get("purpose", 0)) * 100], 13))
 		box.add_child(ThemeKit.label("Hunger %.0f   company %.0f" % [float(row.get("hunger", 0)) * 100, float(row.get("social", 0)) * 100], 13))
@@ -734,13 +736,13 @@ func _person_card(row: Dictionary) -> PanelContainer:
 			box.add_child(ThemeKit.label("Household  %s" % house, 13))
 		var motive := str(row.get("motive", ""))
 		if motive != "":
-			box.add_child(ThemeKit.label(motive, 13))
+			box.add_child(_wrap(motive, 13))
 		var ties := str(row.get("ties", ""))
 		if ties != "":
 			box.add_child(ThemeKit.label("With neighbours  %s" % ties, 13))
 		var memory := str(row.get("memory", ""))
 		if memory != "":
-			box.add_child(ThemeKit.label(memory, 13))
+			box.add_child(_wrap(memory, 13))
 		var want_line := str(row.get("want_line", ""))
 		if want_line != "":
 			box.add_child(ThemeKit.label(want_line, 13))
@@ -754,14 +756,10 @@ func _person_card(row: Dictionary) -> PanelContainer:
 		box.add_child(button)
 	var kept := str(row.get("road_line", ""))
 	if kept != "":
-		box.add_child(ThemeKit.label(kept, 13))
+		box.add_child(_wrap(kept, 13))
 	var park_kept := str(row.get("park_line", ""))
 	if park_kept != "":
 		box.add_child(ThemeKit.label(park_kept, 13))
-	for key in ["join_line", "parish_bell_line", "parish_sale_line", "hem_card_line", "hem_stone_card_line", "hem_stone_bell_card_line", "hem_stone_on_bell_card_line", "hem_stone_far_bell_card_line", "hem_stone_out_bell_card_line", "meadow_stone_strip_card_line"]:
-		var card_bit := str(row.get(key, ""))
-		if card_bit != "":
-			box.add_child(ThemeKit.label(card_bit, 13))
 	if bool(row.get("can_road", false)):
 		var road := Button.new()
 		road.text = "Hear the road rumour"

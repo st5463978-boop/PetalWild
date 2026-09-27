@@ -44,7 +44,7 @@ func setup(definition: Dictionary) -> void:
 	speech.modulate = Color("f7f1e6")
 	speech.outline_modulate = Color("1c2418")
 	speech.outline_size = 10
-	speech.position = Vector3(0, 1.35, 0)
+	speech.position = Vector3(0, 1.72, 0)
 	speech.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	speech.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
@@ -56,7 +56,7 @@ func setup(definition: Dictionary) -> void:
 	act_label.modulate = Color("d9e6c8")
 	act_label.outline_modulate = Color("1c2418")
 	act_label.outline_size = 8
-	act_label.position = Vector3(0, 1.18, 0)
+	act_label.position = Vector3(0, 1.52, 0)
 	act_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	act_label.text = ""
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):

@@ -98,6 +98,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_VALE_SHOT") == "1":
 		await _run_vale_shot()
 		return
+	if OS.get_environment("PETAL_RESIDENT_SHOT") == "1":
+		await _run_resident_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -356,6 +359,8 @@ func _tick_shop() -> void:
 		return
 	last_shop_hour = hour
 	for id in ["nessa", "bram"]:
+		if str(parish.lives.get(id, {}).get("activity", "")) == "eat":
+			continue
 		var person := _person(id)
 		VillageShop.wish(person)
 		var deal := VillageShop.trade(person)
@@ -1184,6 +1189,7 @@ func accept_park() -> void:
 	Trust.file_park("nessa")
 	toast("Nessa filed Grove Park. The lawn is public. Nobody was spawned.")
 	nessa.say("The park is a lawn beyond the hedge. The book keeps it.")
+	parish.open_park()
 	_sync_park()
 	_tick_town(world_snapshot())
 	refresh_panels()
@@ -1215,6 +1221,8 @@ func _tick_town(world: Dictionary) -> void:
 
 func _sync_park() -> void:
 	var show := Trust.has_action("parish_park")
+	if show:
+		parish.open_park()
 	for node in get_tree().get_nodes_in_group("grove_park"):
 		var body := node as Node3D
 		if body:
@@ -8177,6 +8185,50 @@ func _run_vale_shot() -> void:
 	print("PETAL_VALE_SHOT_OK")
 	get_tree().quit(0)
 
+func _run_resident_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = true
+	Clock.set_hour(15.3)
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.snap_home()
+	show_directory("people")
+	await get_tree().create_timer(0.4).timeout
+	await _shot("/workspace/docs/screenshots/wave1_residents.png")
+	hud.journal.visible = false
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_sync_park()
+	Clock.set_hour(17.2)
+	for id in ["lumen", "bram"]:
+		var person: VegPerson = _person(id)
+		person.has_chore = false
+		person.pause = 0.0
+		var life: Dictionary = parish.lives[id]
+		life["needs"]["hunger"] = 0.7
+		life["needs"]["energy"] = 0.7
+		life["needs"]["social"] = 0.7
+		life["pick_hour"] = -1
+		parish.lives[id] = life
+	_tick_parish(0.2)
+	for id in ["lumen", "bram"]:
+		var dest: Vector3 = parish.destination(id)
+		if dest.x == INF:
+			continue
+		_person(id).global_position = dest
+		var stay: Array[Vector3] = [dest]
+		_person(id).set_route(stay, true)
+		_person(id).set_activity(parish.label_for(id))
+		_person(id).say(parish._line(id, "leisure"))
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	camera.focus_on(GardenLayout.PARK + Vector3(0.4, 0.5, 0.6), 6.4)
+	await get_tree().create_timer(0.45).timeout
+	await _shot("/workspace/docs/screenshots/residents_park.png")
+	show_directory("people")
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/residents_directory.png")
+	print("PETAL_RESIDENT_SHOT_OK")
+	get_tree().quit(0)
+
 func _run_kettle_shot() -> void:
 	Settings.reduce_motion = true
 	camera.snap_home()
@@ -9268,7 +9320,10 @@ func _boot_parish() -> void:
 		"gate": GardenLayout.GATE,
 		"pond": GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
 		"plots": GardenLayout.cell_center(2, 2),
+		"park": GardenLayout.PARK + Vector3(0.8, 0, 1.15),
 	}, lines)
+	if Trust.has_action("parish_park"):
+		parish.open_park()
 
 func _apply_shift(snap: bool) -> void:
 	# ponytail: mist uses the rain routes; a separate mist round if the rooms should differ.
@@ -11098,11 +11153,44 @@ func _tick_parish(delta: float) -> void:
 		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
 			var route: Array[Vector3] = [dest]
 			person.set_route(route, false)
+	_serve_eat()
 	if Clock.running:
 		for row in changed:
 			var speaker := _person(str(row.get("id", "")))
 			if speaker and speaker.present:
 				speaker.say(str(row.get("text", "")))
+
+func _serve_eat() -> void:
+	if not Clock.running:
+		return
+	var stall: Vector3 = parish.places.get("stall", Vector3.INF)
+	if stall.x == INF:
+		return
+	for id in people.keys():
+		var person: VegPerson = people[id]
+		if not person.present or str(parish.lives.get(id, {}).get("activity", "")) != "eat":
+			continue
+		if person.global_position.distance_to(stall) > 1.4:
+			continue
+		var crop := ""
+		if str(id) == "lumen":
+			crop = "a peach slice"
+		else:
+			var crop_id := str(person.want)
+			if crop_id == "" or Economy.count(crop_id) < 1:
+				var held: Array[String] = VillageShop.stock()
+				crop_id = held[0] if held.size() > 0 else ""
+			if crop_id != "" and Economy.take(crop_id, 1):
+				Economy.earn(int(ContentDB.plant(crop_id).get("sell_price", 1)))
+				crop = str(ContentDB.plant(crop_id).get("name", crop_id))
+				person.want = ""
+		var line := parish.snack(str(id), crop)
+		if line == "":
+			continue
+		parish.apply_to(person)
+		person.say(line)
+		if crop != "":
+			toast("%s ate %s at the stall." % [person.display_name, crop])
 
 func _choose_activity(question: String, options: Array) -> String:
 	# ponytail: smoke and forced shop/settle choices must not be stolen by a day's pick.
@@ -11518,18 +11606,8 @@ func _people_rows(world: Dictionary) -> Array:
 			"can_draft": person.present and id == "nessa" and Trust.level("nessa") >= 1 and not Trust.has_action("parish_draft"),
 			"can_road": person.present and id == "nessa" and _road_rumoured() and not Trust.has_action("parish_road_rumour"),
 			"can_park": person.present and id == "nessa" and Trust.has_action("parish_road_rumour") and not Trust.has_action("parish_park"),
-			"road_line": _road_card_line() if id == "nessa" else "",
-			"park_line": _park_card_line() if id == "nessa" else "",
-			"join_line": _join_line() if id == "nessa" else "",
-			"parish_bell_line": _east_closer_bell_line() if id == "nessa" else "",
-			"parish_sale_line": _parish_sale_line() if id == "nessa" else "",
-			"hem_card_line": _hem_card_line() if id == "nessa" else "",
-			"hem_stone_card_line": _hem_stone_card_line() if id == "nessa" else "",
-			"hem_stone_bell_card_line": _hem_stone_bell_card_line() if id == "nessa" else "",
-			"hem_stone_on_bell_card_line": _hem_stone_on_bell_card_line() if id == "nessa" else "",
-			"hem_stone_far_bell_card_line": _hem_stone_far_bell_card_line() if id == "nessa" else "",
-			"hem_stone_out_bell_card_line": _hem_stone_out_bell_card_line() if id == "nessa" else "",
-			"meadow_stone_strip_card_line": _meadow_stone_strip_card_line() if id == "nessa" else "",
+			"road_line": _road_card_line() if id == "nessa" and person.present else "",
+			"park_line": _park_card_line() if id == "nessa" and person.present else "",
 			"want_line": ("%s is looking for %s." % [person.display_name, ContentDB.plant(person.want).get("name", person.want)]) if person.want != "" else "",
 		})
 	return rows
