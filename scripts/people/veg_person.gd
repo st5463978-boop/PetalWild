@@ -13,6 +13,11 @@ var energy := 0.7
 var belonging := 0.45
 var purpose := 0.55
 var relation := 0.1
+var hunger := 0.64
+var social := 0.48
+var activity := "work"
+var memories: Array = []
+var tier := 1
 var waypoints: Array[Vector3] = []
 var chore := Vector3.ZERO
 var has_chore := false
@@ -21,6 +26,7 @@ var pause := 0.0
 var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
+var act_label: Label3D
 var body: Node3D
 var want := ""
 
@@ -44,6 +50,18 @@ func setup(definition: Dictionary) -> void:
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		speech.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	add_child(speech)
+	act_label = Label3D.new()
+	act_label.font_size = 28
+	act_label.pixel_size = 0.004
+	act_label.modulate = Color("d9e6c8")
+	act_label.outline_modulate = Color("1c2418")
+	act_label.outline_size = 8
+	act_label.position = Vector3(0, 1.18, 0)
+	act_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	act_label.text = ""
+	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
+		act_label.font = speech.font
+	add_child(act_label)
 
 func set_route(points: Array[Vector3], snap := true) -> void:
 	waypoints = points
@@ -66,6 +84,8 @@ func _process(delta: float) -> void:
 		speech_time -= delta
 		if speech_time <= 0.0 and speech:
 			speech.visible = false
+	if body:
+		body.visible = present and tier < 4
 	# ponytail: one point is a home; two or more is a loop. A chore is one bed, then the route resumes.
 	if not has_chore and waypoints.is_empty():
 		return
@@ -81,14 +101,37 @@ func _process(delta: float) -> void:
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)
 		return
-	var step := flat.normalized() * delta * 0.55
+	var step := flat.normalized() * delta * _speed()
 	global_position += step
+	if tier >= 3:
+		global_position.y = 0.0
+		if body:
+			body.scale = Vector3.ONE
+		if body:
+			body.visible = tier < 4
+		return
+	if body:
+		body.visible = true
 	phase += delta * 7.0
 	global_position.y = absf(sin(phase)) * 0.045
 	rotation.y = lerp_angle(rotation.y, atan2(flat.x, flat.z), minf(1.0, delta * 6.0))
 	if body:
 		var squash := 1.0 + sin(phase * 2.0) * 0.035
 		body.scale = Vector3(1.0 / squash, squash, 1.0)
+
+func set_activity(text: String) -> void:
+	activity = text
+	if act_label:
+		act_label.text = text
+		act_label.visible = text != ""
+
+func _speed() -> float:
+	var rate := 0.55
+	if energy < 0.35:
+		rate = 0.32
+	if tier >= 3:
+		rate *= 3.0
+	return rate
 
 func _build_body() -> void:
 	body = Node3D.new()
@@ -401,6 +444,10 @@ func to_state() -> Dictionary:
 		"belonging": belonging,
 		"purpose": purpose,
 		"relation": relation,
+		"hunger": hunger,
+		"social": social,
+		"activity": activity,
+		"memories": memories.duplicate(),
 		"position": [global_position.x, global_position.y, global_position.z],
 		"has_chore": has_chore,
 		"chore": [chore.x, chore.y, chore.z],
@@ -415,6 +462,15 @@ func apply_state(data: Dictionary) -> void:
 	belonging = float(data.get("belonging", belonging))
 	purpose = float(data.get("purpose", purpose))
 	relation = float(data.get("relation", relation))
+	hunger = float(data.get("hunger", hunger))
+	social = float(data.get("social", social))
+	activity = str(data.get("activity", activity))
+	var saved_mem = data.get("memories", memories)
+	if typeof(saved_mem) == TYPE_ARRAY:
+		memories = saved_mem.duplicate()
+	if act_label:
+		act_label.text = activity
+		act_label.visible = activity != ""
 	var pos = data.get("position", null)
 	if typeof(pos) == TYPE_ARRAY and pos.size() == 3:
 		global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
