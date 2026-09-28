@@ -2,8 +2,10 @@ class_name JellyStatusIcon
 extends Node3D
 
 ## Billboarded neon status overlay. Bind it to any jelly (or a placeholder).
-## Drive it with set_activity(EMAIL | IDEA | WORKING | HAPPY | NONE).
-## Only one icon is visible. Transitions kill the previous tween first.
+## Drive it with set_activity(EMAIL | IDEA | WORKING | HAPPY |
+## ROMANCE_INTERESTED | ROMANCE_LOCKED | NONE).
+## HAPPY is a one-shot. The two romance hearts loop. Interested→locked morphs
+## in place and bursts mini hearts. Only one icon is visible.
 
 const _SHADER := preload("res://shaders/jelly_status_icon.gdshader")
 
@@ -39,6 +41,8 @@ var _looping := false
 var _reduce_motion := false
 var _photosensitive := false
 var _kind_playing := JellyActivity.NONE
+var _bloom := 1.0
+var _sparks: Array = []
 
 func _ready() -> void:
 	top_level = true
@@ -113,7 +117,10 @@ func _build() -> void:
 	_meshes[JellyActivity.EMAIL] = [_stroke(_envelope(), _HALO_WIDTH), _stroke(_envelope(), _CORE_WIDTH)]
 	_meshes[JellyActivity.IDEA] = [_stroke(_bulb(), _HALO_WIDTH), _stroke(_bulb(), _CORE_WIDTH)]
 	_meshes[JellyActivity.WORKING] = [_stroke(_gear(), _HALO_WIDTH), _stroke(_gear(), _CORE_WIDTH)]
-	_meshes[JellyActivity.HAPPY] = [_stroke(_heart(), _HALO_WIDTH), _stroke(_heart(), _CORE_WIDTH)]
+	var heart := [_stroke(_heart(), _HALO_WIDTH), _stroke(_heart(), _CORE_WIDTH)]
+	_meshes[JellyActivity.HAPPY] = heart
+	_meshes[JellyActivity.ROMANCE_INTERESTED] = heart
+	_meshes[JellyActivity.ROMANCE_LOCKED] = heart
 
 
 func _mesh_node(node_name: String, mat: Material) -> MeshInstance3D:
@@ -144,8 +151,13 @@ func _play(kind: String, restart: bool) -> void:
 		_kind_playing = kind
 		_looping = kind != JellyActivity.HAPPY and kind != JellyActivity.NONE
 		return
-	_kill()
 	var leaving := activity
+	var morph := (
+		leaving == JellyActivity.ROMANCE_INTERESTED
+		and kind == JellyActivity.ROMANCE_LOCKED
+		and _alpha > 0.05
+	)
+	_kill()
 	activity = kind
 	if kind == JellyActivity.NONE:
 		if leaving == JellyActivity.NONE or _alpha <= 0.01:
@@ -155,6 +167,10 @@ func _play(kind: String, restart: bool) -> void:
 		return
 	_kind_playing = kind
 	visible = true
+	if morph:
+		_morph_to_locked()
+		return
+	_clear_sparks()
 	_spin_angle = 0.0
 	_spin.rotation.z = 0.0
 	if leaving != JellyActivity.NONE and leaving != kind and _alpha > 0.05:
@@ -181,6 +197,7 @@ func _pop_in(kind: String) -> void:
 	_alpha = 0.0
 	_pop = 0.2
 	_energy = 1.0
+	_bloom = 1.0
 	_flicker = 1.0
 	var tw := _motion()
 	match kind:
@@ -204,6 +221,24 @@ func _pop_in(kind: String) -> void:
 			tw.tween_callback(_work_loop)
 		JellyActivity.HAPPY:
 			_beat()
+		JellyActivity.ROMANCE_INTERESTED:
+			_energy = 0.42
+			_bloom = 0.52
+			_pop = 0.78
+			tw.tween_property(self, "_alpha", 1.0, 0.22)
+			tw.parallel().tween_property(self, "_pop", 0.94, 0.22)
+			tw.tween_callback(_interest_loop)
+		JellyActivity.ROMANCE_LOCKED:
+			_energy = 0.7
+			_bloom = 1.0
+			_pop = 0.55
+			_spawn_burst()
+			tw.tween_property(self, "_pop", 1.16, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(self, "_alpha", 1.0, 0.12)
+			tw.parallel().tween_property(self, "_energy", 1.22, 0.2)
+			tw.parallel().tween_property(self, "_bloom", 1.75, 0.2)
+			tw.tween_property(self, "_pop", 1.0, 0.1)
+			tw.tween_callback(_lock_loop)
 		_:
 			_idle()
 
@@ -253,6 +288,113 @@ func _work_loop() -> void:
 	_looping = true
 
 
+func _interest_loop() -> void:
+	_looping = true
+	_energy = 0.42
+	_bloom = 0.52
+	if _reduce_motion:
+		_pop = 0.92
+		return
+	var tw := _motion()
+	tw.set_loops()
+	tw.tween_property(self, "_pop", 0.98, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(self, "_energy", 0.52, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(self, "_pop", 0.86, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(self, "_energy", 0.34, 1.15).set_trans(Tween.TRANS_SINE)
+
+
+func _lock_loop() -> void:
+	_looping = true
+	_energy = 1.22
+	_bloom = 1.75
+	if _reduce_motion:
+		_pop = 1.0
+		return
+	var tw := _motion()
+	tw.set_loops()
+	tw.tween_property(self, "_pop", 1.24, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "_pop", 0.9, 0.07)
+	tw.tween_property(self, "_pop", 1.34, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "_pop", 1.0, 0.1)
+	tw.tween_property(self, "_pop", 1.0, 0.14)
+
+
+func _morph_to_locked() -> void:
+	_looping = false
+	_lift = 0.0
+	_apply_look(JellyActivity.ROMANCE_LOCKED)
+	_spawn_burst()
+	var tw := _motion()
+	tw.tween_property(self, "_energy", 1.22, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(self, "_bloom", 1.75, 0.28)
+	tw.parallel().tween_property(self, "_alpha", 1.0, 0.1)
+	tw.parallel().tween_property(self, "_pop", 1.18, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "_pop", 1.0, 0.1)
+	tw.tween_callback(_lock_loop)
+
+
+func _spawn_burst() -> void:
+	_clear_sparks()
+	if _reduce_motion or _photosensitive:
+		return
+	var packed: Array = _meshes.get(JellyActivity.HAPPY, [null, null])
+	var mesh: ArrayMesh = packed[1]
+	if mesh == null:
+		return
+	var color := JellyActivity.color_of(JellyActivity.ROMANCE_LOCKED)
+	for i in 5:
+		var node := MeshInstance3D.new()
+		node.mesh = mesh
+		var mat := _make_mat(2.4, 0)
+		mat.set_shader_parameter("neon_color", color)
+		mat.set_shader_parameter("fade", 1.0)
+		node.material_override = mat
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.position = Vector3(0.0, 0.02, 0.05)
+		node.scale = Vector3.ONE * 0.2
+		_face.add_child(node)
+		var ang := TAU * float(i) / 5.0 + 0.18
+		_sparks.append({
+			"node": node,
+			"mat": mat,
+			"vel": Vector3(cos(ang) * 0.7, 0.48 + 0.1 * float(i % 2), 0.0),
+			"life": 0.58,
+			"age": 0.0,
+		})
+
+
+func _tick_sparks(delta: float) -> void:
+	if _sparks.is_empty():
+		return
+	var remain: Array = []
+	for spark in _sparks:
+		var node: MeshInstance3D = spark["node"]
+		if not is_instance_valid(node):
+			continue
+		spark["age"] = float(spark["age"]) + delta
+		var t := float(spark["age"]) / float(spark["life"])
+		if t >= 1.0:
+			node.queue_free()
+			continue
+		node.position += spark["vel"] * delta
+		var vel: Vector3 = spark["vel"]
+		vel.y += 0.4 * delta
+		spark["vel"] = vel
+		node.scale = Vector3.ONE * lerpf(0.22, 0.07, t)
+		var mat: ShaderMaterial = spark["mat"]
+		mat.set_shader_parameter("fade", 1.0 - t)
+		remain.append(spark)
+	_sparks = remain
+
+
+func _clear_sparks() -> void:
+	for spark in _sparks:
+		var node: MeshInstance3D = spark["node"]
+		if is_instance_valid(node):
+			node.queue_free()
+	_sparks.clear()
+
+
 func _beat() -> void:
 	_looping = false
 	_alpha = 1.0
@@ -281,11 +423,13 @@ func _idle() -> void:
 	_pop = 1.0
 	_lift = 0.0
 	_energy = 1.0
+	_bloom = 1.0
 	_flicker = 1.0
 	_spin_angle = 0.0
 	_kind_playing = JellyActivity.NONE
 	activity = JellyActivity.NONE
 	visible = false
+	_clear_sparks()
 	_paint()
 
 
@@ -306,8 +450,7 @@ func _process(delta: float) -> void:
 	var settings := get_node_or_null("/root/Settings")
 	if settings != null:
 		_photosensitive = bool(settings.photosensitivity)
-		if not (host is Jelly):
-			_reduce_motion = bool(settings.reduce_motion)
+		_reduce_motion = bool(settings.reduce_motion)
 	_follow_host()
 	_billboard()
 	if activity == JellyActivity.WORKING and _looping:
@@ -323,6 +466,7 @@ func _process(delta: float) -> void:
 		_flicker = 0.82 + 0.18 * absf(sin(t * 7.4)) + 0.12 * absf(sin(t * 19.0))
 	else:
 		_flicker = 1.0
+	_tick_sparks(delta)
 	_paint()
 
 
@@ -331,7 +475,6 @@ func _follow_host() -> void:
 		return
 	if host is Jelly:
 		var jelly := host as Jelly
-		_reduce_motion = jelly.reduce_motion or _reduce_motion
 		if jelly.tier >= 3:
 			visible = false
 		elif activity != JellyActivity.NONE or _alpha > 0.02:
@@ -363,16 +506,18 @@ func _billboard() -> void:
 
 func _paint() -> void:
 	_face.scale = Vector3.ONE * maxf(_pop, 0.01)
+	_glow.scale = Vector3.ONE * clampf(0.72 + 0.42 * _bloom, 0.72, 1.55)
 	var fade := clampf(_alpha, 0.0, 1.0)
 	var flash := _energy * _flicker
 	_core_mat.set_shader_parameter("fade", fade)
 	_core_mat.set_shader_parameter("energy", 2.8 * flash)
 	_halo_mat.set_shader_parameter("fade", fade * 0.55)
 	_halo_mat.set_shader_parameter("energy", 0.85 * flash)
-	_glow_mat.set_shader_parameter("fade", fade * 0.35)
-	_glow_mat.set_shader_parameter("energy", 1.15 * flash)
-	var wash := 0.0 if _photosensitive else 0.42 * fade
+	_glow_mat.set_shader_parameter("fade", fade * 0.28 * _bloom)
+	_glow_mat.set_shader_parameter("energy", 1.15 * flash * _bloom)
+	var wash := 0.0 if _photosensitive else 0.42 * fade * _bloom
 	_light.light_energy = wash
+	_light.omni_range = 1.05 + 0.38 * maxf(_bloom - 1.0, 0.0)
 	_light.position = Vector3(0.0, -0.42, 0.0)
 	_glow.visible = fade > 0.02
 	if host != null and is_instance_valid(host):

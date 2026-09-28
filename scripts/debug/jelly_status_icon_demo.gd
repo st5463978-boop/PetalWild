@@ -1,7 +1,8 @@
 extends Node3D
 
 ## Standalone neon status-icon desk. Placeholders sit still; the overlay is live.
-## Keys: 1 email, 2 idea, 3 working, 4 happy, 5 none, C cycle, [ ] work intensity, Esc quit.
+## Keys: 1 email, 2 idea, 3 working, 4 happy, 5 interested, 6 locked, 7 none,
+## C cycle, [ ] work intensity, Esc quit.
 ## PETAL_ICON_CAPTURE=1 writes shots, a frame strip, gif, and mp4 then quits.
 
 const _CAPTURE_DIR := "/workspace/docs/screenshots/jelly_status_icons"
@@ -15,7 +16,8 @@ var _kind_order: Array[String] = [
 	JellyActivity.EMAIL,
 	JellyActivity.IDEA,
 	JellyActivity.WORKING,
-	JellyActivity.HAPPY,
+	JellyActivity.ROMANCE_INTERESTED,
+	JellyActivity.ROMANCE_LOCKED,
 ]
 var _hud: Label
 var _intensity := 1.0
@@ -85,7 +87,7 @@ func _build_world() -> void:
 	_camera.far = 80.0
 	_camera.current = true
 	add_child(_camera)
-	_aim(Vector3(0.0, 0.45, 0.0), 5.6)
+	_aim(Vector3(0.0, 0.45, 0.0), 6.4)
 
 
 func _aim(at: Vector3, distance: float) -> void:
@@ -101,13 +103,8 @@ func _spawn_jellies() -> void:
 		{"id": "mail", "name": "Post", "shape": "droplet", "deep": "#1d6db8", "lit": "#9fd6ff", "glow": "#5ec2ff", "eye": "#f4fbff", "radius": 0.34},
 		{"id": "idea", "name": "Glim", "shape": "stacked", "deep": "#2f8f55", "lit": "#d5ffb0", "glow": "#b6ff6a", "eye": "#f4ffd2", "radius": 0.32},
 		{"id": "work", "name": "Cog", "shape": "crown", "deep": "#1b8a86", "lit": "#b8fff4", "glow": "#5bffd4", "eye": "#e7fff8", "radius": 0.33},
-		{"id": "joy", "name": "Pip", "shape": "lobes", "deep": "#c4457a", "lit": "#ffd0e8", "glow": "#ff7eb6", "eye": "#fff0f6", "radius": 0.34},
-	]
-	var kinds: Array[String] = [
-		JellyActivity.EMAIL,
-		JellyActivity.IDEA,
-		JellyActivity.WORKING,
-		JellyActivity.HAPPY,
+		{"id": "crush", "name": "Pip", "shape": "lobes", "deep": "#c4457a", "lit": "#ffd0e8", "glow": "#ff7eb6", "eye": "#fff0f6", "radius": 0.34},
+		{"id": "pair", "name": "Vee", "shape": "bell", "deep": "#9a2f6a", "lit": "#ffc4e4", "glow": "#ff5fa8", "eye": "#fff0f6", "radius": 0.33},
 	]
 	for i in defs.size():
 		var jelly := Jelly.new()
@@ -118,12 +115,13 @@ func _spawn_jellies() -> void:
 		jelly.hop_wait = 99.0
 		jelly.tier = 0
 		jelly.vel = Vector3.ZERO
-		jelly.global_position = Vector3(-1.65 + float(i) * 1.1, 0.0, 0.0)
+		jelly.global_position = Vector3(-2.2 + float(i) * 1.1, 0.0, 0.0)
 		var to_cam := _camera.global_position - jelly.global_position
 		to_cam.y = 0.0
 		if to_cam.length() > 0.01:
 			jelly.look_at(jelly.global_position + to_cam, Vector3.UP)
-		jelly.force_activity(kinds[i], 1.0 if kinds[i] != JellyActivity.WORKING else 1.15)
+		var kind: String = _kind_order[i]
+		jelly.force_activity(kind, 1.15 if kind == JellyActivity.WORKING else 1.0)
 		_jellies.append(jelly)
 
 
@@ -141,7 +139,7 @@ func _build_hud() -> void:
 func _refresh_hud() -> void:
 	if _hud == null:
 		return
-	_hud.text = "Neon status icons  ·  1 email  2 idea  3 working  4 happy  5 none  C cycle  [ ] intensity %.2f" % _intensity
+	_hud.text = "Neon status icons  ·  1 email  2 idea  3 working  4 happy  5 interested  6 locked  7 none  C cycle  [ ] intensity %.2f" % _intensity
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -157,6 +155,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_4:
 			_force_all(JellyActivity.HAPPY)
 		KEY_5:
+			_force_all(JellyActivity.ROMANCE_INTERESTED)
+		KEY_6:
+			_force_all(JellyActivity.ROMANCE_LOCKED)
+		KEY_7:
 			_force_all(JellyActivity.NONE)
 		KEY_C:
 			_cycle = not _cycle
@@ -207,28 +209,25 @@ func _capture() -> void:
 	DirAccess.make_dir_recursive_absolute(_ARTIFACT_DIR)
 	_restore_row()
 	for i in _jellies.size():
-		if _kind_order[i] == JellyActivity.HAPPY:
-			continue
-		_jellies[i].force_activity(_kind_order[i], 1.15)
-	await _settle(0.45)
-	_jellies[3].force_activity(JellyActivity.HAPPY)
-	await _settle(0.18)
-	_aim(Vector3(0.0, 0.5, 0.0), 5.2)
+		_jellies[i].force_activity(_kind_order[i], 1.15 if _kind_order[i] == JellyActivity.WORKING else 1.0)
+	await _settle(0.55)
+	_aim(Vector3(0.0, 0.5, 0.0), 6.2)
 	_restore_row()
-	for i in [0, 1, 2]:
-		_jellies[i].force_activity(_kind_order[i], 1.15)
-	_jellies[3].force_activity(JellyActivity.HAPPY)
-	await _settle(0.16)
+	for i in _jellies.size():
+		_jellies[i].force_activity(_kind_order[i], 1.15 if _kind_order[i] == JellyActivity.WORKING else 1.0)
+	await _settle(0.2)
 	await _shot("lineup.png")
 	await _record_kind(0, JellyActivity.EMAIL, "envelope", 0.85, 16)
 	await _record_kind(1, JellyActivity.IDEA, "bulb", 0.7, 16)
 	await _record_kind(2, JellyActivity.WORKING, "gear", 0.55, 16)
 	await _record_heart()
+	await _record_kind(3, JellyActivity.ROMANCE_INTERESTED, "heart_interested", 0.55, 16, 0.11)
+	await _record_locked()
 	_stitch_gifs()
 	print("PETAL_ICON_CAPTURE_OK")
 
 
-func _record_kind(index: int, kind: String, stem: String, hold: float, frames: int) -> void:
+func _record_kind(index: int, kind: String, stem: String, hold: float, frames: int, step := 0.07) -> void:
 	_solo(index)
 	_jellies[index].force_activity(kind, 1.35 if kind == JellyActivity.WORKING else 1.0)
 	await _settle(hold)
@@ -238,7 +237,7 @@ func _record_kind(index: int, kind: String, stem: String, hold: float, frames: i
 			_jellies[index].work_intensity = 0.7 + 0.08 * float(i)
 			if _jellies[index].status_icon:
 				_jellies[index].status_icon.set_intensity(_jellies[index].work_intensity)
-		await _settle(0.07)
+		await _settle(step)
 		var img := await _grab()
 		var path := "%s/%s_%02d.png" % [_CAPTURE_DIR, stem, i]
 		img.save_png(path)
@@ -266,6 +265,26 @@ func _record_heart() -> void:
 	_write_strip(images, "%s/heart_strip.png" % _ARTIFACT_DIR)
 
 
+func _record_locked() -> void:
+	_solo(4)
+	_jellies[4].force_activity(JellyActivity.ROMANCE_INTERESTED)
+	await _settle(0.4)
+	_jellies[4].force_activity(JellyActivity.ROMANCE_LOCKED)
+	await _settle(0.05)
+	var images: Array[Image] = []
+	for i in 18:
+		await _settle(0.055)
+		var img := await _grab()
+		img.save_png("%s/heart_locked_%02d.png" % [_CAPTURE_DIR, i])
+		images.append(img)
+		if i == 3:
+			img.save_png("%s/heart_locked.png" % _CAPTURE_DIR)
+			img.save_png("%s/heart_locked.png" % _ARTIFACT_DIR)
+			print("SHOT heart_locked.png ", img.get_width(), "x", img.get_height())
+	_write_strip(images, "%s/heart_locked_strip.png" % _CAPTURE_DIR)
+	_write_strip(images, "%s/heart_locked_strip.png" % _ARTIFACT_DIR)
+
+
 func _solo(index: int) -> void:
 	for i in _jellies.size():
 		if i == index:
@@ -288,7 +307,7 @@ func _solo(index: int) -> void:
 func _restore_row() -> void:
 	for i in _jellies.size():
 		_jellies[i].tier = 0
-		_jellies[i].global_position = Vector3(-1.65 + float(i) * 1.1, 0.0, 0.0)
+		_jellies[i].global_position = Vector3(-2.2 + float(i) * 1.1, 0.0, 0.0)
 		if _jellies[i].status_icon:
 			_jellies[i].status_icon.visible = true
 		var to_cam := _camera.global_position - _jellies[i].global_position
@@ -317,7 +336,7 @@ func _write_strip(images: Array[Image], path: String) -> void:
 
 
 func _stitch_gifs() -> void:
-	for stem in ["envelope", "bulb", "gear", "heart"]:
+	for stem in ["envelope", "bulb", "gear", "heart", "heart_interested", "heart_locked"]:
 		_ffmpeg(stem)
 
 

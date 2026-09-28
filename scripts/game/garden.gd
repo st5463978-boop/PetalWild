@@ -1945,6 +1945,14 @@ func debug_jelly_activity(kind: String) -> void:
 	toast("%s icon: %s" % [jelly.display_name, kind])
 
 func _sync_jelly_activity() -> void:
+	var adults := {}
+	for actor in ecology.actors:
+		if not is_instance_valid(actor):
+			continue
+		var body: Jelly = actor
+		if body.young or body.leaving:
+			continue
+		adults[body.species_id] = int(adults.get(body.species_id, 0)) + 1
 	for actor in ecology.actors:
 		if not is_instance_valid(actor):
 			continue
@@ -1957,7 +1965,20 @@ func _sync_jelly_activity() -> void:
 			jelly.work_intensity = clampf(1.35 - jelly.hunger * 1.2, 0.75, 1.65)
 		else:
 			jelly.work_intensity = 0.0
+		jelly.romance = _romance_for(jelly, int(adults.get(jelly.species_id, 0)))
 		jelly.refresh_activity()
+
+
+func _romance_for(jelly: Jelly, adults: int) -> String:
+	if jelly.young or jelly.leaving:
+		return ""
+	var sid := jelly.species_id
+	if str(ecology.states.get(sid, "")) == "breeding" or adults >= 2:
+		return "locked"
+	var definition: Dictionary = ContentDB.species_def(sid)
+	if definition.has("romance") and ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident"):
+		return "interested"
+	return ""
 
 func debug_coins(amount: int) -> void:
 	Economy.earn(amount)

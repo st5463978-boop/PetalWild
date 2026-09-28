@@ -2,26 +2,34 @@ class_name JellyActivity
 extends RefCounted
 
 ## Live jelly status-icon kinds. Gameplay calls Jelly.set_activity / offer_mail /
-## pulse_happy; the overlay never stays on without a current activity.
+## pulse_happy / show_interest / lock_romance. The overlay never stays on
+## without a current activity.
 ##
 ## Priority, highest wins, one icon at a time:
-##   HAPPY (4)  >  EMAIL (3)  >  WORKING (2)  >  IDEA (1)  >  NONE (0)
-## HAPPY is a one-shot event. It preempts whatever is showing, plays the heart,
-## then the overlay returns to the next derived activity (mail still pending,
-## still working, still restless, or none).
+##   HAPPY (6) > ROMANCE_LOCKED (5) > EMAIL (4) > ROMANCE_INTERESTED (3)
+##     > WORKING (2) > IDEA (1) > NONE (0)
+## HAPPY is a one-shot event. It preempts whatever is showing, plays, then the
+## overlay returns to the next derived activity (locked romance, mail, interest,
+## work, restless, or none).
+## ROMANCE_INTERESTED and ROMANCE_LOCKED are looping heart tiers. Crossing from
+## interested to locked morphs in place (no pop-out) and may burst mini hearts.
 
 const NONE := "none"
 const EMAIL := "email"
 const IDEA := "idea"
 const WORKING := "working"
 const HAPPY := "happy"
+const ROMANCE_INTERESTED := "romance_interested"
+const ROMANCE_LOCKED := "romance_locked"
 
 const PRIORITY := {
 	NONE: 0,
 	IDEA: 1,
 	WORKING: 2,
-	EMAIL: 3,
-	HAPPY: 4,
+	ROMANCE_INTERESTED: 3,
+	EMAIL: 4,
+	ROMANCE_LOCKED: 5,
+	HAPPY: 6,
 }
 
 const COLOR := {
@@ -29,6 +37,8 @@ const COLOR := {
 	IDEA: Color("#FFD84A"),
 	WORKING: Color("#5BFF8A"),
 	HAPPY: Color("#FF5FA8"),
+	ROMANCE_INTERESTED: Color("#FF5FA8"),
+	ROMANCE_LOCKED: Color("#FF5FA8"),
 }
 
 static func rank(kind: String) -> int:
@@ -37,6 +47,10 @@ static func rank(kind: String) -> int:
 
 static func is_kind(kind: String) -> bool:
 	return PRIORITY.has(kind)
+
+
+static func is_heart(kind: String) -> bool:
+	return kind == HAPPY or kind == ROMANCE_INTERESTED or kind == ROMANCE_LOCKED
 
 
 static func pick(kinds: Array) -> String:
@@ -65,8 +79,13 @@ static func derive(jelly: Object) -> String:
 		return forced
 	if bool(jelly.get("_happy_playing")):
 		return HAPPY
+	var romance := str(jelly.get("romance"))
+	if romance == "locked":
+		return ROMANCE_LOCKED
 	if bool(jelly.get("mail_pending")):
 		return EMAIL
+	if romance == "interested":
+		return ROMANCE_INTERESTED
 	if float(jelly.get("work_intensity")) > 0.05:
 		return WORKING
 	if str(jelly.get("mood")) == "restless":

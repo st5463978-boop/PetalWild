@@ -59,6 +59,7 @@ var iris_mats: Array[StandardMaterial3D] = []
 var activity := JellyActivity.NONE
 var work_intensity := 0.0
 var mail_pending := false
+var romance := ""
 var status_icon: JellyStatusIcon
 var _forced_activity := ""
 var _happy_playing := false
@@ -124,6 +125,10 @@ func set_activity(kind: String, intensity := 1.0) -> void:
 	if kind == JellyActivity.HAPPY:
 		pulse_happy()
 		return
+	if kind == JellyActivity.ROMANCE_INTERESTED:
+		romance = "interested"
+	elif kind == JellyActivity.ROMANCE_LOCKED:
+		romance = "locked"
 	_forced_activity = ""
 	_apply_activity(kind)
 
@@ -161,6 +166,21 @@ func handle_mail() -> void:
 func pulse_happy() -> void:
 	_happy_playing = true
 	_apply_activity(JellyActivity.HAPPY, true)
+
+func show_interest() -> void:
+	if romance == "locked":
+		refresh_activity()
+		return
+	romance = "interested"
+	refresh_activity()
+
+func lock_romance() -> void:
+	romance = "locked"
+	refresh_activity()
+
+func clear_romance() -> void:
+	romance = ""
+	refresh_activity()
 
 func refresh_activity() -> void:
 	var next := JellyActivity.derive(self)

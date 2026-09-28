@@ -16,7 +16,7 @@ func build(owner: Node) -> void:
 	panel.offset_left = -360
 	panel.offset_right = -16
 	panel.offset_top = 90
-	panel.offset_bottom = 820
+	panel.offset_bottom = 900
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -41,6 +41,8 @@ func build(owner: Node) -> void:
 	_button(box, "Icon: idea", func(): host.debug_jelly_activity("idea"))
 	_button(box, "Icon: working", func(): host.debug_jelly_activity("working"))
 	_button(box, "Icon: happy", func(): host.debug_jelly_activity("happy"))
+	_button(box, "Icon: interested", func(): host.debug_jelly_activity("romance_interested"))
+	_button(box, "Icon: locked", func(): host.debug_jelly_activity("romance_locked"))
 	_button(box, "Icon: none", func(): host.debug_jelly_activity("none"))
 	_button(box, "Icon: live", func(): host.debug_jelly_activity(""))
 
