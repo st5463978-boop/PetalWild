@@ -5,7 +5,7 @@ extends SceneTree
 const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0", "BedBody_1_0"]},
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "beds", "subject_nodes": ["BedBody_0_0", "BedBody_0_1", "BedBody_1_0", "BedBody_1_1"]},
-	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.05, 6.4), "look": Vector3(0, -0.15, 0.2), "fov": 50.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
+	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(-0.6, 1.2, 7.1), "look": Vector3(-0.4, 0.1, 0.6), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_group": "jelly"},
@@ -73,10 +73,12 @@ func _run() -> void:
 			continue
 		cam.make_current()
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
+		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
+		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
 		if img.get_width() != HONEST.x or img.get_height() != HONEST.y:
 			img.resize(HONEST.x, HONEST.y, Image.INTERPOLATE_LANCZOS)
@@ -325,6 +327,17 @@ func _hide_placeholder_under(root: Node) -> void:
 			gi.visible = false
 	for child in root.get_children():
 		_hide_placeholder_under(child)
+
+func _hide_cam03_bench(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	var tree := scene.get_tree()
+	if tree != null:
+		for n: Node in tree.get_nodes_in_group("signoff_cam03_hide"):
+			n.visible = not on
+	var named: Node = scene.find_child("CC0Bench", true, false)
+	if named != null:
+		named.visible = not on
 
 func _clamp_sun_disc(scene: Node, on: bool) -> void:
 	if scene == null:
