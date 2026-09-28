@@ -30,8 +30,8 @@ func _stall(parent: Node3D) -> void:
 		# ponytail: the blue cloth clips to sky under this sun; raise if the stripe goes black.
 		var shut := Color("#4a3f34") if i % 2 == 0 else Color("#263444")
 		var open := Color("#c4895a") if i % 2 == 0 else Color("#8a5344")
-		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.78, 0.28), Vector3(0.36, 0.1, 1.45), shut)
-		stripe.rotation_degrees = Vector3(18, 0, 0)
+		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.74, 0.22), Vector3(0.34, 0.07, 1.28), shut)
+		stripe.rotation_degrees = Vector3(14, 0, 0)
 		stripe.set_meta("open_color", open)
 		stripe.set_meta("shut_color", shut)
 		stripe.add_to_group("parish_awning")
