@@ -328,10 +328,7 @@ func _hedge_crown(at: Vector3) -> float:
 	return smoothstep(0.72, 0.96, _hedge_knot(at))
 
 func _crown_scale(at: Vector3) -> float:
-	var mound := _hedge_crown(at)
-	if _crest_wall(at.z):
-		return _notch_lip(at.x) * lerpf(0.22, 1.5, mound)
-	return lerpf(0.34, 1.0, mound)
+	return lerpf(0.72, 1.08, _hedge_crown(at))
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
