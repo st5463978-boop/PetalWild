@@ -2,11 +2,17 @@
 
 Research only. No gameplay or shader implementation in this change. Target: Godot **4.8-dev6 Forward+**, Windows PC.
 
-**Primary look:** Viva Piñata (Rare, Xbox 360, 2006) and *Trouble in Paradise* (2008) garden ponds. A **high-realism, sparkly water surface** over a **cartoony, painterly, high-quality bed**. That contrast is the effect. The approved city-park pond concept is our instance of the same split.
+Three high-end, one-to-one **material** references, one per material. Water is the deliverable in this doc. Snow and sand are future, but they share one weather/deform framework (§10).
 
-**Supporting:** Road to Vostok for Godot-4 lake technique. *Clair Obscur: Expedition 33* (Sandfall Interactive) for a modern painterly-world / realistic-water split — the best “known for good water” match for the owner’s “Penitent / Sandfire” names. Exact-title alternatives (Kmitt’s *Sandfire*, devmar’s *Penitent*) are in §2.3; they explain the words better and are weaker as water showcases.
+| Material | Role | Working title | Confidence |
+| --- | --- | --- | --- |
+| **Water** | **Primary look:** Viva Piñata / *Trouble in Paradise* — sparkly realistic **surface** over a cartoony painted **bed**. **Surface realism** under that look: *Senua’s Saga: Hellblade II* (“Penitent”). | Hellblade II | ~55% on the name; water quality is not in doubt |
+| **Snow** | Future. *Road to Vostok* (Godot 4.6.1 Forward+). | RTV | Given |
+| **Sand** | Future. *Clair Obscur: Expedition 33* / Sandfall Interactive (“Sandfire”). | Expedition 33 | ~65% |
 
-Licence firewall is the same as `docs/research/REFERENCES.md` and `docs/LICENSE_MATRIX.md`. MIT / CC0 only in the tree. Do not vendor Road to Vostok, Viva Piñata, TiP-Recomp (no-AI policy; not inspected), Expedition 33, Kmitt’s *Sandfire*, or *Penitent*. House style is already “Viva Piñata-style, painterly, saturated, chunky and toy-like” (`docs/AGENT_CONTRACTS.md`); this plan is how that applies to **water**.
+**Primary look (water):** Viva Piñata (Rare, Xbox 360, 2006) and *Trouble in Paradise* (2008) garden ponds. That contrast is the effect. The approved city-park pond concept is our instance of the same split. Hellblade II tells the **surface** how wet, tight, and flow-aware to be; it does **not** replace the painted bed.
+
+Licence firewall is the same as `docs/research/REFERENCES.md` and `docs/LICENSE_MATRIX.md`. MIT / CC0 only in the tree. Do not vendor Road to Vostok, Viva Piñata, TiP-Recomp (no-AI policy; not inspected), Hellblade II / Fluid Flux, Expedition 33, Kmitt’s *Sandfire*, or *Penitent*. House style is already “Viva Piñata-style, painterly, saturated, chunky and toy-like” (`docs/AGENT_CONTRACTS.md`); this plan is how that applies to **water**.
 
 Nested worlds share one water stack; each body gets a `WaterProfile`, not a unique shader.
 
@@ -101,88 +107,60 @@ Rare / Microsoft stills are copyrighted. They are **not** copied into this repo 
 
 PetalWild’s own look target (original art, allowed in-tree): the attached city-park pond close-up, and `docs/reference/petalwild_target_garden_01.png` (willow water in the back of the hedge). Match **that** lighting to the Piñata *split*, not to Piñata’s characters.
 
-### 2.2 Supporting — Road to Vostok (surface realism on Godot 4)
+### 2.2 Surface realism — *Senua’s Saga: Hellblade II* (“Penitent”)
 
-Hardcore survival FPS. **Godot 4** after a Unity port. Public notes: Godot **4.6.1 Forward+**. Same renderer family as us.
-
-Use it for: still-water *scale*, a cheap reflection toggle, weather as shader globals, “do not turn on Environment SSR on transparent water.” Do **not** use it for colour. RTV lakes are tannin and dark. That murk would hide the painterly bed and kill the Piñata split.
-
-Sources: [site](https://roadtovostok.com/), [Public Demo 1 v2](https://www.youtube.com/watch?v=2HePkuTN6hs) (Water System; swimming off for polish), [PC settings](https://www.switchbladegaming.com/road-to-vostok/best-pc-settings/) (Water Reflection = low cost), [Peter’s Immersion](https://modworkshop.net/mod/56778) (clarity / fish). Architecture names only at [dwoodruff83/RoadToVostokMods](https://github.com/dwoodruff83/RoadToVostokMods) — not a source.
-
-### 2.3 Supporting — “Penitent” / “Sandfire” (owner correction)
-
-The second supporting title is **not** *Pen Pen TriIcelon*. That was a first-pass guess from an earlier voice fragment (“Pen Pen Dorif” / “Pennerith”). The owner now says the names are something like **Penitent** and **Sandfire** (ASR; one game or two). Filter: real titles matching those sounds that are **known for good water**, including upcoming/indie Unreal or Godot work.
+Owner: the water **surface** is a high-end, one-to-one material reference named something like **Penitent**. It sits **under** Piñata (look), not instead of it. *Road to Vostok* is snow, not water (§10.1). *Sandfire* is sand, not water (§10.2). *Pen Pen TriIcelon* stays a mistaken first guess.
 
 #### Identification
 
-| Candidate | Why the names fit | Water reputation | Confidence it is “the” title |
+| Candidate | Why the name fits | Water / material reputation | Confidence |
 | --- | --- | --- | --- |
-| ***Clair Obscur: Expedition 33*** (Sandfall Interactive, UE5, Apr 2025) | **Sandfire ≈ Sandfall** (fire/fall). “Penitent” does **not** attach; leftover from the earlier Pennerith ASR, or a mix with Blasphemous. | **Strongest.** Flying Waters, Gestral Beach, coastal caves, overworld swim. Painterly painted world + Lumen-wet surfaces. Same *split* as Piñata at 2025 quality. | **~60%** if this was one misheard studio/title. Working supporting ref below. |
-| ***Sandfire*** (Kmitt, Godot, itch prototype) | **Exact “Sandfire.”** Blurb: inspired by *Shadow of the Colossus* **and *Blasphemous*** (the **Penitent One**). One sentence explains **both** uttered words. | Author is known for a [Godot stylized water shader](https://godotshaders.com/shader/stylized-water-shader/) and a [particle waterfall with refraction + foam](https://realtimevfx.com/t/kmitt-sketch-49/19348). The game itself is a desert souls-like, not a shipped water setpiece. | **~40%** as the literal title. Best dual-name parse. Weaker as a look bar. |
-| ***Penitent*** (devmar / Devinthewater, Godot 4) | **Exact “Penitent.”** | Flooded maps ([Devlog 19](https://www.youtube.com/watch?v=DfKsxQaY63Y)), underwater post, official [Godot 4.0 beta 2 hero screenshot](https://godotengine.org/article/dev-snapshot-godot-4-0-beta-2/). Recent murky indoor water. | **~25%**. Godot-relevant volume/underwater notes; murk fights the Piñata split. |
-| *Blasphemous* (The Game Kitchen) | Protagonist is the **Penitent One**. | 2D pixel. Salt-lake tableau (*Blessed Lord of Salty Shores*), mud relic. Not a 3D water renderer. | Name only. |
-| Two-title parse: *Penitent* (devmar) **and** *Sandfire* (Kmitt) | Both words exact; both Godot indies with documented water work. | Useful recipes, not famous ponds. | Plausible if they meant two games. |
+| ***Senua’s Saga: Hellblade II*** (Ninja Theory, UE5, May 2024) | Senua is a **penitent** pilgrim. Earlier ASR “Pennerith” is a plausible mash of **Senua**. High-end **one-to-one** wetness/water is what the game is famous for. | **Strongest water surface.** Iceland photogrammetry, Fluid Flux shallow-water sim, Houdini **flowmaps** on rock, shoreline wetness field, lake-drain setpiece. DF full tech interview. | **~55%** as the uttered title. **Working surface ref.** |
+| *Horizon Forbidden West* | Weak name. | Often cited as best-in-class game water (rivers, puddles, coasts). | Water-quality runner-up if Hellblade II is the wrong name. |
+| *Red Dead Redemption 2* | **Redemption ≈ Penitent** (sense, not sound). | Excellent rivers and wet banks. | ~20% semantic. |
+| *Blasphemous* | Protagonist is the **Penitent One**. Exact word. | 2D pixel. Salt lake, mud relic. Not a 3D water material. | Name only. Ruled out as a one-to-one surface. |
+| *Penitent* (devmar, Godot 4) | Exact title. | Flooded maps, official 4.0 beta 2 still. Murky, not high-end. | Exact-name indie. Not the material bar. |
+| *Clair Obscur: Expedition 33* | Does not sound like Penitent. | Wet sheet on painted sand — but the owner assigned **Sandfire / Sandfall** to **sand**. | Moved to §10.2. |
 
-**Rejected:** *Pentiment* (2D manuscript, no water tech). *Penitence* (Unreal horror, no water reputation). Penumbra / Penrith / Palia / Dorfromantik. *Sand Land*, Sandfall RPG (Aldorlea), falling-sand toys (*Damp*, Magic Pixel). *Pen Pen TriIcelon* — **mistaken first guess**, kept only in §2.3.3.
+**Rejected for water:** *Pentiment*, *Penitence*, Penumbra, Penrith, *Pen Pen TriIcelon*, RTV lakes (tannin; wrong material).
 
-**Working pick for this plan:** Expedition 33. It is the only candidate that is widely known for water *and* shares Piñata’s realistic-surface / painterly-world split. If the owner meant the exact indie names instead, swap in Kmitt’s Godot water (look) and/or Penitent’s flooded volume (stage 3) — Q5.
+Do **not** vendor Hellblade II, Fluid Flux, or photogrammetry scans. Study only. Photogrammetry **bed** would kill the Piñata split; we steal **surface behaviour**.
 
-Do **not** vendor Expedition 33, *Sandfire*, *Penitent*, or *Blasphemous*. Study only.
+#### What Ninja Theory actually documented
 
-#### 2.3.1 Water study — *Clair Obscur: Expedition 33*
+[Digital Foundry interview](https://www.digitalfoundry.net/articles/digitalfoundry-2024-the-big-senuas-saga-hellblade-2-tech-interview) with Mark Slater-Tunstill (and the matching DF video). Reconstruction, not leaked source.
 
-Sandfall Interactive, Unreal Engine 5, ~30-person core team. Art direction is a **painted world** (the Paintress, Lumière) lit with **Lumen / Nanite / Virtual Shadow Maps**. Digital Foundry: software (SDF) Lumen, not hardware triangle Lumen; reflections are a bit diffused so SDF blobs stay quiet; Series S **drops Lumen reflections for SSR**. Bloom, shallow DoF, film grain, chromatic aberration are part of the look, not accidents ([DF console tech](https://www.digitalfoundry.net/articles/digitalfoundry-2025-clair-obscur-expedition-33-tech-review-ps5-pro-series-x-s)).
+- **Flowing water on rock:** Houdini tool exports Unreal meshes, bakes **flow maps**, chunks them into surface vs side flow, renders with UE **single-layer water**. One giant export was too expensive; they chunk so off-screen falls do not draw. Material + decal + scrolling shaders — water runs *down the rock*, not in one UV direction.
+- **Bodies of water:** marketplace **Fluid Flux** (Krystian Komisarek). 2D real-time shallow-water sim on a captured **height map**. Inject/remove water (the draining lake). Shoreline: height-map capture → wave speed/height params → **wetness**. Niagara (and audio blueprints) **read the same fluid data** so debris and sound match the wave, not a random loop.
+- Fluid Flux internals (public docs, not HB2 source): render targets for ground height, velocity/depth/foam, **height + wetness**. Wet-dry tracking. Do not vendor the plugin (UE, paid). Our analog is shader-global `wetness` + the ripple RT.
 
-Two different “waters” in the game. Only the first is a PetalWild pond analog.
+Iceland photogrammetry (370+ scans vs one in HB1) is how *their world* is one-to-one. Our **PondBed stays painted**. The surface is allowed to be the realistic half of the Piñata split.
 
-1. **Real water sheet** — Gestral Beach, coasts, caves, Esquie swim/dive on the Continent. Horizontal wet surface, sand readable in the shallows, characters and sky in the sheet.
-2. **Walkable ocean dungeon** — Flying Waters. You walk the seabed; kelp, coral, fish, and a surface far above. The “water” is the *environment* (volume, particles, painted coral), not a garden-pond shader. DF: “coralline environments that are underwater in every sense but literally.” Do **not** copy this as v1 parish-pond tech.
-
-Alexandre Breton (Sandfall TA) documented the water-adjacent toolkit: [paint shader + flowmaps](https://lealexandrebreton.artstation.com/projects/Zl9zOx), [waterfall](https://lealexandrebreton.artstation.com/projects) (Houdini: pick rocks to collide, place a start point, the fall generates), [buoyancy](https://lealexandrebreton.artstation.com/projects), opening coral / sponge, ice/snow shaders. Houdini Connect: procedural waterfalls and L-system corals ([talk](https://www.youtube.com/watch?v=-XNaPI9OTwY), [SideFX](https://www.sidefx.com/community/expedition-33-sandfall-interactive/)). Treat shader internals below as **reconstruction from footage + DF + those talks**, not leaked source.
-
-| Cue | What you see | Likely how (UE5, 2025) |
+| Cue | What you see | Take for our WaterSurface |
 | --- | --- | --- |
-| Surface vs bed (beach) | Wet **sheet** over painterly sand. The sheet is the realistic part; the sand is illustrative. | Water material on a plane / height field. Bed is the terrain (Nanite hero sand), seen because the sheet is clear — same split as Piñata / our WaterSurface + PondBed. |
-| Flying Waters | You are *inside* a painted sea. No pond plane at camera height. Light shafts, bubbles, fish, coral. | Volume + particles + painted meshes. PetalWild v1 is **not** this. Underwater flag in §4.2 is the later cousin. |
-| Sparkle | Tight sun glints, bloomed, especially grazing. Feels wetter than the painted rocks. | Specular into HDR + bloom (same idea as Eslami / Piñata). DoF and grain soften it; we already have glow and should **not** add UE grain to fake this. |
-| Reflections | Sky, cliffs, **characters** in still water. Soft, not mirror-sharp. Smooth metals show blobby SDF Lumen. Series S: SSR. | Lumen reflections on low roughness. **Godot analog:** probe + cheap custom SSR (v1) + planar (stage 2). We will not match SDF Lumen. Series S dropping to SSR is the same fallback we already planned. |
-| Transparency | Shallows: **sand is obvious**. Deeper: more hue, still not tannin-black. | Light absorption, strong Fresnel. Same “clear enough to read the bed” rule as Piñata. RTV murk would be wrong here too. |
-| Bed colour | Saturated, **painted** sand / coral / moss. Toy-adjacent, not photogrammetry grit. | Hero painted assets, not scan data. Matches PondBed. Nanite is how they spend triangles, not a look we copy. |
-| Foam / edges | Wet sand beaches; surf foam only where there is surf. Almost none in still shallows. | Wetness on the bed, not a white ring in the water shader. Same as Boulton’s sediment bank. |
-| Caustics / light | Moving bright hits on sand and on the sheet. Flying Waters: shafts through the “volume.” | Surface sparkle first. Optional bed caustic atlas second. Shafts are volumetric fog — **off** for our pond (see §6). |
-| Motion | Beach: small chop. Falls: long ribbons. Flying Waters: kelp/particles, not Gerstner swell. | Dual scrolling normals / flow. Waterfalls: Houdini mesh + VFX (Breton), not a pond Gerstner stack. |
-| Flow / paint | Viscous paint crawls on world surfaces. | Custom paint shader driven by **flowmaps** (Breton). That is our stage-2 canal language, not v1 still pond. |
-| Creatures | Esquie swims and later dives. Gestral Beach: parkour on logs in the water. | Breton **buoyancy** tool. Our `WaterBody.sample_height` / `is_submerged` is the Godot stand-in. Splashes are particles. |
+| Specular / wetness | Rocks and skin go **dark and sharp** when wet. Water itself is a tight, believable dielectric, not a toon sheet. | `roughness` ~0.04, HDR sparkle into glow (already Piñata). Global `wetness` darkens banks, stones, jelly feet. |
+| Flow | Water follows gravity on irregular rock, not a tiling scroll. | Stage 2: `WATER_FLOWMAP` on the canal and wet rock. v1 still pond can be dual normals. |
+| Shore | Wet band, foam only where there is actual motion. Particles and audio locked to the sim. | Wet sediment, not a foam ring (same as Boulton). Splash particles on `impulse`. |
+| Interaction | Lake level can change; debris rides the sim. | `WaterBody.impulse` / `sample_height`. Ripple RT is the cheap 2D heightfield cousin of Fluid Flux. We do **not** ship a draining-lake sim in v1. |
+| Underwater / volume | Present in HB2. | `WATER_UNDERWATER` later. Not v1. |
+| Photogrammetry grit | The *world* is scanned Iceland. | **Do not** put that under our water. Painted PondBed. |
 
-**Take for PetalWild:** Expedition 33 is the current-gen proof that **realistic wet water on a painterly world** reads as magic, not as a style clash. Copy the relationship (clear sparkly sheet, painted bed, wet banks, character reflections). Do not copy Lumen, Nanite, Houdini falls, walkable-ocean volumes, or the Paintress palette. Godot 4.8 Forward+ gets there with WaterSurface + PondBed + glow sparkle + probe/SSR, then planar.
+**Take for PetalWild:** Hellblade II is the **physical water sheet** (tight spec, flow, wetness field, heightfield interaction). Piñata is the **picture** you see through it. Godot: WaterSurface + glow sparkle + probe/SSR + ripple RT now; flowmaps and planar later. No Fluid Flux, no Lumen, no scanned mud.
 
-##### Footage and stills (links only)
-
-Copyrighted. Not copied into this repo.
+##### Footage (links only)
 
 | What | URL |
 | --- | --- |
-| DF console tech (Lumen / SSR on Series S, bloom/DoF as direction) | [article](https://www.digitalfoundry.net/articles/digitalfoundry-2025-clair-obscur-expedition-33-tech-review-ps5-pro-series-x-s), [video](https://www.youtube.com/watch?v=r8dwj_wLy0I) |
-| First-look gameplay, **Flying Waters** | [PlayStation Blog, 28 Aug 2024](https://blog.playstation.com/2024/08/28/new-clair-obscur-expedition-33-gameplay-fighting-and-exploring-the-flying-waters-region/). Walkthrough context: [IGN](https://www.ign.com/wikis/clair-obscur-expedition-33/Flying_Waters_Walkthrough), [Fextralife](https://expedition33.wiki.fextralife.com/Flying_Waters) |
-| Gestral Beach (actual water sheet, logs, shallows) | [IGN parkour guide](https://www.ign.com/wikis/clair-obscur-expedition-33/Gestral_Beach_1_-_Parkour_Guide) |
-| Breton paint shader / waterfall / buoyancy | [ArtStation index](https://lealexandrebreton.artstation.com/projects) |
-| Procedural waterfalls + coral | [Houdini Connect](https://www.youtube.com/watch?v=-XNaPI9OTwY), [SideFX](https://www.sidefx.com/community/expedition-33-sandfall-interactive/) |
-| Studio / engine facts | [Wikipedia](https://en.wikipedia.org/wiki/Clair_Obscur:_Expedition_33) |
+| DF tech interview (flowmaps, Fluid Flux, wetness) | [article](https://www.digitalfoundry.net/articles/digitalfoundry-2024-the-big-senuas-saga-hellblade-2-tech-interview) |
+| DF video breakdown | Search: *Inside Senua's Saga: Hellblade 2 - An Unreal Engine 5 Masterpiece* |
+| Fluid Flux (study the ideas, do not buy into the tree) | [docs](https://imaginaryblend.com/2025/01/10/fluid-flux-documentation/), [80.lv](https://80.lv/articles/fluid-flux-a-cool-water-simulation-system-for-unreal-engine) |
+| Iceland / photogrammetry context | [Xbox Wire, Wanderers](https://news.xbox.com/en-us/2024/05/20/hellblade-2-environmental-design-inspired-by-iceland/) |
 
-#### 2.3.2 Exact-name alternatives (if Expedition 33 is wrong)
+### 2.3 Closed name guesses (water)
 
-***Sandfire*** (Kmitt) — Godot souls-like, [2024 demo](https://kmitt.itch.io/sandfire-demo-2024). Inspired by SotC and *Blasphemous*, which is why someone might say “Penitent” and “Sandfire” in one breath. Water to study is the author’s public Godot work, not a lake in the demo:
-
-- [Stylized water shader](https://godotshaders.com/shader/stylized-water-shader/) (Godot 3, community Godot 4 ports): dual noise, depth-difference **edge foam**, `SCREEN_TEXTURE` refraction offset, scrolling normal, `ROUGHNESS` 0.1, `SPECULAR` 1, small vertex sine. Licence on that page is **not** MIT/CC0 — **do not vendor**; same ideas as Malido / our v1, which we write ourselves.
-- [RTVFX Sketch #49](https://realtimevfx.com/t/kmitt-sketch-49/19348): waterfall as **particles with a refraction material**, second system for foam/splash, ground splash = same material on a scrolling disc. Useful for a later fall or a chunky splash, not for the parish-pond sheet. Piñata already covers drink/wade splash; this is the Godot recipe.
-
-***Penitent*** (devmar) — Godot 4 third-person, post-doomsday. [Hitmarker](https://hitmarker.net/news/penitent-a-post-doomsday-demonic-game-by-a-solo-developer-519767): underwater level, water creatures. Devlog 19: maps that are **entirely flooded** ([YouTube](https://www.youtube.com/watch?v=DfKsxQaY63Y)). Later posts: murky indoor water (opacity, normals, still reflections). Official engine blog used a Penitent still as the **4.0 beta 2** illustration. Take: flooded *volume* and underwater post are stage 3 (`WATER_UNDERWATER`). Default **murk is the opposite** of v1 — same warning as RTV tannin.
-
-*Blasphemous* — keep only as the reason “Penitent” might have been said next to *Sandfire*. No 3D water to copy.
-
-#### 2.3.3 Mistaken first guess — *Pen Pen TriIcelon*
-
-Dreamcast penguin racer. Fit the old “Pen Pen Dorif” fragment; the owner has ruled it out. Leave it here so we do not rediscover it. Splash/drip notes in this plan now come from Piñata particles and, if needed, Kmitt’s refraction splash — not from Pen Pen. Wave Race: Blue Storm stays a planar/wake footnote for stage 2–3, not a named supporting title.
+- ***Pen Pen TriIcelon*** — first ASR (“Pen Pen Dorif”). Owner ruled it out. Splash now from Piñata particles.
+- Using ***Expedition 33*** as the water game — previous pass; owner has assigned Sandfall to **sand**.
+- *Wave Race: Blue Storm* — planar/wake footnote for stage 2–3, not a named ref.
 
 ## 3. What exists in PetalWild today
 
@@ -249,8 +227,9 @@ Transparent pass (`hint_screen_texture`, `hint_depth_texture`). **Environment SS
 | Reflection | `ssr_steps` (12–24), `ssr_travel`, `ssr_mix`, `ssr_edge_fade` | yes | |
 | Reflection | `planar_tex` | reserved black | Stage 2. |
 | Interaction | `ripple_tex`, `ripple_strength`, `ripple_rect` | yes | Distorts normals, not the bed albedo. |
-| Reserved | `flow_map`, `wave_displace_tex` | blank | |
-| Globals | `wind_dir`, `wind_strength` | shader globals | RTV-style. |
+| Reserved | `flow_map`, `wave_displace_tex` | blank | Hellblade-style flow on canal/wet rock, stage 2. |
+| Reserved | `deform_tex` | blank | Same RT family as `ripple_tex`; later snow/sand footprints (§10). |
+| Globals | `wind_dir`, `wind_strength`, `wetness` | shader globals | Shared weather. `snow_cover` reserved 0. RTV lakes taught us: **Environment SSR off** on transparent water. |
 
 Fragment order (surface):
 
@@ -272,7 +251,7 @@ This is half of v1. A photoreal bed will make the sparkly surface look like a pu
 | --- | --- |
 | `sediment_albedo` (sampler or colour) | Painted sand / moss. Saturated. Soft brush, not scan data. |
 | `sediment_tint` | Warm green-gold in shallows, slightly deeper olive in the bowl. |
-| `wetness` | Darken a band just above the waterline (Boulton’s sediment transition). |
+| `wetness` | Darken a band just above the waterline (Boulton’s sediment transition). Driven by global `wetness` + shoreline distance so snow/sand materials can read the same value later. |
 | `detail_scale` | Large, readable blobs. Toy scale. |
 | `caustic_tex`, `caustic_strength` | Optional additive, sampled in **bed XZ**, sun-masked. Secondary to surface sparkle. |
 
@@ -316,20 +295,21 @@ func depth_at(world_pos: Vector3) -> float
 func is_submerged(world_pos: Vector3, radius := 0.0) -> bool
 ```
 
-v1 height = plane Y + ripple. Waders (Bulrush) call `sample_height()`. Thrown jelly: one `impulse` + splash particles (Piñata-style; Kmitt-style refraction splash only if we want a chunkier hit). Rain: same RT. Land jellies still bounce the rim until a swim stage. Expedition 33’s buoyancy tool is the named analog of `sample_height` / `is_submerged`, not something we port.
+v1 height = plane Y + ripple. Waders (Bulrush) call `sample_height()`. Thrown jelly: one `impulse` + splash particles (Piñata-style). Rain: same RT. Land jellies still bounce the rim until a swim stage. Hellblade II’s Fluid Flux heightfield is the named analog of this RT, not something we port.
 
-Ripple: 256² compute (official [water_plane](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane), MIT) or a SubViewport blob. Distorts **surface normals** so sparkles break up around a wader. Do not ripple the bed albedo.
+Ripple: 256² compute (official [water_plane](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane), MIT) or a SubViewport blob. Distorts **surface normals** so sparkles break up around a wader. Do not ripple the bed albedo. The same blit pattern is reserved as `deform_tex` for snow compression and sand footprints (§10).
 
 ## 5. Roadmap
 
 | Stage | Add | Do not change |
 | --- | --- | --- |
 | **v1** | **PondBed + sparkly WaterSurface**, light absorption, mild refraction, probe + cheap SSR, ripple RT, splash | Profile fields, `WaterBody` API, plane + basin, world XZ UVs |
-| **2** | **Planar reflection** on the hero pond (Piñata creature copy; Expedition 33 character-in-water); wetness on feet/stones; more drip-off; flow map on the canal (Expedition 33 paint/flow language); optional bed caustics | Uniform names. Bind `planar_tex`. |
+| **2** | **Planar reflection** on the hero pond (Piñata creature copy); wetness on feet/stones (Hellblade wetness field); more drip-off; flow map on the canal (Hellblade rock-flow, not a tiling scroll); optional bed caustics | Uniform names. Bind `planar_tex`. |
 | **3** | 2–4 Gerstner tones; better SSR; underwater volume; LOD drops sparkle/SSR in Vale | `sample_height()` includes Gerstner |
 | **4** | FFT only for a Vale ocean ([2Retr0](https://github.com/2Retr0/GodotOceanWaves), [tessarakkt](https://github.com/tessarakkt/godot4-oceanfft), MIT) | Pond profiles stay on sparkle + plane |
+| **later** | Snow (RTV) and sand (Expedition 33) on the shared weather + `deform_tex` framework | §10. Do not rename v1 water uniforms. |
 
-RTV stays the Godot-lake checklist. Expedition 33 stays the modern “wet sheet on a painted world” check (not Lumen, not Flying Waters-as-pond). Kmitt/Penitent only if Q5 says the names were those indies. Wave Race sits with planar/wakes in stage 2–3. Piñata is the look bar for every stage: if a pass makes the bed photoreal or the surface matte, it failed.
+Hellblade II is the surface-physics check (tight wet spec, flow, wetness). Piñata is the look bar for every water stage: if a pass makes the bed photoreal or the surface matte, it failed. Snow and sand must keep the same globals and the same deform-RT idea.
 
 ## 6. Performance (Windows PC, Forward+)
 
@@ -359,8 +339,7 @@ Prefer an original PetalWild pair of shaders with our names. MIT/CC0 study only.
 | [godot-demo water_plane](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane) | **MIT** | Ripple RT. |
 | [smart_planar_reflector](https://github.com/KipJM/smart_planar_reflector) / [gd_planar_reflection](https://github.com/risingthumb/gd_planar_reflection) | **MIT** | Stage 2 planar. |
 | LesusX Gerstner, 2Retr0 / tessarakkt FFT, REBOOT16 SWE | **MIT** | Later stages. |
-| [kmitt91 stylized water](https://godotshaders.com/shader/stylized-water-shader/) | **not MIT/CC0** | Study depth-foam / screen refraction only. Rewrite; do not copy. |
-| Crest, Unity water, RTV PCK, Viva Piñata, Expedition 33, *Sandfire*, *Penitent* | proprietary | **Do not vendor.** |
+| Crest, Unity water, Fluid Flux, RTV PCK, Viva Piñata, Hellblade II, Expedition 33, *Sandfire*, *Penitent* | proprietary | **Do not vendor.** |
 
 No built-in WaterBody in 4.8-dev6.
 
@@ -370,7 +349,7 @@ No built-in WaterBody in 4.8-dev6.
 2. **Planar in v1 or 2?** Sparkle+bed can ship without it. The jelly reflection in the concept really wants planar. Prefer stage 2 unless you want the extra camera now.
 3. **Bed paint.** Shader-only sediment for v1, or an art-desk painted map before the shader lands?
 4. **Bowl vs plane.** Recommend plane + terrain basin. Confirm we drop the bowled water mesh.
-5. **Second supporting title.** Working pick is *Clair Obscur: Expedition 33* (Sandfall ≈ “Sandfire”, ~60%). If you meant the exact indie names, say so: Kmitt’s *Sandfire* (and/or *Blasphemous* / the Penitent One) and/or devmar’s *Penitent*. Pen Pen TriIcelon is closed.
+5. **Names.** Water surface = Hellblade II (~55%, “Penitent” / Senua). Sand = Expedition 33 / Sandfall (~65%, “Sandfire”). Snow = RTV (given). If Penitent was *Forbidden West* or *Redemption 2*, or Sandfire was Journey / Kmitt, say so. Pen Pen is closed.
 6. **Swim / underwater.** v1 is wading + splash. When does a jelly fully submerge?
 7. **HDRI** for the probe, or procedural sky for v1?
 8. **Rain ripples** on the same RT as character impulses?
@@ -379,10 +358,49 @@ No built-in WaterBody in 4.8-dev6.
 ## 9. Sources
 
 - Viva Piñata: Boulton SIGGRAPH 2007 tessellation PDF; GDC 2007 *Look of Viva Pinata* (Vault); Eslami Xbox 360 HDR PDF; Ed Bryan interview; E3 Water Park WMV; MobyGames / Giant Bomb / XboxAchievements stills; GameFAQs TiP water note; pinataisland pond page. Links in §2.1 and §2.1.1.
-- Road to Vostok: §2.2.
-- “Penitent” / “Sandfire” ID + water: §2.3. Expedition 33: DF tech article/video; Breton ArtStation (paint shader, waterfall, buoyancy); Houdini Connect / SideFX; IGN Flying Waters + Gestral Beach; Wikipedia (Sandfall, UE5). *Sandfire* (Kmitt): itch 2024 demo; godotshaders stylized water; RTVFX Sketch #49. *Penitent* (devmar): Godot 4.0 beta 2 blog; Devlog 19 flooded maps; Hitmarker underwater note. *Blasphemous*: name-only (Penitent One). Pen Pen TriIcelon: mistaken first guess, §2.3.3. Wave Race (planar/wake footnote): [Aguas](https://aguaspoints.com/2023/02/02/some-thoughts-on-nintendos-wave-race-blue-storm/), [IGN Blue Storm](https://www.ign.com/articles/2001/11/07/wave-race-blue-storm-2).
-- Godot: screen-reading shaders, [reflection probes](https://docs.godotengine.org/en/stable/tutorials/3d/global_illumination/reflection_probes.html), [compositor](https://docs.godotengine.org/en/stable/tutorials/rendering/compositor.html), issues 90094 / 93725, proposal 7274.
+- Hellblade II (water surface): §2.2. DF tech interview; Fluid Flux public docs (ideas only); Xbox Wire Iceland/photogrammetry.
+- Road to Vostok (snow, not water): §10.1. Site / Steam; shader globals from [dwoodruff83/RoadToVostokMods](https://github.com/dwoodruff83/RoadToVostokMods) architecture table — not a source dump.
+- Expedition 33 / Sandfall (sand): §10.2. DF; Breton ArtStation; Gestral Beach guides; Wikipedia. Journey sand (technique cousin): [Edwards GDC Vault](https://www.gdcvault.com/play/1017742/Sand-Rendering-in), [Zucconi](https://www.alanzucconi.com/2019/10/08/journey-sand-shader-1/).
+- Closed water guesses: §2.3. Wave Race (planar/wake footnote): [Aguas](https://aguaspoints.com/2023/02/02/some-thoughts-on-nintendos-wave-race-blue-storm/), [IGN Blue Storm](https://www.ign.com/articles/2001/11/07/wave-race-blue-storm-2).
+- Godot: screen-reading shaders, [reflection probes](https://docs.godotengine.org/en/stable/tutorials/3d/global_illumination/reflection_probes.html), [compositor](https://docs.godotengine.org/en/stable/tutorials/rendering/compositor.html), issues 90094 / 93725, proposal 7274. Snow deform pattern: [goeshard](https://goeshard.org/2025/05/20/snow-deformation/).
 - Technique background (not v1): Tessendorf *Simulating Ocean Water*; GPU Gems ch. 1 Gerstner; Source/HL2 planar water as the 360-era cousin of Piñata’s likely reflection path.
 - Shaders / addons: §7.
 
 PetalWild files: `shaders/water.gdshader`, `scripts/world/dressing.gd` `_water`, `scripts/world/layout.gd` pond helpers, `scripts/world/atmosphere.gd`, `scripts/creatures/jelly.gd` `_stand_y`, `project.godot`, `docs/ENGINE_VERSION.md`.
+
+## 10. Future materials (snow, sand) and shared weather
+
+Not v1. Names and a Godot sketch so water, snow, and sand do not grow three different weather systems.
+
+### 10.0 Shared framework
+
+One set of **shader globals** (RTV already does this in Godot 4.6.1: `Winter`, `Snow`, `Rain`, `Wind`). Ours, with our names:
+
+| Global | v1 water | Later snow | Later sand |
+| --- | --- | --- | --- |
+| `wind_dir`, `wind_strength` | chop / sparkle breakup | drift, sparkle anisotropy | ripple direction, glitter |
+| `wetness` | banks, stones, jelly feet | slush, darker snow | dark damp sand at the waterline |
+| `snow_cover` | 0 | accumulation 0–1 | 0 |
+| `rain` | drives ripple impulses | wet snow | crater pocks |
+
+One **interaction heightfield** idea, three bindings: water `ripple_tex` (v1), snow compression, sand footprints. Same 256² compute/SubViewport blit around the jelly, world-XZ. `WaterBody.impulse` grows a generic `GroundImpulse(pos, vel, radius, medium)` later; do not put it in `jelly.gd` now.
+
+Garden materials (grass, PondBed, future SnowSheet, SandSheet) all sample `wetness` and the deform RT they care about. Feature flags stay per-profile so a Vale snow pass cannot rename pond uniforms.
+
+### 10.1 Snow — *Road to Vostok*
+
+Finnish-border survival FPS. **Godot 4.6.1 Forward+**, same renderer family as us. Owner: this is the **snow material**, not the lake. Public: summer/winter modes, `Snow` / `Winter` / `Rain` / `Wind` shader globals, items freeze, water accelerates freeze ([Steam](https://store.steampowered.com/app/1963610/Road_to_Vostok/), [site](https://roadtovostok.com/), architecture names only at [RoadToVostokMods](https://github.com/dwoodruff83/RoadToVostokMods)). Screenshots: [roadtovostok.com/screenshots](https://roadtovostok.com/screenshots). Do not vendor the PCK.
+
+**What makes it convincing:** snow is a **volume you walk through**, not a white albedo. Cover sits on every material (ground, roof, pine, crate) from one winter switch. It sparkles like a dielectric (tight spec, same family as our water glints). Footfalls and bodies leave **lasting compression**. Weather is globals, not a unique shader per mesh. Lakes go dark and should be ignored for our water colour.
+
+**Godot approach (when we do it):** a `SnowSheet` (or a snow layer in the terrain shader) that adds a world-XZ cover using `snow_cover`, sparkles into the existing **glow** (reuse water sparkle code with a different threshold), and displaces/occludes via `deform_tex` written by an ortho blit of jelly contact (same pattern as [goeshard snow deform](https://goeshard.org/2025/05/20/snow-deformation/), MIT-study, rewrite). `wetness` turns cover to slush near the pond. No RTV assets, no extra Environment SSR.
+
+### 10.2 Sand — *Clair Obscur: Expedition 33* (“Sandfire”)
+
+**Sandfire ≈ Sandfall.** High-end UE5, painted world, Gestral Beach dunes and shallows, Flying Waters seabed sand. Working pick **~65%**. Exact-title alt: Kmitt’s Godot *Sandfire* (desert souls-like, not a sand-shader showcase). Technique cousin, not the named ref: *Journey* ([Edwards GDC](https://www.gdcvault.com/play/1017742/Sand-Rendering-in) — glitter specular, ocean specular, diffuse contrast, detail heightmaps). *Dune: Awakening* is one-to-one dune sim if we ever need storms; weaker name. Do not vendor any of them.
+
+**What makes it convincing (E33):** sand reads as **illustrative pigment that still lights like grains** — saturated, readable, not photogrammetry grit (same split as PondBed). In shallows you see it **through** water. Beaches are broad, toy-scale dunes, not a noise tile. Journey’s extra lesson, which E33’s sparkle shares in spirit: sand wants a **glitter lobe** and a wide “ocean” spec so it feels a little liquid, which is what makes footprints and surfing satisfying.
+
+**Godot approach (when we do it):** a `SandSheet` on world XZ: painted/procedural albedo (art desk, no E33 pixels), glitter + ocean spec into glow (Edwards/Zucconi ideas, our code), `wetness` darkening at the pond, `deform_tex` for jelly footprints and thrown-jelly craters (same RT as snow, different restore rate — sand slumps back slower than snow, faster than a puddle ripple). Wind scrolls a fine normal. Keep it toy-scale; a Dune storm sim is out of scope.
+
+Q5 if this is the wrong Sandfire.
