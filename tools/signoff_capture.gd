@@ -74,12 +74,14 @@ func _run() -> void:
 		cam.make_current()
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
+		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL")
 		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
 		_hide_cam06_clutter(scene, false)
+		_hide_cam02_jelly(scene, false)
 		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
 		if img.get_width() != HONEST.x or img.get_height() != HONEST.y:
@@ -388,6 +390,13 @@ func _hide_cam06_clutter(scene: Node, on: bool) -> void:
 		elif mesh_i.has_meta("signoff_hid_sphere"):
 			mesh_i.visible = true
 			mesh_i.remove_meta("signoff_hid_sphere")
+
+func _hide_cam02_jelly(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	var jelly: Node = scene.find_child("SignoffJelly", true, false)
+	if jelly != null:
+		jelly.visible = not on
 
 func _hide_cam03_bench(scene: Node, on: bool) -> void:
 	if scene == null:
