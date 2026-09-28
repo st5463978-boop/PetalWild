@@ -5,6 +5,18 @@ const Kit = preload("res://scripts/presentation/prop_kit.gd")
 
 var _rng := RandomNumberGenerator.new()
 
+static func load_tex(path: String) -> Texture2D:
+	if path == "" or not FileAccess.file_exists(path):
+		return null
+	if ResourceLoader.exists(path):
+		var loaded: Variant = load(path)
+		if loaded is Texture2D:
+			return loaded
+	var img := Image.new()
+	if img.load(path) != OK:
+		return null
+	return ImageTexture.create_from_image(img)
+
 func build(parent: Node3D) -> void:
 	_rng.seed = 14017
 	_terrain(parent)
@@ -44,16 +56,14 @@ func _terrain(parent: Node3D) -> void:
 	node.mesh = mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/terrain.gdshader")
-	material.set_shader_parameter("grass_tex", load("res://assets/textures/garden/lawn_meadow_albedo.png"))
-	material.set_shader_parameter("clover_tex", load("res://assets/textures/garden/lawn_clover_albedo.png"))
-	material.set_shader_parameter("dirt_tex", load("res://assets/textures/garden/dirtpath_albedo.png"))
-	material.set_shader_parameter("flagstone_tex", load("res://assets/textures/garden/flagstone_albedo.png"))
-	material.set_shader_parameter("gravel_tex", load("res://assets/textures/garden/gravel_albedo.png"))
-	material.set_shader_parameter("splat_tex", load("res://assets/terrain/garden_splat.png"))
-	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"):
-		material.set_shader_parameter("grass_nrm", load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"))
-	if ResourceLoader.exists("res://assets/textures/detail/B10_flagstone_nrm.png"):
-		material.set_shader_parameter("flag_nrm", load("res://assets/textures/detail/B10_flagstone_nrm.png"))
+	material.set_shader_parameter("grass_tex", load_tex("res://assets/textures/garden/lawn_meadow_albedo.png"))
+	material.set_shader_parameter("clover_tex", load_tex("res://assets/textures/garden/lawn_clover_albedo.png"))
+	material.set_shader_parameter("dirt_tex", load_tex("res://assets/textures/garden/dirtpath_albedo.png"))
+	material.set_shader_parameter("flagstone_tex", load_tex("res://assets/textures/garden/flagstone_albedo.png"))
+	material.set_shader_parameter("gravel_tex", load_tex("res://assets/textures/garden/gravel_albedo.png"))
+	material.set_shader_parameter("splat_tex", load_tex("res://assets/terrain/garden_splat.png"))
+	material.set_shader_parameter("grass_nrm", load_tex("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"))
+	material.set_shader_parameter("flag_nrm", load_tex("res://assets/textures/detail/B10_flagstone_nrm.png"))
 	node.material_override = material
 	node.name = "Terrain"
 	parent.add_child(node)

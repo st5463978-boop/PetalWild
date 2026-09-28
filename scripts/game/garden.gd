@@ -10661,12 +10661,10 @@ func _boot_plot_soil() -> void:
 			plot_cell_tex[key] = tex
 			var material := ShaderMaterial.new()
 			material.shader = load("res://shaders/bed_soil.gdshader")
-			material.set_shader_parameter("soil_tex", load("res://assets/textures/garden/soil_albedo.png"))
-			material.set_shader_parameter("mulch_tex", load("res://assets/textures/garden/mulch_albedo.png"))
-			if ResourceLoader.exists("res://assets/textures/detail/B01_soil_nrm.png"):
-				material.set_shader_parameter("soil_nrm", load("res://assets/textures/detail/B01_soil_nrm.png"))
-			if ResourceLoader.exists("res://assets/textures/detail/B02_tilled_nrm.png"):
-				material.set_shader_parameter("tilled_nrm", load("res://assets/textures/detail/B02_tilled_nrm.png"))
+			material.set_shader_parameter("soil_tex", GardenDressing.load_tex("res://assets/textures/garden/soil_albedo.png"))
+			material.set_shader_parameter("mulch_tex", GardenDressing.load_tex("res://assets/textures/garden/mulch_albedo.png"))
+			material.set_shader_parameter("soil_nrm", GardenDressing.load_tex("res://assets/textures/detail/B01_soil_nrm.png"))
+			material.set_shader_parameter("tilled_nrm", GardenDressing.load_tex("res://assets/textures/detail/B02_tilled_nrm.png"))
 			material.set_shader_parameter("cell_state", tex)
 			var origin := GardenLayout.plot_origin(px * GardenLayout.COLS, pz * GardenLayout.ROWS)
 			material.set_shader_parameter("plot_origin", origin)
