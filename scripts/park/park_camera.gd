@@ -4,14 +4,14 @@ extends Node3D
 enum Mode { RING, BUILDER, POND_EDGE, FREE }
 
 var mode: int = Mode.RING
-var yaw := -0.62
-var pitch := 0.88
-var distance := 24.0
-var pivot := Vector3(0.35, 0.4, 0.15)
-var target_yaw := -0.62
-var target_pitch := 0.88
-var target_distance := 24.0
-var target_pivot := Vector3(0.35, 0.4, 0.15)
+var yaw := -0.28
+var pitch := 0.70
+var distance := 20.5
+var pivot := Vector3(0.4, 0.45, -0.2)
+var target_yaw := -0.28
+var target_pitch := 0.70
+var target_distance := 20.5
+var target_pivot := Vector3(0.4, 0.45, -0.2)
 var camera: Camera3D
 var intro := 0.0
 var dof_on := false
@@ -35,8 +35,8 @@ func build() -> void:
 	camera.attributes = _attrs
 	add_child(camera)
 	set_mode(Mode.RING)
-	distance = 32.0
-	pitch = 1.05
+	distance = 30.0
+	pitch = 0.95
 	intro = 0.0
 
 
@@ -45,29 +45,37 @@ func set_mode(next: int) -> void:
 	intro = 1.0
 	match mode:
 		Mode.RING:
-			target_yaw = -0.62
-			target_pitch = 0.88
-			target_distance = 24.0
-			target_pivot = Vector3(0.35, 0.4, 0.15)
-			camera.fov = 42.0
+			target_yaw = -0.28
+			target_pitch = 0.70
+			target_distance = 20.5
+			target_pivot = Vector3(0.4, 0.45, -0.2)
+			camera.fov = 44.0
 		Mode.BUILDER:
-			target_yaw = 0.04
-			target_pitch = 1.22
-			target_distance = 28.5
-			target_pivot = Vector3(0.0, 0.15, 0.4)
-			camera.fov = 40.0
+			target_yaw = 0.06
+			target_pitch = 1.18
+			target_distance = 26.0
+			target_pivot = Vector3(0.0, 0.12, 0.2)
+			camera.fov = 38.0
 		Mode.POND_EDGE:
-			target_yaw = 0.92
-			target_pitch = 0.12
-			target_distance = 5.6
-			target_pivot = Vector3(0.25, 0.22, 0.15)
-			camera.fov = 55.0
+			target_yaw = 0.12
+			target_pitch = 0.13
+			target_distance = 6.4
+			target_pivot = Vector3(0.15, 0.16, 0.85)
+			camera.fov = 52.0
 		Mode.FREE:
 			free_pos = camera.global_position
 			free_yaw = yaw
 			free_pitch = pitch
 			camera.fov = 55.0
 	_apply_dof()
+
+
+func snap() -> void:
+	intro = 1.0
+	yaw = target_yaw
+	pitch = target_pitch
+	distance = target_distance
+	pivot = target_pivot
 
 
 func cycle() -> void:
@@ -111,8 +119,8 @@ func _process(delta: float) -> void:
 	if intro < 1.0:
 		intro = minf(1.0, intro + delta * 0.32)
 		var t := smoothstep(0.0, 1.0, intro)
-		target_distance = lerpf(32.0, 24.0, t)
-		target_pitch = lerpf(1.05, 0.88, t)
+		target_distance = lerpf(30.0, 20.5, t)
+		target_pitch = lerpf(0.95, 0.70, t)
 	if mode == Mode.FREE:
 		_free_move(delta)
 		return

@@ -7,7 +7,7 @@ uniform sampler2D arm_tex : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 tint : source_color = vec3(1.0);
 uniform float uv_scale = 0.55;
 uniform float normal_strength = 0.7;
-uniform float wrap = 0.28;
+uniform float wrap = 0.55;
 
 varying vec3 world_pos;
 
@@ -30,5 +30,5 @@ void fragment() {
 	NORMAL_MAP_DEPTH = normal_strength;
 	// wrap keeps lawn from going muddy on the shade side
 	float ndl = clamp(dot(NORMAL, vec3(0.22, 0.94, 0.18)), 0.0, 1.0);
-	EMISSION = alb * wrap * (1.0 - ndl) * 0.12;
+	EMISSION = alb * wrap * (1.0 - ndl) * 0.22;
 }

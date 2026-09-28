@@ -1,11 +1,11 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
-uniform vec3 deep_color : source_color = vec3(0.08, 0.38, 0.42);
-uniform vec3 shallow_color : source_color = vec3(0.32, 0.78, 0.70);
-uniform vec3 sparkle_color : source_color = vec3(0.95, 0.88, 0.62);
-uniform float wave_height = 0.028;
-uniform float caustic_strength = 0.22;
+uniform vec3 deep_color : source_color = vec3(0.10, 0.42, 0.48);
+uniform vec3 shallow_color : source_color = vec3(0.28, 0.72, 0.68);
+uniform vec3 sparkle_color : source_color = vec3(0.95, 0.90, 0.68);
+uniform float wave_height = 0.012;
+uniform float caustic_strength = 0.16;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 uniform bool use_refraction = false;
 
@@ -22,10 +22,10 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 n_uv = world_pos.xz * 0.42;
-	float n1 = sin(n_uv.x * 7.0 + TIME * 1.55) * cos(n_uv.y * 5.5 - TIME * 1.2);
-	float n2 = sin((n_uv.x + n_uv.y) * 9.5 + TIME * 2.05);
-	vec3 nrm = vec3(n1 * 0.22, 1.0, n2 * 0.18);
+	vec2 n_uv = world_pos.xz * 0.28;
+	float n1 = sin(n_uv.x * 3.4 + TIME * 0.85) * cos(n_uv.y * 2.8 - TIME * 0.7);
+	float n2 = sin((n_uv.x + n_uv.y) * 4.6 + TIME * 1.05);
+	vec3 nrm = vec3(n1 * 0.12, 1.0, n2 * 0.1);
 	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 2.35);
 	vec3 water = mix(deep_color, shallow_color, clamp(fres * 0.85 + 0.12, 0.0, 1.0));
 	vec3 col = water;
@@ -45,5 +45,5 @@ void fragment() {
 	EMISSION = sparkle_color * spark * 0.28 + vec3(0.45, 0.72, 0.55) * caustic * caustic_strength + shallow_color * fres * 0.08;
 	ALPHA = mix(0.88, 0.96, fres);
 	NORMAL_MAP = vec3(n1 * 0.5 + 0.5, n2 * 0.5 + 0.5, 1.0);
-	NORMAL_MAP_DEPTH = 0.55;
+	NORMAL_MAP_DEPTH = 0.22;
 }

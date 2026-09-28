@@ -29,17 +29,17 @@ func load_all() -> void:
 		PH + "leafy_grass/leafy_grass_diff_1k.jpg",
 		PH + "leafy_grass/leafy_grass_nor_gl_1k.jpg",
 		PH + "leafy_grass/leafy_grass_arm_1k.jpg",
-		Color("679428"),
-		0.48,
-		0.62
+		Color("7aa832"),
+		0.42,
+		0.55
 	)
 	soil = _terrain(
 		PH + "flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg",
 		PH + "flower_scattered_dirt/flower_scattered_dirt_nor_gl_1k.jpg",
 		PH + "flower_scattered_dirt/flower_scattered_dirt_arm_1k.jpg",
-		Color("3d2c20"),
-		0.95,
-		0.72
+		Color("5c4330"),
+		0.85,
+		0.62
 	)
 	gravel = _terrain(
 		PH + "gravel/gravel_diff_1k.jpg",
@@ -118,15 +118,15 @@ func load_all() -> void:
 		0.92
 	)
 	hedge = StandardMaterial3D.new()
-	hedge.albedo_color = Color("3d7725")
-	hedge.roughness = 0.82
+	hedge.albedo_color = Color("4f8a2e")
+	hedge.roughness = 0.78
 	hedge.vertex_color_use_as_albedo = true
-	if ResourceLoader.exists(PH + "leafy_grass/leafy_grass_diff_1k.jpg"):
-		hedge.albedo_texture = load(PH + "leafy_grass/leafy_grass_diff_1k.jpg")
+	if ResourceLoader.exists(PH + "forest_leaves_03/forest_leaves_03_diff_1k.jpg"):
+		hedge.albedo_texture = load(PH + "forest_leaves_03/forest_leaves_03_diff_1k.jpg")
 		hedge.normal_enabled = true
-		hedge.normal_texture = load(PH + "leafy_grass/leafy_grass_nor_gl_1k.jpg")
-		hedge.normal_scale = 0.55
-	hedge.uv1_scale = Vector3(2.2, 2.2, 2.2)
+		hedge.normal_texture = load(PH + "forest_leaves_03/forest_leaves_03_nor_gl_1k.jpg")
+		hedge.normal_scale = 0.5
+	hedge.uv1_scale = Vector3(1.6, 1.6, 1.6)
 	glass = StandardMaterial3D.new()
 	glass.albedo_color = Color(0.62, 0.78, 0.74, 0.28)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

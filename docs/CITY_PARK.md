@@ -81,6 +81,21 @@ This scene does **not** re-enable `game/` as the running game. It copies the rin
 
 Character art is still incoming: `jelly_spawn` and `veg_spawn` are ground rings, not blob stand-ins. Requests live in `art_desk/requests/PETAL-08-10*.yaml`.
 
+## Honest gaps vs the three concepts
+
+These 1920×1080 frames are llvmpipe / OpenGL3. Forward+ (SDFGI, volumetric sunbeams, SSR, DOF) is wired for a real GPU and will not show in VM captures.
+
+- Kenney Nature Kit has no colormap in this tree, so trees are re-tinted green low-poly, not photoreal willows/oaks.
+- Gazebo, greenhouse, clock tower and townhouses are procedural PBR boxes, not hero-sculpted meshes.
+- The wood bridge is a pillow-plank arch, not the carved stone/timber footbridge in the concepts.
+- Lily pads are discs plus Kenney meshes; pink blooms are spheres until `PETAL-08-103`.
+- Iron railings and the golden-hour willow curtain are lighter than concept 2.
+- Jellies and veg folk are spawn rings, not characters (`PETAL-08-101`, `102`).
+- Builder view is a high orbit, not a locked orthographic Sims camera.
+- Square plots read, but the stone edging is simpler than the concept's pillow-bevelled beds.
+
+Captures: `docs/screenshots/city-park/park_ring.png`, `park_builder.png`, `park_pond_edge.png`.
+
 ## Credits
 
 See `docs/CITY_PARK_CREDITS.md` and the root `CREDITS.md`.
