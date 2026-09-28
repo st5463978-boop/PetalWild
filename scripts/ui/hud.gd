@@ -634,13 +634,15 @@ func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.pressed.connect(on_press)
+	button.clip_contents = false
 	_skin_slot(button, false)
-	var key_label := ThemeKit.outline_label(key, 14)
+	var key_label := ThemeKit.outline_label(key, 15, ThemeKit.PARCHMENT, 5)
 	key_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	key_label.offset_left = 7
-	key_label.offset_top = 3
-	key_label.offset_right = 28
-	key_label.offset_bottom = 22
+	key_label.offset_left = 16
+	key_label.offset_top = 12
+	key_label.offset_right = 42
+	key_label.offset_bottom = 32
+	key_label.z_index = 8
 	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(key_label)
 	return button
