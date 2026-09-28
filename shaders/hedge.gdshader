@@ -29,16 +29,18 @@ void fragment() {
 	vec3 n = normalize(NORMAL);
 	vec3 col = triplanar_col(albedo_tex, world_pos, n);
 	float h = clamp(height_mask, 0.0, 1.0);
-	vec3 base_mul = vec3(0.043, 0.365, 0.071);
-	col *= mix(base_mul, vec3(1.0), mix(0.55, 1.0, h));
-	col = mix(col, vec3(0.435, 0.800, 0.220), h * h * 0.16);
+	// Dark olive bases, quieter crown. Keep the pillow value, drop the lime.
+	vec3 base_mul = vec3(0.055, 0.16, 0.06);
+	vec3 top_mul = vec3(0.42, 0.50, 0.28);
+	col *= mix(base_mul, top_mul, mix(0.22, 1.0, h));
+	col = mix(col, vec3(0.30, 0.38, 0.16), h * h * 0.10);
 	vec3 nn = triplanar_col(nrm_tex, world_pos, n) * 2.0 - 1.0;
 	NORMAL = normalize(n + vec3(nn.x, nn.y, 0.0) * nrm_strength);
 	ALBEDO = col;
-	ROUGHNESS = 0.8;
-	SPECULAR = 0.18;
-	BACKLIGHT = vec3(0.19, 0.31, 0.08);
-	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.2) * 0.08;
+	ROUGHNESS = 0.84;
+	SPECULAR = 0.14;
+	BACKLIGHT = vec3(0.12, 0.20, 0.08);
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.2) * 0.05;
 	float top = smoothstep(0.6, 1.0, NORMAL.y);
-	EMISSION = vec3(0.808, 0.898, 0.992) * rim * (1.0 + top);
+	EMISSION = vec3(0.62, 0.58, 0.42) * rim * (1.0 + top * 0.4);
 }

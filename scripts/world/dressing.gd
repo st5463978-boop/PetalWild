@@ -774,7 +774,7 @@ func _hedge_volume(parent: Node3D) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
-	material.set_shader_parameter("tint", Color("#3a7a32"))
+	material.set_shader_parameter("tint", Color("#3a4f22"))
 	material.set_shader_parameter("gain", 0.58)
 	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false, [], true)
 
@@ -1120,7 +1120,7 @@ func _groundcover(parent: Node3D) -> void:
 			continue
 		var y := GardenLayout.height_at(x, z)
 		var scale := _rng.randf_range(0.4, 1.1)
-		var tint := Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf())
+		var tint := Color("#2a4a24").lerp(Color("#6a7a38"), _rng.randf())
 		if z > 9.0 and _north_notch(x, true):
 			continue
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
@@ -1186,7 +1186,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 		var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 		var scale := rng.randf_range(0.55, 0.9)
 		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.32, 0.5), scale)), Vector3(x, y, z)))
-		colors.append(Color("#3a7a34").lerp(Color("#8fb84a"), rng.randf() * 0.45))
+		colors.append(Color("#2f4a22").lerp(Color("#6a7a38"), rng.randf() * 0.45))
 		customs.append(Color(rng.randf(), 0.15, 0.0, 1.0))
 		if blooms.size() < 1100 and rng.randf() > 0.45:
 			var tint: Color = palette[rng.randi_range(0, palette.size() - 1)]

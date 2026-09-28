@@ -30,6 +30,11 @@ float vnoise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+float wall_ao(vec2 p, float axis, float lo, float hi, float width) {
+	float on = step(lo, p.y) * step(p.y, hi);
+	return (1.0 - smoothstep(0.0, width, abs(p.x - axis))) * on;
+}
+
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -42,9 +47,24 @@ void fragment() {
 	vec3 grass_b = texture(grass_tex, uv_b).rgb;
 	vec3 grass = mix(grass_a, grass_b, 0.5);
 	float clover_m = step(0.75, vnoise(uv / 3.0));
-	grass = mix(grass, texture(clover_tex, uv / 2.0).rgb, clover_m * 0.28);
-	float macro = mix(0.94, 1.06, vnoise(uv / 5.4));
-	grass *= macro;
+	grass = mix(grass, texture(clover_tex, uv / 2.0).rgb, clover_m * 0.22);
+	float g = dot(grass, vec3(0.30, 0.50, 0.20));
+	grass = mix(vec3(g), grass, 0.62) * vec3(0.78, 0.86, 0.48);
+	float patch = mix(0.84, 1.08, vnoise(uv / 2.4));
+	float lane = fract(uv.x * 0.68 + vnoise(vec2(floor(uv.x * 0.68), 0.2)) * 0.12);
+	float mow = mix(0.88, 1.05, smoothstep(0.0, 0.18, lane) * (1.0 - smoothstep(0.48, 0.66, lane)));
+	float macro = mix(0.92, 1.05, vnoise(uv / 5.4));
+	grass *= patch * mow * macro;
+	float ao = 0.0;
+	ao = max(ao, wall_ao(uv, -13.6, -10.1, 8.1, 0.7));
+	ao = max(ao, wall_ao(uv, 12.8, -10.1, 8.1, 0.7));
+	ao = max(ao, wall_ao(vec2(uv.y, uv.x), -9.9, -13.9, 13.1, 0.7));
+	ao = max(ao, wall_ao(vec2(uv.y, uv.x), 7.9, -13.9, 13.1, 0.7));
+	ao = max(ao, wall_ao(uv, -8.55, -6.9, 3.5, 0.55));
+	ao = max(ao, wall_ao(uv, 3.85, -6.9, 3.5, 0.55));
+	ao = max(ao, wall_ao(vec2(uv.y, uv.x), -6.55, -8.9, 4.2, 0.55));
+	ao = max(ao, wall_ao(vec2(uv.y, uv.x), 3.2, -8.9, 4.2, 0.55));
+	grass *= mix(1.0, 0.55, ao);
 	vec2 splat_uv = (uv - splat_origin_size.xy) / splat_origin_size.zw;
 	vec3 splat = texture(splat_tex, splat_uv).rgb;
 	vec3 flag = texture(flagstone_tex, uv / 1.5).rgb * vec3(0.78, 0.74, 0.68);
@@ -52,7 +72,7 @@ void fragment() {
 	vec3 grav = texture(gravel_tex, uv).rgb * vec3(0.86, 0.82, 0.74);
 	float luma = dot(flag, vec3(0.3, 0.5, 0.2));
 	float moss_amt = (1.0 - smoothstep(0.35, 0.55, luma)) * splat.r;
-	flag = mix(flag, vec3(0.45, 0.45, 0.27), moss_amt * 0.45);
+	flag = mix(flag, vec3(0.40, 0.42, 0.24), moss_amt * 0.45);
 	vec3 col = grass;
 	col = mix(col, flag, clamp(splat.r, 0.0, 1.0));
 	col = mix(col, dirt, clamp(splat.g, 0.0, 1.0));
@@ -67,5 +87,5 @@ void fragment() {
 	ROUGHNESS = mix(0.85, 0.75, splat.r);
 	SPECULAR = 0.25;
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.4) * 0.02;
-	EMISSION = vec3(0.72, 0.62, 0.48) * rim;
+	EMISSION = vec3(0.62, 0.54, 0.40) * rim;
 }
