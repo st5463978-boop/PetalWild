@@ -19,6 +19,7 @@ PetalWild code is MIT. Third-party assets keep their own licences. Presence in t
 | TiP-Recomp | RED for this project | no-AI policy | Not fetched, not analysed |
 | Cities: Skylines topic | RED if assets | proprietary | Genre research only |
 | Supplied concept paintings | project art | supplied by the creative director | `docs/reference/petalwild_target_*.png` |
+| Marble/gold HUD kit | GREEN | CC0 1.0 / project-owned generated art | `assets/ui/kit/` |
 
 YELLOW (CC-BY) : none accepted this wave.
 

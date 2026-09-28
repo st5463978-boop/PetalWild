@@ -21,4 +21,4 @@ The docs were written on the box and cite box paths. In this repo use:
 - `/workspace/petalwild-artdesk/visual_target/refs/petalwild_target_garden_02.png` -> `docs/art/refs/petalwild_target_garden_02.png`
 - Original "playable" snapshot: `docs/screenshots/petalwild_overview.png`
 - Kenney / AssetQuest / Poly Haven PBR paths cited in the docs already exist in this repo under `assets/third_party/` and `third_party/incoming/`.
-Anything else under `/workspace/...` or `/home/box/...` is NOT available in the repo (other DaVinci props/concepts, Higgsfield, staging contact sheets). The UI kit is not included yet.
+Anything else under `/workspace/...` or `/home/box/...` is NOT available in the repo (other DaVinci props/concepts, Higgsfield, staging contact sheets). The marble/gold HUD kit is in `assets/ui/kit/` (CC0, project-owned generated art).

@@ -1,0 +1,5 @@
+PetalWild marble/gold HUD kit (panel, topbar, slots, tools, weather badge, petal icon).
+Source: generated in-house for PetalWild (project-owned generated art) and committed
+from the art-desk tarball `petalwild_ui_kit.tar.gz` on 2026-09-28.
+Licence: CC0 1.0 / project-owned; free to use, modify and ship in PetalWild.
+9-slice margins live in ui_kit_margins.json. Style notes in UI_STYLE.md.
