@@ -23,6 +23,20 @@ Poly Haven's licence page states that assets on the site are CC0: https://polyha
 
 Licence files inside the Kenney zips were kept next to the packs.
 
+City Park extras, 28 Sep 2026, CC0, 1K JPG (albedo + nor_gl + ARM unless noted). Listed file-by-file in `docs/CITY_PARK_CREDITS.md`.
+
+| Name | Source | Use |
+| --- | --- | --- |
+| cobblestone_floor_13 | https://polyhaven.com/a/cobblestone_floor_13 | Streets, flag paths |
+| gravel | https://polyhaven.com/a/gravel | Ring gravel |
+| rocks_ground_02 | https://polyhaven.com/a/rocks_ground_02 | Pond rim (`_col` albedo) |
+| brick_wall_001 | https://polyhaven.com/a/brick_wall_001 | Townhouses (`_diffuse` albedo) |
+| roof_09 | https://polyhaven.com/a/roof_09 | Roofs, gazebo |
+| wood_planks | https://polyhaven.com/a/wood_planks | Timber |
+| rusty_metal_02 | https://polyhaven.com/a/rusty_metal_02 | Lamps, railings |
+
+Generated originals: `assets/park/generated/` (clock face, awning stripes).
+
 Not downloaded: CC-BY OpenGameArt packs, large CC0 park ambiences, Quaternius Drive folders, ambientCG sets over the size budget, Kenney Fantasy Town.
 
 Nothing from Viva Piñata, Cities: Skylines, Nintendo, or Jelly-Baby was copied.

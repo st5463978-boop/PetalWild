@@ -1,0 +1,13 @@
+id: PETAL-08-102
+pass: PETAL-08
+kind: image
+subject: "Pixar/Ghibli veg folk for City Park: onion, pea, carrot, tomato, cabbage. Whole body is the vegetable, real skin, appealing faces, nub limbs, 0.9–1.1 m. Turnarounds on transparent."
+style: "Halfway toy/real. VISUAL_TARGET 3.7. No human mannequin, no grotesque."
+size: 2048x2048
+count: 5
+priority: high
+target: assets/art/images/PETAL-08-102/veg_folk_turnaround.png
+status: requested
+due: 2026-10-05
+refs:
+  - docs/CITY_PARK.md

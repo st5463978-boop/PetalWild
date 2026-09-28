@@ -1,0 +1,13 @@
+id: PETAL-08-104
+pass: PETAL-08
+kind: image
+subject: "Weeping willow for the pond-edge shot. Chunky trunk, hanging curtain of rounded leaf strands, golden-hour backlight. Hero mesh reference, not a Kenney pine."
+style: "Halfway toy/real. Cloud canopy of overlapping blobs plus hanging strands. Bark #89613b. No cone needles."
+size: 2048x2048
+count: 3
+priority: normal
+target: assets/art/images/PETAL-08-104/willow.png
+status: requested
+due: 2026-10-06
+refs:
+  - docs/CITY_PARK.md

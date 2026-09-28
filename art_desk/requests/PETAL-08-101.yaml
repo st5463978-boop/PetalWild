@@ -1,0 +1,14 @@
+id: PETAL-08-101
+pass: PETAL-08
+kind: image
+subject: "Grok jelly park residents, eight icon silhouettes (circle, oblong, square, pill, triangle, hexagon, cloud, teardrop), slash eyes, candy translucency, Grok picker colours. Turnaround on transparent ground. For City Park spawn points, not pear blobs."
+style: "Halfway toy/real. Chunky extruded Grok icons, diagonal slash eyes, candy SSS, no animal features. Palette from VISUAL_TARGET 3.6."
+size: 2048x2048
+count: 8
+priority: high
+target: assets/art/images/PETAL-08-101/grok_jelly_turnaround.png
+status: requested
+due: 2026-10-05
+refs:
+  - docs/CITY_PARK.md
+  - art_desk/requests/_EXAMPLE.yaml
