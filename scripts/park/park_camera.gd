@@ -125,10 +125,10 @@ func _process(delta: float) -> void:
 		_free_move(delta)
 		return
 	if mode == Mode.POND_EDGE:
-		# Low south bank: water fills the lower frame, willow on the right.
-		camera.fov = 62.0
-		camera.global_position = Vector3(0.05, 0.5, 4.65)
-		camera.look_at(Vector3(0.9, 0.22, 0.85), Vector3.UP)
+		# Look down onto the near water so the surface fills the frame.
+		camera.fov = 68.0
+		camera.global_position = Vector3(0.15, 0.4, 3.72)
+		camera.look_at(Vector3(0.7, -0.04, 1.35), Vector3.UP)
 		return
 	if mode == Mode.RING:
 		# Slow Viva Piñata crawl while the player is idle.
