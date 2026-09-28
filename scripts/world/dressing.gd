@@ -1161,7 +1161,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 	var customs: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#7d658f"), Color("#ef7f72")]
+	var palette: Array[Color] = [Color("#f2d36b"), Color("#f8e8d0"), Color("#e8c4d4"), Color("#d7e7b0"), Color("#f0a06a")]
 	var rooms: Array[Vector3] = [GardenLayout.TEA, GardenLayout.HUT, GardenLayout.FOUNDRY, GardenLayout.HALL]
 	var tries := 0
 	# ponytail: one meadow up to the bed edge; a second scatter if the halo still squares the plots.
@@ -1184,13 +1184,13 @@ func _lawn_meadow(parent: Node3D) -> void:
 		if indoors:
 			continue
 		var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
-		var scale := rng.randf_range(0.75, 1.5)
-		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.85, 1.55), scale)), Vector3(x, y, z)))
-		colors.append(Color("#3a7a34").lerp(Color("#d5e48a"), rng.randf() * 0.55))
+		var scale := rng.randf_range(0.55, 0.9)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.32, 0.5), scale)), Vector3(x, y, z)))
+		colors.append(Color("#3a7a34").lerp(Color("#8fb84a"), rng.randf() * 0.45))
 		customs.append(Color(rng.randf(), 0.15, 0.0, 1.0))
 		if blooms.size() < 1100 and rng.randf() > 0.45:
 			var tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-			var bscale := rng.randf_range(0.9, 1.35)
+			var bscale := rng.randf_range(0.35, 0.55)
 			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
 			bloom_colors.append(tint)
 	# ponytail: west margin and the north apron; the worn walks stay open.
@@ -1218,7 +1218,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not west_room:
 				var west_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var west_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var west_scale := rng.randf_range(0.95, 1.4)
+				var west_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(west_basis.scaled(Vector3.ONE * west_scale), Vector3(jx, gy, jz)))
 				bloom_colors.append(west_tint)
 			gz += 0.38
@@ -1276,7 +1276,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not east_block:
 				var east_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var east_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var east_scale := rng.randf_range(0.95, 1.4)
+				var east_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(east_basis.scaled(Vector3.ONE * east_scale), Vector3(jx, ey, jz)))
 				bloom_colors.append(east_tint)
 			ez += 0.38
@@ -1308,7 +1308,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not front_block:
 				var front_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var front_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var front_scale := rng.randf_range(0.95, 1.4)
+				var front_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(front_basis.scaled(Vector3.ONE * front_scale), Vector3(jx, fy, jz)))
 				bloom_colors.append(front_tint)
 			fz += 0.38
@@ -1338,13 +1338,13 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not hedge_block:
 				var hedge_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var hedge_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var hedge_scale := rng.randf_range(1.15, 1.65)
+				var hedge_scale := rng.randf_range(0.4, 0.6)
 				blooms.append(Transform3D(hedge_basis.scaled(Vector3.ONE * hedge_scale), Vector3(jx, hy, jz)))
 				bloom_colors.append(hedge_tint)
 			hz += 0.36
 		hx += 0.26
 	_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
-	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
+	_multimesh(parent, _flower(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
 func _room_clumps(parent: Node3D) -> void:
 	var mesh := _leaf_card()
