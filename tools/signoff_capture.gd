@@ -7,7 +7,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "beds", "subject_nodes": ["BedBody_0_0", "BedBody_0_1", "BedBody_1_0", "BedBody_1_1"]},
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.25, 1.5, 6.95), "look": Vector3(0.05, 0.18, 0.55), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
-	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(1.15, 2.15, 2.15), "look": Vector3(0, 1.15, 0), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
+	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(2.45, 1.48, 2.42), "look": Vector3(0.08, 1.38, 0.05), "fov": 46.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.35, 0.82, 3.05), "look": Vector3(0.1, 0.32, -0.7), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
@@ -75,12 +75,14 @@ func _run() -> void:
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL")
+		_hide_cam05_crate(scene, shot_name == "CAM_05_MARKET_STALL")
 		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
 		_hide_cam06_clutter(scene, false)
+		_hide_cam05_crate(scene, false)
 		_hide_cam02_jelly(scene, false)
 		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
@@ -390,6 +392,14 @@ func _hide_cam06_clutter(scene: Node, on: bool) -> void:
 		elif mesh_i.has_meta("signoff_hid_sphere"):
 			mesh_i.visible = true
 			mesh_i.remove_meta("signoff_hid_sphere")
+
+func _hide_cam05_crate(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	var tree := scene.get_tree()
+	if tree != null:
+		for n: Node in tree.get_nodes_in_group("signoff_cam05_hide"):
+			n.visible = not on
 
 func _hide_cam02_jelly(scene: Node, on: bool) -> void:
 	if scene == null:

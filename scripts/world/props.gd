@@ -35,7 +35,9 @@ func _stall(parent: Node3D) -> void:
 		stripe.set_meta("open_color", open)
 		stripe.set_meta("shut_color", shut)
 		stripe.add_to_group("parish_awning")
-	_crate(root, Vector3(-1.35, 0.16, 0.7))
+	var crate_l := _crate(root, Vector3(-1.35, 0.16, 0.7))
+	crate_l.name = "StallCrateL"
+	crate_l.add_to_group("signoff_cam05_hide")
 	_crate(root, Vector3(1.25, 0.16, 0.62))
 	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
 	cup.add_to_group("parish_cup")
@@ -292,8 +294,8 @@ func _gate_crate(parent: Node3D) -> void:
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	root.add_child(sign)
 
-func _crate(parent: Node3D, at: Vector3) -> void:
-	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
+func _crate(parent: Node3D, at: Vector3) -> MeshInstance3D:
+	return _box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
 
 func _room_lamp(light: OmniLight3D, day: float) -> void:
 	light.set_meta("day_energy", day)
