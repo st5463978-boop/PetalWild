@@ -24,6 +24,7 @@
  },
  "cameras": {
   "CAM_01_HERO_OVERVIEW": {
+   "subject": "garden",
    "must_hit": [
     "#644728",
     "#67651f",
@@ -50,6 +51,7 @@
    ]
   },
   "CAM_02_BEDS_SOIL": {
+   "subject": "beds",
    "must_hit": [
     "#644728",
     "#4c6f21",
@@ -75,6 +77,7 @@
    ]
   },
   "CAM_03_LAWN_PATH": {
+   "subject": "lawn path",
    "must_hit": [
     "#69601d",
     "#9c872c",
@@ -100,6 +103,7 @@
    ]
   },
   "CAM_04_FOLIAGE_EDGE": {
+   "subject": "hedge",
    "must_hit": [
     "#61661a",
     "#8f8927",
@@ -126,6 +130,7 @@
    ]
   },
   "CAM_05_MARKET_STALL": {
+   "subject": "stall",
    "must_hit": [
     "#653d15",
     "#a16639",
@@ -151,6 +156,7 @@
    ]
   },
   "CAM_06_JELLY_HERO": {
+   "subject": "jelly",
    "must_hit": [
     "#60571a",
     "#818125",
@@ -174,6 +180,9 @@
    ]
   },
   "CAM_07_VEG_FOLK": {
+   "subject": "veg folk",
+   "blocked_on_art": true,
+   "blocked_reason": "veg-folk art has not landed",
    "must_hit": [
     "#6b5a25",
     "#4c6f21",
@@ -197,6 +206,7 @@
    ]
   },
   "CAM_08_PHONE_PLAY": {
+   "subject": "garden",
    "must_hit": [
     "#644728",
     "#67651f",

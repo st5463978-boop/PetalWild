@@ -3,14 +3,14 @@
 extends SceneTree
 
 const SHOTS: Array[Dictionary] = [
-	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.05, 6.4), "look": Vector3(0, -0.15, 0.2), "fov": 50.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true},
+	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0", "BedBody_1_0"]},
+	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "beds", "subject_nodes": ["BedBody_0_0", "BedBody_0_1", "BedBody_1_0", "BedBody_1_1"]},
+	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.05, 6.4), "look": Vector3(0, -0.15, 0.2), "fov": 50.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
+	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
+	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
+	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_group": "jelly"},
+	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
+	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
 ]
 const PLACEHOLDER_MESHES: Array[String] = ["BoxMesh", "CylinderMesh", "PrismMesh", "CapsuleMesh", "QuadMesh", "PlaneMesh"]
 const BAD_TEX := ["checker", "grid", "prototype", "uv_test", "uvtest", "placeholder", "dev_"]
@@ -84,6 +84,7 @@ func _run() -> void:
 		per["label_overlaps"] = _label_overlaps(scene, cam)
 		per["camera"] = {"pos": var_to_str(cam.global_position), "rot_deg": var_to_str(cam.global_rotation_degrees), "fov": cam.fov}
 		per["size"] = [img.get_width(), img.get_height()]
+		_fill_subject(scene, cam, shot, per)
 		audit[shot_name] = per
 	var f: FileAccess = FileAccess.open(out_dir.path_join("scene_audit.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(audit, "  "))
@@ -160,6 +161,96 @@ func _camera_for(scene: Node, shot: Dictionary) -> Camera3D:
 	cam.fov = float(shot["fov"])
 	cam.near = 0.05
 	return cam
+
+func _fill_subject(scene: Node, cam: Camera3D, shot: Dictionary, per: Dictionary) -> void:
+	var subject_name := str(shot.get("subject", ""))
+	per["subject_name"] = subject_name
+	per["blocked_on_art"] = bool(shot.get("blocked_on_art", false))
+	if per["blocked_on_art"]:
+		per["blocked_reason"] = "veg-folk art has not landed" if subject_name == "veg folk" else ("subject '%s' awaits art" % subject_name)
+	var nodes: Array[Node] = _find_subject_nodes(scene, shot)
+	var paths: Array[String] = []
+	for n: Node in nodes:
+		paths.append(str(scene.get_path_to(n)) if scene != null else n.name)
+	per["subject_nodes"] = paths
+	if nodes.is_empty():
+		per["subject_visible"] = false
+		per["subject_area_pct"] = 0.0
+		return
+	var box := AABB()
+	var started := false
+	for n: Node in nodes:
+		var piece := _merged_aabb(n)
+		if piece.size.length() < 0.0001:
+			continue
+		if not started:
+			box = piece
+			started = true
+		else:
+			box = box.merge(piece)
+	if not started and nodes[0] is Node3D:
+		var origin: Vector3 = (nodes[0] as Node3D).global_position
+		box = AABB(origin - Vector3(0.2, 0.2, 0.2), Vector3(0.4, 0.4, 0.4))
+		started = true
+	if not started:
+		per["subject_visible"] = false
+		per["subject_area_pct"] = 0.0
+		return
+	var view := Rect2(Vector2.ZERO, Vector2(HONEST))
+	var screen := Rect2()
+	var any_front := false
+	for i in 8:
+		var world: Vector3 = box.get_endpoint(i)
+		if cam.is_position_behind(world):
+			continue
+		var s: Vector2 = cam.unproject_position(world)
+		if not any_front:
+			screen = Rect2(s, Vector2.ZERO)
+			any_front = true
+		else:
+			screen = screen.expand(s)
+	var center: Vector3 = box.get_center()
+	var center_in := not cam.is_position_behind(center) and view.has_point(cam.unproject_position(center))
+	if not any_front:
+		per["subject_visible"] = center_in
+		per["subject_area_pct"] = 0.2 if center_in else 0.0
+		return
+	var hit: Rect2 = screen.intersection(view)
+	var area_pct: float = 0.0 if view.get_area() <= 0.0 else hit.get_area() / view.get_area() * 100.0
+	per["subject_area_pct"] = snappedf(area_pct, 0.01)
+	per["subject_rect"] = [snappedf(hit.position.x, 1.0), snappedf(hit.position.y, 1.0), snappedf(hit.size.x, 1.0), snappedf(hit.size.y, 1.0)]
+	per["subject_visible"] = (hit.get_area() > 64.0 and area_pct >= 0.2) or center_in
+
+func _find_subject_nodes(scene: Node, shot: Dictionary) -> Array[Node]:
+	var found: Array[Node] = []
+	if shot.has("subject_group"):
+		for n: Node in get_nodes_in_group(str(shot["subject_group"])):
+			found.append(n)
+	if scene != null and shot.has("subject_nodes"):
+		for raw in shot["subject_nodes"]:
+			var node: Node = scene.find_child(str(raw), true, false)
+			if node != null:
+				found.append(node)
+	return found
+
+func _merged_aabb(node: Node) -> AABB:
+	var merged := AABB()
+	var started := false
+	var stack: Array[Node] = [node]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is VisualInstance3D:
+			var vi := n as VisualInstance3D
+			if vi.is_visible_in_tree():
+				var world: AABB = vi.global_transform * vi.get_aabb()
+				if not started:
+					merged = world
+					started = true
+				else:
+					merged = merged.merge(world)
+		for child in n.get_children():
+			stack.append(child)
+	return merged
 
 func _set_hud(scene: Node, on: bool) -> void:
 	if scene == null:

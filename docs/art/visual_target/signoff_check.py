@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """PetalWild visual sign-off checker (image side). Free, local: PIL + numpy.
 usage: python3 signoff_check.py <capture_dir> [--spec signoff_spec.json]
-Reads CAM_*.png plus the optional scene_audit.json written by signoff_capture.gd; prints PASS/FAIL per camera and
-writes <capture_dir>/signoff_report.json. Exit code 1 if any camera fails."""
+Reads CAM_*.png plus the optional scene_audit.json written by signoff_capture.gd.
+Prints PASS / FAIL / BLOCKED-ON-ART per camera and writes <capture_dir>/signoff_report.json.
+Exit 1 if any camera FAILs. BLOCKED-ON-ART is not a PASS."""
 import sys, json, os, glob, argparse, numpy as np
 from PIL import Image
 def to_lab(rgb):
@@ -31,6 +32,8 @@ def check(png,spec,audit):
     if m['mean_chroma']<g['min_mean_chroma']: res['fails'].append(f"too grey: chroma {m['mean_chroma']:.1f}")
     if m['flat_ground_score']>g['max_flat_ground_score']: res['fails'].append(f"flat or checker ground: top-2 colours cover {m['flat_ground_score']:.2f} of lower half")
     cam=os.path.splitext(os.path.basename(png))[0]; cs=spec['cameras'].get(cam,{})
+    subject=cs.get('subject','')
+    blocked=bool(cs.get('blocked_on_art'))
     hits={}
     for h in cs.get('must_hit',[]):
         d=np.linalg.norm(lab-to_lab(hex2rgb(h)[None])[0],axis=1); hits[h]=float((d<g['delta_e']).mean()*100)
@@ -39,22 +42,57 @@ def check(png,spec,audit):
     for h in g['forbid']+cs.get('forbid',[]):
         d=np.linalg.norm(lab-to_lab(hex2rgb(h)[None])[0],axis=1); p=float((d<6).mean()*100)
         if p>g['max_forbid_pct']: res['fails'].append(f"forbidden colour {h} covers {p:.1f}%")
-    if audit:
-        per=audit.get(cam,{}); scene=audit.get('scene',{})
+    per=(audit or {}).get(cam,{}) if isinstance((audit or {}).get(cam),dict) else {}
+    scene=(audit or {}).get('scene',{}) if audit else {}
+    if not blocked:
         for k in ('placeholders','checker_textures','spike_meshes'):
             v=scene.get(k,[])+per.get(k,[])
             if v: res['fails'].append(f"{k}: {len(v)} e.g. {v[:3]}")
         if per.get('label_overlaps'): res['fails'].append(f"label_overlaps: {per['label_overlaps'][:3]}")
-    res['pass']=not res['fails']; return res
+        vis=per.get('subject_visible')
+        name=per.get('subject_name') or subject
+        if vis is False:
+            res['fails'].append(f"subject '{name}' not visible in frame")
+        elif vis is None and subject:
+            res['fails'].append(f"subject '{subject}' visibility not recorded")
+    if blocked:
+        reason=cs.get('blocked_reason') or per.get('blocked_reason') or (f"subject '{subject}' awaits art" if subject else 'subject awaits art')
+        res['status']='BLOCKED-ON-ART'
+        res['blocked']=True
+        res['blocked_reason']=reason
+        res['pass']=False
+        return res
+    res['status']='PASS' if not res['fails'] else 'FAIL'
+    res['pass']=not res['fails']
+    return res
+def line_for(r):
+    st=r.get('status','PASS' if r.get('pass') else 'FAIL')
+    name=os.path.basename(r['file'])
+    if st=='FAIL':
+        return 'FAIL '+name+'  <- '+'; '.join(r.get('fails') or ['failed'])
+    if st=='BLOCKED-ON-ART':
+        return 'BLOCKED-ON-ART '+name+'  <- '+r.get('blocked_reason','subject awaits art')
+    return 'PASS '+name
 if __name__=='__main__':
     ap=argparse.ArgumentParser(); ap.add_argument('dir'); ap.add_argument('--spec',default=os.path.join(os.path.dirname(os.path.abspath(__file__)),'signoff_spec.json'))
     A=ap.parse_args(); spec=json.load(open(A.spec))
     ap_=os.path.join(A.dir,'scene_audit.json'); audit=json.load(open(ap_)) if os.path.exists(ap_) else None
-    out=[check(p,spec,audit) for p in sorted(glob.glob(os.path.join(A.dir,'*.png')))]
+    pngs=sorted(p for p in glob.glob(os.path.join(A.dir,'*.png')) if os.path.basename(p).startswith('CAM_'))
+    out=[check(p,spec,audit) for p in pngs]
     for cam,v in (audit or {}).items():
-        if isinstance(v,dict) and v.get('error'): out.append({'file':cam+'.png','fails':[v['error']],'metrics':{},'pass':False})
+        if isinstance(v,dict) and v.get('error'): out.append({'file':cam+'.png','fails':[v['error']],'metrics':{},'pass':False,'status':'FAIL'})
     for cam in spec['cameras']:
-        if not any(os.path.basename(r['file']).startswith(cam) for r in out): out.append({'file':cam+'.png','fails':['not captured'],'metrics':{},'pass':False})
-    for r in out: print(('PASS ' if r['pass'] else 'FAIL ')+os.path.basename(r['file'])+('' if r['pass'] else '  <- '+'; '.join(r['fails'])))
+        if not any(os.path.basename(r['file']).startswith(cam) for r in out):
+            cs=spec['cameras'][cam]
+            if cs.get('blocked_on_art'):
+                reason=cs.get('blocked_reason') or (f"subject '{cs.get('subject','')}' awaits art")
+                out.append({'file':cam+'.png','fails':[],'metrics':{},'pass':False,'status':'BLOCKED-ON-ART','blocked':True,'blocked_reason':reason})
+            else:
+                out.append({'file':cam+'.png','fails':['not captured'],'metrics':{},'pass':False,'status':'FAIL'})
+    for r in out: print(line_for(r))
+    n_pass=sum(1 for r in out if r.get('status')=='PASS')
+    n_fail=sum(1 for r in out if r.get('status')=='FAIL')
+    n_block=sum(1 for r in out if r.get('status')=='BLOCKED-ON-ART')
+    print(f'RESULT PASS={n_pass} FAIL={n_fail} BLOCKED-ON-ART={n_block}')
     json.dump(out,open(os.path.join(A.dir,'signoff_report.json'),'w'),indent=1)
-    sys.exit(0 if all(r['pass'] for r in out) else 1)
+    sys.exit(0 if n_fail==0 else 1)
