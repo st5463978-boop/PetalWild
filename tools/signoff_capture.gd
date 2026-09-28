@@ -236,12 +236,17 @@ func _clamp_sun_disc(scene: Node, on: bool) -> void:
 	if we == null or we.environment == null:
 		return
 	var environment: Environment = we.environment
+	var pan: PanoramaSkyMaterial = null
+	if environment.sky != null and environment.sky.sky_material is PanoramaSkyMaterial:
+		pan = environment.sky.sky_material as PanoramaSkyMaterial
 	if on:
-		QualityTier.set_hdri_energy(environment, 0.44)
+		if pan:
+			pan.energy_multiplier = 0.44
 		environment.glow_enabled = false
 		environment.tonemap_white = 10.0
 	else:
-		QualityTier.set_hdri_energy(environment, QualityTier.HDRI_ENERGY)
+		if pan:
+			pan.energy_multiplier = 0.82
 		environment.glow_enabled = true
 		environment.tonemap_white = 6.0
 
