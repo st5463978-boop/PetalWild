@@ -8,7 +8,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(-0.6, 1.2, 7.1), "look": Vector3(-0.4, 0.1, 0.6), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
-	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.15, 0.62, 2.35), "look": Vector3(0, 0.12, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
+	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.35, 0.82, 3.05), "look": Vector3(0.1, 0.32, -0.7), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
 ]
@@ -144,10 +144,10 @@ func _make_signoff_jelly(scene: Node) -> void:
 	mesh.rings = 16
 	node.mesh = mesh
 	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/jelly.gdshader")
+	mat.shader = load("res://shaders/veg_jelly.gdshader")
 	mat.set_shader_parameter("deep_color", Color("2f8f55"))
-	mat.set_shader_parameter("lit_color", Color("e7ffc4"))
-	mat.set_shader_parameter("glow_color", Color("d6ff6a"))
+	mat.set_shader_parameter("shallow_color", Color("e7ffc4"))
+	mat.set_shader_parameter("rim_color", Color("d6ff6a"))
 	node.material_override = mat
 	node.add_to_group("jelly")
 	node.add_to_group("signoff_ok")
