@@ -1,0 +1,22 @@
+id: ART-DIRECTOR-006
+pass: ART-DIRECTOR
+kind: image
+subject: "Garden rocks and stepping stones to replace the ice-cube placeholders: boulders, mossy rocks, pebble clusters, flat stepping stones, pond-edge stones (modelling sheet plus a seamless rock texture)"
+style: >
+  The current Kenney nature-kit rock_*/stone_* GLBs read as faceted ice cubes. Replacements are
+  rounded, weathered, halfway toy/real: soft chunky silhouettes, real lichen and moss (#737244, #61661a),
+  warm stone #c9b79b / #938b7e, dark crevice #1a120c. Sheet of 12 rock forms (3 sizes x 4 types) on grey,
+  top + side views, plus variant 2: a seamless 2048 rock albedo + height. No sharp facets, no crystal look.
+  A16 only for rock form variety (not its desert palette).
+size: 2048x2048
+count: 2
+priority: normal
+target: assets/art/images/ART-DIRECTOR-006/garden_rocks_sheet.png
+status: requested
+due: 2026-10-04
+lane_hint: A
+refs:
+  - "/workspace/petalwild-davinci/concept/A01_circular_stone_plaza.png"
+  - "/workspace/petalwild-davinci/concept/A16_rocky_desert.png"
+  - "/workspace/art_library/staging/ground/davinci_B14_pebbles_tile.png"
+  - "/workspace/art_library/staging/bed/davinci_B34_drystone_tile.png"

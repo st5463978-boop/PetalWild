@@ -1,0 +1,26 @@
+id: ART-DIRECTOR-004
+pass: ART-DIRECTOR
+kind: texture
+subject: "Sky and weather solution: per-state sky panoramas / cloud layers for a procedural sky (clear, overcast, rain, dawn/dusk, night with stars, frost), used on top of the Poly Haven CC0 pure-sky HDRIs"
+style: >
+  VISUAL_TARGET v2 section 3.1 state table. Deliver equirectangular LDR cloud/colour layers
+  (power-of-two 4096x2048) that a Godot sky shader blends over ProceduralSkyMaterial colours:
+  clear #b7c7d2 -> #cfdbe1; overcast/rain #97a77b -> #c4d2bd; dawn #e4d7b8, dusk #c39042; night #12272f -> #466177
+  with star field; frost #98a1a4 -> #e2dbd6. Soft painterly-real clouds (A07, A03, A06, A09), no hard toy puffs.
+  A procedural sky is acceptable; the base image-based lighting uses staged CC0 HDRIs
+  staging/sky/polyhaven/rustig_koppie_puresky (clear) and kloofendal_48d_partly_cloudy_puresky (partly cloudy),
+  so no HDRI needs generating. Also one 2-stop gradient ramp PNG per state for the Compatibility-phone tier.
+size: 4096x2048
+count: 6
+priority: high
+target: assets/art/textures/ART-DIRECTOR-004/sky_layer.png
+status: requested
+due: 2026-10-02
+lane_hint: A
+refs:
+  - "/workspace/art_library/staging/sky/polyhaven/"
+  - "/workspace/art_library/staging/sky/polyhaven/sky_analysis.json"
+  - "/workspace/petalwild-davinci/concept/A03_a_pond_at_dawn.png"
+  - "/workspace/petalwild-davinci/concept/A06_night_garden.png"
+  - "/workspace/petalwild-davinci/concept/A07_rainy_afternoon.png"
+  - "/workspace/petalwild-davinci/concept/A09_winter_frost.png"

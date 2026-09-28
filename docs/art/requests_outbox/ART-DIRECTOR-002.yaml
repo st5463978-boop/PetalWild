@@ -1,0 +1,25 @@
+id: ART-DIRECTOR-002
+pass: ART-DIRECTOR
+kind: image
+subject: "Veg folk cast: Pixar/Ghibli surreal fruit-and-veg people (carrot, tomato, leek, onion, pea pod, cabbage/lettuce, strawberry), full-body turnarounds plus a lineup"
+style: >
+  VISUAL_TARGET v2 section 3.7: the whole body IS the vegetable with real skin (waxy tomato, ridged
+  carrot, veined cabbage, papery onion, satin pea pod) at toy proportions (body 1:1.1-1.4, nub hands and feet,
+  0.9-1.1 m tall). Pixar-readable face (large glossy eyes set wide, small soft mouth, no teeth), Ghibli softness:
+  gentle, a little odd, never grotesque. Optional thick felt apron. Halfway toy/real, not plastic, not photo.
+  Palette: VISUAL_TARGET 3.7 table, graded 30-50% toward the A12 real samples (e.g. carrot #743d1d).
+  Match the existing rigs' silhouettes so repo carrot/tomato/leek GLBs can be re-textured or remodelled.
+size: 2048x1024
+count: 8
+priority: high
+target: assets/art/images/ART-DIRECTOR-002/vegfolk_turnaround.png
+status: requested
+due: 2026-10-03
+lane_hint: A
+refs:
+  - "/workspace/art_library/staging/veg_folk/higgsfield_vegfolk_52682b82-121f-471e-b38d-0c1c4a47ca26.png"
+  - "/workspace/art_library/staging/veg_folk/higgsfield_vegfolk_64eb0574-746c-4547-bcad-61bb982f1f07.png"
+  - "/workspace/art_library/staging/veg_folk/higgsfield_vegfolk_ab9e6641-f84d-42e4-ab21-eab520ef4c86.png"
+  - "/workspace/art_library/staging/veg_folk/artchars_carrot_threequarter.png"
+  - "/workspace/petalwild-veg-seed/previews/lineup.png"
+  - "/workspace/petalwild-davinci/concept/A12_vegetable_allotment.png"

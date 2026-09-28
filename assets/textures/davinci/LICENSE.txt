@@ -1,0 +1,7 @@
+PetalWild DaVinci detail tiles: B01 soil, B02 tilled, B10 flagstone, B19 planks, B29 boxwood, B31 mulch
+Source: generated with DaVinci AI for Scott Thompson's PetalWild project (box path
+/workspace/petalwild-davinci/textures/tiled/). Original, project-owned generated art.
+Licence: CC0 1.0 / project-owned; free to use, modify and ship in PetalWild.
+These are 1024 px Lanczos downsamples of the 2048 px seamless originals (kept off-repo to stay
+under the per-folder size budget; ASTRA_PLAN change 2 downsamples detail maps to 1024 anyway).
+Use for DETAIL (derived normal/roughness) only, not as albedo (see docs/art/ASTRA_PLAN.md section 4).

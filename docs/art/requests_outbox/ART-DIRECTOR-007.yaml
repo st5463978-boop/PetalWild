@@ -1,0 +1,21 @@
+id: ART-DIRECTOR-007
+pass: ART-DIRECTOR
+kind: texture
+subject: "Hedges: leafy hedge wall albedo + height/normal source and matching leaf-card atlas (boxwood/privet), plus a hedge modelling reference sheet (tall room wall 1.6 m, low inner hedge 0.6 m, rounded ends)"
+style: >
+  VISUAL_TARGET v2 section 3.4, refs A04, A18, A20. Halfway hedge #3d7725 / leaf tip #80b64a / core #194110:
+  lumpy but leafy, uneven rounded crest, never a flat-topped box. Texture seamless 2048 (seam <= 1.2) with
+  height; leaf-card atlas 2048 with opacity for shell cards; sheet shows silhouette lumpiness targets.
+  Combines VP24 (toy) and B29 boxwood (real) at the midpoint.
+size: 2048x2048
+count: 3
+priority: high
+target: assets/art/textures/ART-DIRECTOR-007/hedge_albedo.png
+status: requested
+due: 2026-10-03
+lane_hint: A
+refs:
+  - "/workspace/art_library/staging/foliage/davinci_B29_boxwood_tile.png"
+  - "/workspace/art_library/staging/foliage/VP24_hedge_tile.png"
+  - "/workspace/petalwild-davinci/concept/A04_wildflower_meadow.png"
+  - "/workspace/petalwild-davinci/concept/A18_tree_canopy.png"

@@ -1,0 +1,26 @@
+id: ART-DIRECTOR-003
+pass: ART-DIRECTOR
+kind: image
+subject: "Petal Stall market stall: modelling sheet (front, 3/4, side, plan) plus prop callouts (counter, seed crates, burlap sacks, lantern, painted sign, striped awning, plank bench)"
+style: >
+  VISUAL_TARGET v2 section 3.5, refs A05 and A13. Small hand-built timber stall, posts 12-15 cm, rolled
+  roof edge, thick worn counter (0.9 m), striped awning cream #baac74 / rust #c06427 (18-22 cm stripes,
+  rounded scallop), thatch or terracotta roof, lantern glow #ec9a35, seed packets with blue #2f638c accents,
+  painted sign board as a texture (not floating text). Halfway timber #9f7f63 / #6c543e. No box bench.
+  Absolutely no Havenbrook branding or lettering (the staged Higgsfield stall scenes carry it and are excluded).
+  Plus a 2048 tileable striped awning fabric texture (cream/rust) as variant 5.
+size: 2048x2048
+count: 5
+priority: high
+target: assets/art/images/ART-DIRECTOR-003/petal_stall_sheet.png
+status: requested
+due: 2026-10-03
+lane_hint: A
+refs:
+  - "/workspace/petalwild-davinci/concept/A05_cosy_seed_shop.png"
+  - "/workspace/petalwild-davinci/concept/A13_greenhouse_interior.png"
+  - "/workspace/petalwild-davinci/props/D09_seed_crate.png"
+  - "/workspace/petalwild-davinci/props/D13_lantern.png"
+  - "/workspace/petalwild-davinci/props/D14_signpost.png"
+  - "/workspace/art_library/staging/bed/davinci_B19_planks_tile.png"
+  - "/workspace/art_library/staging/stall/davinci_B21_thatch_tile.png"

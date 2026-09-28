@@ -1,0 +1,6 @@
+PetalWild VP stylised tiles (VP01, 04, 05, 06, 07, 10, 15, 16, 19, 20, 23, 24, 25, 26, 28)
+Source: generated in-chat by the PetalWild Game Art Director agent for Scott Thompson on 2026-09-27
+(box path /workspace/petalwild-vp-textures/tiled/). Original, project-owned generated art.
+Licence: CC0 1.0 / project-owned; free to use, modify and ship in PetalWild.
+Flagged tiles VP02, VP03, VP09, VP18 and VP30 are intentionally NOT included (see docs/art/ASSET_PICKS.md).
+All tiles are 1024 px, seamless, albedo only (no normal/roughness maps).
