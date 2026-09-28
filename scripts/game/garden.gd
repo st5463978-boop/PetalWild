@@ -23,6 +23,9 @@ var soil_lid: BoxMesh
 var bed_lid: BoxMesh
 var soil_grass: Texture2D
 var soil_dirt: Texture2D
+var plot_soil_mat := {}
+var plot_cell_img := {}
+var plot_cell_tex := {}
 var plant_views := {}
 var structures := {"home_kit": 0}
 var home_points: Array = []
@@ -163,6 +166,7 @@ func _build() -> void:
 	region.boot()
 	region.decide_cb = Callable(self, "_vale_decide")
 	debug_overlay = DebugOverlay.new()
+	debug_overlay.name = "DebugOverlay"
 	add_child(debug_overlay)
 	debug_overlay.build(self)
 	_tick_town(world_snapshot())
@@ -8846,17 +8850,15 @@ func _build_patches() -> void:
 	# ponytail: overlapping lids hide the seam; one mesh per plot if the join still reads.
 	bed_lid = BoxMesh.new()
 	bed_lid.size = Vector3(GardenLayout.CELL_W * 1.06, 0.03, GardenLayout.CELL_D * 1.06)
+	_boot_plot_soil()
 	for cell in soil.all():
 		var plot: SoilCell = cell
 		var node := MeshInstance3D.new()
 		node.mesh = soil_lid
-		var material := StandardMaterial3D.new()
-		material.roughness = 0.95
-		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-		material.uv1_scale = Vector3(1.8, 1.8, 1)
-		_bind_soil_tex(material, plot)
-		node.material_override = material
+		node.material_override = _plot_mat_for(plot.ix, plot.iz)
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.visible = false
+		node.add_to_group("signoff_ok")
 		var center := GardenLayout.cell_center(plot.ix, plot.iz)
 		var shift := _row_shift(plot.ix, plot.iz)
 		node.position = Vector3(center.x, 0.055, center.z) + shift
@@ -8864,6 +8866,7 @@ func _build_patches() -> void:
 		add_child(node)
 		_scallop_patch(node, plot.ix, plot.iz)
 		patches["%d,%d" % [plot.ix, plot.iz]] = node
+	_build_bed_bodies()
 	_build_bed_meadow()
 	_scallop_lawn()
 	highlight = MeshInstance3D.new()
@@ -8877,6 +8880,7 @@ func _build_patches() -> void:
 	highlight.material_override = material
 	highlight.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	highlight.visible = false
+	highlight.add_to_group("signoff_ok")
 	add_child(highlight)
 
 func _build_bed_meadow() -> void:
@@ -8916,6 +8920,10 @@ func _build_bed_meadow() -> void:
 	_build_bed_blades()
 	_build_bed_frame()
 	_bridge_lids()
+	for bloom in bed_blooms:
+		bloom.visible = false
+	for bloom in bed_inside:
+		bloom.visible = false
 
 func _build_bed_turf() -> void:
 	# ponytail: flat discs over empty cells; a blade scatter if the discs still read as paint.
@@ -9016,6 +9024,7 @@ func _make_bed_mesh(mesh: Mesh, material: Material) -> MultiMeshInstance3D:
 	inst.multimesh = multi
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	inst.material_override = material
+	inst.add_to_group("signoff_ok")
 	add_child(inst)
 	return inst
 
@@ -9218,6 +9227,7 @@ func _scallop_lawn() -> void:
 	node.multimesh = multi
 	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visible = false
 	add_child(node)
 
 func _fill_bed_meadow() -> void:
@@ -9520,6 +9530,7 @@ func _bridge_lid(node_name: String, at: Vector3, size: Vector3) -> void:
 	# ponytail: short planks on the sine; one mesh again if the strip has to read as a board.
 	var root := Node3D.new()
 	root.name = node_name
+	root.visible = false
 	add_child(root)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color("#1c3420")
@@ -10121,6 +10132,7 @@ func _home_box(root: Node3D, size: Vector3, at: Vector3, color: Color) -> MeshIn
 	node.material_override = material
 	node.position = at
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.add_to_group("signoff_ok")
 	root.add_child(node)
 	return node
 
@@ -10590,17 +10602,11 @@ func _refresh_soil_colors() -> void:
 		var patch: MeshInstance3D = patches.get("%d,%d" % [plot.ix, plot.iz])
 		if patch == null:
 			continue
-		var material := patch.material_override as StandardMaterial3D
 		if _joined_bed(plot):
 			patch.mesh = bed_lid
-			if plot.plant_id != "" or plot.tilled:
-				material.albedo_color = _soil_color(plot)
-			else:
-				material.albedo_color = Color("#1c3420")
 		else:
 			patch.mesh = soil_lid
-			material.albedo_color = _soil_color(plot)
-		_bind_soil_tex(material, plot)
+	_write_cell_state()
 	_fill_bed_meadow()
 
 func _meadow_cell(plot: SoilCell) -> bool:
@@ -10638,6 +10644,73 @@ func _bind_soil_tex(material: StandardMaterial3D, plot: SoilCell) -> void:
 		material.albedo_texture = soil_dirt
 	else:
 		material.albedo_texture = soil_grass
+
+func _plot_key(ix: int, iz: int) -> String:
+	var px := 0 if ix < GardenLayout.COLS else 1
+	var pz := 0 if iz < GardenLayout.ROWS else 1
+	return "%d,%d" % [px, pz]
+
+func _boot_plot_soil() -> void:
+	for px in 2:
+		for pz in 2:
+			var key := "%d,%d" % [px, pz]
+			var img := Image.create(GardenLayout.COLS, GardenLayout.ROWS, false, Image.FORMAT_RGBA8)
+			img.fill(Color(0, 0.28, 0, 1))
+			var tex := ImageTexture.create_from_image(img)
+			plot_cell_img[key] = img
+			plot_cell_tex[key] = tex
+			var material := ShaderMaterial.new()
+			material.shader = load("res://shaders/bed_soil.gdshader")
+			material.set_shader_parameter("soil_tex", load("res://assets/textures/garden/soil_albedo.png"))
+			material.set_shader_parameter("mulch_tex", load("res://assets/textures/garden/mulch_albedo.png"))
+			if ResourceLoader.exists("res://assets/textures/detail/B01_soil_nrm.png"):
+				material.set_shader_parameter("soil_nrm", load("res://assets/textures/detail/B01_soil_nrm.png"))
+			if ResourceLoader.exists("res://assets/textures/detail/B02_tilled_nrm.png"):
+				material.set_shader_parameter("tilled_nrm", load("res://assets/textures/detail/B02_tilled_nrm.png"))
+			material.set_shader_parameter("cell_state", tex)
+			var origin := GardenLayout.plot_origin(px * GardenLayout.COLS, pz * GardenLayout.ROWS)
+			material.set_shader_parameter("plot_origin", origin)
+			material.set_shader_parameter("plot_size", Vector2(GardenLayout.COLS * GardenLayout.CELL_W, GardenLayout.ROWS * GardenLayout.CELL_D))
+			material.set_shader_parameter("cells", Vector2(GardenLayout.COLS, GardenLayout.ROWS))
+			material.set_shader_parameter("cell_w", GardenLayout.CELL_W)
+			material.set_shader_parameter("cell_d", GardenLayout.CELL_D)
+			plot_soil_mat[key] = material
+
+func _plot_mat_for(ix: int, iz: int) -> ShaderMaterial:
+	return plot_soil_mat[_plot_key(ix, iz)]
+
+func _build_bed_bodies() -> void:
+	var size := Vector2(GardenLayout.COLS * GardenLayout.CELL_W, GardenLayout.ROWS * GardenLayout.CELL_D)
+	var mesh: ArrayMesh = (load("res://scripts/world/bed_mesh_builder.gd") as GDScript).build(size)
+	for px in 2:
+		for pz in 2:
+			var rect := GardenLayout.plot_rect(px, pz)
+			var node := MeshInstance3D.new()
+			node.name = "BedBody_%d_%d" % [px, pz]
+			node.mesh = mesh
+			node.material_override = plot_soil_mat["%d,%d" % [px, pz]]
+			node.position = Vector3(rect.position.x + rect.size.x * 0.5, 0.0, rect.position.y + rect.size.y * 0.5)
+			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			add_child(node)
+
+func _write_cell_state() -> void:
+	for px in 2:
+		for pz in 2:
+			var key := "%d,%d" % [px, pz]
+			var img: Image = plot_cell_img.get(key)
+			var tex: ImageTexture = plot_cell_tex.get(key)
+			if img == null or tex == null:
+				continue
+			for lx in GardenLayout.COLS:
+				for lz in GardenLayout.ROWS:
+					var plot: SoilCell = soil.get_cell(px * GardenLayout.COLS + lx, pz * GardenLayout.ROWS + lz)
+					if plot == null:
+						continue
+					var r := 1.0 if plot.tilled else 0.0
+					var g := clampf(plot.moisture, 0.0, 1.0)
+					var b := 1.0 if plot.plant_id != "" else 0.0
+					img.set_pixel(lx, lz, Color(r, g, b, 1.0))
+			tex.update(img)
 
 func _wire_jellies() -> void:
 	for actor in ecology.actors:

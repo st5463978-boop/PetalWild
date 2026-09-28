@@ -17,13 +17,9 @@ func build(parent: Node3D) -> void:
 	_hedge_coat(parent)
 	_hedge_bulges(parent)
 	_hedge_volume(parent)
-	# Change 1: floor is lawn texture plus bed-border flowers. Spike grass, red
-	# leaf cards, cone shrubs, and the interior willow come out of the hedge room.
-	_flowers(parent)
-	_flower_rows(parent)
+	# Bed-border flowers only. Interior scatter hid the soil and lawn.
 	_trees(parent)
 	_gap_fill(parent)
-	_groundcover(parent)
 	_room_beds(parent)
 	_stones(parent)
 	_cc0_props(parent)
@@ -48,10 +44,16 @@ func _terrain(parent: Node3D) -> void:
 	node.mesh = mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/terrain.gdshader")
-	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"):
-		material.set_shader_parameter("grass_tex", load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"))
-	if ResourceLoader.exists("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"):
-		material.set_shader_parameter("dirt_tex", load("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"))
+	material.set_shader_parameter("grass_tex", load("res://assets/textures/garden/lawn_meadow_albedo.png"))
+	material.set_shader_parameter("clover_tex", load("res://assets/textures/garden/lawn_clover_albedo.png"))
+	material.set_shader_parameter("dirt_tex", load("res://assets/textures/garden/dirtpath_albedo.png"))
+	material.set_shader_parameter("flagstone_tex", load("res://assets/textures/garden/flagstone_albedo.png"))
+	material.set_shader_parameter("gravel_tex", load("res://assets/textures/garden/gravel_albedo.png"))
+	material.set_shader_parameter("splat_tex", load("res://assets/terrain/garden_splat.png"))
+	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"):
+		material.set_shader_parameter("grass_nrm", load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"))
+	if ResourceLoader.exists("res://assets/textures/detail/B10_flagstone_nrm.png"):
+		material.set_shader_parameter("flag_nrm", load("res://assets/textures/detail/B10_flagstone_nrm.png"))
 	node.material_override = material
 	node.name = "Terrain"
 	parent.add_child(node)
@@ -120,20 +122,7 @@ func _paths(parent: Node3D) -> void:
 		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.44],
 		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5), 0.96],
 	]
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for strip in strips:
-		# ponytail: narrow tracks are stones; a ribbon if the gaps stop reading as meadow.
-		if float(strip[2]) < 0.5:
-			continue
-		_ribbon(tool, strip[0], strip[1], float(strip[2]))
-	tool.generate_normals()
-	var node := MeshInstance3D.new()
-	node.mesh = tool.commit()
-	node.material_override = _standard(Color("#3c3228"), 0.98)
-	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.name = "Paths"
-	parent.add_child(node)
+	# Change 2: walks are the terrain splat. Stones stay as layout grit until change 4.
 	_path_stones(parent, strips)
 
 func _ribbon(tool: SurfaceTool, a: Vector3, b: Vector3, width: float) -> void:

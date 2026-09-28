@@ -38,6 +38,10 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	for i in 24:
+		if current_scene != null:
+			break
+		await process_frame
 	var scene: Node = current_scene
 	_freeze_time()
 	_hide_debug(scene)
@@ -108,6 +112,8 @@ func _freeze_time() -> void:
 	seed(20260928)
 
 func _stage_subjects(scene: Node) -> void:
+	if scene == null:
+		return
 	if scene.has_method("debug_spawn") and get_nodes_in_group("jelly").is_empty():
 		scene.call("debug_spawn", "bellhelp")
 	var jellies: Array[Node] = get_nodes_in_group("jelly")
@@ -124,6 +130,8 @@ func _anchor(scene: Node, key: String) -> Node3D:
 	return scene.find_child(key, true, false) as Node3D
 
 func _camera_for(scene: Node, shot: Dictionary) -> Camera3D:
+	if scene == null:
+		return play_cam if shot["anchor"] == "@gameplay" else null
 	var shot_name: String = shot["name"]
 	var existing: Camera3D = scene.find_child(shot_name, true, false) as Camera3D
 	if existing != null:
@@ -145,14 +153,26 @@ func _camera_for(scene: Node, shot: Dictionary) -> Camera3D:
 	return cam
 
 func _set_hud(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	var overlay: Node = null
+	if "debug_overlay" in scene:
+		overlay = scene.get("debug_overlay") as Node
 	for n: Node in scene.find_children("*", "CanvasLayer", true, false):
-		if n is DebugOverlay:
-			(n as CanvasLayer).visible = false
+		var layer := n as CanvasLayer
+		if overlay != null and n == overlay:
+			layer.visible = false
 			continue
-		(n as CanvasLayer).visible = on
+		var nm := str(layer.name).to_lower()
+		if nm.contains("debug"):
+			layer.visible = false
+			continue
+		layer.visible = on
 
 func _hide_debug(scene: Node) -> void:
-	if scene != null and "debug_overlay" in scene:
+	if scene == null:
+		return
+	if "debug_overlay" in scene:
 		var overlay: Variant = scene.get("debug_overlay")
 		if overlay is CanvasLayer:
 			(overlay as CanvasLayer).visible = false
@@ -169,6 +189,8 @@ func _audit_tree(scene: Node) -> Dictionary:
 	var placeholders: Array[String] = []
 	var spikes: Array[String] = []
 	var checkers: Array[String] = []
+	if scene == null:
+		return {"placeholders": placeholders, "spike_meshes": spikes, "checker_textures": checkers}
 	for n: Node in scene.find_children("*", "GeometryInstance3D", true, false):
 		var gi: GeometryInstance3D = n
 		if not gi.is_visible_in_tree() or gi.is_in_group("signoff_ok"):
@@ -224,6 +246,8 @@ func _texture_paths(mat: Material) -> Array[String]:
 
 func _label_overlaps(scene: Node, cam: Camera3D) -> Array[String]:
 	var rects: Array[Dictionary] = []
+	if scene == null or cam == null:
+		return []
 	for n: Node in scene.find_children("*", "Label", true, false):
 		var l: Label = n
 		if l.is_visible_in_tree() and l.text != "":

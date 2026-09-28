@@ -313,6 +313,7 @@ func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInsta
 	material.roughness = 0.74
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node
 
@@ -330,6 +331,7 @@ func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: f
 	material.roughness = 0.7
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node
 
@@ -347,5 +349,6 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> MeshIn
 	material.roughness = 0.55
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node
