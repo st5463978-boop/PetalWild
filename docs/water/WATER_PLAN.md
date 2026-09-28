@@ -1,206 +1,240 @@
 # PetalWild water plan
 
-Research only. No gameplay or shader implementation in this change. Target: Godot **4.8-dev6 Forward+**, Windows PC. House look: materials halfway between toy and real, matching the approved city-park pond (clear water, caustics on the bed, lily pads, a sharp creature reflection). Nested worlds share one water stack; each body gets a profile, not a unique shader.
+Research only. No gameplay or shader implementation in this change. Target: Godot **4.8-dev6 Forward+**, Windows PC.
 
-Licence firewall is the same as `docs/research/REFERENCES.md` and `docs/LICENSE_MATRIX.md`. MIT / CC0 only in the tree. Road to Vostok is a study reference, not a source. Do not vendor its `Water.gd` or shaders.
+**Primary look:** Viva Piñata (Rare, Xbox 360, 2006) and *Trouble in Paradise* (2008) garden ponds. A **high-realism, sparkly water surface** over a **cartoony, painterly, high-quality bed**. That contrast is the effect. The approved city-park pond concept is our instance of the same split.
 
-## 1. Look target
+**Supporting:** Road to Vostok for Godot-4 lake technique. Pen Pen TriIcelon for creature-in-water interaction.
 
-Approved pond concept (attached city-park close-up, also the art-desk city-park pond):
+Licence firewall is the same as `docs/research/REFERENCES.md` and `docs/LICENSE_MATRIX.md`. MIT / CC0 only in the tree. Do not vendor Road to Vostok, Viva Piñata, or TiP-Recomp (no-AI policy; not inspected). House style is already “Viva Piñata-style, painterly, saturated, chunky and toy-like” (`docs/AGENT_CONTRACTS.md`); this plan is how that applies to **water**.
 
-- Horizontal **clear** surface, not a dyed bowl.
-- **Caustics** on stones and bed, brightest in the shallows.
-- **Reflections** of the jelly, willow, lamps, sky; a readable inverted copy, slightly softened.
-- **Refraction**: lily pads and stones kick sideways under the surface.
-- Green-gold **depth colour** that still lets the bed show in the shallows.
-- Soft mossy shoreline, not a white foam ring.
-- Dragonflies, duck, pads sit *in* the water, not stamped on a plane.
+Nested worlds share one water stack; each body gets a `WaterProfile`, not a unique shader.
 
-Today’s live pond (`shaders/water.gdshader` + `GardenDressing._water`) is a vertex-sine bowl with fresnel tint and a sparkle. No depth, refraction, normals, foam, caustics, or interaction. The bowl-down mesh was a look hack because the shader could not read bathymetry. **v1 should make the surface a rest plane** (tiny waves on top). The basin stays in the terrain.
+## 1. The layered look (ship this first)
 
-Worlds that will use this:
+Two layers, two materials. Do not paint the bed inside the water shader.
+
+```
+sun / sky / jelly / willow     ← reflected and sparkled on the SURFACE
+────────────────────────────────  WaterSurface  (realistic, sparkly, mostly clear)
+  painterly sediment, stones,    ← readable THROUGH the water
+  pads, toy-scale weeds
+────────────────────────────────  PondBed       (stylised, saturated, hand-painted quality)
+```
+
+If the surface is cartoony, it is Wind Waker. If the bed is photogrammetry mud, it is a real pond. Piñata is **realistic top, toy bottom**. The realistic sheet makes the toy bed pop.
+
+v1 success test (parish pond or city-park canal, close camera):
+
+1. Surface **glints** in the sun (tight specular + bloomed sparkles).
+2. Surface **reflects** sky and a nearby creature, at least as a readable highlight.
+3. Looking down, the **bed is a painted picture**, not a dark teal void and not Poly Haven dirt.
+4. Shore is **wet sediment**, not a white foam ring.
+5. Water is **clear enough** that (3) is obvious. Murky beer-law absorption is the wrong default.
+
+The live shader (`shaders/water.gdshader`) already has a cheap world-space sparkle and a bowled mesh. Keep the sparkle *idea*; replace the implementation. Flatten the surface to a rest plane. The basin stays in the terrain, with a new bed material.
 
 | World | Water | v1 quality |
 | --- | --- | --- |
-| Hedge Hollow parish pond | ~3–6 m scooped still pond, Bulrush/Reedic wade | Full |
-| Grove Park / city-park canal | Hero look from the concept (bridge, pads, lamps) | Full when that world is loaded |
-| Petal Vale / distant | Lakes as set dressing | LOD: probe + colour, no SSR, no ripple RT |
-
-One shader. `WaterProfile` per body.
+| Hedge Hollow parish pond | ~3–6 m scooped still pond, Bulrush/Reedic wade | Full layered look |
+| Grove Park / city-park canal | Hero look from the concept (bridge, pads, lamps, jelly reflection) | Full when that world is loaded |
+| Petal Vale / distant | Set dressing | LOD: probe + colour, no sparkle RT, no ripple |
 
 ## 2. Reference games
 
-### 2.1 Road to Vostok (confirmed)
+### 2.1 Primary look — *Viva Piñata* (2006) and *Trouble in Paradise* (2008)
 
-Hardcore survival FPS, Finnish–Russian border wetlands. Solo developer Antti. **Godot 4** after a mid-production Unity port (~600 hours, 2024). Public modding notes put the Early Access build on **Godot 4.6.1, Forward+, D3D12**. That is the same renderer family as PetalWild’s Windows target, one minor version behind our 4.8-dev6 pin.
+Rare, Xbox 360. Custom on-team engine, ~50 people, 30 fps in a busy garden. Ponds are **dug holes** in the tessellated “diggable surface,” filled with water, used to attract aquatic piñatas (Quackberry, Newtgat, Lickatoad, Dragumfly, Swanana, Chippopotamus, …). TiP made lakes faster to draw and, per players, **clearer and shinier** with nicer reflections ([GameFAQs thread](https://gamefaqs.gamespot.com/boards/946126-viva-pinata-trouble-in-paradise/45255605)).
 
-Why the water reads:
+#### What Rare actually documented
 
-- **Still, cold lakes**, not an ocean. Dark tannin / steel, big sky and pine reflections. PetalWild wants clearer garden water, but the *scale* (pond/lake, not swell) matches.
-- A dedicated **Water system** shipped in Public Demo 1 v2 ([devlog](https://www.youtube.com/watch?v=2HePkuTN6hs)). Swimming and fishing were turned off in that demo for polish, so interaction exists in the project and was not yet the selling point.
-- Graphics menu exposes **Water Reflection** as a cheap, high-value wetland toggle ([settings write-up](https://www.switchbladegaming.com/road-to-vostok/best-pc-settings/)). That is probe / SSR class, not a second full scene.
-- **Water clarity** (see-through to fish) is a known tweak in the visual-overhaul mod community, which implies depth absorption + underwater tint, not a solid plane ([Peter’s Immersion](https://modworkshop.net/mod/56778)).
-- Weather is global shader state (`Rain`, `Wind`, `Winter`, `Snow`, player position) in the public architecture notes. Water is expected to listen to those, not own a private clock.
-- Godot’s built-in **SSR does not run on transparent materials**. Any water that both refracts and reflects is either a custom ray-march in the water shader, a reflection probe, or a planar camera. RTV almost certainly uses some mix of those; we must not copy their code.
+**Michael Boulton, SIGGRAPH 2007** — *Tessellation in Viva Piñata*, Advances in Real-Time Rendering ([PDF](https://advances.realtimerendering.com/s2007/Boulton-PinataTessellation(Siggraph07).pdf), [course index](https://advances.realtimerendering.com/s2007/index.html)):
 
-Take for PetalWild: **Godot Forward+ lake water is a solved shape** — depth colour, a reflection toggle, weather globals, keep swimming/wading as a later polish pass. Do not chase RTV’s boreal darkness; our pond is ornamental and clear.
+- Cartoon look, expensive GPU: unified shadows, volumetric rendering, long draw distances, **microcode shaders**.
+- Garden floor is a **16×16 tessellated lattice**. Vertex-shader memory export writes tessellation factors from screen-space edge length (~50 px). Off-screen quads drop to minimum. Pixel shaders were so heavy that extra triangles hurt.
+- Attributes are **not interpolated** across tessellated verts (swimming artefacts). A separate **attribute texture** is fetched in vertex and pixel shaders (grass, contact occlusion, height).
+- **Ponds, in so many words:** “To avoid artefacts around pond banks, filtering was used in the vertex shader. When transitioning to the **sediment texture layer**, the height value was read directly from the attribute texture.” Vertex kill punches holes (grass vs ground).
 
-### 2.2 Second title: *Pen Pen TriIcelon* (most probable)
+That is the bed/surface split in engine terms: the pond is a **hole in the garden mesh** with a **sediment material**, not a water shader pretending to be dirt.
 
-**Confidence: ~75% that this is the game the owner meant. ~40% that it is the water-quality reference they would pick if shown a shortlist.**
+**Michael Boulton, GDC 2007** — *The Look of Viva Pinata: A Detailed Tour Of The Graphics Engine* ([GDC Vault](https://www.gdcvault.com/play/732/The-Look-of-i-Viva), [preview](https://www.gamedeveloper.com/game-platforms/gdc-adds-i-assassin-s-creed-viva-pinata-elite-beat-agents-i-lectures)). Topics: “how the shaders were designed to achieve the look,” lighting and shadowing, edge-based tessellation. Full video is Vault-locked; no public water-shader slide deck. Treat water internals below as **reconstruction from the tessellation talk + HDR practice + footage**, not leaked source.
 
-| Guess | Match |
+**Ali Eslami, Xbox 360 HDR** — *A Brief Introduction to High Dynamic Range Lighting on the Xbox 360* ([PDF](https://arkitus.com/files/tm-09-eslami-hdr.pdf)). Uses **Viva Piñata frames as the HDR example**, and lists bloom as part of the 360 HDR story. Sparkles on water are HDR values that bloom, not a white albedo.
+
+**Ed Bryan (lead artist)** — [Rare Gamer interview](https://www.raregamer.co.uk/games/interview-with-viva-pinata-lead-artist-ed-bryan/): a “solid and coherent world,” extreme close-up detail, weather (sun, night, storms, morning mist), 30 fps in a full garden. Maya / Bodypaint / Photoshop textures; particle tools dating back to Banjo-Tooie.
+
+Gameplay shape of a pond: [pinataisland.info/Pond](https://pinataisland.info/viva/Pond), [fandom Shovel](https://vivapinata.fandom.com/wiki/Shovel). Level 7 Pond Shovel Head; TiP lets you stamp a polygon. Piñatas drink from it. Aquatic species live in the volume.
+
+#### Footage analysis (how it reads)
+
+Press and play footage (links in §2.1.1). No Rare water-shader source.
+
+| Cue | What you see | Likely how (360, 2006) |
+| --- | --- | --- |
+| Surface vs bed | Horizontal **sheet**. Under it: painted sand/green **sediment**, stones, weeds. The sheet is the realistic part. | Water is a **separate plane**. Bed is the tessellated garden with the sediment layer. You see the bed because the plane is clear, not because the water shader paints a fake floor. |
+| Sparkle | Tight, dancing **sun glints**, bloomed, especially at a shallow grazing angle. Feels “wetter than the grass.” | Dual scrolling normals + **very tight Blinn/Phong** + a high-frequency sparkle mask. Specular **> 1** into an HDR buffer; bloom turns dots into sparkles (Eslami). Not a tiled caustic atlas as the main trick. |
+| Reflections | Sky, trees, houses, **piñatas** sit in the water, fairly crisp in TiP. Distorted a little by the chop. | **Planar reflection** (mirror camera into a RT) was the 360 default for small lakes (same family as Source/HL2 water). Cube/env for sky fill. SSR did not exist as a standard 360 pass. |
+| Transparency / refraction | Looking **down**: bed is obvious, lightly tinted. Looking **across**: more sky. Stones and pads kick only a little. | Strong **Fresnel**. Light tint, not murky absorption. Mild UV-offset of the scene behind, not a hard Snell IOR. The “refraction” is often just seeing the real terrain through alpha. |
+| Bed colour | Saturated, **illustrative** dirt and moss. Toy scale. No photogrammetry grit. | Sediment **texture layer** (Boulton). Painted albedo, maybe a wet-darker variant near the waterline. |
+| Foam / edges | Soft **wet bank**, sediment creeping up. Almost no white foam. | Vertex-shader **filtering** at the bank; height from the attribute texture so the lip does not crawl. Not a foam ring in the water shader. |
+| Caustic-like hits | Bright moving highlights. More **on the surface** than classic pool-floor caustics. | Mostly sparkle/spec. A scrolling additive on the bed is optional and secondary. |
+| Creatures | Quackberry swims **on** the sheet; others wade. Drink. Splash on entry. Ripples are small. | Particle splashes (Banjo-era particle tools). A few ripple decals or a scrolling normal, not a 256² heightfield. Pond is gameplay volume (pinometers of water). |
+| Motion | Garden pond: **tiny chop**, not Gerstner swell. | Dual normal scrolls. Geometry stays a plane. |
+
+**Take for PetalWild:** two materials; HDR sparkle into the existing glow; keep the bed painterly and the water **clear**; banks are sediment, not foam; planar reflection is how they got creature copies in the pond. Do not copy species, textures, or code.
+
+#### 2.1.1 Screenshots and footage (links only)
+
+Rare / Microsoft stills are copyrighted. They are **not** copied into this repo (`ASSET_PROVENANCE.md`). Use these while researching; do not vendor them.
+
+| What | URL |
 | --- | --- |
-| “Pen Pen Dorif” | Japanese title **ペンペントライアイスロン** (*Pen Pen ToraiAisuron*). Europe shipped it as **Pen Pen**. “Dorif” is a plausible mishear of *TriIcelon* / triathlon, or of Japanese **ドリフト** (*dorifuto*, drift) after watching a swim/slide race. |
-| “Pennerith” | No game, studio, or shader author by that name turned up. Closest dead-ends: Penrith (UK town), Penumbra, Palia, Prophesy of Pendor. None are water showcases. |
-| Penguin or water game | Dreamcast launch racer (1998 JP / 1999 WW) by General Entertainment / Team Land Ho. Penguin-like **Pen Pen** waddle, belly-slide, and **swim**. |
+| Official E3 2006 **Water Park** demo (WMV) | [Microsoft Download Center archive](https://legacyupdate.net/download-center/download/9980/viva-pinata-movies-water-park) (`Pinata_WaterPark_Med.wmv`) |
+| Same demo, stream | [Gamersyde, 2:55](https://www.gamersyde.com/video_viva_pinata_e3_water_park-2639_en.html) |
+| Rare Gamer write-up of that demo | [E3 2006 Garden Demos – Water Park](https://www.raregamer.co.uk/games/viva-pinata-e3-2006-garden-demos-water-park/) |
+| Promo stills, including “Wallpaper … Water” | [MobyGames promo](https://www.mobygames.com/game/25261/viva-pinata/promo/) |
+| In-game screenshot set | [MobyGames screenshots](https://www.mobygames.com/game/25261/viva-pinata/screenshots/) |
+| “A quackberry in the lake” | [Giant Bomb images](https://www.giantbomb.com/viva-pinata/3030-20537/images/) |
+| TiP press shots | [XboxAchievements](https://www.xboxachievements.com/game/viva-pinata-trouble-in-paradise/screenshots/), [Neoseeker](https://www.neoseeker.com/viva-pinata-trouble-in-paradise/screenshots/) |
+| Rare staff playing a finished garden (ponds in a live garden) | [IGN Plays: Rare Replay garden](https://www.ign.com/videos/rare-replay-cultivating-a-pimped-out-viva-piata-garden-ign-plays) |
+| SIGGRAPH tessellation slides (pond banks called out) | [Boulton PDF](https://advances.realtimerendering.com/s2007/Boulton-PinataTessellation(Siggraph07).pdf) |
 
-Sources: [Wikipedia](https://en.wikipedia.org/wiki/Pen_Pen_TriIcelon), [Hardcore Gaming 101](https://www.hardcoregaming101.net/pen-pen-triicelon/), [IGN 1999](https://www.ign.com/articles/1999/09/09/pen-pen-tri-icelon), [GameVortex](https://www.gamevortex.com/gamevortex/soft_rev.php/1404/pen-pen-triicelon-dreamcast.html), [Retro Replay](https://retro-replay.com/db/dreamcast/pen-pen-triicelon/).
+PetalWild’s own look target (original art, allowed in-tree): the attached city-park pond close-up, and `docs/reference/petalwild_target_garden_01.png` (willow water in the back of the hedge). Match **that** lighting to the Piñata *split*, not to Piñata’s characters.
 
-What the water actually does (footage / reviews, not a published shader talk — none exists):
+### 2.2 Supporting — Road to Vostok (surface realism on Godot 4)
 
-- Dreamcast PowerVR2: cheap alpha, **environment-mapped surface**, scrolling water textures, modest vertex chop. Not PBR, not FFT.
-- Swim sections are **full body-in-water**: camera can go under, sunken toys/ships stay readable, characters stroke through a volume rather than skating on a plane.
-- **Splashes and drip-off** are the sell. Reviews call out droplets when a Pen Pen surfaces and a shake-off after a dive. Particle + animation, not a fluid sim.
-- Toy palette, crystal-clear water, props sitting in the swim lane (shampoo bottles on Toys, mines on Sweets). That is closer to PetalWild’s jelly-in-a-garden-pond than RTV’s wetlands.
-- Four racers in the water at once; draw-distance / LOD kept it smooth.
+Hardcore survival FPS. **Godot 4** after a Unity port. Public notes: Godot **4.6.1 Forward+**. Same renderer family as us.
 
-Take for PetalWild: **interaction feel**, not surface shading. Jellies, Bulrush, and Reedic should splash, wake, and look wet. Underwater as a later stage. Do not treat Pen Pen’s env-map puddle as the lighting model.
+Use it for: still-water *scale*, a cheap reflection toggle, weather as shader globals, “do not turn on Environment SSR on transparent water.” Do **not** use it for colour. RTV lakes are tannin and dark. That murk would hide the painterly bed and kill the Piñata split.
 
-### 2.3 Runner-up candidates (if the owner meant “great water”, not “penguin”)
+Sources: [site](https://roadtovostok.com/), [Public Demo 1 v2](https://www.youtube.com/watch?v=2HePkuTN6hs) (Water System; swimming off for polish), [PC settings](https://www.switchbladegaming.com/road-to-vostok/best-pc-settings/) (Water Reflection = low cost), [Peter’s Immersion](https://modworkshop.net/mod/56778) (clarity / fish). Architecture names only at [dwoodruff83/RoadToVostokMods](https://github.com/dwoodruff83/RoadToVostokMods) — not a source.
 
-Ranked by how well they fit the guesses **or** the water brief.
+### 2.3 Supporting — *Pen Pen TriIcelon* (~75% name match)
 
-| Rank | Title | Why it is on the list | Why it is not pick 1 |
-| --- | --- | --- | --- |
-| 1 | **Wave Race 64** / **Wave Race: Blue Storm** (N64 / GameCube) | The generation’s “look at this water” racer. Vertex wave field, buoyancy, full-scene reflections on Blue Storm, jet-ski wakes that deform the surface. [Aguas](https://aguaspoints.com/2023/02/02/some-thoughts-on-nintendos-wave-race-blue-storm/), [IGN Blue Storm](https://www.ign.com/articles/2001/11/07/wave-race-blue-storm-2), [GamesFirst](https://gamesfirst.com/articles/2001/wave-race-blue-storm-gc/). Same era/platform neighbourhood as Pen Pen (Sega hardware adjacent; Hydro Thunder on DC). | Name is not Pen Pen. Study it for **wakes and planar-ish reflections**, not as the mystery title. |
-| 2 | **Hydro Thunder** (Dreamcast) | Same box as Pen Pen, water was the screenshot. Heavy env-map + spray. | Not a penguin game; arcade boats. |
-| 3 | **Surf’s Up** (2007) | Actual penguins on water; Ubisoft wave/surf tech. | Name is not close. CG-film look. |
-| 4 | **ABZÛ** / **The Pathless** (Giant Squid) | Best stylized “creature in water” lighting this side of Wind Waker. | Names are not Pennerith. Use as a *look* extra, not the ID. |
-| 5 | **Club Penguin** / Island | Penguin + water, toy. | Weak water tech; name only shares “Pen”. |
-| 6 | **Ecco the Dolphin** | Classic swim-through-volume. | Dolphin, not penguin. |
-| 7 | **Palia**, **Penumbra**, **Penrith**, **Dorfromantik** | Phonetic leftovers (“Pennerith”, “Dorif” ≈ Dorf). | Palia is Unreal cozy; Penumbra is horror; Penrith is a town; Dorfromantik has no water tech. Rejected. |
+Dreamcast penguin racer (1998/99). “Pen Pen Dorif” → *Pen Pen ToraiAisuron*. “Pennerith” matched nothing. Use it for **splash, drip-off, body-in-water**, not lighting. If the owner meant water-quality rather than penguin, the runner-up is **Wave Race: Blue Storm** (planar-ish reflections, wakes). Hydro Thunder, Surf’s Up, ABZÛ sit behind that. Palia / Penumbra / Penrith / Dorfromantik are phonetic dead-ends.
 
-**Owner check:** if the second reference was meant as *water quality* rather than *penguin*, swap Pen Pen for **Wave Race: Blue Storm** and keep Pen Pen as the interaction mood board.
+Sources: [Wikipedia](https://en.wikipedia.org/wiki/Pen_Pen_TriIcelon), [HG101](https://www.hardcoregaming101.net/pen-pen-triicelon/), [IGN 1999](https://www.ign.com/articles/1999/09/09/pen-pen-tri-icelon).
 
 ## 3. What exists in PetalWild today
 
-- `shaders/water.gdshader`: `blend_mix`, `cull_disabled`, two colours, fresnel alpha, `ROUGHNESS` 0.08, a world-space sparkle. Vertex `sin`/`cos` ~1–2 cm.
-- Mesh: 14 rings × 28 segments, **bowled down** to match `GardenLayout.pond_surface` (`dressing.gd`). UVs are already **world XZ**. Group `parish_pond`.
-- Terrain already cuts a basin (`layout.gd` `height_at`). Bed colour `#1e5c56`.
-- Interaction: land jellies **bounce off** the pond; Bulrush/Reedic **stand on the bowl** (`jelly.gd` `_stand_y`, `JellyFeel.bounce_prop`). No splash, no wake, no wetness.
-- Atmosphere (`atmosphere.gd`): SSAO, glow, exponential fog, filmic tonemap, procedural sky. **No SSR, no reflection probes, no volumetric fog.** MSAA 2× in `project.godot`.
-- Engine pin: 4.8-dev6 Forward+ on the Windows target. This agent VM is llvmpipe / Compatibility — do not tune water against that.
+- `shaders/water.gdshader`: fresnel tint, `ROUGHNESS` 0.08, a **sine sparkle**, 1–2 cm vertex chop. No depth, no real specular sparkle, no bed layer.
+- Mesh: 14×28 **bowl** (`dressing.gd`). UVs already world XZ. Group `parish_pond`.
+- Terrain basin exists (`layout.gd`). Bed colour `#1e5c56` — too dark and too “real.” Poly Haven dirt on the garden must **not** continue under the water.
+- Land jellies bounce off; Bulrush/Reedic stand on the bowl. No splash.
+- `atmosphere.gd`: SSAO, **glow already on**, exponential fog, filmic, procedural sky. No SSR, no probes. MSAA 2×. Glow is the bloom path the sparkles need.
 
-## 4. v1 stack (stylised, convincing, cheap)
+## 4. v1 stack — sparkly surface over painted bed
 
-Goal: the city-park close-up on a garden-scale pond, ~1 ms GPU at 1080p, no ocean sim.
+Goal: the Piñata split on a garden pond, ~1 ms GPU at 1080p. No ocean sim.
 
-### 4.1 Scene layout (forward-compatible)
-
-Do **not** keep a unique bowl mesh as the water. Bathymetry lives in terrain; water is a rest plane with optional displacement.
+### 4.1 Scene layout (two materials, one API)
 
 ```
 WaterBody (Node3D, group `water_body`)
-├─ Surface          MeshInstance3D   PlaneMesh, ~64 subdiv, clipped to shoreline AABB
-├─ Probe            ReflectionProbe  box-projected, interior, once-dirty or 2–4 s update
-├─ RippleCam        SubViewport      256², orthographic, heightfield (or compute, see below)
-├─ Splash           GPUParticles3D   droplets + a short ring; off until an impulse
-└─ Volume           Area3D           overlap for wading / splash triggers
+├─ Surface          MeshInstance3D   PlaneMesh, ~64 subdiv, rest Y = shoreline
+├─ Bed              MeshInstance3D   basin / clipped terrain, PondBed material
+├─ Probe            ReflectionProbe  box-projected, slow update
+├─ RippleCam        SubViewport      256² heightfield (or compute)
+├─ Splash           GPUParticles3D
+└─ Volume           Area3D
 ```
 
-Later stages add children, they do not rename these: `PlanarCam` (stage 2), `FlowMap` texture slot (stage 2), Gerstner/FFT displace on the same `Surface` mesh (stage 3).
+Later children (do not rename the above): `PlanarCam` (stage 2 — how Piñata got creature copies), `FlowMap` (stage 2 canal).
 
-`WaterProfile` (Resource) is the only authored look. Garden pond and city-park canal are two resources, one shader.
+`WaterProfile` authors **both** layers (surface uniforms + bed colours). Garden pond and city-park canal are two resources, one shader pair.
 
-**Mesh rules that keep later stages unboxed:**
+**Mesh rules:**
 
-- World-space XZ UVs (already true).
-- Rest pose is a **horizontal plane** at shoreline Y. Vertex displacement is additive (`rest + wave + ripple`).
-- Subdivision high enough for later Gerstner (~64² on a 8 m pond). v1 waves are normal-map only, so this is prepaid, not used.
-- Shoreline clip by mesh bounds + shader depth foam, not by baking the basin into the surface.
-- One material per body; feature flags in the shader, not duplicated files.
+- Surface is a **horizontal rest plane**. Displacement is additive (`rest + wave + ripple`). Drop the bowled water mesh.
+- World XZ UVs on both layers.
+- Bed is real geometry (the existing terrain bowl is fine as a starting mesh). Shoreline = where bed meets plane, with vertex/height filtering in the *bed* shader (Boulton’s bank trick), not a foam strip on the water.
+- Subdivision on the plane prepaid for later Gerstner (~64² on an 8 m pond). v1 does not displace.
 
-### 4.2 Shader (ubershader, flags off until paid for)
+### 4.2 WaterSurface shader
 
-`render_mode` spatial, **do not write engine-SSR-friendly opaque**. We need `hint_screen_texture` + `hint_depth_texture`, which forces the transparent pass. **Leave Environment SSR off** while this material is in the frame ([Godot docs](https://docs.godotengine.org/en/stable/tutorials/shaders/screen-reading_shaders.html), [issue 90094](https://github.com/godotengine/godot/issues/90094), [proposal 7274](https://github.com/godotengine/godot-proposals/discussions/7274)).
+Transparent pass (`hint_screen_texture`, `hint_depth_texture`). **Environment SSR off** ([docs](https://docs.godotengine.org/en/stable/tutorials/shaders/screen-reading_shaders.html), [issue 90094](https://github.com/godotengine/godot/issues/90094)).
 
 ```
-#define WATER_SSR          // custom ray march, v1 on, cheap step count
-#define WATER_REFRACTION   // v1 on
-#define WATER_FOAM         // v1 on
-#define WATER_CAUSTICS     // v1 on
+#define WATER_SPARKLE      // v1 on — the Piñata glint
+#define WATER_REFRACTION   // v1 on, mild
+#define WATER_SSR          // v1 on, cheap; miss → probe
 #define WATER_RIPPLE_RT    // v1 on
-// #define WATER_PLANAR     // stage 2, samples planar_tex
-// #define WATER_FLOWMAP    // stage 2
-// #define WATER_GERSTNER   // stage 3 vertex
-// #define WATER_FFT        // stage 4 vertex / sample
-// #define WATER_UNDERWATER // stage 3 camera volume
+// #define WATER_FOAM       // default OFF — Piñata banks are sediment
+// #define WATER_CAUSTICS   // v1 optional, additive on the BED, not the sheet
+// #define WATER_PLANAR     // stage 2
+// #define WATER_FLOWMAP
+// #define WATER_GERSTNER
+// #define WATER_FFT
+// #define WATER_UNDERWATER
 ```
 
-**Uniforms (v1 live, later reserved).** Group them so the inspector stays readable.
-
-| Group | Uniform | v1 | Later |
+| Group | Uniform | v1 | Notes |
 | --- | --- | --- | --- |
-| Colour | `shallow_color`, `deep_color`, `absorption_color`, `fresnel_color` | yes | same |
-| Colour | `depth_meters`, `beer_law` | yes | same |
-| Surface | `normal_a`, `normal_b` (sampler2D) | yes | same |
-| Surface | `normal_scale_a/b`, `normal_scroll_a/b`, `normal_strength` | yes | flow map distorts UVs |
-| Surface | `roughness`, `specular` | yes | same |
-| Refraction | `refract_strength`, `refract_max` (depth fade so far objects do not smear) | yes | IOR later |
-| Foam | `foam_color`, `foam_depth`, `foam_noise`, `foam_noise_scale` | yes | flow / Gerstner peak foam |
-| Caustics | `caustic_tex` (2D or 2DArray), `caustic_scale`, `caustic_strength`, `caustic_speed` | yes | bed decal pass |
-| Reflection | `ssr_steps` (12–24), `ssr_travel`, `ssr_mix`, `ssr_edge_fade` | yes | better march |
-| Reflection | `planar_tex` | bound black / unused | stage 2 |
-| Interaction | `ripple_tex`, `ripple_strength`, `ripple_rect` (XZ AABB → UV) | yes | same |
-| Reserved | `flow_map`, `flow_strength` | default blank | stage 2 |
-| Reserved | `wave_displace_tex` | default blank | Gerstner/FFT |
-| Globals | `wind_dir`, `wind_strength`, `wetness_clock` | via shader globals, like RTV | rain ripples |
+| Colour | `shallow_tint`, `deep_tint`, `absorption_color` | yes | **Light.** Bed must read. Default beer_law low. |
+| Colour | `depth_meters`, `beer_law`, `fresnel_power` | yes | Fresnel does the “sky vs bed” split. |
+| Surface | `normal_a`, `normal_b`, scales, scrolls, `normal_strength` | yes | Small chop. Not ocean swell. |
+| Surface | `roughness` (~0.04), `specular` | yes | Tighter than today’s 0.08. |
+| Sparkle | `sparkle_tex` (or procedural), `sparkle_scale`, `sparkle_scroll` | yes | High-frequency noise. |
+| Sparkle | `sparkle_power` (64–128), `sparkle_intensity`, `sparkle_threshold` | yes | `pow(NdotH, power) * mask` → **EMISSION** so glow blooms it. |
+| Refraction | `refract_strength`, `refract_max` | yes | Mild. Depth-fade so distant trees do not smear. |
+| Reflection | `ssr_steps` (12–24), `ssr_travel`, `ssr_mix`, `ssr_edge_fade` | yes | |
+| Reflection | `planar_tex` | reserved black | Stage 2. |
+| Interaction | `ripple_tex`, `ripple_strength`, `ripple_rect` | yes | Distorts normals, not the bed albedo. |
+| Reserved | `flow_map`, `wave_displace_tex` | blank | |
+| Globals | `wind_dir`, `wind_strength` | shader globals | RTV-style. |
 
-Fragment, in order:
+Fragment order (surface):
 
-1. Dual scrolling normals, unpack, mix. Add `ripple_tex` slope.
-2. Reconstruct **scene depth** at refracted `SCREEN_UV`; convert to world; `water_depth = water_y - bed_y`. Handle Forward+ NDC z `[0,1]` (Compatibility would need `depth * 2 - 1` — keep a comment, do not ship a compat water path).
-3. **Absorption:** `screen - absorption_color * beer(depth)` then lerp toward `deep_color`. This is the Malido trick ([CC0 shader](https://godotshaders.com/shader/absorption-based-stylized-water/)).
-4. **Caustics:** sample at **bed XZ**, not surface XZ, so patterns sit on stones. Fade by depth and by `NdotL` of the sun. Two scaled layers, subtractive mix.
-5. **SSR:** reflect view about the mixed normal, march in view space against `DEPTH_TEXTURE`, fade at screen edge and on miss. Miss falls through to the **ReflectionProbe** via a low roughness / high specular write *or* a cubemap mix. Do not enable Environment SSR.
-6. **Fresnel** to `fresnel_color` / sky.
-7. **Foam** where `water_depth < foam_depth`, broken up by noise. No hard ring.
-8. Write `ALBEDO` as the composed colour, `ALPHA` near 1 (we already sampled the screen — treat as “opaque composite” so sorting fights lily pads less). `ROUGHNESS` low. Do not put the bed in `EMISSION` except a tiny caustic boost.
+1. Dual normals + ripple slope.
+2. Reconstruct bed depth at refracted `SCREEN_UV`. Forward+ NDC z is `[0,1]`.
+3. Sample the **already-drawn bed** from the screen (the bed is opaque, drawn first). Apply a **light** absorption tint. Do not lerp to a solid deep colour until depth is metres, not centimetres.
+4. Fresnel mix toward probe / SSR / sky.
+5. Sun specular (tight) + **sparkle emission**.
+6. Optional faint foam only if a profile asks; default off.
+7. `ALPHA` near 1 after compositing the screen sample, so lily pads sort less badly. `ROUGHNESS` low. Emission **only** on glints.
 
-Vertex v1: almost none (a millimetre sine is optional). Leave `VERTEX.y +=` behind a `WATER_GERSTNER` flag.
+Vertex v1: none (or a millimetre sine). Gerstner stays behind a flag.
 
-### 4.3 Textures
+### 4.3 PondBed shader (the stylised layer)
 
-| Map | Spec | Source plan |
-| --- | --- | --- |
-| `normal_a`, `normal_b` | 1K or 2K, OpenGL, seamless, small chop | Procedural FBM or CC0 (ambientCG / similar). Not photogrammetry swell. |
-| `foam_noise` | 512–1K cellular | Procedural or CC0 noise. |
-| `caustic_tex` | 1K tile or 16-slice array | Prefer **procedural Voronoi interference** in v1 (no asset). Else Calinou’s [CC0 caustics](https://opengameart.org/content/caustic-textures). |
-| `ripple_tex` | 256² R16F runtime | WaterBody. |
-| `flow_map` | RG, authored | Empty in v1. Canal later. |
-| HDRI | optional | Probe currently sees the procedural sky. A Poly Haven CC0 HDRI would help reflections; not required for v1. |
+This is half of v1. A photoreal bed will make the sparkly surface look like a puddle on mud.
 
-Art desk: only if a painted foam/caustic is wanted. Do not generate placeholder maps.
-
-### 4.4 Reflections, v1 choice
-
-| Path | Use |
+| Uniform | Intent |
 | --- | --- |
-| ReflectionProbe, box projected, on the pond AABB | Always-on fallback. Update rarely. Captures willow / houses when they are off-screen. |
-| Custom SSR in the water shader | Hero glints: jelly, lamps, bridge, sky band. 12–24 steps. |
-| Engine Environment SSR | **Off.** Fights `hint_screen_texture`. |
-| Planar camera | Stage 2, **small ponds only**, half-res, clip below the plane. This is what will make the jelly’s reflection match the concept. |
+| `sediment_albedo` (sampler or colour) | Painted sand / moss. Saturated. Soft brush, not scan data. |
+| `sediment_tint` | Warm green-gold in shallows, slightly deeper olive in the bowl. |
+| `wetness` | Darken a band just above the waterline (Boulton’s sediment transition). |
+| `detail_scale` | Large, readable blobs. Toy scale. |
+| `caustic_tex`, `caustic_strength` | Optional additive, sampled in **bed XZ**, sun-masked. Secondary to surface sparkle. |
 
-v1 is probe + cheap custom SSR. Budget the planar camera as a child node that stays disabled so stage 2 is a flag, not a rewrite.
+Do **not** bind Poly Haven `flower_scattered_dirt` under water. If we lack a painted map, a **shader-only** sediment (two colour ramps + cheap fbm, clamped saturation) is closer to Piñata than a photo. Art desk can replace that with a real paint later.
 
-### 4.5 Caustics and foam
+Banks: smoothstep the bed shading into the garden grass using world-XZ distance to the shoreline, with a filtered height sample so the lip does not crawl when the water plane is a millimetre off. That is the Boulton pond-bank note, on our side of the licence line.
 
-- Caustics are **projected onto the reconstructed bed**, mixed into the refracted colour. That reads through the water (concept: stones and pads).
-- Stage 2 can add a **Decal** or a second bed material so caustics still show from underwater. Leave a `caustic_decals: bool` on the profile.
-- Foam is depth + noise only. No mesh ribbon. Shoreline moss stays on the terrain shader.
+### 4.4 Textures
 
-### 4.6 Interaction API (do not put this in `jelly.gd`)
+| Map | Spec | Plan |
+| --- | --- | --- |
+| `normal_a/b` | 1K–2K OpenGL, small chop | Procedural FBM or CC0. Not photogrammetry swell. |
+| `sparkle_tex` | 256–512 high-frequency | Procedural dots / cellular. Threshold in shader. |
+| `sediment_albedo` | 1K painted or procedural | Art desk if we want a hero paint. No VP pixels. |
+| `caustic_tex` | optional | Procedural Voronoi, or Calinou [CC0 caustics](https://opengameart.org/content/caustic-textures). |
+| `ripple_tex` | 256² R16F runtime | WaterBody. |
+| HDRI | optional | Helps the probe. Procedural sky is dull in reflections. |
+
+### 4.5 Reflections
+
+| Path | Role in the Piñata look |
+| --- | --- |
+| Glow + HDR sparkle | The “wetter than the world” glint. v1 must. |
+| ReflectionProbe | Sky / willow when SSR misses. v1. |
+| Custom SSR | Nearby trees, lamps. v1, 12 steps. |
+| Environment SSR | **Off.** |
+| Planar camera | **How Rare likely put piñatas in the pond.** Stage 2, but the node exists disabled in v1. Half-res, clip below the plane, one live camera per loaded world. |
+
+v1 can look like Piñata **without** planar if sparkle + clear bed + probe are right. The jelly’s inverted copy in the city-park concept is the reason planar is next, not optional forever.
+
+### 4.6 Interaction API (not in `jelly.gd`)
 
 ```
 class_name WaterBody
@@ -208,97 +242,77 @@ signal body_entered_water(body, pos, speed)
 signal body_exited_water(body, pos)
 
 func impulse(world_pos: Vector3, velocity: Vector3, radius: float) -> void
-func sample_height(world_pos: Vector3) -> float   # rest Y + ripple (+ waves later)
+func sample_height(world_pos: Vector3) -> float
 func depth_at(world_pos: Vector3) -> float
 func is_submerged(world_pos: Vector3, radius := 0.0) -> bool
 ```
 
-v1 `sample_height` = plane Y + ripple sample + optional millimetre sine. Callers (jelly, Bulrush, thrown bodies, rain) never branch on shader internals.
+v1 height = plane Y + ripple. Waders (Bulrush) call `sample_height()`. Thrown jelly: one `impulse` + splash particles (Pen Pen). Rain: same RT. Land jellies still bounce the rim until a swim stage.
 
-Ripple field: **256² ping-pong height** over the pond AABB.
+Ripple: 256² compute (official [water_plane](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane), MIT) or a SubViewport blob. Distorts **surface normals** so sparkles break up around a wader. Do not ripple the bed albedo.
 
-- Preferred: Godot **compute** ripple (same idea as the official [water_plane demo](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane), MIT). Forward+ / RenderingDevice only — our Windows target.
-- Fallback if compute is awkward on 4.8-dev6: a SubViewport drawing additive blobs into a damping shader. Same `ripple_tex` slot.
-- `impulse()` stamps a blob scaled by `velocity.length()` and `radius`. Wading (Bulrush) stamps every few metres of travel at low energy. A thrown jelly stamps once on impact.
-- `GPUParticles3D` splash when `speed` exceeds a threshold (enter / throw). Small count (~24). No fluid sim.
-
-Land jellies still bounce at the rim until a later swim stage. Water species keep using `sample_height()` instead of `GardenLayout.pond_surface`.
-
-Rain: the same ripple RT, a few random impulses per second while `weather == rain`. Do not spawn a second system.
-
-## 5. Roadmap (same material, same mesh, same API)
+## 5. Roadmap
 
 | Stage | Add | Do not change |
 | --- | --- | --- |
-| **v1** | Dual normals, depth absorption, screen refraction, probe + cheap SSR, depth foam, bed caustics, ripple RT, splash particles | Profile fields, `WaterBody` API, plane mesh, world XZ UVs |
-| **2** | Flow map on the canal; **planar reflection** camera for the hero pond (half-res, disabled when the camera is far); wetness darkening on stones / feet; more splash / drip-off (Pen Pen) | Uniform names. Bind `planar_tex` and `flow_map` that already exist. |
-| **3** | 2–4 Gerstner tones behind `WATER_GERSTNER`; better SSR (interpolated step, like Malido); underwater camera volume (fog, caustic on the view, flip cull); LOD: distant bodies drop SSR and ripples | `sample_height()` adds Gerstner so waders stay on the surface |
-| **4** | FFT / Tessendorf only if a Vale *ocean* appears ([2Retr0](https://github.com/2Retr0/GodotOceanWaves), [tessarakkt](https://github.com/tessarakkt/godot4-oceanfft), both MIT). Shoreline SWE ([REBOOT16](https://reboot16.itch.io/godot-rsw), MIT) only if we need breaking waves on a beach | Pond profiles stay on Gerstner/normals. FFT is a third profile, not a rewrite of v1. |
+| **v1** | **PondBed + sparkly WaterSurface**, light absorption, mild refraction, probe + cheap SSR, ripple RT, splash | Profile fields, `WaterBody` API, plane + basin, world XZ UVs |
+| **2** | **Planar reflection** on the hero pond (Piñata creature copy); wetness on feet/stones; more drip-off (Pen Pen); flow map on the canal; optional bed caustics | Uniform names. Bind `planar_tex`. |
+| **3** | 2–4 Gerstner tones; better SSR; underwater volume; LOD drops sparkle/SSR in Vale | `sample_height()` includes Gerstner |
+| **4** | FFT only for a Vale ocean ([2Retr0](https://github.com/2Retr0/GodotOceanWaves), [tessarakkt](https://github.com/tessarakkt/godot4-oceanfft), MIT) | Pond profiles stay on sparkle + plane |
 
-Wave Race’s lesson sits in stage 2–3: **wakes are heightfield impulses**, reflections are a second camera or a strong env-map, buoyancy reads `sample_height()`. Pen Pen’s lesson is stage 2 particles + a wetness mask. RTV’s lesson is already v1 (Godot lake, reflection toggle, weather globals).
+RTV stays the Godot-lake checklist. Pen Pen stays splash. Wave Race sits with planar/wakes in stage 2–3. Piñata is the look bar for every stage: if a pass makes the bed photoreal or the surface matte, it failed.
 
-## 6. Performance and platform
+## 6. Performance (Windows PC, Forward+)
 
-Windows PC, Forward+, Vulkan (RTV also ships D3D12; we follow whatever 4.8-dev6 uses on Windows). Floor: **1080p 60**. Comfortable: 1440p on a mid GPU (RTX 2060 class), in line with how RTV treats Water Reflection as *low* cost.
+Floor **1080p 60**. Comfortable 1440p on an RTX 2060 class. Rare held 30 fps on a 2006 GPU with much heavier unique shaders; our garden is smaller.
 
 | Item | Budget |
 | --- | --- |
-| Water shader (garden pond on screen) | ≤ 1.0 ms at 1080p |
+| WaterSurface + PondBed | ≤ 1.0 ms at 1080p |
+| Sparkle | Folded into the surface pass (a few extra samples) |
 | Custom SSR | 12 steps default, 24 high |
-| Ripple RT | 256², one dispatch / viewport blit per frame, only if someone is near |
-| Splash particles | ≤ 64 live |
-| ReflectionProbe | 128³ or 256³, update ≤ 0.5 Hz or on teleport |
-| Planar cam (stage 2) | 50% res, culled below the plane, **one** live camera in the loaded world |
-| Distant / Vale LOD | no screen texture, no ripple, albedo + probe |
+| Ripple RT | 256², only if someone is near |
+| Splash | ≤ 64 particles |
+| Probe | 128³–256³, ≤ 0.5 Hz |
+| Planar (stage 2) | 50% res, one camera |
 
-Notes:
-
-- **Do not turn on Environment SSR, SSIL, or volumetric fog just to make water pretty.** Probe + custom SSR is cheaper and does not black out refraction ([issue 93725](https://github.com/godotengine/godot/issues/93725)).
-- MSAA 2× is already on. Custom SSR in the water shader is compatible. Engine SSR is happier with TAA — another reason to leave it off.
-- Shader compile stutters are a Godot 4 fact (RTV players hit this). Keep feature flags as `#define` baked per-profile, not runtime branches that explode variants.
-- Only the **loaded world’s** hero water runs full quality. Nested worlds do not keep a hidden planar camera warm.
-- Compute ripples need RenderingDevice (Forward+). If a future Compatibility shipping target appears, fall back to the SubViewport blob path; the uniform stays `ripple_tex`.
+Glow is already on; sparkles ride it. Do not add volumetric fog or engine SSR to “help” water. Feature flags baked per profile, not runtime variants. Compute ripples need Forward+. Nested worlds: only the loaded world’s hero water is full quality.
 
 ## 7. Open-source Godot 4 water (licences)
 
-Study and, where MIT/CC0, reuse ideas or snippets. Prefer an **original PetalWild shader** with our uniform names so we are not stuck with someone else’s inspector. Do not import GPL.
+Prefer an original PetalWild pair of shaders with our names. MIT/CC0 study only.
 
 | Project | Licence | Use |
 | --- | --- | --- |
-| [Malido — Absorption Based Stylized Water](https://godotshaders.com/shader/absorption-based-stylized-water/) | **CC0** (code; images not) | Closest v1 recipe: beer-law absorption, dual normals, optional SSR, player waves, caustics. Read it. Rewrite into `WaterProfile`. |
-| [marcelb/GodotSSRWater](https://github.com/marcelb/GodotSSRWater) (AssetLib 2152) | **MIT**, Godot 4.3+ / 4.4.1 | Transparent-surface SSR + fake refraction. Steal the march, not the demo scene. |
-| [Binbun Godot Water](https://binbun3d.itch.io/godot-water-shader) | **CC0** | World-space caustics, foam, compat depth warning. Good comment on NDC z. |
-| [LesusX/Water-Shader](https://github.com/LesusX/Water-Shader) | **MIT** | Gerstner + caustics + foam. Stage 3 reading. |
-| [godot-demo-projects `compute/texture/water_plane`](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane) | **MIT** | Ripple heightfield on RenderingDevice. v1 interaction. |
-| [KipJM/smart_planar_reflector](https://github.com/KipJM/smart_planar_reflector) | **MIT** | Stage 2 planar cam, dynamic near plane. |
-| [RisingThumb/gd_planar_reflection](https://github.com/risingthumb/gd_planar_reflection) (AssetLib 2930) | **MIT** | Simpler planar. Same stage. |
-| [2Retr0/GodotOceanWaves](https://github.com/2Retr0/GodotOceanWaves) | **MIT** | FFT ocean. Stage 4 only. |
-| [tessarakkt/godot4-oceanfft](https://github.com/tessarakkt/godot4-oceanfft) | **MIT** | FFT + CDLOD + buoyancy. Stage 4. |
-| [REBOOT16 shoreline / SWE](https://reboot16.itch.io/godot-rsw) | **MIT** code, CC0 assets, Godot 4.7+ | Breaking shore. Not a garden pond. |
-| Calinou [caustic textures](https://opengameart.org/content/caustic-textures) | **CC0** | If procedural caustics look cheap. |
-| Crest, Unity water, RTV PCK | various / proprietary | **Do not vendor.** |
+| [Malido absorption water](https://godotshaders.com/shader/absorption-based-stylized-water/) | **CC0** (code) | Dual normals, optional SSR, screen composite. **Tone down** its absorption so the bed pops. |
+| [marcelb/GodotSSRWater](https://github.com/marcelb/GodotSSRWater) | **MIT** | Transparent SSR. |
+| [Binbun Godot Water](https://binbun3d.itch.io/godot-water-shader) | **CC0** | World-space caustics; NDC z note. |
+| [godot-demo water_plane](https://github.com/godotengine/godot-demo-projects/tree/master/compute/texture/water_plane) | **MIT** | Ripple RT. |
+| [smart_planar_reflector](https://github.com/KipJM/smart_planar_reflector) / [gd_planar_reflection](https://github.com/risingthumb/gd_planar_reflection) | **MIT** | Stage 2 planar. |
+| LesusX Gerstner, 2Retr0 / tessarakkt FFT, REBOOT16 SWE | **MIT** | Later stages. |
+| Crest, Unity water, RTV PCK, Viva Piñata | proprietary | **Do not vendor.** |
 
-Godot still has **no built-in WaterBody** in 4.8-dev6. Compositor effects can move underwater post to a callback later; v1 stays in the surface shader.
+No built-in WaterBody in 4.8-dev6.
 
 ## 8. Open questions for the owner
 
-1. **Second reference.** Is *Pen Pen TriIcelon* the intended title (~75%)? If you meant “the water racer”, we should study **Wave Race: Blue Storm** instead and keep Pen Pen as interaction-only.
-2. **Bowl vs plane.** Recommend plane + terrain basin, which matches the concept and unlocks planar reflections. Confirm we can drop the current bowled mesh.
-3. **v1 reflection bar.** Probe + 12-step SSR, with planar camera in stage 2. Or pay for planar on the parish pond in v1 (extra camera, half-res).
-4. **Swim / underwater.** Pen Pen puts the camera in the volume. v1 only does wading + splash. When should a jelly fully submerge?
-5. **Caustics on moving bodies** (jelly, pads) vs bed only?
-6. **City-park canal flow.** v1 still water. Is a painted flow map wanted for Grove Park in stage 2?
-7. **HDRI.** Procedural sky makes probe reflections bland. Approve a CC0 Poly Haven sky?
-8. **Rain ripples** on the same RT as character impulses — yes/no?
-9. **Compat / llvmpipe.** Windows Forward+ only, or must water degrade on Compatibility?
+1. **Look bar.** Treat Piñata’s split as the pass/fail for v1 (sparkle + painted bed, clear water). City-park concept is the camera we grade against. Confirm.
+2. **Planar in v1 or 2?** Sparkle+bed can ship without it. The jelly reflection in the concept really wants planar. Prefer stage 2 unless you want the extra camera now.
+3. **Bed paint.** Shader-only sediment for v1, or an art-desk painted map before the shader lands?
+4. **Bowl vs plane.** Recommend plane + terrain basin. Confirm we drop the bowled water mesh.
+5. **Pen Pen vs Wave Race** as the interaction/water-racer supporting title (~75% Pen Pen on the name).
+6. **Swim / underwater.** v1 is wading + splash. When does a jelly fully submerge?
+7. **HDRI** for the probe, or procedural sky for v1?
+8. **Rain ripples** on the same RT as character impulses?
+9. **Compat / llvmpipe.** Windows Forward+ only?
 
 ## 9. Sources
 
-- Road to Vostok: [site](https://roadtovostok.com/), [game page](https://roadtovostok.com/game), [Public Demo 1 v2](https://www.youtube.com/watch?v=2HePkuTN6hs), [PC settings](https://www.switchbladegaming.com/road-to-vostok/best-pc-settings/), [Peter’s Immersion](https://modworkshop.net/mod/56778), public architecture notes at [dwoodruff83/RoadToVostokMods](https://github.com/dwoodruff83/RoadToVostokMods) (script *names* only; not a source).
-- Pen Pen TriIcelon: Wikipedia, HG101, IGN 1999, GameVortex, Retro Replay (links in §2.2).
-- Wave Race: Aguas, IGN Blue Storm, GamesFirst (links in §2.3). Digital Foundry / John Linneman on Wave Race 64 as early GPU wave simulation is the usual secondary cite.
-- Godot: [screen-reading shaders](https://docs.godotengine.org/en/stable/tutorials/shaders/screen-reading_shaders.html), [reflection probes](https://docs.godotengine.org/en/stable/tutorials/3d/global_illumination/reflection_probes.html), [compositor](https://docs.godotengine.org/en/stable/tutorials/rendering/compositor.html), issues [90094](https://github.com/godotengine/godot/issues/90094), [93725](https://github.com/godotengine/godot/issues/93725), proposal [7274](https://github.com/godotengine/godot-proposals/discussions/7274).
-- Technique background (not to implement in v1): Tessendorf *Simulating Ocean Water*; GPU Gems ch. 1 Gerstner; Sea of Thieves water GDC talks; Jeschke et al. *Water Surface Wavelets*.
+- Viva Piñata: Boulton SIGGRAPH 2007 tessellation PDF; GDC 2007 *Look of Viva Pinata* (Vault); Eslami Xbox 360 HDR PDF; Ed Bryan interview; E3 Water Park WMV; MobyGames / Giant Bomb / XboxAchievements stills; GameFAQs TiP water note; pinataisland pond page. Links in §2.1 and §2.1.1.
+- Road to Vostok: §2.2.
+- Pen Pen / Wave Race: §2.3. Wave Race write-ups: [Aguas](https://aguaspoints.com/2023/02/02/some-thoughts-on-nintendos-wave-race-blue-storm/), [IGN Blue Storm](https://www.ign.com/articles/2001/11/07/wave-race-blue-storm-2).
+- Godot: screen-reading shaders, [reflection probes](https://docs.godotengine.org/en/stable/tutorials/3d/global_illumination/reflection_probes.html), [compositor](https://docs.godotengine.org/en/stable/tutorials/rendering/compositor.html), issues 90094 / 93725, proposal 7274.
+- Technique background (not v1): Tessendorf *Simulating Ocean Water*; GPU Gems ch. 1 Gerstner; Source/HL2 planar water as the 360-era cousin of Piñata’s likely reflection path.
 - Shaders / addons: §7.
 
-PetalWild files this plan is written against: `shaders/water.gdshader`, `scripts/world/dressing.gd` `_water`, `scripts/world/layout.gd` pond helpers, `scripts/world/atmosphere.gd`, `scripts/creatures/jelly.gd` `_stand_y`, `project.godot`, `docs/ENGINE_VERSION.md`.
+PetalWild files: `shaders/water.gdshader`, `scripts/world/dressing.gd` `_water`, `scripts/world/layout.gd` pond helpers, `scripts/world/atmosphere.gd`, `scripts/creatures/jelly.gd` `_stand_y`, `project.godot`, `docs/ENGINE_VERSION.md`.
