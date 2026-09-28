@@ -104,6 +104,8 @@
   },
   "CAM_04_FOLIAGE_EDGE": {
    "subject": "hedge",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-007/008: hedges and trees await art",
    "must_hit": [
     "#61661a",
     "#8f8927",
@@ -131,6 +133,8 @@
   },
   "CAM_05_MARKET_STALL": {
    "subject": "stall",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-003: stall awaits art",
    "must_hit": [
     "#653d15",
     "#a16639",
@@ -157,6 +161,8 @@
   },
   "CAM_06_JELLY_HERO": {
    "subject": "jelly",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-001: jelly awaits art",
    "must_hit": [
     "#60571a",
     "#818125",
@@ -182,7 +188,7 @@
   "CAM_07_VEG_FOLK": {
    "subject": "veg folk",
    "blocked_on_art": true,
-   "blocked_reason": "veg-folk art has not landed",
+   "blocked_reason": "ART-DIRECTOR-002: veg folk await art",
    "must_hit": [
     "#6b5a25",
     "#4c6f21",
