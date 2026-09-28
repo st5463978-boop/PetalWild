@@ -49,7 +49,7 @@ void fragment() {
 	float clover_m = step(0.75, vnoise(uv / 3.0));
 	grass = mix(grass, texture(clover_tex, uv / 2.0).rgb, clover_m * 0.22);
 	float g = dot(grass, vec3(0.30, 0.50, 0.20));
-	grass = mix(vec3(g), grass, 0.62) * vec3(0.78, 0.86, 0.48);
+	grass = mix(vec3(g), grass, 0.70) * vec3(0.82, 0.90, 0.52);
 	float patch = mix(0.84, 1.08, vnoise(uv / 2.4));
 	float lane = fract(uv.x * 0.68 + vnoise(vec2(floor(uv.x * 0.68), 0.2)) * 0.12);
 	float mow = mix(0.88, 1.05, smoothstep(0.0, 0.18, lane) * (1.0 - smoothstep(0.48, 0.66, lane)));

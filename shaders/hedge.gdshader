@@ -30,10 +30,10 @@ void fragment() {
 	vec3 col = triplanar_col(albedo_tex, world_pos, n);
 	float h = clamp(height_mask, 0.0, 1.0);
 	// Dark olive bases, quieter crown. Keep the pillow value, drop the lime.
-	vec3 base_mul = vec3(0.055, 0.16, 0.06);
-	vec3 top_mul = vec3(0.42, 0.50, 0.28);
-	col *= mix(base_mul, top_mul, mix(0.22, 1.0, h));
-	col = mix(col, vec3(0.30, 0.38, 0.16), h * h * 0.10);
+	vec3 base_mul = vec3(0.10, 0.24, 0.09);
+	vec3 top_mul = vec3(0.50, 0.58, 0.32);
+	col *= mix(base_mul, top_mul, mix(0.38, 1.0, h));
+	col = mix(col, vec3(0.34, 0.42, 0.18), h * h * 0.10);
 	vec3 nn = triplanar_col(nrm_tex, world_pos, n) * 2.0 - 1.0;
 	NORMAL = normalize(n + vec3(nn.x, nn.y, 0.0) * nrm_strength);
 	ALBEDO = col;
