@@ -5,11 +5,11 @@ extends SceneTree
 const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.1, 7.0), "look": Vector3(0, 0.2, 1.0), "fov": 55.0, "size": Vector2i(1440, 900), "hud": false},
+	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.05, 6.4), "look": Vector3(0, -0.15, 0.2), "fov": 50.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_07_VEG_FOLK", "anchor": "@resident", "pos": Vector3(1.8, 1.45, -3.4), "look": Vector3(0.0, 0.62, 0.0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
+	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true},
 ]
 const PLACEHOLDER_MESHES: Array[String] = ["BoxMesh", "CylinderMesh", "PrismMesh", "CapsuleMesh", "QuadMesh", "PlaneMesh"]
@@ -49,6 +49,8 @@ func _run() -> void:
 		await process_frame
 	_stage_subjects(scene)
 	_hide_debug(scene)
+	if scene != null:
+		scene.process_mode = Node.PROCESS_MODE_DISABLED
 	play_cam = root.get_camera_3d()
 	audit["scene"] = _audit_tree(scene)
 	audit["renderer"] = RenderingServer.get_current_rendering_method()
@@ -241,14 +243,16 @@ func _clamp_sun_disc(scene: Node, on: bool) -> void:
 		pan = environment.sky.sky_material as PanoramaSkyMaterial
 	if on:
 		if pan:
-			pan.energy_multiplier = 0.44
+			pan.energy_multiplier = 0.28
 		environment.glow_enabled = false
-		environment.tonemap_white = 10.0
+		environment.tonemap_white = 12.0
+		environment.tonemap_exposure = 0.88
 	else:
 		if pan:
 			pan.energy_multiplier = 0.82
 		environment.glow_enabled = true
 		environment.tonemap_white = 6.0
+		environment.tonemap_exposure = 1.05
 
 func _mesh_class(m: Mesh) -> String:
 	return m.get_class() if m != null else ""
