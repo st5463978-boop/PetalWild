@@ -1651,6 +1651,9 @@ func _cc0_props(parent: Node3D) -> void:
 		if file.find("Bench") != -1:
 			node.name = "CC0Bench"
 			node.add_to_group("signoff_cam03_hide")
+		if file.find("Table") != -1:
+			node.name = "CC0Table"
+			node.add_to_group("signoff_cam03_hide")
 		parent.add_child(node)
 
 func _flat_material(color: Color, rough: float) -> StandardMaterial3D:

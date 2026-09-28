@@ -5,7 +5,7 @@ extends SceneTree
 const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0", "BedBody_1_0"]},
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "beds", "subject_nodes": ["BedBody_0_0", "BedBody_0_1", "BedBody_1_0", "BedBody_1_1"]},
-	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(-0.6, 1.2, 7.1), "look": Vector3(-0.4, 0.1, 0.6), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
+	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.25, 1.5, 6.95), "look": Vector3(0.05, 0.18, 0.55), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(1.15, 2.15, 2.15), "look": Vector3(0, 1.15, 0), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.35, 0.82, 3.05), "look": Vector3(0.1, 0.32, -0.7), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
