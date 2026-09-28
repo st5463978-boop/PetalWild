@@ -7,8 +7,8 @@ extends Node3D
 
 const _SHADER := preload("res://shaders/jelly_status_icon.gdshader")
 
-const _CORE_WIDTH := 0.016
-const _HALO_WIDTH := 0.042
+const _CORE_WIDTH := 0.018
+const _HALO_WIDTH := 0.038
 
 signal finished(kind: String)
 
@@ -57,7 +57,7 @@ func bind(node: Node3D, height := 0.92) -> void:
 	host_height = height
 	if node is Jelly:
 		var jelly := node as Jelly
-		host_height = jelly.radius * 2.35 + 0.2
+		host_height = jelly.radius * 2.7 + 0.28
 		set_activity(jelly.activity, jelly.work_intensity)
 
 
@@ -82,9 +82,9 @@ func set_intensity(intensity: float) -> void:
 
 
 func _build() -> void:
-	_core_mat = _make_mat(6.4, 0)
-	_halo_mat = _make_mat(1.8, 0)
-	_glow_mat = _make_mat(2.4, 1)
+	_core_mat = _make_mat(3.6, 0)
+	_halo_mat = _make_mat(1.05, 0)
+	_glow_mat = _make_mat(1.35, 1)
 	_face = Node3D.new()
 	_face.name = "Face"
 	add_child(_face)
@@ -366,12 +366,12 @@ func _paint() -> void:
 	var fade := clampf(_alpha, 0.0, 1.0)
 	var flash := _energy * _flicker
 	_core_mat.set_shader_parameter("fade", fade)
-	_core_mat.set_shader_parameter("energy", 6.4 * flash)
-	_halo_mat.set_shader_parameter("fade", fade * 0.85)
-	_halo_mat.set_shader_parameter("energy", 1.9 * flash)
-	_glow_mat.set_shader_parameter("fade", fade * 0.7)
-	_glow_mat.set_shader_parameter("energy", 2.6 * flash)
-	var wash := 0.0 if _photosensitive else 0.55 * fade
+	_core_mat.set_shader_parameter("energy", 2.8 * flash)
+	_halo_mat.set_shader_parameter("fade", fade * 0.55)
+	_halo_mat.set_shader_parameter("energy", 0.85 * flash)
+	_glow_mat.set_shader_parameter("fade", fade * 0.35)
+	_glow_mat.set_shader_parameter("energy", 1.15 * flash)
+	var wash := 0.0 if _photosensitive else 0.42 * fade
 	_light.light_energy = wash
 	_light.position = Vector3(0.0, -0.42, 0.0)
 	_glow.visible = fade > 0.02
@@ -391,9 +391,11 @@ func _stroke(paths: Array, width: float) -> ArrayMesh:
 		var count := pts.size() - 1
 		for i in count:
 			_seg(tool, pts[i], pts[i + 1], half)
-			_disc(tool, pts[i], half, 8)
-		if not closed:
-			_disc(tool, pts[count], half, 8)
+		if closed:
+			_disc(tool, pts[0], half, 7)
+		else:
+			_disc(tool, pts[0], half, 7)
+			_disc(tool, pts[count], half, 7)
 	tool.generate_normals()
 	return tool.commit()
 
@@ -464,16 +466,11 @@ func _gear() -> Array:
 	var paths: Array = []
 	paths.append(_arc(Vector2.ZERO, 0.175, 0.0, TAU, 28))
 	paths.append(_arc(Vector2.ZERO, 0.08, 0.0, TAU, 16))
-	var teeth := 8
+	var teeth := 6
 	for i in teeth:
 		var ang := TAU * float(i) / float(teeth)
 		var dir := Vector2(cos(ang), sin(ang))
-		var side := Vector2(-dir.y, dir.x)
-		var a := dir * 0.17 + side * 0.045
-		var b := dir * 0.17 - side * 0.045
-		var c := dir * 0.3 - side * 0.038
-		var d := dir * 0.3 + side * 0.038
-		paths.append(PackedVector2Array([a, d, c, b, a]))
+		paths.append(PackedVector2Array([dir * 0.175, dir * 0.3]))
 	return paths
 
 

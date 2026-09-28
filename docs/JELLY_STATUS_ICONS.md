@@ -48,4 +48,10 @@ DISPLAY=:1 PETALWILD_GODOT=$HOME/.local/godot/Godot_v4.8-dev6_linux.x86_64 \
 
 `1` email, `2` idea, `3` working, `4` happy, `5` none, `C` cycle, `[` `]` work intensity.
 
-Shots: `docs/screenshots/jelly_status_icons/`.
+Shots: `docs/screenshots/jelly_status_icons/`
+
+- `lineup.png` — four jellies, one icon each
+- `envelope.gif` / `.mp4` / `_strip.png` — overshoot pop and pulse
+- `bulb.gif` / `.mp4` / `_strip.png` — fade-in flash and flicker
+- `gear.gif` / `.mp4` / `_strip.png` — spin, speeding with intensity
+- `heart.gif` / `.mp4` / `_strip.png` — double-beat, then float and fade

@@ -117,9 +117,10 @@ func _mount_status_icon() -> void:
 func set_activity(kind: String, intensity := 1.0) -> void:
 	if not JellyActivity.is_kind(kind):
 		kind = JellyActivity.NONE
-	work_intensity = intensity
 	if kind == JellyActivity.WORKING:
 		work_intensity = maxf(intensity, 0.05)
+	elif kind == JellyActivity.NONE:
+		work_intensity = 0.0
 	if kind == JellyActivity.HAPPY:
 		pulse_happy()
 		return
@@ -129,10 +130,12 @@ func set_activity(kind: String, intensity := 1.0) -> void:
 func force_activity(kind: String, intensity := 1.0) -> void:
 	if not JellyActivity.is_kind(kind):
 		kind = JellyActivity.NONE
-	work_intensity = intensity
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
 	if kind == JellyActivity.NONE:
 		_forced_activity = ""
 		_happy_playing = false
+		work_intensity = 0.0
 		refresh_activity()
 		return
 	_forced_activity = kind

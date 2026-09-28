@@ -50,9 +50,9 @@ func _build_world() -> void:
 	var settings := get_node_or_null("/root/Settings")
 	if settings != null and bool(settings.photosensitivity):
 		env.glow_enabled = false
-	env.glow_intensity = 0.85
-	env.glow_bloom = 0.35
-	env.glow_hdr_threshold = 0.7
+	env.glow_intensity = 0.48
+	env.glow_bloom = 0.18
+	env.glow_hdr_threshold = 0.85
 	env.fog_enabled = true
 	env.fog_density = 0.004
 	env.fog_light_color = Color("f3d7b4")
@@ -119,7 +119,10 @@ func _spawn_jellies() -> void:
 		jelly.tier = 0
 		jelly.vel = Vector3.ZERO
 		jelly.global_position = Vector3(-1.65 + float(i) * 1.1, 0.0, 0.0)
-		jelly.rotation.y = PI
+		var to_cam := _camera.global_position - jelly.global_position
+		to_cam.y = 0.0
+		if to_cam.length() > 0.01:
+			jelly.look_at(jelly.global_position + to_cam, Vector3.UP)
 		jelly.force_activity(kinds[i], 1.0 if kinds[i] != JellyActivity.WORKING else 1.15)
 		_jellies.append(jelly)
 
@@ -198,31 +201,43 @@ func _process(delta: float) -> void:
 
 func _capture() -> void:
 	_cycle = false
+	if _hud:
+		_hud.visible = false
 	DirAccess.make_dir_recursive_absolute(_CAPTURE_DIR)
 	DirAccess.make_dir_recursive_absolute(_ARTIFACT_DIR)
-	_aim(Vector3(0.0, 0.55, 0.0), 5.4)
+	_restore_row()
 	for i in _jellies.size():
+		if _kind_order[i] == JellyActivity.HAPPY:
+			continue
 		_jellies[i].force_activity(_kind_order[i], 1.15)
-	await _settle(0.55)
+	await _settle(0.45)
+	_jellies[3].force_activity(JellyActivity.HAPPY)
+	await _settle(0.18)
+	_aim(Vector3(0.0, 0.5, 0.0), 5.2)
+	_restore_row()
+	for i in [0, 1, 2]:
+		_jellies[i].force_activity(_kind_order[i], 1.15)
+	_jellies[3].force_activity(JellyActivity.HAPPY)
+	await _settle(0.16)
 	await _shot("lineup.png")
-	await _record_kind(JellyActivity.EMAIL, "envelope", 1.05, 16)
-	await _record_kind(JellyActivity.IDEA, "bulb", 0.9, 16)
-	await _record_kind(JellyActivity.WORKING, "gear", 0.7, 16)
+	await _record_kind(0, JellyActivity.EMAIL, "envelope", 0.85, 16)
+	await _record_kind(1, JellyActivity.IDEA, "bulb", 0.7, 16)
+	await _record_kind(2, JellyActivity.WORKING, "gear", 0.55, 16)
 	await _record_heart()
 	_stitch_gifs()
 	print("PETAL_ICON_CAPTURE_OK")
 
 
-func _record_kind(kind: String, stem: String, hold: float, frames: int) -> void:
-	_solo(kind)
-	_jellies[0].force_activity(kind, 1.35 if kind == JellyActivity.WORKING else 1.0)
+func _record_kind(index: int, kind: String, stem: String, hold: float, frames: int) -> void:
+	_solo(index)
+	_jellies[index].force_activity(kind, 1.35 if kind == JellyActivity.WORKING else 1.0)
 	await _settle(hold)
 	var images: Array[Image] = []
 	for i in frames:
 		if kind == JellyActivity.WORKING:
-			_jellies[0].work_intensity = 0.7 + 0.08 * float(i)
-			if _jellies[0].status_icon:
-				_jellies[0].status_icon.set_intensity(_jellies[0].work_intensity)
+			_jellies[index].work_intensity = 0.7 + 0.08 * float(i)
+			if _jellies[index].status_icon:
+				_jellies[index].status_icon.set_intensity(_jellies[index].work_intensity)
 		await _settle(0.07)
 		var img := await _grab()
 		var path := "%s/%s_%02d.png" % [_CAPTURE_DIR, stem, i]
@@ -234,30 +249,52 @@ func _record_kind(kind: String, stem: String, hold: float, frames: int) -> void:
 
 
 func _record_heart() -> void:
-	_solo(JellyActivity.HAPPY)
-	_jellies[0].force_activity(JellyActivity.HAPPY)
+	_solo(3)
+	_jellies[3].force_activity(JellyActivity.HAPPY)
+	await _settle(0.08)
 	var images: Array[Image] = []
 	for i in 18:
 		await _settle(0.055)
 		var img := await _grab()
 		img.save_png("%s/heart_%02d.png" % [_CAPTURE_DIR, i])
 		images.append(img)
+		if i == 1:
+			img.save_png("%s/heart.png" % _CAPTURE_DIR)
+			img.save_png("%s/heart.png" % _ARTIFACT_DIR)
+			print("SHOT heart.png ", img.get_width(), "x", img.get_height())
 	_write_strip(images, "%s/heart_strip.png" % _CAPTURE_DIR)
 	_write_strip(images, "%s/heart_strip.png" % _ARTIFACT_DIR)
-	await _shot("heart.png")
 
 
-func _solo(kind: String) -> void:
-	var slot := _kind_order.find(kind)
-	if slot < 0:
-		slot = 0
-	_aim(_jellies[0].global_position + Vector3(0.0, 0.55, 0.0), 3.2)
-	_jellies[0].global_position = Vector3(0.0, 0.0, 0.0)
-	_jellies[0].rotation.y = PI
+func _solo(index: int) -> void:
 	for i in _jellies.size():
-		_jellies[i].visible = i == 0
-		if i == 0:
+		if i == index:
+			_jellies[i].tier = 0
+			_jellies[i].global_position = Vector3(0.0, 0.0, 0.0)
+		else:
+			_jellies[i].tier = 3
 			_jellies[i].force_activity(JellyActivity.NONE)
+			if _jellies[i].status_icon:
+				_jellies[i].status_icon.visible = false
+			_jellies[i].global_position = Vector3(0.0, -25.0, 0.0)
+	_aim(Vector3(0.0, 0.62, 0.0), 3.7)
+	var face := _jellies[index]
+	var to_cam := _camera.global_position - face.global_position
+	to_cam.y = 0.0
+	if to_cam.length() > 0.01:
+		face.look_at(face.global_position + to_cam, Vector3.UP)
+
+
+func _restore_row() -> void:
+	for i in _jellies.size():
+		_jellies[i].tier = 0
+		_jellies[i].global_position = Vector3(-1.65 + float(i) * 1.1, 0.0, 0.0)
+		if _jellies[i].status_icon:
+			_jellies[i].status_icon.visible = true
+		var to_cam := _camera.global_position - _jellies[i].global_position
+		to_cam.y = 0.0
+		if to_cam.length() > 0.01:
+			_jellies[i].look_at(_jellies[i].global_position + to_cam, Vector3.UP)
 
 
 func _write_strip(images: Array[Image], path: String) -> void:
