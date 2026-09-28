@@ -161,8 +161,6 @@
   },
   "CAM_06_JELLY_HERO": {
    "subject": "jelly",
-   "blocked_on_art": true,
-   "blocked_reason": "ART-DIRECTOR-001: jelly awaits art",
    "must_hit": [
     "#60571a",
     "#818125",

@@ -99,6 +99,61 @@ func set_select(on: bool, grabbed := false) -> void:
 		halo_mat.emission = Color(0.55, 0.85, 0.4)
 		halo_mat.emission_energy_multiplier = 0.28
 
+const ART_DIR := "res://assets/art/images/PETAL-08-101/"
+
+static func art_path(shape: String, species_id: String = "") -> String:
+	var key := "circle"
+	match species_id:
+		"bellhelp":
+			key = "circle"
+		"berrypatch":
+			key = "cloud"
+		"bulrush":
+			key = "oblong"
+		"reedic":
+			key = "pill"
+		"cirlark":
+			key = "square"
+		"grapling":
+			key = "triangle"
+		"dusknip":
+			key = "hexagon"
+		"pegapear":
+			key = "teardrop"
+		"gushorn":
+			key = "hexagon"
+		_:
+			match shape:
+				"long":
+					key = "oblong"
+				"flat":
+					key = "pill"
+				"stacked":
+					key = "square"
+				"lobes", "crown":
+					key = "cloud"
+				"pear", "droplet":
+					key = "teardrop"
+				_:
+					key = "circle"
+	return ART_DIR + key + ".png"
+
+static func make_card(tex_path: String, height_m: float) -> Sprite3D:
+	var sprite := Sprite3D.new()
+	sprite.texture = load(tex_path)
+	var tex: Texture2D = sprite.texture
+	var h := float(tex.get_height()) if tex != null else 154.0
+	sprite.pixel_size = height_m / maxf(h, 1.0)
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.transparent = true
+	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISABLED
+	sprite.shaded = false
+	sprite.double_sided = true
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sprite.add_to_group("signoff_ok")
+	return sprite
+
 func _build(definition: Dictionary) -> void:
 	mat = ShaderMaterial.new()
 	mat.shader = load("res://shaders/jelly.gdshader")
@@ -112,6 +167,17 @@ func _build(definition: Dictionary) -> void:
 	body_root = root
 	_halo()
 	var shape := str(definition.get("shape", "droplet"))
+	var card := art_path(shape, str(definition.get("id", "")))
+	if ResourceLoader.exists(card):
+		var sprite := make_card(card, maxf(radius * 1.7, 0.44))
+		sprite.name = "Art"
+		root.add_child(sprite)
+		face_z = -radius * 0.2
+		_face(root, definition, radius * 0.18)
+		_hide_meshes(eye_l)
+		_hide_meshes(eye_r)
+		_hide_meshes(mouth)
+		return
 	face_z = -radius * 1.05
 	var eye_y := _shape(root, shape)
 	var organ_y := eye_y * 0.5
@@ -119,6 +185,14 @@ func _build(definition: Dictionary) -> void:
 		organ_y = radius * 0.95
 	_organ(root, definition, organ_y)
 	_face(root, definition, eye_y)
+
+func _hide_meshes(n: Node) -> void:
+	if n == null:
+		return
+	if n is GeometryInstance3D:
+		(n as GeometryInstance3D).visible = false
+	for child in n.get_children():
+		_hide_meshes(child)
 
 func _shape(root: Node3D, shape: String) -> float:
 	match shape:
