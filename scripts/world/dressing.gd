@@ -24,14 +24,9 @@ func build(parent: Node3D) -> void:
 	_paths(parent)
 	_hedge(parent)
 	_hedge_clumps(parent)
-	_hedge_leaves(parent)
-	_hedge_fringe(parent)
-	_hedge_coat(parent)
-	_hedge_bulges(parent)
-	_hedge_volume(parent)
+	# Crest cards stay off: the VP24 pillow mesh is the wall.
 	# Bed-border flowers only. Interior scatter hid the soil and lawn.
 	_trees(parent)
-	_gap_fill(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -485,7 +480,6 @@ func _hedge_material() -> ShaderMaterial:
 	material.set_shader_parameter("rgh_tex", load_tex("res://assets/textures/detail/B29_boxwood_rgh.png"))
 	material.set_shader_parameter("tile_m", 1.2)
 	material.set_shader_parameter("nrm_strength", 0.5)
-	material.set_shader_parameter("wrap", 0.3)
 	return material
 
 func _hedge_clumps(parent: Node3D) -> void:
