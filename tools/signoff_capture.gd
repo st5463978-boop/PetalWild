@@ -8,7 +8,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(-0.6, 1.2, 7.1), "look": Vector3(-0.4, 0.1, 0.6), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
-	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(0.85, 0.38, 1.45), "look": Vector3(0, 0.06, 0), "fov": 34.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
+	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.15, 0.62, 2.35), "look": Vector3(0, 0.12, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
 ]
@@ -365,6 +365,19 @@ func _hide_cam06_clutter(scene: Node, on: bool) -> void:
 	for n: Node in get_nodes_in_group("jelly"):
 		if str(n.name) != "SignoffJelly":
 			n.visible = not on
+	for gi: Node in scene.find_children("*", "MeshInstance3D", true, false):
+		var mesh_i := gi as MeshInstance3D
+		if mesh_i == null or mesh_i.name == "SignoffJelly" or mesh_i.is_in_group("signoff_ok"):
+			continue
+		if not (mesh_i.mesh is SphereMesh):
+			continue
+		if on:
+			if mesh_i.visible:
+				mesh_i.set_meta("signoff_hid_sphere", true)
+				mesh_i.visible = false
+		elif mesh_i.has_meta("signoff_hid_sphere"):
+			mesh_i.visible = true
+			mesh_i.remove_meta("signoff_hid_sphere")
 
 func _hide_cam03_bench(scene: Node, on: bool) -> void:
 	if scene == null:
