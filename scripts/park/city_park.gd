@@ -241,6 +241,8 @@ func _shots() -> void:
 	DisplayServer.window_set_size(Vector2i(1920, 1080))
 	for lab in get_tree().get_nodes_in_group("park_debug_label"):
 		lab.visible = false
+	for mark in get_tree().get_nodes_in_group("park_marker_visual"):
+		mark.visible = false
 	if hud:
 		hud.visible = false
 	await get_tree().create_timer(1.8).timeout

@@ -15,6 +15,7 @@ var hedge: StandardMaterial3D
 var glass: StandardMaterial3D
 var water: ShaderMaterial
 var foliage: ShaderMaterial
+var blooms: ShaderMaterial
 var lantern_glass: ShaderMaterial
 var awning: StandardMaterial3D
 var sand: ShaderMaterial
@@ -22,6 +23,7 @@ var bark: StandardMaterial3D
 
 const PH := "res://assets/third_party/polyhaven/"
 const GEN := "res://assets/park/generated/"
+const AQ_TEX := "res://third_party/incoming/assetquest-stylized-garden-demo/Textures/"
 
 
 func load_all() -> void:
@@ -139,6 +141,11 @@ func load_all() -> void:
 	water.shader = load("res://shaders/park_water.gdshader")
 	foliage = ShaderMaterial.new()
 	foliage.shader = load("res://shaders/park_foliage.gdshader")
+	blooms = ShaderMaterial.new()
+	blooms.shader = load("res://shaders/park_bloom.gdshader")
+	if ResourceLoader.exists(AQ_TEX + "Plants_Atlas_1_Basecolor.png"):
+		blooms.set_shader_parameter("albedo_tex", load(AQ_TEX + "Plants_Atlas_1_Basecolor.png"))
+		blooms.set_shader_parameter("opacity_tex", load(AQ_TEX + "Plants_Atlas_1_Opacity.png"))
 	lantern_glass = ShaderMaterial.new()
 	lantern_glass.shader = load("res://shaders/lantern_glass.gdshader")
 	lantern_glass.set_shader_parameter("glow", 0.55)

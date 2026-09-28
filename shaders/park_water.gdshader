@@ -43,7 +43,7 @@ void fragment() {
 	METALLIC = 0.08;
 	SPECULAR = 0.72;
 	EMISSION = sparkle_color * spark * 0.28 + vec3(0.45, 0.72, 0.55) * caustic * caustic_strength + shallow_color * fres * 0.08;
-	ALPHA = mix(0.88, 0.96, fres);
+	ALPHA = mix(0.58, 0.82, fres);
 	NORMAL_MAP = vec3(n1 * 0.5 + 0.5, n2 * 0.5 + 0.5, 1.0);
 	NORMAL_MAP_DEPTH = 0.22;
 }

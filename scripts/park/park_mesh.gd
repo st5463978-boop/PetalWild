@@ -101,6 +101,24 @@ static func wedge_roof(width: float, height: float, depth: float) -> ArrayMesh:
 	return tool.commit()
 
 
+static func oct_roof(radius: float, height: float) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var apex := Vector3(0.0, height, 0.0)
+	var n := 8
+	for i in n:
+		var a0 := TAU * float(i) / float(n)
+		var a1 := TAU * float(i + 1) / float(n)
+		var p0 := Vector3(cos(a0) * radius, 0.0, sin(a0) * radius)
+		var p1 := Vector3(cos(a1) * radius, 0.0, sin(a1) * radius)
+		var u0 := float(i) / float(n)
+		var u1 := float(i + 1) / float(n)
+		_face3(tool, p0, apex, p1, Vector2(u0, 1.0), Vector2((u0 + u1) * 0.5, 0.0), Vector2(u1, 1.0))
+	tool.generate_normals()
+	tool.generate_tangents()
+	return tool.commit()
+
+
 static func gable_roof(width: float, height: float, depth: float) -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
