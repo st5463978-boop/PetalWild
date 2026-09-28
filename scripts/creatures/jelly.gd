@@ -140,7 +140,15 @@ static func art_path(shape: String, species_id: String = "") -> String:
 
 static func make_card(tex_path: String, height_m: float) -> Sprite3D:
 	var sprite := Sprite3D.new()
-	sprite.texture = load(tex_path)
+	var img: Image = null
+	var abs_path := ProjectSettings.globalize_path(tex_path)
+	if FileAccess.file_exists(abs_path):
+		img = Image.load_from_file(abs_path)
+	if img != null:
+		img.fix_alpha_edges()
+		sprite.texture = ImageTexture.create_from_image(img)
+	elif ResourceLoader.exists(tex_path):
+		sprite.texture = load(tex_path)
 	var tex: Texture2D = sprite.texture
 	var h := float(tex.get_height()) if tex != null else 154.0
 	sprite.pixel_size = height_m / maxf(h, 1.0)
