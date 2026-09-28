@@ -38,6 +38,7 @@ func setup(definition: Dictionary) -> void:
 	role = str(definition.get("role", ""))
 	present = bool(definition.get("starts_present", false))
 	visible = present
+	add_to_group("resident")
 	_build_body()
 	speech = Label3D.new()
 	speech.font_size = 42

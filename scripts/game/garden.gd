@@ -134,6 +134,7 @@ func _build() -> void:
 	GardenProps.new().build(self)
 	road.build(self)
 	town.boot()
+	_add_signoff_anchors()
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -8823,6 +8824,17 @@ func _force_plant(ix: int, iz: int, plant_id: String, growth: float, grow_day: i
 	plot.taken = false
 	plot.eaten_by = ""
 	plot.grow_from_day = grow_day
+
+func _add_signoff_anchors() -> void:
+	_marker("ANCHOR_BEDS", Vector3(-2.35, 0.0, -1.4))
+	_marker("ANCHOR_STALL", GardenLayout.STALL)
+	_marker("ANCHOR_HEDGE_W", Vector3(-13.6, 0.0, -1.0))
+
+func _marker(marker_name: String, at: Vector3) -> void:
+	var node := Marker3D.new()
+	node.name = marker_name
+	node.position = at
+	add_child(node)
 
 func _build_patches() -> void:
 	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"):
