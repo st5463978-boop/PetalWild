@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ROOT := "res://assets/third_party/kenney/nature-kit/Models/FBX format/"
+const GLTF_ROOT := "res://assets/third_party/kenney/nature-kit/Models/GLTF format/"
 
 static func spawn(file_name: String, target_height: float) -> Node3D:
 	var packed := _scene(file_name)
@@ -31,6 +32,9 @@ static func mesh(file_name: String) -> Mesh:
 
 static func _scene(file_name: String) -> PackedScene:
 	var path := ROOT + file_name
+	if not ResourceLoader.exists(path):
+		var glb := file_name.get_basename() + ".glb"
+		path = GLTF_ROOT + glb
 	if not ResourceLoader.exists(path):
 		return null
 	return load(path) as PackedScene

@@ -217,6 +217,13 @@ func _hedge(parent: Node3D) -> void:
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
+	var inner_s: Array[Vector3] = [Vector3(-2.35, -6.55, 1.35)]
+	var inner_e: Array[Vector3] = [Vector3(3.85, -2.5, 1.35)]
+	var inner_n: Array[Vector3] = [Vector3(-3.4, 3.2, 2.4)]
+	_hedge_wall(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), inner_s, 0.62)
+	_hedge_wall(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), inner_e, 0.62)
+	_hedge_wall(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), inner_n, 0.62)
+	_hedge_wall(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.62)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
@@ -350,10 +357,14 @@ func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> v
 		_hedge_tri(tool, a[i], b[i + 1], a[i + 1])
 
 func _hedge_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	var hmax := 2.2
+	tool.set_color(Color(1.0, 1.0, clampf(a.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(0, 1))
 	tool.add_vertex(a)
+	tool.set_color(Color(1.0, 1.0, clampf(b.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(1, 1))
 	tool.add_vertex(b)
+	tool.set_color(Color(1.0, 1.0, clampf(c.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(0.5, 0))
 	tool.add_vertex(c)
 
@@ -469,6 +480,12 @@ func _room_cover(parent: Node3D) -> void:
 func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
+	material.set_shader_parameter("albedo_tex", load_tex("res://assets/textures/garden/hedge_albedo.png"))
+	material.set_shader_parameter("nrm_tex", load_tex("res://assets/textures/detail/B29_boxwood_nrm.png"))
+	material.set_shader_parameter("rgh_tex", load_tex("res://assets/textures/detail/B29_boxwood_rgh.png"))
+	material.set_shader_parameter("tile_m", 1.2)
+	material.set_shader_parameter("nrm_strength", 0.5)
+	material.set_shader_parameter("wrap", 0.3)
 	return material
 
 func _hedge_clumps(parent: Node3D) -> void:
@@ -1027,8 +1044,8 @@ func _shrubs(parent: Node3D) -> void:
 		parent.add_child(node)
 
 func _trees(parent: Node3D) -> void:
-	# Backdrop and side frame only. The south approach stays open for the garden camera.
-	var files: Array[String] = ["tree_oak.fbx", "tree_default.fbx", "tree_detailed.fbx", "tree_fat.fbx"]
+	# Kenney Nature Kit trees are layout stand-ins (Art Director).
+	var files: Array[String] = ["tree_oak.glb", "tree_fat.glb", "tree_default.glb"]
 	var spots: Array[Vector2] = [
 		Vector2(-17.4, -11.2),
 		Vector2(-18.6, -3.4),
@@ -1038,58 +1055,48 @@ func _trees(parent: Node3D) -> void:
 		Vector2(18.0, -2.2),
 		Vector2(17.2, 5.0),
 		Vector2(15.4, 11.4),
-		Vector2(-9.5, 13.0),
-		Vector2(-2.2, 13.6),
-		Vector2(5.2, 13.1),
-		Vector2(11.4, 12.2),
+		Vector2(-11.2, 5.6),
 		Vector2(-14.8, -14.4),
 		Vector2(13.8, -14.2),
 	]
 	var index := 0
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
-		var behind := spot.y > 9.0
-		if behind and _north_notch(spot.x, true):
-			var centers: Array[float] = [-12.0, -2.6, 8.2]
-			var nearest := centers[0]
-			for center in centers:
-				if absf(spot.x - center) < absf(spot.x - nearest):
-					nearest = center
-			spot.x = nearest + (4.2 if spot.x >= nearest else -4.2)
-		var height := (2.4 if behind else 3.6) + float(index % 4) * 0.35
+		var height := 2.4 + float(index % 4) * 0.28
 		var tree: Node3D = Kit.spawn(files[index % files.size()], height)
 		if tree:
 			tree.position = Vector3(spot.x, y, spot.y)
 			tree.rotation.y = float(index) * 0.7
 			parent.add_child(tree)
 		index += 1
+	for i in 12:
+		var ang := float(i) / 12.0 * TAU + 0.2
+		var radius := 28.0 + float(i % 3) * 4.0
+		var x := sin(ang) * radius
+		var z := cos(ang) * radius
+		var y := GardenLayout.height_at(x, z)
+		var tree: Node3D = Kit.spawn(files[i % files.size()], 5.2 + float(i % 3) * 0.6)
+		if tree:
+			tree.position = Vector3(x, y, z)
+			tree.rotation.y = ang + 0.4
+			parent.add_child(tree)
 
 func _gap_fill(parent: Node3D) -> void:
-	# ponytail: east end is taller so the lip meets the hedge line. The hill stays.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 19021
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.64
-	cone.bottom_radius = 0.86
-	cone.height = 2.15
-	cone.radial_segments = 7
+	var files: Array[String] = ["plant_bushLarge.glb", "plant_bushDetailed.glb", "plant_bush.glb"]
 	var x := -13.1
+	var n := 0
 	while x < 12.5:
 		var z := 8.18 + rng.randf_range(-0.06, 0.1)
 		var y := GardenLayout.height_at(x, z)
-		var node := MeshInstance3D.new()
-		node.mesh = cone
-		# ponytail: these shrubs lift to pale green under the sun; raise if the row goes black.
-		var leaf := Color("#0e2212").lerp(Color("#1a3816"), rng.randf())
-		node.material_override = _standard(leaf, 0.88)
-		var lift := clampf((x + 13.0) / 25.0, 0.0, 1.0) * 0.12
-		var h := rng.randf_range(0.96, 1.0) + lift
-		node.position = Vector3(x, y + 1.075 * h, z)
-		node.scale = Vector3(rng.randf_range(0.95, 1.12), h, rng.randf_range(0.92, 1.08))
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		node.add_to_group("signoff_ok")
-		parent.add_child(node)
-		x += rng.randf_range(1.02, 1.18)
+		var bush: Node3D = Kit.spawn(files[n % files.size()], rng.randf_range(1.4, 1.9))
+		if bush:
+			bush.position = Vector3(x, y, z)
+			bush.rotation.y = rng.randf() * TAU
+			parent.add_child(bush)
+		x += rng.randf_range(1.4, 1.8)
+		n += 1
 
 func _willow(parent: Node3D) -> void:
 	var root := Vector3(5.55, 0.0, -4.35)
