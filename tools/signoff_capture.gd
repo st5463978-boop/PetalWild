@@ -8,7 +8,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.25, 1.5, 6.95), "look": Vector3(0.05, 0.18, 0.55), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(2.45, 1.48, 2.42), "look": Vector3(0.08, 1.38, 0.05), "fov": 46.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
-	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(1.35, 0.82, 3.05), "look": Vector3(0.1, 0.32, -0.7), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
+	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(0.55, 0.88, 1.4), "look": Vector3(0.0, 0.3, -0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
 ]
