@@ -633,7 +633,7 @@ func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	button.expand_icon = true
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-	button.add_theme_constant_override("icon_max_width", 40)
+	button.icon_max_width = 40
 	button.pressed.connect(on_press)
 	_skin_slot(button, false)
 	var key_label := ThemeKit.outline_label(key, 14)

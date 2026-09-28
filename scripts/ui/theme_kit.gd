@@ -101,8 +101,8 @@ static func slice(stem: String, content := -1) -> StyleBoxTexture:
 	box.content_margin_top = pad
 	box.content_margin_right = pad
 	box.content_margin_bottom = pad
-	box.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_STRETCH
-	box.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_STRETCH
+	box.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	box.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
 	box.draw_center = true
 	return box
 
