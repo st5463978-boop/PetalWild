@@ -20,6 +20,8 @@ Godot 4.8-dev6 official `8898c2b3d` (`tools/fetch_godot.sh`), `--rendering-drive
 
 ## What landed
 
-`third_party/kenney_city_builder/` is the kit, with paths moved under that folder. `scenes/parish.tscn` is that project's main scene: fifteen structures, empty grid and $10000 on play, F3 loads `sample map/map.res` (122 cells, cash 5860). `run/main_scene` points at it. The grove scene remains `scenes/main.tscn`.
+`third_party/kenney_city_builder/` is the kit, with paths moved under that folder. `scenes/parish.tscn` is that project's main scene: the original fifteen structures stay first, so F3 still loads `sample map/map.res` (122 cells, cash 5860). Play still starts on an empty grid with $10000. `run/main_scene` points at it. The grove scene remains `scenes/main.tscn`.
+
+Church, restaurant, cafe, clinic, and school are appended after that list. Their meshes are original boxes in `assets/civic/`, not Kenney models. Enter on a small apartment (building a–d) or on one of those five opens that building: a jelly, a short list for the day, and furniture that has to stay in the room. Each building keeps its own list.
 
 Grove Park is still unbuilt. The parish grid does not replace utility scoring, the session inventory, or navigation.

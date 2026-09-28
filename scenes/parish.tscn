@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://vgwrcfy1qawf"]
+[gd_scene load_steps=32 format=3 uid="uid://vgwrcfy1qawf"]
 
 [ext_resource type="Script" uid="uid://76g8ejmdibal" path="res://third_party/kenney_city_builder/scripts/builder.gd" id="1_jybm7"]
 [ext_resource type="Environment" path="res://third_party/kenney_city_builder/scenes/main-environment.tres" id="1_yndf3"]
@@ -24,6 +24,12 @@
 [ext_resource type="Texture2D" uid="uid://dwg5acxkyoy86" path="res://third_party/kenney_city_builder/sprites/coin.png" id="17_cjamx"]
 [ext_resource type="Texture2D" uid="uid://civeawwc03474" path="res://third_party/kenney_city_builder/sprites/instructions.png" id="22_pm3ni"]
 [ext_resource type="AudioStream" uid="uid://b7qp44k7flk1x" path="res://third_party/kenney_city_builder/sounds/ambience.ogg" id="24_y6deb"]
+[ext_resource type="Script" path="res://scripts/world/apartment.gd" id="27_apt"]
+[ext_resource type="Resource" path="res://assets/civic/church.tres" id="28_church"]
+[ext_resource type="Resource" path="res://assets/civic/restaurant.tres" id="29_restaurant"]
+[ext_resource type="Resource" path="res://assets/civic/cafe.tres" id="30_cafe"]
+[ext_resource type="Resource" path="res://assets/civic/clinic.tres" id="31_clinic"]
+[ext_resource type="Resource" path="res://assets/civic/school.tres" id="32_school"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_q176i"]
 font = ExtResource("16_vlub6")
@@ -34,7 +40,7 @@ shadow_color = Color(0, 0, 0, 0.392157)
 
 [node name="Builder" type="Node3D" parent="." node_paths=PackedStringArray("selector", "selector_container", "view_camera", "gridmap", "cash_display")]
 script = ExtResource("1_jybm7")
-structures = Array[ExtResource("2_54v6r")]([ExtResource("2_bwyku"), ExtResource("3_o6o81"), ExtResource("3_6fpyf"), ExtResource("7_kqu4g"), ExtResource("8_1swhv"), ExtResource("4_b632v"), ExtResource("8_4il2q"), ExtResource("5_v5o2m"), ExtResource("6_f4603"), ExtResource("10_84or2"), ExtResource("12_8obn7"), ExtResource("13_ut2cy"), ExtResource("9_ifw7y"), ExtResource("10_vaeah"), ExtResource("13_t5d2v")])
+structures = Array[ExtResource("2_54v6r")]([ExtResource("2_bwyku"), ExtResource("3_o6o81"), ExtResource("3_6fpyf"), ExtResource("7_kqu4g"), ExtResource("8_1swhv"), ExtResource("4_b632v"), ExtResource("8_4il2q"), ExtResource("5_v5o2m"), ExtResource("6_f4603"), ExtResource("10_84or2"), ExtResource("12_8obn7"), ExtResource("13_ut2cy"), ExtResource("9_ifw7y"), ExtResource("10_vaeah"), ExtResource("13_t5d2v"), ExtResource("28_church"), ExtResource("29_restaurant"), ExtResource("30_cafe"), ExtResource("31_clinic"), ExtResource("32_school")])
 selector = NodePath("Selector")
 selector_container = NodePath("Selector/Container")
 view_camera = NodePath("../View/Camera")
@@ -117,3 +123,6 @@ texture = ExtResource("22_pm3ni")
 stream = ExtResource("24_y6deb")
 volume_db = -30.0
 autoplay = true
+
+[node name="Apartment" type="Node" parent="."]
+script = ExtResource("27_apt")
