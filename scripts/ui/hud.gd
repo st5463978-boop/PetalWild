@@ -633,7 +633,6 @@ func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	button.expand_icon = true
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-	button.icon_max_width = 40
 	button.pressed.connect(on_press)
 	_skin_slot(button, false)
 	var key_label := ThemeKit.outline_label(key, 14)
@@ -647,8 +646,12 @@ func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	return button
 
 func _skin_slot(button: Button, on: bool) -> void:
+	if button == null:
+		return
 	var box: StyleBox = ThemeKit.slot_selected if on else ThemeKit.slot_normal
 	var hover: StyleBox = ThemeKit.slot_selected if on else ThemeKit.slot_hover
+	if box == null or hover == null:
+		return
 	button.add_theme_stylebox_override("normal", box)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", ThemeKit.slot_selected)
