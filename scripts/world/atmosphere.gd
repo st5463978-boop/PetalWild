@@ -9,7 +9,7 @@ var sun: DirectionalLight3D
 var moon: DirectionalLight3D
 var fill: DirectionalLight3D
 var rain: CPUParticles3D
-var sky_material: ProceduralSkyMaterial
+var sky_material: Material
 var shafts: Array[MeshInstance3D] = []
 var photosensitivity := false
 
@@ -41,7 +41,7 @@ func build(parent: Node3D) -> void:
 	world_environment = WorldEnvironment.new()
 	world_environment.name = "WorldEnvironment"
 	world_environment.environment = QualityTier.make_environment()
-	sky_material = world_environment.environment.sky.sky_material as ProceduralSkyMaterial
+	sky_material = world_environment.environment.sky.sky_material
 	env_root.add_child(world_environment)
 
 	sun = DirectionalLight3D.new()
@@ -106,15 +106,15 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	fill.visible = QualityTier.uses_bounce_fill()
 	fill.light_energy = QualityTier.BOUNCE_ENERGY * day
 	fill.light_color = QualityTier.BOUNCE_COLOR
-	environment.ambient_light_energy = lerpf(0.25, 0.6, day)
+	environment.ambient_light_energy = lerpf(0.22, 0.55, day)
+	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
 	environment.tonemap_exposure = QualityTier.EXPOSURE
 	environment.fog_density = QualityTier.FOG_DENSITY
 	environment.fog_light_color = QualityTier.FOG
 	environment.glow_enabled = not photosensitivity
-	sky_material.sky_top_color = QualityTier.SKY_TOP.lerp(Color("12272f"), night)
-	sky_material.sky_horizon_color = QualityTier.SKY_HORIZON.lerp(Color("466177"), night)
-	sky_material.ground_horizon_color = QualityTier.GROUND_HORIZON
-	sky_material.ground_bottom_color = QualityTier.GROUND_BOTTOM.lerp(Color("1d2a22"), night)
+	environment.sky_rotation = QualityTier.SKY_ROT
+	QualityTier.set_hdri_energy(environment, lerpf(0.18, QualityTier.HDRI_ENERGY, day))
+	_tint_procedural(night)
 	_apply_weather(environment, weather, day)
 	_apply_fx(weather, camera, day)
 
@@ -122,9 +122,9 @@ func _apply_identity(environment: Environment) -> void:
 	QualityTier.style_sun(sun)
 	QualityTier.style_bounce(fill)
 	moon.light_energy = 0.0
-	environment.ambient_light_energy = 0.6
+	environment.ambient_light_energy = 0.55
 	environment.ambient_light_color = QualityTier.AMBIENT
-	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
+	environment.tonemap_mode = Environment.TONE_MAPPER_AGX
 	environment.tonemap_exposure = QualityTier.EXPOSURE
 	environment.tonemap_white = 6.0
 	environment.adjustment_enabled = true
@@ -132,28 +132,37 @@ func _apply_identity(environment: Environment) -> void:
 	environment.adjustment_contrast = 1.05
 	environment.fog_density = QualityTier.FOG_DENSITY
 	environment.fog_light_color = QualityTier.FOG
+	environment.fog_aerial_perspective = 0.62
 	environment.glow_enabled = not photosensitivity
-	sky_material.sky_top_color = QualityTier.SKY_TOP
-	sky_material.sky_horizon_color = QualityTier.SKY_HORIZON
-	sky_material.ground_horizon_color = QualityTier.GROUND_HORIZON
-	sky_material.ground_bottom_color = QualityTier.GROUND_BOTTOM
-	sky_material.sun_angle_max = 30.0
+	environment.sky_rotation = QualityTier.SKY_ROT
+	QualityTier.set_hdri_energy(environment, QualityTier.HDRI_ENERGY)
+	_tint_procedural(0.0)
+
+func _tint_procedural(night: float) -> void:
+	var sky := sky_material as ProceduralSkyMaterial
+	if sky == null:
+		return
+	sky.sky_top_color = QualityTier.SKY_TOP.lerp(Color("12272f"), night)
+	sky.sky_horizon_color = QualityTier.SKY_HORIZON.lerp(Color("466177"), night)
+	sky.ground_horizon_color = QualityTier.GROUND_HORIZON
+	sky.ground_bottom_color = QualityTier.GROUND_BOTTOM.lerp(Color("1d2a22"), night)
+	sky.sun_angle_max = 30.0
 
 func _sun_rotation(hour: float) -> Vector3:
-	var elev := 35.0
-	var az := -45.0
+	var elev := 18.0
+	var az := -135.0
 	if hour < 6.0 or hour >= 20.5:
 		elev = -8.0
-		az = -120.0
+		az = -160.0
 	elif hour < GOLDEN_HOUR:
 		var t := (hour - 6.0) / 10.5
 		var noon := 1.0 - clampf(absf(hour - 12.0) / 6.0, 0.0, 1.0)
-		elev = lerpf(8.0, 35.0, t) + noon * 18.0
-		az = lerpf(50.0, -45.0, t)
+		elev = lerpf(8.0, 18.0, t) + noon * 14.0
+		az = lerpf(40.0, -135.0, t)
 	else:
 		var t := clampf((hour - GOLDEN_HOUR) / 4.0, 0.0, 1.0)
-		elev = lerpf(35.0, 4.0, t)
-		az = lerpf(-45.0, -100.0, t)
+		elev = lerpf(18.0, 4.0, t)
+		az = lerpf(-135.0, -160.0, t)
 	return Vector3(-elev, az, 0.0)
 
 func _sun_color(hour: float, weather: String) -> Color:
@@ -188,34 +197,42 @@ func _shadow_opacity(weather: String, day: float) -> float:
 		return 0.35
 	if weather == "overcast" or weather == "mist":
 		return 0.5
-	return lerpf(0.4, 0.85, day)
+	return lerpf(0.4, 0.78, day)
 
 func _apply_weather(environment: Environment, weather: String, day: float) -> void:
+	var sky := sky_material as ProceduralSkyMaterial
 	if weather == "mist":
 		environment.fog_density = 0.012
 		environment.fog_light_color = Color("e7e0d4")
-		sky_material.sky_horizon_color = Color("c4d2bd")
+		QualityTier.set_hdri_energy(environment, 0.55)
+		if sky:
+			sky.sky_horizon_color = Color("c4d2bd")
 	elif weather == "rain":
 		environment.fog_density = 0.015
 		environment.fog_light_color = Color("c4d2bd")
 		environment.tonemap_exposure = 1.1
 		environment.ambient_light_energy = 1.0
-		sky_material.sky_top_color = Color("97a77b")
-		sky_material.sky_horizon_color = Color("c4d2bd")
+		QualityTier.set_hdri_energy(environment, 0.4)
+		if sky:
+			sky.sky_top_color = Color("97a77b")
+			sky.sky_horizon_color = Color("c4d2bd")
 	elif weather == "golden":
 		environment.fog_density = 0.006
 		environment.fog_light_color = Color("e4d7b8")
 		environment.tonemap_exposure = 1.0
-		sky_material.sky_top_color = Color("c39042")
-		sky_material.sky_horizon_color = Color("e4d7b8")
+		if sky:
+			sky.sky_top_color = Color("c39042")
+			sky.sky_horizon_color = Color("e4d7b8")
 	elif weather == "overcast":
 		environment.fog_density = 0.008
 		environment.fog_light_color = Color("c4d2bd")
 		environment.tonemap_exposure = 1.05
 		environment.ambient_light_energy = 0.9
-		sky_material.sky_horizon_color = Color("c4d2bd")
+		QualityTier.set_hdri_energy(environment, 0.5)
+		if sky:
+			sky.sky_horizon_color = Color("c4d2bd")
 	else:
-		environment.ambient_light_energy = lerpf(0.25, 0.6, day)
+		environment.ambient_light_energy = lerpf(0.22, 0.55, day)
 
 func _apply_fx(weather: String, camera: Camera3D, day: float) -> void:
 	if camera:
