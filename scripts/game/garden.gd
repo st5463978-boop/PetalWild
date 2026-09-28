@@ -1928,6 +1928,58 @@ func debug_spawn(id: String) -> void:
 	jelly.global_position = GardenLayout.cell_center(2, 2)
 	toast("Spawned %s." % id)
 
+func debug_jelly_activity(kind: String) -> void:
+	var jelly := focus
+	if jelly == null or not is_instance_valid(jelly):
+		jelly = ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+		jelly.global_position = GardenLayout.cell_center(2, 2)
+	jelly.leaving = false
+	jelly.tier = 0
+	if kind == "":
+		jelly.clear_force()
+		toast("%s icon follows live state." % jelly.display_name)
+		return
+	jelly.force_activity(kind, 1.25 if kind == JellyActivity.WORKING else 1.0)
+	toast("%s icon: %s" % [jelly.display_name, kind])
+
+func _sync_jelly_activity() -> void:
+	var adults := {}
+	for actor in ecology.actors:
+		if not is_instance_valid(actor):
+			continue
+		var body: Jelly = actor
+		if body.young or body.leaving:
+			continue
+		adults[body.species_id] = int(adults.get(body.species_id, 0)) + 1
+	for actor in ecology.actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if str(jelly.get("_forced_activity")) != "":
+			continue
+		if jelly.held or jelly.leaving or jelly.wants_sleep:
+			jelly.work_intensity = 0.0
+		elif jelly.is_hungry() and jelly.global_position.distance_to(jelly.goal) > 0.55:
+			jelly.work_intensity = clampf(1.35 - jelly.hunger * 1.2, 0.75, 1.65)
+		else:
+			jelly.work_intensity = 0.0
+		jelly.romance = _romance_for(jelly, int(adults.get(jelly.species_id, 0)))
+		jelly.refresh_activity()
+
+
+func _romance_for(jelly: Jelly, adults: int) -> String:
+	if jelly.young or jelly.leaving:
+		return ""
+	var sid := jelly.species_id
+	if str(ecology.states.get(sid, "")) == "breeding" or adults >= 2:
+		return "locked"
+	var definition: Dictionary = ContentDB.species_def(sid)
+	if definition.has("romance") and ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident"):
+		return "interested"
+	return ""
+
 func debug_coins(amount: int) -> void:
 	Economy.earn(amount)
 
@@ -10719,6 +10771,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_reeds()
 	_seek_bees()
 	_walk_shore()
+	_sync_jelly_activity()
 
 func _bowl_line(at: Vector3) -> float:
 	var rim := GardenLayout.POND_RADIUS

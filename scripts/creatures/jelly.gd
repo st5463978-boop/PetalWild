@@ -2,6 +2,7 @@ class_name Jelly
 extends Node3D
 
 signal reacted(kind: String, jelly: Jelly)
+signal activity_changed(kind: String, jelly: Jelly)
 
 var species_id := ""
 var display_name := ""
@@ -55,6 +56,13 @@ var pet_time := 0.0
 var nuzzled := false
 var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
+var activity := JellyActivity.NONE
+var work_intensity := 0.0
+var mail_pending := false
+var romance := ""
+var status_icon: JellyStatusIcon
+var _forced_activity := ""
+var _happy_playing := false
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -65,6 +73,7 @@ func setup(definition: Dictionary) -> void:
 	_apply_tune(definition)
 	add_to_group("jelly")
 	_build(definition)
+	_mount_status_icon()
 	var here := Vector3.ZERO
 	if is_inside_tree():
 		here = global_position
@@ -98,6 +107,107 @@ func set_select(on: bool, grabbed := false) -> void:
 		halo_mat.albedo_color = Color(0.85, 0.98, 0.7, 0.7)
 		halo_mat.emission = Color(0.55, 0.85, 0.4)
 		halo_mat.emission_energy_multiplier = 0.28
+
+func _mount_status_icon() -> void:
+	status_icon = JellyStatusIcon.new()
+	add_child(status_icon)
+	status_icon.bind(self)
+	if not status_icon.finished.is_connected(_on_status_icon_finished):
+		status_icon.finished.connect(_on_status_icon_finished)
+
+func set_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	elif kind == JellyActivity.NONE:
+		work_intensity = 0.0
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	if kind == JellyActivity.ROMANCE_INTERESTED:
+		romance = "interested"
+	elif kind == JellyActivity.ROMANCE_LOCKED:
+		romance = "locked"
+	_forced_activity = ""
+	_apply_activity(kind)
+
+func force_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	if kind == JellyActivity.NONE:
+		_forced_activity = ""
+		_happy_playing = false
+		work_intensity = 0.0
+		refresh_activity()
+		return
+	_forced_activity = kind
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	_apply_activity(kind)
+
+func clear_force() -> void:
+	_forced_activity = ""
+	refresh_activity()
+
+func offer_mail() -> void:
+	mail_pending = true
+	refresh_activity()
+
+func handle_mail() -> void:
+	if not mail_pending:
+		return
+	mail_pending = false
+	refresh_activity()
+
+func pulse_happy() -> void:
+	_happy_playing = true
+	_apply_activity(JellyActivity.HAPPY, true)
+
+func show_interest() -> void:
+	if romance == "locked":
+		refresh_activity()
+		return
+	romance = "interested"
+	refresh_activity()
+
+func lock_romance() -> void:
+	romance = "locked"
+	refresh_activity()
+
+func clear_romance() -> void:
+	romance = ""
+	refresh_activity()
+
+func refresh_activity() -> void:
+	var next := JellyActivity.derive(self)
+	_apply_activity(next)
+
+func _apply_activity(kind: String, restart := false) -> void:
+	var changed := kind != activity
+	if not changed and not restart:
+		if status_icon != null and kind == JellyActivity.WORKING:
+			status_icon.set_intensity(work_intensity)
+		return
+	activity = kind
+	if status_icon != null:
+		if restart and kind == JellyActivity.HAPPY and not changed:
+			status_icon.replay()
+		else:
+			status_icon.set_activity(kind, work_intensity)
+	if changed:
+		activity_changed.emit(kind, self)
+
+func _on_status_icon_finished(kind: String) -> void:
+	if kind != JellyActivity.HAPPY:
+		return
+	_happy_playing = false
+	if _forced_activity == JellyActivity.HAPPY:
+		_forced_activity = ""
+	refresh_activity()
 
 func _build(definition: Dictionary) -> void:
 	mat = ShaderMaterial.new()
@@ -339,11 +449,13 @@ func poke() -> void:
 	bond = minf(1.0, bond + 0.04)
 	ripple = 0.85
 	poke_time = 0.7
+	pulse_happy()
 	reacted.emit("poke", self)
 
 func inspect_face() -> void:
 	inspected = true
 	tier = 0
+	handle_mail()
 	poke()
 
 func clear_inspect() -> void:
@@ -356,6 +468,8 @@ func snack() -> void:
 	ripple = 0.85
 	bite_wait = 4.0
 	poke_time = 0.55
+	handle_mail()
+	pulse_happy()
 	reacted.emit("snack", self)
 
 func _eye(root: Node3D, at: Vector3, color: Color, keep_iris := false) -> Node3D:
@@ -438,6 +552,7 @@ func release() -> void:
 		bond = minf(1.0, bond + 0.06)
 		vel.y = 2.6
 		feel = "air"
+		pulse_happy()
 	sample_pos.clear()
 	sample_ms.clear()
 	set_select(selected, false)
@@ -581,6 +696,7 @@ func _full(delta: float) -> void:
 			bond = minf(1.0, bond + 0.08)
 			mood = "happy"
 			ripple = maxf(ripple, 0.4)
+			pulse_happy()
 			reacted.emit("nuzzle", self)
 	_apply_deform()
 	if not reduce_motion:
