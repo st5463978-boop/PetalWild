@@ -7,9 +7,9 @@ size: 2048x2048
 count: 8
 priority: high
 target: assets/art/images/PETAL-08-101/grok_jelly_turnaround.png
-status: delivered
+status: in_review
 due: 2026-10-05
-note: "Delivered 2026-09-28 Lane A. Blender EEVEE local renders (GenerateImage unavailable to executor). Files: circle.png oblong.png square.png pill.png triangle.png hexagon.png cloud.png teardrop.png grok_jelly_turnaround.png. 0 DaVinci credits."
+note: "Images replaced 2026-09-28 with the approved v3 lineup and cut-outs (circle, oblong, square, pill, triangle, hexagon, cloud, teardrop, grok_jelly_turnaround). Higher-resolution cut-outs will follow. 0 DaVinci credits."
 refs:
   - docs/CITY_PARK.md
   - art_desk/requests/_EXAMPLE.yaml
