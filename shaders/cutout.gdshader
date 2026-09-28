@@ -5,6 +5,9 @@ uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, r
 uniform sampler2D opacity_tex : filter_linear_mipmap_anisotropic, repeat_disable;
 
 void fragment() {
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 	vec3 alb = texture(albedo_tex, UV).rgb;
 	float cut = texture(opacity_tex, UV).r;
 	ALPHA = cut;
@@ -14,4 +17,9 @@ void fragment() {
 	float cap = peak > 0.38 ? 0.38 / peak : 1.0;
 	ALBEDO = alb * cap;
 	ROUGHNESS = 0.74;
+}
+
+void light() {
+	float ndot = max(abs(dot(NORMAL, LIGHT)), 0.22);
+	DIFFUSE_LIGHT += ALBEDO * LIGHT_COLOR * ATTENUATION * ndot;
 }

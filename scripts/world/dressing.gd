@@ -1343,7 +1343,10 @@ func _lawn_meadow(parent: Node3D) -> void:
 				bloom_colors.append(hedge_tint)
 			hz += 0.36
 		hx += 0.26
-	_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
+	# Tier b (Compatibility / llvmpipe) paints card backfaces as black spikes even
+	# with two-sided shading. Keep the blooms the smoke test counts; skip the blades.
+	if QualityTier.tier != "b":
+		_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
 	_multimesh(parent, _flower(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
 func _room_clumps(parent: Node3D) -> void:

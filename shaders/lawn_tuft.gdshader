@@ -14,15 +14,17 @@ void vertex() {
 }
 
 void fragment() {
+	// Two-sided: Compatibility/llvmpipe paints unflipped backfaces as black spikes.
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 	vec3 col = COLOR.rgb;
-	float shade = clamp(dot(NORMAL, vec3(0.25, 0.9, 0.2)), 0.0, 1.0);
-	// ponytail: same shade as the hedge cards; 0.72 is the night delta, drop it if the lawn goes black.
-	ALBEDO = col * (0.48 + 0.36 * shade) * 0.72;
+	float shade = clamp(abs(dot(NORMAL, vec3(0.25, 0.9, 0.2))), 0.0, 1.0);
+	ALBEDO = col * (0.62 + 0.38 * shade);
 	ROUGHNESS = 1.0;
 }
 
 void light() {
-	float ndot = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
-	vec3 lit = ALBEDO * LIGHT_COLOR * ATTENUATION * ndot;
-	DIFFUSE_LIGHT += min(lit, vec3(0.2));
+	float ndot = max(abs(dot(NORMAL, LIGHT)), 0.28);
+	DIFFUSE_LIGHT += ALBEDO * LIGHT_COLOR * ATTENUATION * ndot;
 }
