@@ -1,0 +1,3 @@
+PETAL-08-102 delivered 2026-09-28
+Method: rembg cutouts of existing staged masters in art_library/staging/veg_folk and petalwild-veg-seed (no new paid gens).
+Files: onion.png pea.png carrot.png tomato.png cabbage.png veg_folk_turnaround.png

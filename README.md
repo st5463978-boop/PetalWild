@@ -52,4 +52,14 @@ The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plot
 
 `docs/PETALWILD_MASTER_STATE.md`
 
-A second scene, `scenes/garden.tscn`, came in from a parallel build called Hedge Hollow. It is not the scene `tools/run.sh` launches.
+A second scene, `scenes/garden.tscn`, came in from a parallel build called Hedge Hollow. It is the scene the title's **New garden** launches.
+
+## City Park
+
+The city-park pond layer is a standalone scene that brings back the square-tile plots and the Viva Piñata ring camera. How to run it, switch cameras, and capture shots: `docs/CITY_PARK.md`. Credits: `docs/CITY_PARK_CREDITS.md`.
+
+```bash
+DISPLAY=:1 ./tools/run.sh res://scenes/city_park.tscn
+```
+
+F1 ring, F2 builder, F3 pond edge, F4 free cam. Space pause, 1 / 2 / 3 for 1× / 2× / 4×. Esc returns to the title. There is also a **City Park** button on the title screen.

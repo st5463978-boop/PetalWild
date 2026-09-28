@@ -6,7 +6,7 @@ Godot Engine 4.8-dev6, MIT, https://godotengine.org
 
 Kenney nature, foliage, mini-forest, and interface sounds, CC0, https://kenney.nl
 
-Poly Haven textures by Charlotte Baglioni, Dimitrios Savva, and Rob Tuytel, CC0, https://polyhaven.com
+Poly Haven textures by Charlotte Baglioni, Dimitrios Savva, Rob Tuytel, and other Poly Haven authors, CC0, https://polyhaven.com (lawn, soil, cobble, gravel, rock, brick, roof, wood, metal). City Park extra sets are listed in `docs/CITY_PARK_CREDITS.md`.
 
 Forest ambience by Slobad, CC0, https://opengameart.org/content/forest-ambience
 

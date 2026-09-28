@@ -8,4 +8,13 @@ if [ ! -x "$BIN" ]; then
   echo "Download Godot_v4.8-dev6_linux.x86_64.zip from the 4.8-dev6 release and do not substitute a later snapshot." >&2
   exit 1
 fi
-exec "$BIN" --path "$ROOT" --rendering-driver opengl3 "$@"
+DRIVER="opengl3"
+if [ "${PETAL_RENDER:-}" = "forward" ]; then
+  DRIVER="vulkan"
+fi
+if [ -z "${XDG_RUNTIME_DIR:-}" ] || [ ! -d "${XDG_RUNTIME_DIR}" ]; then
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime}"
+  mkdir -p "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+fi
+exec "$BIN" --path "$ROOT" --rendering-driver "$DRIVER" "$@"

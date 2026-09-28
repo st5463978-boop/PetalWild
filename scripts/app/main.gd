@@ -49,6 +49,10 @@ func _build() -> void:
 	licences.text = "Licences"
 	licences.pressed.connect(_show_licences)
 	column.add_child(licences)
+	var park := Button.new()
+	park.text = "City Park"
+	park.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/city_park.tscn"))
+	column.add_child(park)
 	column.add_child(ThemeKit.label("Godot %s" % _engine_label(), 13, ThemeKit.MOSS_DEEP))
 	var panel := Panel.new()
 	panel.name = "Panel"

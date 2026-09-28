@@ -1,0 +1,6 @@
+PETAL-08-101 delivered 2026-09-28
+Method: Blender 4.3 EEVEE_NEXT candy SSS meshes (executor lacked cursor GenerateImage/CallDynamicTool).
+Files:
+- circle.png, oblong.png, square.png, pill.png, triangle.png, hexagon.png, cloud.png, teardrop.png (each 2048x2048 RGBA turnaround 2x2)
+- grok_jelly_turnaround.png (contact sheet of 8 fronts)
+Palette mapping: circle=#804ee0 oblong=#0e74e0 square=#009957 pill=#ff6700 triangle=#e02135 hexagon=#00a592 cloud=#e02a88 teardrop=#ff9800

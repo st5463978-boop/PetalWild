@@ -1,0 +1,3 @@
+PETAL-08-103 delivered 2026-09-28
+Method: Blender 4.3 EEVEE_NEXT procedural Nymphaea (chunky 5-8 petals, peach/coral, cream throat, lily pad).
+Files: lily_1.png lily_2.png lily_3.png lily_4.png water_lily.png (2x2 contact). All 1024x1024 RGBA.
