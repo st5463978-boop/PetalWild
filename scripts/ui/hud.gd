@@ -43,7 +43,7 @@ func build(owner: Node) -> void:
 	add_child(toast_label)
 	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   C town   M vale   B stall", 13, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	hint_label.offset_bottom = -100
+	hint_label.offset_bottom = -80
 	hint_label.offset_left = -420
 	hint_label.offset_right = 420
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -543,7 +543,7 @@ func _top(theme: Theme) -> void:
 	bar.offset_left = 16
 	bar.offset_right = -16
 	bar.offset_top = 12
-	bar.offset_bottom = 78
+	bar.offset_bottom = 56
 	add_child(bar)
 	var row := HBoxContainer.new()
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -567,7 +567,7 @@ func _tools(theme: Theme) -> void:
 	bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	bar.offset_left = 12
 	bar.offset_right = -12
-	bar.offset_top = -108
+	bar.offset_top = -76
 	bar.offset_bottom = -12
 	add_child(bar)
 	var row := HBoxContainer.new()
@@ -590,7 +590,7 @@ func _tools(theme: Theme) -> void:
 	for spec in specs:
 		var button := Button.new()
 		button.text = spec[1]
-		button.custom_minimum_size = Vector2(112, 72)
+		button.custom_minimum_size = Vector2(112, 48)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var id := str(spec[0])
 		button.pressed.connect(func(): host.set_tool(id))
@@ -600,12 +600,12 @@ func _tools(theme: Theme) -> void:
 			seed_button = button
 	var journal_button := Button.new()
 	journal_button.text = "J  Journal"
-	journal_button.custom_minimum_size = Vector2(112, 72)
+	journal_button.custom_minimum_size = Vector2(112, 48)
 	journal_button.pressed.connect(toggle_journal)
 	row.add_child(journal_button)
 	var stall_button := Button.new()
 	stall_button.text = "B  Stall"
-	stall_button.custom_minimum_size = Vector2(100, 72)
+	stall_button.custom_minimum_size = Vector2(100, 48)
 	stall_button.pressed.connect(toggle_shop)
 	row.add_child(stall_button)
 
