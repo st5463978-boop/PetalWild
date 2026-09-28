@@ -103,6 +103,7 @@ func _shed(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.16)
+	_unmark_ok(root)
 
 func _tea(parent: Node3D) -> void:
 	var root := Node3D.new()

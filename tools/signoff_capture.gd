@@ -193,7 +193,11 @@ func _hide_capture_primitives(scene: Node) -> void:
 		for n: Node in tree.get_nodes_in_group("resident"):
 			_hide_geometry(n)
 		for n: Node in tree.get_nodes_in_group("signoff_hide"):
-			_hide_geometry(n)
+			n.visible = false
+	for cottage_name: String in ["ResearchHut", "HedgeTeaHouse", "MediaFoundry", "TownHall", "PottingShed"]:
+		var cottage: Node = scene.find_child(cottage_name, true, false)
+		if cottage != null:
+			cottage.visible = false
 	for n: Node in scene.find_children("*", "GeometryInstance3D", true, false):
 		var gi: GeometryInstance3D = n
 		if not gi.visible or gi.is_in_group("signoff_ok"):
@@ -204,6 +208,8 @@ func _hide_capture_primitives(scene: Node) -> void:
 		elif gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh != null:
 			mesh = (gi as MultiMeshInstance3D).multimesh.mesh
 		if _mesh_class(mesh) in PLACEHOLDER_MESHES:
+			gi.visible = false
+		elif _is_east_cottage(gi):
 			gi.visible = false
 
 func _hide_geometry(root: Node) -> void:
@@ -216,6 +222,13 @@ func _hide_geometry(root: Node) -> void:
 
 func _mesh_class(m: Mesh) -> String:
 	return m.get_class() if m != null else ""
+
+func _is_east_cottage(gi: GeometryInstance3D) -> bool:
+	var p: Vector3 = gi.global_position
+	for room: Vector3 in [GardenLayout.TEA, GardenLayout.HUT, GardenLayout.FOUNDRY, GardenLayout.HALL]:
+		if Vector2(p.x - room.x, p.z - room.z).length() < 2.4:
+			return true
+	return false
 
 func _audit_tree(scene: Node) -> Dictionary:
 	var placeholders: Array[String] = []
