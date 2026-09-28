@@ -118,15 +118,15 @@ func load_all() -> void:
 		0.92
 	)
 	hedge = StandardMaterial3D.new()
-	hedge.albedo_color = Color("4f8a2e")
-	hedge.roughness = 0.78
+	hedge.albedo_color = Color("7eb445")
+	hedge.roughness = 0.74
 	hedge.vertex_color_use_as_albedo = true
-	if ResourceLoader.exists(PH + "forest_leaves_03/forest_leaves_03_diff_1k.jpg"):
-		hedge.albedo_texture = load(PH + "forest_leaves_03/forest_leaves_03_diff_1k.jpg")
+	if ResourceLoader.exists(PH + "leafy_grass/leafy_grass_diff_1k.jpg"):
+		hedge.albedo_texture = load(PH + "leafy_grass/leafy_grass_diff_1k.jpg")
 		hedge.normal_enabled = true
-		hedge.normal_texture = load(PH + "forest_leaves_03/forest_leaves_03_nor_gl_1k.jpg")
-		hedge.normal_scale = 0.5
-	hedge.uv1_scale = Vector3(1.6, 1.6, 1.6)
+		hedge.normal_texture = load(PH + "leafy_grass/leafy_grass_nor_gl_1k.jpg")
+		hedge.normal_scale = 0.4
+	hedge.uv1_scale = Vector3(1.8, 1.8, 1.8)
 	glass = StandardMaterial3D.new()
 	glass.albedo_color = Color(0.62, 0.78, 0.74, 0.28)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

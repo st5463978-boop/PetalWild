@@ -301,7 +301,7 @@ func _hedge() -> void:
 		var h := rng.randf_range(1.05, 1.45)
 		var b := Basis.from_euler(Vector3(0, a, 0)).scaled(Vector3(s, h, s))
 		xf.append(Transform3D(b, Vector3(x, 0.55 * h, z)))
-		cols.append(Color("3d7725").lerp(Color("80b64a"), rng.randf() * 0.45))
+		cols.append(Color("6eac3c").lerp(Color("a0d05a"), rng.randf() * 0.45))
 	_multi(blob, xf, cols, mats.hedge, "Hedge")
 	# inner low hedges near beds
 	var low: Array[Transform3D] = []
@@ -315,7 +315,7 @@ func _hedge() -> void:
 			continue
 		var s := rng.randf_range(0.45, 0.7)
 		low.append(Transform3D(Basis.from_euler(Vector3(0, a, 0)).scaled(Vector3(s, 0.55, s)), Vector3(x, 0.28, z)))
-		lowc.append(Color("3d7725"))
+		lowc.append(Color("78b448"))
 	_multi(blob, low, lowc, mats.hedge, "LowHedge")
 
 
@@ -335,7 +335,7 @@ func _grass() -> void:
 		if pond_amount(x, z) > 0.02:
 			continue
 		var y := height_at(x, z)
-		var s := rng.randf_range(0.55, 1.05)
+		var s := rng.randf_range(0.35, 0.7)
 		var b := Basis.from_euler(Vector3(rng.randf_range(-0.15, 0.2), rng.randf() * TAU, 0.0))
 		xf.append(Transform3D(b.scaled(Vector3(s, s * rng.randf_range(0.85, 1.4), s)), Vector3(x, y, z)))
 		cols.append(Color("447826").lerp(Color("82a834"), rng.randf()))
@@ -418,10 +418,10 @@ func _trees() -> void:
 		[Vector2(10.6, -4.2), 3.5],
 		[Vector2(-11.2, 6.4), 3.0],
 		[Vector2(11.0, 5.8), 3.2],
-		[Vector2(-2.2, -9.4), 3.3],
-		[Vector2(2.6, -9.6), 3.5],
-		[Vector2(-4.8, -10.6), 4.2],
-		[Vector2(5.2, -11.0), 4.0],
+		[Vector2(-2.2, -9.4), 2.4],
+		[Vector2(2.6, -9.6), 2.5],
+		[Vector2(-4.8, -10.6), 2.6],
+		[Vector2(5.2, -11.0), 2.6],
 		[Vector2(8.8, -10.4), 3.8],
 		[Vector2(-8.6, -10.8), 4.1],
 	]
@@ -442,7 +442,7 @@ func _trees() -> void:
 	]
 	for at in extras:
 		xf.append(Transform3D(Basis.from_euler(Vector3(0, rng.randf() * TAU, 0)), at))
-		cols.append(Color("3d7725").lerp(Color("80b64a"), rng.randf()))
+		cols.append(Color("6eac3c").lerp(Color("98c85a"), rng.randf()))
 	_multi(canopy, xf, cols, mats.hedge, "CanopyBlobs")
 	# bushes
 	for i2 in 18:
@@ -473,7 +473,7 @@ func _willow() -> void:
 		var at := root + Vector3(cos(angle) * radial, 2.15 + rng.randf() * 0.35, sin(angle) * radial)
 		var s := rng.randf_range(0.7, 1.15)
 		xf.append(Transform3D(Basis.from_euler(Vector3(0.35, angle, 0)).scaled(Vector3(s, s * 1.35, s)), at))
-		cols.append(Color("3d7725").lerp(Color("80b64a"), rng.randf() * 0.45))
+		cols.append(Color("6eac3c").lerp(Color("a0d05a"), rng.randf() * 0.45))
 	_multi(drape, xf, cols, mats.hedge, "WillowDrape")
 
 
@@ -503,7 +503,7 @@ func _lilies_reeds() -> void:
 		var y := -0.01
 		var s := rng.randf_range(0.7, 1.25)
 		pxf.append(Transform3D(Basis.from_euler(Vector3(0, a, 0)).scaled(Vector3(s, 1, s)), Vector3(x, y, z)))
-		pc.append(Color("3d7725").lerp(Color("80b64a"), rng.randf()))
+		pc.append(Color("4f8a2e").lerp(Color("80b64a"), rng.randf()))
 		if i % 2 == 0:
 			bxf.append(Transform3D(Basis.IDENTITY, Vector3(x, y + 0.07, z)))
 			bc.append(Color("e8a0b4").lerp(Color("f2c2d0"), rng.randf()))
@@ -548,37 +548,37 @@ func _lilies_reeds() -> void:
 
 func _bridge() -> void:
 	# Arched wood footbridge on the south-west pond pinch (concept 1 / 2).
-	var plank := ParkMesh.pillow(Vector3(0.95, 0.08, 0.42), 5)
-	var post := ParkMesh.pillow(Vector3(0.07, 0.48, 0.07), 4)
-	var rail := ParkMesh.pillow(Vector3(0.72, 0.05, 0.05), 4)
+	var plank := ParkMesh.pillow(Vector3(0.48, 0.05, 0.36), 5)
+	var post := ParkMesh.pillow(Vector3(0.055, 0.42, 0.055), 4)
+	var rail := ParkMesh.pillow(Vector3(0.42, 0.04, 0.04), 4)
 	var deck_xf: Array[Transform3D] = []
 	var deck_c: Array[Color] = []
 	var post_xf: Array[Transform3D] = []
 	var post_c: Array[Color] = []
 	var rail_xf: Array[Transform3D] = []
 	var rail_c: Array[Color] = []
-	var n := 10
-	var yaw := atan2(1.15 - (-1.85), -1.7 - (-4.55))
+	var n := 14
+	var yaw := atan2(1.05 - (-1.65), -1.85 - (-4.45))
 	for i in n:
 		var t := float(i) / float(n - 1)
-		var x := lerpf(-4.55, -1.7, t)
-		var z := lerpf(-1.85, 1.15, t)
-		var arch := sin(t * PI) * 0.62
-		var y := 0.06 + arch
-		var tilt := -0.42 * cos(t * PI)
+		var x := lerpf(-4.45, -1.85, t)
+		var z := lerpf(-1.65, 1.05, t)
+		var arch := sin(t * PI) * 0.38
+		var y := 0.05 + arch
+		var tilt := -0.28 * cos(t * PI)
 		deck_xf.append(Transform3D(Basis.from_euler(Vector3(tilt, yaw, 0)), Vector3(x, y, z)))
 		deck_c.append(Color(0.96, 0.88, 0.76))
-		var side := Vector3(cos(yaw + PI * 0.5), 0, sin(yaw + PI * 0.5)) * 0.24
-		if i == 0 or i == n - 1 or i % 2 == 0:
-			post_xf.append(Transform3D(Basis.IDENTITY, Vector3(x, y, z) + side + Vector3(0, 0.28, 0)))
-			post_xf.append(Transform3D(Basis.IDENTITY, Vector3(x, y, z) - side + Vector3(0, 0.28, 0)))
+		var side := Vector3(cos(yaw + PI * 0.5), 0, sin(yaw + PI * 0.5)) * 0.2
+		if i == 0 or i == n - 1 or i % 3 == 0:
+			post_xf.append(Transform3D(Basis.IDENTITY, Vector3(x, y, z) + side + Vector3(0, 0.24, 0)))
+			post_xf.append(Transform3D(Basis.IDENTITY, Vector3(x, y, z) - side + Vector3(0, 0.24, 0)))
 			post_c.append(Color(0.9, 0.8, 0.68))
 			post_c.append(Color(0.9, 0.8, 0.68))
 		if i < n - 1:
-			var x2 := lerpf(-4.55, -1.7, float(i + 1) / float(n - 1))
-			var z2 := lerpf(-1.85, 1.15, float(i + 1) / float(n - 1))
-			var y2 := 0.06 + sin(float(i + 1) / float(n - 1) * PI) * 0.62
-			var mid := Vector3((x + x2) * 0.5, (y + y2) * 0.5 + 0.42, (z + z2) * 0.5)
+			var x2 := lerpf(-4.45, -1.85, float(i + 1) / float(n - 1))
+			var z2 := lerpf(-1.65, 1.05, float(i + 1) / float(n - 1))
+			var y2 := 0.05 + sin(float(i + 1) / float(n - 1) * PI) * 0.38
+			var mid := Vector3((x + x2) * 0.5, (y + y2) * 0.5 + 0.36, (z + z2) * 0.5)
 			rail_xf.append(Transform3D(Basis.from_euler(Vector3(tilt, yaw, 0)), mid + side))
 			rail_xf.append(Transform3D(Basis.from_euler(Vector3(tilt, yaw, 0)), mid - side))
 			rail_c.append(Color(0.88, 0.76, 0.62))

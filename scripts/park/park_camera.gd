@@ -124,6 +124,12 @@ func _process(delta: float) -> void:
 	if mode == Mode.FREE:
 		_free_move(delta)
 		return
+	if mode == Mode.POND_EDGE:
+		# Fixed bank pose so the lens sits on the water, not the south lawn.
+		camera.global_position = Vector3(0.55, 0.92, 4.05)
+		camera.look_at(Vector3(-0.15, 0.08, -1.35), Vector3.UP)
+		_wasd_pan(delta)
+		return
 	if mode == Mode.RING:
 		# Slow Viva Piñata crawl while the player is idle.
 		if not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and not _wasd():
