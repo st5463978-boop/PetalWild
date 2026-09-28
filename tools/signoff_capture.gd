@@ -121,6 +121,12 @@ func _freeze_time() -> void:
 	if scene != null:
 		if "gossip_done" in scene:
 			scene.set("gossip_done", true)
+		if "tool" in scene:
+			scene.set("tool", "hands")
+		if "highlight" in scene:
+			var hi: Variant = scene.get("highlight")
+			if hi is Node:
+				(hi as Node).visible = false
 		_hide_debug(scene)
 	audit["test_state"] = {"hour": hour, "weather": weather, "live_sync": false, "time_scale": 1.0}
 	seed(20260928)
@@ -309,6 +315,10 @@ func _hide_debug(scene: Node) -> void:
 			continue
 		label.visible = false
 	_hide_capture_primitives(scene)
+	if "highlight" in scene:
+		var hi: Variant = scene.get("highlight")
+		if hi is CanvasItem or hi is Node3D:
+			hi.visible = false
 
 func _hide_capture_primitives(scene: Node) -> void:
 	# Hide capsule/box placeholder visuals for sign-off. Gameplay nodes stay.
