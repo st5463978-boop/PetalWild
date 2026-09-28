@@ -264,10 +264,10 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 0.85 + center.z * 0.7 + phase) * 0.36 * scale
-		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
-		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
-		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
+		var lift := sin(center.x * 0.85 + center.z * 0.7 + phase) * 0.08 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.08
+		var chop := 0.94 + 0.08 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
+		var lean := sin(center.x * 2.2 + phase) * 0.06 * scale
 		var spine := center - side * offset_side
 		var knot := _hedge_knot(spine)
 		var waist := 0.22 + 0.78 * knot
@@ -329,7 +329,7 @@ func _hedge_crown(at: Vector3) -> float:
 	return smoothstep(0.72, 0.96, _hedge_knot(at))
 
 func _crown_scale(at: Vector3) -> float:
-	return lerpf(0.72, 1.08, _hedge_crown(at))
+	return lerpf(0.94, 1.04, _hedge_crown(at))
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
@@ -998,6 +998,9 @@ func _bloom_material() -> Material:
 	return material
 
 func _shrubs(parent: Node3D) -> void:
+	# Cone CylinderMesh shrubs read as spikes on Compatibility / llvmpipe.
+	if QualityTier.tier == "b":
+		return
 	var spots: Array[Vector2] = [
 		Vector2(-11.2, -3.4),
 		Vector2(-10.2, 3.6),
