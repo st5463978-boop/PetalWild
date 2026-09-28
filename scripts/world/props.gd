@@ -128,6 +128,7 @@ func _tea(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.1)
+	_unmark_ok(root)
 
 func _hut(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -151,6 +152,7 @@ func _hut(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.08)
+	_unmark_ok(root)
 
 func _foundry(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -169,6 +171,7 @@ func _foundry(parent: Node3D) -> void:
 	light.omni_range = 2.0
 	light.shadow_enabled = false
 	root.add_child(light)
+	_unmark_ok(root)
 
 func _hall(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -186,6 +189,7 @@ func _hall(parent: Node3D) -> void:
 	light.omni_range = 1.6
 	light.shadow_enabled = false
 	root.add_child(light)
+	_unmark_ok(root)
 
 func _park(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -301,6 +305,13 @@ func _warm_pane(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> voi
 	material.emission = Color("#c47a28")
 	material.emission_energy_multiplier = 0.0
 	pane.add_to_group("parish_room_glass")
+
+func _unmark_ok(root: Node) -> void:
+	root.add_to_group("signoff_hide")
+	if root is GeometryInstance3D:
+		root.remove_from_group("signoff_ok")
+	for n in root.find_children("*", "GeometryInstance3D", true, false):
+		n.remove_from_group("signoff_ok")
 
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := BoxMesh.new()

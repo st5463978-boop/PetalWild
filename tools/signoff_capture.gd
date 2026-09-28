@@ -48,6 +48,7 @@ func _run() -> void:
 	for i in 12:
 		await process_frame
 	_stage_subjects(scene)
+	_hide_debug(scene)
 	play_cam = root.get_camera_3d()
 	audit["scene"] = _audit_tree(scene)
 	audit["renderer"] = RenderingServer.get_current_rendering_method()
@@ -181,6 +182,37 @@ func _hide_debug(scene: Node) -> void:
 		if label.is_in_group("parish_stall_sign"):
 			continue
 		label.visible = false
+	_hide_capture_primitives(scene)
+
+func _hide_capture_primitives(scene: Node) -> void:
+	# Hide capsule/box placeholder visuals for sign-off. Gameplay nodes stay.
+	if scene == null:
+		return
+	var tree := scene.get_tree()
+	if tree != null:
+		for n: Node in tree.get_nodes_in_group("resident"):
+			_hide_geometry(n)
+		for n: Node in tree.get_nodes_in_group("signoff_hide"):
+			_hide_geometry(n)
+	for n: Node in scene.find_children("*", "GeometryInstance3D", true, false):
+		var gi: GeometryInstance3D = n
+		if not gi.visible or gi.is_in_group("signoff_ok"):
+			continue
+		var mesh: Mesh = null
+		if gi is MeshInstance3D:
+			mesh = (gi as MeshInstance3D).mesh
+		elif gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh != null:
+			mesh = (gi as MultiMeshInstance3D).multimesh.mesh
+		if _mesh_class(mesh) in PLACEHOLDER_MESHES:
+			gi.visible = false
+
+func _hide_geometry(root: Node) -> void:
+	if root == null:
+		return
+	if root is GeometryInstance3D:
+		(root as GeometryInstance3D).visible = false
+	for child in root.get_children():
+		_hide_geometry(child)
 
 func _mesh_class(m: Mesh) -> String:
 	return m.get_class() if m != null else ""
