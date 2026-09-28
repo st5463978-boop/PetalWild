@@ -13,6 +13,7 @@ var coin_label: Label
 var weather_label: Label
 var hover_label: Label
 var toast_label: Label
+var toast_panel: PanelContainer
 var hint_label: Label
 var photo_label: Label
 var inspect_panel: Panel
@@ -34,14 +35,29 @@ func build(owner: Node) -> void:
 	_shop(theme)
 	_pause(theme)
 	_proposal(theme)
+	toast_panel = PanelContainer.new()
+	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	toast_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	toast_panel.offset_left = -260
+	toast_panel.offset_right = 260
+	toast_panel.offset_top = 64
+	toast_panel.offset_bottom = 100
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Color(0.07, 0.06, 0.05, 0.84)
+	plate.set_corner_radius_all(10)
+	plate.content_margin_left = 18
+	plate.content_margin_right = 18
+	plate.content_margin_top = 6
+	plate.content_margin_bottom = 6
+	toast_panel.add_theme_stylebox_override("panel", plate)
 	toast_label = ThemeKit.outline_label("", 16)
-	toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	toast_label.offset_top = 78
-	toast_label.offset_left = -280
-	toast_label.offset_right = 280
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(toast_label)
+	toast_panel.add_child(toast_label)
+	toast_panel.visible = false
+	add_child(toast_panel)
 	hint_label = ThemeKit.outline_label("kettle / crate   click a face   Space   F8 play   C town   M vale", 13)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -96
@@ -113,6 +129,8 @@ func _process(delta: float) -> void:
 		_toast_time -= delta
 		if _toast_time <= 0.0:
 			toast_label.text = ""
+			if toast_panel:
+				toast_panel.visible = false
 
 func apply_text_scale() -> void:
 	ThemeKit.restyle(self)
@@ -129,6 +147,8 @@ func set_status(clock_text: String, weather: String, coins: int, hover: String, 
 func toast(text: String) -> void:
 	toast_label.text = text
 	_toast_time = 3.4
+	if toast_panel:
+		toast_panel.visible = text != ""
 	hint_label.visible = false
 
 func set_tool(tool_name: String) -> void:
@@ -536,6 +556,8 @@ func set_photo(on: bool) -> void:
 		proposal.visible = false
 		if inspect_panel:
 			inspect_panel.visible = false
+		if toast_panel:
+			toast_panel.visible = toast_label != null and toast_label.text != ""
 
 func show_pause(on: bool) -> void:
 	pause_panel.visible = on
