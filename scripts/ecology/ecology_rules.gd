@@ -76,10 +76,191 @@ func romance_met(species: Dictionary, world: Dictionary) -> bool:
 	var romance: Dictionary = species.get("romance", {})
 	if romance.is_empty():
 		return false
-	return requirement_met(romance, world)
+	if not requirement_met(romance, world):
+		return false
+	var nest := str(romance.get("nest", ""))
+	if nest == "":
+		return true
+	var mature: Dictionary = world.get("mature", {})
+	return int(mature.get(nest, 0)) >= int(romance.get("nest_min", 1))
 
 func romance_label(species: Dictionary) -> String:
 	var romance: Dictionary = species.get("romance", {})
 	if romance.is_empty():
 		return ""
-	return str(romance.get("label", "Romance"))
+	var label := str(romance.get("label", "Romance"))
+	var nest_label := str(romance.get("nest_label", ""))
+	if nest_label == "":
+		return label
+	return "%s, and %s" % [label, nest_label]
+
+func food_of(species: Dictionary) -> String:
+	return str(species.get("food", ""))
+
+func habitat_of(entry: Dictionary) -> String:
+	return str(entry.get("habitat", ""))
+
+func growth_factor(plant: Dictionary, neighbor_ids: Array, same_count: int) -> float:
+	var rate := 1.0
+	var likes := str(plant.get("likes", ""))
+	if likes != "" and neighbor_ids.has(likes):
+		rate += 0.28
+	var crowd := int(plant.get("crowd", 99))
+	if same_count >= crowd:
+		rate *= 0.7
+	return rate
+
+func likes_label(plant: Dictionary, neighbor_ids: Array) -> String:
+	var likes := str(plant.get("likes", ""))
+	if likes == "" or not neighbor_ids.has(likes):
+		return ""
+	return str(plant.get("likes_label", "A neighbour is helping."))
+
+func crowded(plant: Dictionary, same_count: int) -> bool:
+	return same_count >= int(plant.get("crowd", 99))
+
+func adjacent(a: Dictionary, b: Dictionary) -> bool:
+	return absi(int(a.get("ix", 0)) - int(b.get("ix", 0))) + absi(int(a.get("iz", 0)) - int(b.get("iz", 0))) == 1
+
+func garden_line(beds: Array, plants: Dictionary) -> String:
+	var counts := {}
+	for bed in beds:
+		var crop_id := str(bed.get("plant_id", ""))
+		if crop_id == "":
+			continue
+		counts[crop_id] = int(counts.get(crop_id, 0)) + 1
+	for bed in beds:
+		var bed_id := str(bed.get("plant_id", ""))
+		var crop_def: Dictionary = plants.get(bed_id, {})
+		var likes := str(crop_def.get("likes", ""))
+		if likes == "":
+			continue
+		for other in beds:
+			if str(other.get("plant_id", "")) != likes:
+				continue
+			if not adjacent(bed, other):
+				continue
+			var here := habitat_of(crop_def)
+			var liked_def: Dictionary = plants.get(likes, {})
+			var there := habitat_of(liked_def)
+			if here == "" or there == "":
+				return "Neighbouring beds are helping each other."
+			return "The %s leans on the %s." % [here, there]
+	for stand_id in counts.keys():
+		var stand_def: Dictionary = plants.get(str(stand_id), {})
+		if not crowded(stand_def, int(counts[stand_id])):
+			continue
+		var stand := habitat_of(stand_def)
+		if stand == "":
+			return "A stand is crowded."
+		return "The %s is crowded." % stand
+	return ""
+
+func restless_line(species: Dictionary, counts: Dictionary, plants: Dictionary) -> String:
+	var habitat := habitat_of(species)
+	if habitat == "":
+		return ""
+	var own := 0
+	var other := 0
+	var other_name := ""
+	for crop in counts.keys():
+		var crop_def: Dictionary = plants.get(str(crop), {})
+		var n := int(counts[crop])
+		if habitat_of(crop_def) == habitat:
+			own += n
+		elif n > other:
+			other = n
+			other_name = habitat_of(crop_def)
+	if other >= 5 and other >= own * 3 and other_name != "":
+		return "The %s is crowding the %s." % [other_name, habitat]
+	return ""
+
+func need_line(species: Dictionary, hunger: float, world: Dictionary, plants: Dictionary) -> String:
+	if hunger < 0.28:
+		var food_id := food_of(species)
+		var food: Dictionary = plants.get(food_id, {})
+		var food_name := str(food.get("name", food_id))
+		if food_name == "":
+			return "Hungry."
+		return "Hungry  ·  wants %s" % food_name
+	var counts: Dictionary = world.get("plant_counts", {})
+	return restless_line(species, counts, plants)
+
+func habitat_line(beds: Array, plants: Dictionary) -> String:
+	var counts := {}
+	for bed in beds:
+		var crop_id := str(bed.get("plant_id", ""))
+		if crop_id == "":
+			continue
+		var crop_def: Dictionary = plants.get(crop_id, {})
+		var stand := habitat_of(crop_def)
+		if stand == "":
+			continue
+		counts[stand] = int(counts.get(stand, 0)) + 1
+	if counts.is_empty():
+		return ""
+	var names: Array = counts.keys()
+	names.sort()
+	var parts: PackedStringArray = PackedStringArray()
+	for stand_name in names:
+		parts.append("%s %d" % [str(stand_name).capitalize(), int(counts[stand_name])])
+	return "Habitats  ·  " + ", ".join(parts)
+
+func habitat_place(habitat: String) -> String:
+	match habitat:
+		"meadow":
+			return "in the meadow"
+		"bank":
+			return "on the bank"
+		"cane":
+			return "in the canes"
+		"dusk":
+			return "at dusk"
+		"loam":
+			return "in the loam"
+		"orchard":
+			return "in the orchard"
+		_:
+			return "in the parish"
+
+func courtship_line(states: Dictionary, catalog: Dictionary) -> String:
+	var names: Array = catalog.keys()
+	names.sort()
+	for id in names:
+		if str(states.get(str(id), "")) != "breeding":
+			continue
+		var definition: Dictionary = catalog.get(str(id), {})
+		var who := str(definition.get("name", id))
+		return "%s is courting %s." % [who, habitat_place(habitat_of(definition))]
+	return ""
+
+func nest_plot_bit(plant_id: String, growth: float, states: Dictionary, catalog: Dictionary) -> String:
+	if plant_id == "" or growth < 1.0:
+		return ""
+	for id in catalog.keys():
+		if str(states.get(str(id), "")) != "breeding":
+			continue
+		var definition: Dictionary = catalog.get(str(id), {})
+		var romance: Dictionary = definition.get("romance", {})
+		var nest := str(romance.get("nest", ""))
+		if plant_id == nest or plant_id == food_of(definition):
+			return "Nest."
+	return ""
+
+func forage_line(catalog: Dictionary, mature: Dictionary, pouch: Dictionary, kettle: Dictionary, plants: Dictionary) -> String:
+	var names: Array = catalog.keys()
+	names.sort()
+	for id in names:
+		var definition: Dictionary = catalog.get(str(id), {})
+		var food_id := food_of(definition)
+		if food_id == "":
+			continue
+		var standing := int(mature.get(food_id, 0))
+		var food: Dictionary = plants.get(food_id, {})
+		var food_name := str(food.get("name", food_id))
+		var who := str(definition.get("name", id))
+		if int(kettle.get(food_id, 0)) > 0 and standing < 2:
+			return "The kettle is steeping the %s %s wants." % [food_name, who]
+		if int(pouch.get(food_id, 0)) > 0 and standing < 1:
+			return "The pouch holds the %s %s wanted." % [food_name, who]
+	return ""

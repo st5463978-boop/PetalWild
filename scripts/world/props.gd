@@ -8,12 +8,14 @@ func build(parent: Node3D) -> void:
 	_hut(parent)
 	_foundry(parent)
 	_hall(parent)
+	_park(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
 	_lantern(parent, Vector3(-6.2, 0, 3.5))
 	_lantern(parent, Vector3(3.4, 0, -2.5))
 	_reeds(parent)
+	_gate_crate(parent)
 
 func _stall(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -34,6 +36,12 @@ func _stall(parent: Node3D) -> void:
 		stripe.add_to_group("parish_awning")
 	_crate(root, Vector3(-1.35, 0.16, 0.7))
 	_crate(root, Vector3(1.25, 0.16, 0.62))
+	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
+	cup.add_to_group("parish_cup")
+	cup.visible = false
+	var jar := _sphere(root, Vector3(1.25, 0.42, 0.62), 0.07, Color("#8a3a48"))
+	jar.add_to_group("parish_jar")
+	jar.visible = false
 	# ponytail: three flats beside the spur; the worn center stays |x+4.55|<0.42.
 	for at in [Vector3(-0.72, 0.06, -0.72), Vector3(0.78, 0.06, -0.66), Vector3(-0.82, 0.06, -1.05)]:
 		var stone := _box(root, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
@@ -49,6 +57,7 @@ func _stall(parent: Node3D) -> void:
 	sign.modulate = Color("#8d6a45")
 	sign.outline_modulate = Color("2a2118")
 	sign.outline_size = 12
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.add_to_group("parish_stall_sign")
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
@@ -80,6 +89,11 @@ func _shed(parent: Node3D) -> void:
 	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
 	_cylinder(root, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
 	_sphere(root, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
+	var pan := _cylinder(root, Vector3(0.0, 0.2, 1.08), 0.12, 0.14, 0.2, Color("#c47c4a"))
+	pan.add_to_group("parish_pan")
+	var jam_steam := _sphere(root, Vector3(0.0, 0.46, 1.08), 0.1, Color("#f2e6d2"))
+	jam_steam.add_to_group("parish_jam_steam")
+	jam_steam.visible = false
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.2, 0.2)
 	light.light_color = Color("ffc98a")
@@ -100,6 +114,11 @@ func _tea(parent: Node3D) -> void:
 	_box(root, Vector3(0, 1.52, 0), Vector3(2.05, 0.1, 1.75), Color("#3a322c"))
 	_box(root, Vector3(0, 0.08, -1.05), Vector3(1.1, 0.08, 0.4), Color("#5c4a3c"))
 	_cylinder(root, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
+	var kettle := _cylinder(root, Vector3(0.48, 0.22, -0.95), 0.09, 0.11, 0.28, Color("#2a3034"))
+	kettle.add_to_group("parish_kettle")
+	var steam := _sphere(root, Vector3(0.48, 0.54, -0.95), 0.11, Color("#efe8dc"))
+	steam.add_to_group("parish_steam")
+	steam.visible = false
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.05, -0.3)
 	light.light_color = Color("ffd2a4")
@@ -167,6 +186,43 @@ func _hall(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 
+func _park(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "GrovePark"
+	root.position = GardenLayout.PARK
+	root.visible = false
+	root.add_to_group("grove_park")
+	parent.add_child(root)
+	_box(root, Vector3(0, 0.02, 0), Vector3(4.6, 0.04, 3.2), Color("#3f6a32"))
+	_box(root, Vector3(0, 0.035, 1.5), Vector3(0.72, 0.03, 2.6), Color("#6b5340"))
+	_box(root, Vector3(-1.6, 0.04, -1.1), Vector3(0.7, 0.08, 0.5), Color("#4a4038"))
+	_box(root, Vector3(1.5, 0.04, 0.9), Vector3(0.6, 0.07, 0.42), Color("#4a4038"))
+	_bench(root, Vector3(-1.2, 0.0, 0.6))
+	_bench(root, Vector3(1.1, 0.0, -0.7))
+	_bench(root, Vector3(0.15, 0.0, -1.15))
+	var sign := Label3D.new()
+	sign.name = "ParkSign"
+	sign.text = "Grove Park"
+	sign.font_size = 48
+	sign.pixel_size = 0.004
+	sign.position = Vector3(0, 1.28, 0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sign.shaded = false
+	sign.modulate = Color("#8d6a45")
+	sign.outline_modulate = Color("2a2118")
+	root.add_child(sign)
+	var count := Label3D.new()
+	count.name = "ParkCount"
+	count.text = "the lawn is quiet"
+	count.font_size = 28
+	count.pixel_size = 0.004
+	count.position = Vector3(0, 0.92, 0)
+	count.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	count.shaded = false
+	count.modulate = Color("#f3ead8")
+	count.outline_modulate = Color("2a2118")
+	root.add_child(count)
+
 func _bench(parent: Node3D, at: Vector3) -> void:
 	var root := Node3D.new()
 	root.position = at
@@ -206,6 +262,29 @@ func _reeds(parent: Node3D) -> void:
 			continue
 		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.02, 0.025, 0.9, Color("#6d7a3a"))
 
+func _gate_crate(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "ValeCrate"
+	root.position = GardenLayout.GATE + Vector3(0.95, 0.0, 0.55)
+	root.visible = false
+	root.add_to_group("vale_crate")
+	parent.add_child(root)
+	_crate(root, Vector3(0, 0.16, 0))
+	var sign := Label3D.new()
+	sign.text = "Vale cart"
+	sign.font_size = 42
+	sign.pixel_size = 0.004
+	sign.position = Vector3(0, 0.72, 0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sign.shaded = false
+	sign.modulate = Color("#c4a070")
+	sign.outline_modulate = Color("2a2118")
+	sign.outline_size = 10
+	sign.add_to_group("vale_crate_sign")
+	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
+		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
+	root.add_child(sign)
+
 func _crate(parent: Node3D, at: Vector3) -> void:
 	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
 
@@ -236,7 +315,7 @@ func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInsta
 	parent.add_child(node)
 	return node
 
-func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: float, color: Color) -> void:
+func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: float, color: Color) -> MeshInstance3D:
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = top
 	mesh.bottom_radius = bottom
@@ -251,8 +330,9 @@ func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: f
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	parent.add_child(node)
+	return node
 
-func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> void:
+func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> MeshInstance3D:
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
@@ -267,3 +347,4 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> void:
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	parent.add_child(node)
+	return node

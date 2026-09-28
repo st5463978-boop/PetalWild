@@ -13,6 +13,11 @@ var energy := 0.7
 var belonging := 0.45
 var purpose := 0.55
 var relation := 0.1
+var hunger := 0.64
+var social := 0.48
+var activity := "work"
+var memories: Array = []
+var tier := 1
 var waypoints: Array[Vector3] = []
 var chore := Vector3.ZERO
 var has_chore := false
@@ -21,8 +26,10 @@ var pause := 0.0
 var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
+var act_label: Label3D
 var body: Node3D
 var want := ""
+var mesh_root: Node3D
 
 func setup(definition: Dictionary) -> void:
 	person_id = str(definition.get("id", ""))
@@ -38,16 +45,29 @@ func setup(definition: Dictionary) -> void:
 	speech.modulate = Color("f7f1e6")
 	speech.outline_modulate = Color("1c2418")
 	speech.outline_size = 10
-	speech.position = Vector3(0, 1.35, 0)
+	speech.position = Vector3(0, 1.72, 0)
 	speech.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	speech.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		speech.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	add_child(speech)
+	act_label = Label3D.new()
+	act_label.font_size = 28
+	act_label.pixel_size = 0.004
+	act_label.modulate = Color("d9e6c8")
+	act_label.outline_modulate = Color("1c2418")
+	act_label.outline_size = 8
+	act_label.position = Vector3(0, 1.52, 0)
+	act_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	act_label.text = ""
+	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
+		act_label.font = speech.font
+	add_child(act_label)
 
 func set_route(points: Array[Vector3], snap := true) -> void:
 	waypoints = points
 	index = 0
+	pause = 0.0
 	if snap and not points.is_empty():
 		global_position = points[0]
 
@@ -66,6 +86,8 @@ func _process(delta: float) -> void:
 		speech_time -= delta
 		if speech_time <= 0.0 and speech:
 			speech.visible = false
+	if body:
+		body.visible = present and tier < 4
 	# ponytail: one point is a home; two or more is a loop. A chore is one bed, then the route resumes.
 	if not has_chore and waypoints.is_empty():
 		return
@@ -75,14 +97,22 @@ func _process(delta: float) -> void:
 	var target := chore if has_chore else waypoints[index]
 	var flat := Vector3(target.x, global_position.y, target.z) - global_position
 	flat.y = 0.0
-	if flat.length() < 0.18:
+	var gap := flat.length()
+	if gap < 0.18:
 		if has_chore:
 			return
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)
 		return
-	var step := flat.normalized() * delta * 0.55
+	var step := flat.normalized() * minf(delta * _speed(), gap)
 	global_position += step
+	if tier >= 3:
+		global_position.y = 0.0
+		if body:
+			body.scale = Vector3.ONE
+		return
+	if body:
+		body.visible = true
 	phase += delta * 7.0
 	global_position.y = absf(sin(phase)) * 0.045
 	rotation.y = lerp_angle(rotation.y, atan2(flat.x, flat.z), minf(1.0, delta * 6.0))
@@ -90,9 +120,21 @@ func _process(delta: float) -> void:
 		var squash := 1.0 + sin(phase * 2.0) * 0.035
 		body.scale = Vector3(1.0 / squash, squash, 1.0)
 
+func set_activity(text: String) -> void:
+	activity = text
+	if act_label:
+		act_label.text = text
+		act_label.visible = false
+
+func _speed() -> float:
+	# ponytail: L3 skips bob instead of running faster; a 6s smoke tick overshoots the porch if we scale speed.
+	return 0.32 if energy < 0.35 else 0.55
+
 func _build_body() -> void:
 	body = Node3D.new()
 	add_child(body)
+	if _mount_mesh():
+		return
 	match family:
 		"beet":
 			_beet()
@@ -100,6 +142,55 @@ func _build_body() -> void:
 			_pea()
 		_:
 			_leek()
+
+func _mesh_path() -> String:
+	match family:
+		"leek":
+			return "res://assets/characters/leek.glb"
+		"beet":
+			return "res://assets/characters/carrot.glb"
+		"pea":
+			return "res://assets/characters/tomato.glb"
+		_:
+			return "res://assets/characters/human.glb"
+
+func _mount_mesh() -> bool:
+	var path := _mesh_path()
+	if not ResourceLoader.exists(path):
+		return false
+	var packed: PackedScene = load(path) as PackedScene
+	if packed == null:
+		return false
+	mesh_root = packed.instantiate() as Node3D
+	if mesh_root == null:
+		return false
+	mesh_root.name = "FolkMesh"
+	body.add_child(mesh_root)
+	_skin(mesh_root)
+	return true
+
+func _skin(node: Node) -> void:
+	if not ResourceLoader.exists("res://shaders/veg_skin.gdshader"):
+		return
+	if node is MeshInstance3D:
+		var mesh_node := node as MeshInstance3D
+		var n := mesh_node.name.to_lower()
+		if "leaf" in n or "eye" in n or "face" in n or "mouth" in n or "hat" in n or "can" in n:
+			pass
+		else:
+			var mat := ShaderMaterial.new()
+			mat.shader = load("res://shaders/veg_skin.gdshader") as Shader
+			mat.set_shader_parameter("skin_tint", Color(1, 1, 1))
+			mat.set_shader_parameter("roughness", 0.42)
+			mat.set_shader_parameter("sss_strength", 0.35)
+			var imported: Material = mesh_node.get_active_material(0)
+			if imported is StandardMaterial3D:
+				var std := imported as StandardMaterial3D
+				if std.albedo_texture != null:
+					mat.set_shader_parameter("albedo_tex", std.albedo_texture)
+			mesh_node.material_override = mat
+	for child in node.get_children():
+		_skin(child)
 
 func _leek() -> void:
 	_stalk()
@@ -401,6 +492,10 @@ func to_state() -> Dictionary:
 		"belonging": belonging,
 		"purpose": purpose,
 		"relation": relation,
+		"hunger": hunger,
+		"social": social,
+		"activity": activity,
+		"memories": memories.duplicate(),
 		"position": [global_position.x, global_position.y, global_position.z],
 		"has_chore": has_chore,
 		"chore": [chore.x, chore.y, chore.z],
@@ -415,6 +510,15 @@ func apply_state(data: Dictionary) -> void:
 	belonging = float(data.get("belonging", belonging))
 	purpose = float(data.get("purpose", purpose))
 	relation = float(data.get("relation", relation))
+	hunger = float(data.get("hunger", hunger))
+	social = float(data.get("social", social))
+	activity = str(data.get("activity", activity))
+	var saved_mem = data.get("memories", memories)
+	if typeof(saved_mem) == TYPE_ARRAY:
+		memories = saved_mem.duplicate()
+	if act_label:
+		act_label.text = activity
+		act_label.visible = false
 	var pos = data.get("position", null)
 	if typeof(pos) == TYPE_ARRAY and pos.size() == 3:
 		global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))

@@ -27,6 +27,14 @@ func _ready() -> void:
 	add_child(pad)
 	pad.play()
 
+func _exit_tree() -> void:
+	if pad:
+		pad.stop()
+		pad.stream = null
+	if wind:
+		wind.stop()
+		wind.stream = null
+
 func play_kind(kind: String, db := -8.0) -> void:
 	if not bank.has(kind):
 		return

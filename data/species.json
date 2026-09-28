@@ -10,6 +10,8 @@
     "radius": 0.34,
     "cap": 3,
     "wobble": 0.7,
+    "habitat": "meadow",
+    "food": "meadowbell",
     "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet, and that ring sets one seed in the next bed. In the rain the bees are down and the bell waits. When it rings, the bees come to that bed. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
     "requirements": [
       {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
@@ -27,10 +29,13 @@
     "radius": 0.32,
     "cap": 2,
     "wobble": 0.55,
-    "blurb": "A cluster of berry lobes that settles where the canes fruit.",
+    "habitat": "cane",
+    "food": "bramble",
+    "blurb": "A cluster of berry lobes that settles where the canes fruit. A pair nests in a thick bramble and leaves one young.",
     "requirements": [
       {"type": "mature_plant", "plant": "bramble", "min": 2, "label": "2 mature Brambles"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "berrypatch", "min": 2, "label": "A second Berrypatch resident", "nest": "bramble", "nest_min": 3, "nest_label": "a bramble nest"}
   },
   {
     "id": "bulrush",
@@ -43,6 +48,8 @@
     "radius": 0.28,
     "cap": 2,
     "wobble": 0.85,
+    "habitat": "bank",
+    "food": "reed",
     "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in. In the pond it sits in the water. On the lawn, and under a home kit, it stands on the ground. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
     "requirements": [
       {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
@@ -61,11 +68,14 @@
     "radius": 0.36,
     "cap": 2,
     "wobble": 0.4,
-    "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water.",
+    "habitat": "bank",
+    "food": "reed",
+    "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water. A pair nests in a reed stand and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
       {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "reedic", "min": 2, "label": "A second Reedic resident", "nest": "reed", "nest_min": 3, "nest_label": "a reed nest"}
   },
   {
     "id": "cirlark",
@@ -78,11 +88,14 @@
     "radius": 0.26,
     "cap": 2,
     "wobble": 0.65,
-    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp.",
+    "habitat": "meadow",
+    "food": "meadowbell",
+    "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp. A pair nests in a looked-after meadow and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
       {"type": "garden_quality", "min": 0.42, "label": "The garden is looked after"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "cirlark", "min": 2, "label": "A second Cirlark resident", "nest": "meadowbell", "nest_min": 4, "nest_label": "a meadow nest"}
   },
   {
     "id": "grapling",
@@ -95,11 +108,14 @@
     "radius": 0.24,
     "cap": 2,
     "wobble": 0.9,
-    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble.",
+    "habitat": "cane",
+    "food": "bramble",
+    "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble. A pair nests in that thicket and leaves one young.",
     "requirements": [
       {"type": "mature_plant", "plant": "bramble", "min": 3, "label": "3 mature Brambles"},
       {"type": "fertility", "min": 0.55, "label": "Rich soil across the beds"}
-    ]
+    ],
+    "romance": {"type": "resident_count", "species": "grapling", "min": 2, "label": "A second Grapling resident", "nest": "bramble", "nest_min": 4, "nest_label": "a thicket nest"}
   },
   {
     "id": "dusknip",
@@ -112,10 +128,13 @@
     "radius": 0.3,
     "cap": 2,
     "wobble": 0.5,
-    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it.",
+    "habitat": "meadow",
+    "food": "meadowbell",
+    "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it. A pair nests in the bells and leaves one young.",
     "requirements": [
       {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
     ],
+    "romance": {"type": "resident_count", "species": "dusknip", "min": 2, "label": "A second Dusknip resident", "nest": "meadowbell", "nest_min": 3, "nest_label": "a bell nest"},
     "soil_effect": {"chem": "nightloam", "count": 5}
   },
   {
@@ -129,6 +148,8 @@
     "radius": 0.36,
     "cap": 1,
     "wobble": 0.6,
+    "habitat": "dusk",
+    "food": "peach",
     "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk. At dusk it bites the lantern. In the morning it bites the peach. A bitten lantern grows back on night-loam. The bed says so.",
     "requirements": [
       {"type": "mature_plant", "plant": "peach", "min": 1, "label": "A ripe Peach"},
@@ -148,6 +169,8 @@
     "radius": 0.42,
     "cap": 1,
     "wobble": 0.45,
+    "habitat": "loam",
+    "food": "mosspear",
     "blurb": "A heavy crown. It wants night-loam, mosspears, and soil that has been fed.",
     "requirements": [
       {"type": "chem_cells", "chem": "nightloam", "min": 4, "label": "Night-loam in the beds"},

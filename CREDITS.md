@@ -14,6 +14,8 @@ Stylized Garden demo by Asset Quest, CC0, https://assetquest.itch.io/stylized-ga
 
 Inter by The Inter Project Authors, SIL OFL 1.1
 
+Veg folk (leek, carrot, tomato) and the clay human are original PetalWild character art.
+
 Concept paintings in `docs/reference/` were supplied for this project.
 
 Jelly-Baby, openage, town, and Viva Piñata are inspirations for systems only. Their code, characters, and assets are not in this game.

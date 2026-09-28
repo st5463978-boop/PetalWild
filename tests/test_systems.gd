@@ -8,6 +8,116 @@ func _init() -> void:
 	_expect(float(child["stature"]) > 0.7 and float(child["stature"]) < 1.4, "child stature sits between parents")
 	_expect(PlantGenetics.price(10, 1.5) == 15, "high yield raises the stall price")
 	_expect(PlantGenetics.price(5, 1.0) == 5, "plain yield keeps the stall price")
+	var rules := EcologyRules.new()
+	var meadow := {"likes": "reed", "likes_label": "Reed nearby.", "crowd": 5, "habitat": "meadow"}
+	_expect(rules.growth_factor(meadow, ["reed"], 1) > 1.0, "a reed neighbour hurries a meadowbell")
+	_expect(rules.growth_factor(meadow, [], 1) == 1.0, "a lone meadowbell keeps its pace")
+	_expect(rules.growth_factor(meadow, [], 5) < 1.0, "five meadowbells crowd")
+	_expect(rules.likes_label(meadow, ["reed"]) == "Reed nearby.", "the bed names the reed")
+	_expect(rules.likes_label(meadow, ["bramble"]) == "", "a bramble neighbour stays quiet")
+	var plants := {
+		"meadowbell": {"habitat": "meadow", "likes": "reed", "crowd": 5, "name": "Meadowbell"},
+		"reed": {"habitat": "bank", "likes": "meadowbell", "crowd": 4, "name": "Reed"},
+		"bramble": {"habitat": "cane", "crowd": 5, "name": "Bramble"},
+	}
+	var pair: Array = [
+		{"plant_id": "meadowbell", "ix": 2, "iz": 2},
+		{"plant_id": "reed", "ix": 3, "iz": 2},
+	]
+	_expect(rules.garden_line(pair, plants) == "The meadow leans on the bank.", "the parish names a reed neighbour")
+	var thicket: Array = []
+	for i in 5:
+		thicket.append({"plant_id": "meadowbell", "ix": i, "iz": 1})
+	_expect(rules.garden_line(thicket, plants) == "The meadow is crowded.", "the parish names a crowded meadow")
+	_expect(rules.need_line({"food": "meadowbell"}, 0.2, {}, plants).find("Hungry") != -1, "hunger asks for food")
+	_expect(rules.food_of({"food": "meadowbell"}) == "meadowbell", "bellhelp food is meadowbell")
+	_expect(rules.habitat_line(pair, plants) == "Habitats  ·  Bank 1, Meadow 1", "a reed and a bell tally two habitats")
+	var berry := {
+		"name": "Berrypatch",
+		"habitat": "cane",
+		"food": "bramble",
+		"romance": {
+			"type": "resident_count",
+			"species": "berrypatch",
+			"min": 2,
+			"label": "A second Berrypatch resident",
+			"nest": "bramble",
+			"nest_min": 3,
+			"nest_label": "a bramble nest",
+		},
+	}
+	var nest_world := {"resident_count": {"berrypatch": 2}, "mature": {"bramble": 2}}
+	_expect(not rules.romance_met(berry, nest_world), "two canes are not a nest")
+	nest_world["mature"]["bramble"] = 3
+	_expect(rules.romance_met(berry, nest_world), "three brambles make a nest")
+	_expect(rules.romance_label(berry).find("bramble nest") != -1, "romance names the nest")
+	_expect(rules.courtship_line({"berrypatch": "breeding"}, {"berrypatch": berry}) == "Berrypatch is courting in the canes.", "parish names cane courtship")
+	_expect(rules.nest_plot_bit("bramble", 1.0, {"berrypatch": "breeding"}, {"berrypatch": berry}) == "Nest.", "a ripe bramble is a nest")
+	_expect(rules.nest_plot_bit("bramble", 0.4, {"berrypatch": "breeding"}, {"berrypatch": berry}) == "", "a young bramble is not a nest")
+	var guests := {"bellhelp": {"name": "Bellhelp", "food": "meadowbell", "habitat": "meadow"}}
+	_expect(rules.forage_line(guests, {"meadowbell": 0}, {}, {"meadowbell": 1}, plants) == "The kettle is steeping the Meadowbell Bellhelp wants.", "kettle forage names the bells")
+	_expect(rules.forage_line(guests, {"meadowbell": 0}, {"meadowbell": 2}, {}, plants) == "The pouch holds the Meadowbell Bellhelp wanted.", "pouch forage names the bells")
+	_expect(rules.forage_line(guests, {"meadowbell": 4}, {"meadowbell": 2}, {"meadowbell": 1}, plants) == "", "a full meadow stays quiet")
+	var mill := ParishChain.new()
+	mill.boot([{
+		"id": "hedge_tea",
+		"name": "Hedge tea",
+		"inputs": {"peach": 1, "meadowbell": 1},
+		"output": "hedge_tea",
+		"output_count": 1,
+		"minutes": 18,
+		"sell_price": 22,
+		"crate_cap": 3,
+	}, {
+		"id": "cane_jam",
+		"name": "Cane jam",
+		"inputs": {"bramble": 1},
+		"output": "cane_jam",
+		"output_count": 1,
+		"minutes": 12,
+		"sell_price": 16,
+		"crate_cap": 3,
+	}])
+	var bag := {"peach": 1, "meadowbell": 0}
+	_expect(mill.line(bag, true, false) == "Kettle waits for meadowbell.", "missing bell is the bottleneck")
+	bag["meadowbell"] = 1
+	_expect(mill.stock(bag), "stocking lights the kettle")
+	_expect(int(bag["peach"]) == 0 and mill.brew == "hedge_tea", "fruit left the bag")
+	_expect(mill.line(bag, true, false) == "The kettle is brewing hedge tea.", "brew line")
+	_expect(mill.tick(18.0) and mill.pot_count() == 1, "a cup finishes")
+	_expect(mill.line(bag, true, false) == "Tea is waiting on the porch.", "porch wait")
+	_expect(mill.deliver() and mill.crate_count() == 1, "first cup on the crate")
+	for _i in 2:
+		bag["peach"] = 1
+		bag["meadowbell"] = 1
+		mill.stock(bag)
+		mill.tick(18.0)
+		mill.deliver()
+	bag["peach"] = 1
+	bag["meadowbell"] = 1
+	mill.stock(bag)
+	mill.tick(18.0)
+	_expect(mill.line(bag, true, true) == "The crate is full.", "full crate blocks delivery")
+	_expect(not mill.deliver(), "a full crate keeps the cup")
+	_expect(mill.take_crate() and mill.crate_count() == 2, "a sale opens a slot")
+	_expect(mill.deliver() and mill.crate_count() == 3 and mill.pot_count() == 0, "the chain recovers")
+	_expect(mill.line(bag, true, true) == "Hedge tea sits on the crate.", "crate readout")
+	bag["bramble"] = 1
+	_expect(mill.stock(bag, "cane_jam"), "stocking lights the pan")
+	_expect(mill.brew == "cane_jam", "jam starts after the tea crate is full")
+	_expect(mill.tick(12.0) and mill.pot_count("cane_jam") == 1, "a jar finishes")
+	_expect(mill.deliver("cane_jam") and mill.crate_count("cane_jam") == 1, "jam on the crate")
+	var life := ParishLife.new()
+	life.boot([{
+		"id": "lumen",
+		"name": "Lumen Peel",
+		"household": "stall house",
+		"places": {"eat": "stall", "social": "tea"},
+	}], {"stall": Vector3.ZERO, "tea": Vector3.ZERO})
+	life.lives["lumen"]["needs"]["hunger"] = 0.2
+	_expect(life.sip("lumen", 2), "a cup can be served")
+	_expect(float(life.lives["lumen"]["needs"]["hunger"]) > 0.3, "tea fills hunger")
+	_expect(life.last_memory("lumen").find("Drank hedge tea") != -1, "tea writes a memory")
 	print("SYSTEMS_OK")
 	quit(0)
 
