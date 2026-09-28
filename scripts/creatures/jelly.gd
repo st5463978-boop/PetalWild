@@ -176,7 +176,8 @@ func _build(definition: Dictionary) -> void:
 	_halo()
 	var shape := str(definition.get("shape", "droplet"))
 	var card := art_path(shape, str(definition.get("id", "")))
-	if ResourceLoader.exists(card):
+	var card_abs := ProjectSettings.globalize_path(card)
+	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
 		var sprite := make_card(card, maxf(radius * 1.7, 0.44))
 		sprite.name = "Art"
 		root.add_child(sprite)
