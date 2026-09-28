@@ -7,7 +7,8 @@ size: 2048x2048
 count: 5
 priority: high
 target: assets/art/images/PETAL-08-102/veg_folk_turnaround.png
-status: requested
+status: delivered
 due: 2026-10-05
+note: "Delivered 2026-09-28 Lane A. Assembled from staged veg_folk masters (artchars + prior Higgsfield stills already on box) via rembg; GenerateImage unavailable. Files: onion.png pea.png carrot.png tomato.png cabbage.png veg_folk_turnaround.png. 0 DaVinci / 0 new Higgsfield credits."
 refs:
   - docs/CITY_PARK.md

@@ -7,7 +7,8 @@ size: 2048x2048
 count: 3
 priority: normal
 target: assets/art/images/PETAL-08-104/willow.png
-status: requested
+status: delivered
 due: 2026-10-06
+note: "Delivered 2026-09-28 Lane A. Blender EEVEE local. 0 DaVinci credits."
 refs:
   - docs/CITY_PARK.md

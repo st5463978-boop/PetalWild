@@ -7,7 +7,8 @@ size: 1024x1024
 count: 4
 priority: normal
 target: assets/art/images/PETAL-08-103/water_lily.png
-status: requested
+status: delivered
 due: 2026-10-06
+note: "Delivered 2026-09-28 Lane A. Blender EEVEE local. 0 DaVinci credits."
 refs:
   - docs/CITY_PARK.md
