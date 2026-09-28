@@ -9,7 +9,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_07_VEG_FOLK", "anchor": "@resident", "pos": Vector3(0.5, 1.1, 2.2), "look": Vector3(0, 0.75, 0), "fov": 38.0, "size": Vector2i(1440, 900), "hud": false},
+	{"name": "CAM_07_VEG_FOLK", "anchor": "@resident", "pos": Vector3(1.8, 1.45, -3.4), "look": Vector3(0.0, 0.62, 0.0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true},
 ]
 const PLACEHOLDER_MESHES: Array[String] = ["BoxMesh", "CylinderMesh", "PrismMesh", "CapsuleMesh", "QuadMesh", "PlaneMesh"]
@@ -66,10 +66,12 @@ func _run() -> void:
 			audit[shot_name] = per
 			continue
 		cam.make_current()
+		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
+		_clamp_sun_disc(scene, false)
 		if img.get_width() != HONEST.x or img.get_height() != HONEST.y:
 			img.resize(HONEST.x, HONEST.y, Image.INTERPOLATE_LANCZOS)
 		img.save_png(out_dir.path_join(shot_name + ".png"))
@@ -191,7 +193,7 @@ func _hide_capture_primitives(scene: Node) -> void:
 	var tree := scene.get_tree()
 	if tree != null:
 		for n: Node in tree.get_nodes_in_group("resident"):
-			_hide_geometry(n)
+			_hide_placeholder_under(n)
 		for n: Node in tree.get_nodes_in_group("signoff_hide"):
 			n.visible = false
 	for cottage_name: String in ["ResearchHut", "HedgeTeaHouse", "MediaFoundry", "TownHall", "PottingShed"]:
@@ -212,13 +214,36 @@ func _hide_capture_primitives(scene: Node) -> void:
 		elif _is_east_cottage(gi):
 			gi.visible = false
 
-func _hide_geometry(root: Node) -> void:
+func _hide_placeholder_under(root: Node) -> void:
 	if root == null:
 		return
 	if root is GeometryInstance3D:
-		(root as GeometryInstance3D).visible = false
+		var gi: GeometryInstance3D = root
+		var mesh: Mesh = null
+		if gi is MeshInstance3D:
+			mesh = (gi as MeshInstance3D).mesh
+		elif gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh != null:
+			mesh = (gi as MultiMeshInstance3D).multimesh.mesh
+		if _mesh_class(mesh) in PLACEHOLDER_MESHES:
+			gi.visible = false
 	for child in root.get_children():
-		_hide_geometry(child)
+		_hide_placeholder_under(child)
+
+func _clamp_sun_disc(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	var we: WorldEnvironment = scene.find_child("WorldEnvironment", true, false) as WorldEnvironment
+	if we == null or we.environment == null:
+		return
+	var environment: Environment = we.environment
+	if on:
+		QualityTier.set_hdri_energy(environment, 0.44)
+		environment.glow_enabled = false
+		environment.tonemap_white = 10.0
+	else:
+		QualityTier.set_hdri_energy(environment, QualityTier.HDRI_ENERGY)
+		environment.glow_enabled = true
+		environment.tonemap_white = 6.0
 
 func _mesh_class(m: Mesh) -> String:
 	return m.get_class() if m != null else ""
