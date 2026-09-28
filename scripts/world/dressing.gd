@@ -229,10 +229,6 @@ func _hedge(parent: Node3D) -> void:
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
-	var north := _crest_wall(origin.z) and absf(along.z) < 0.01 and along.x < 0.0
-	if north:
-		_hedge_run(tool, origin, along, openings, scale * 0.62, 0.0, 0.2)
-		return
 	_hedge_run(tool, origin, along, openings, scale, 0.0, 0.2)
 	_hedge_run(tool, origin, along, openings, scale * 0.74, -0.78, 2.1)
 	_hedge_run(tool, origin, along, openings, scale * 0.66, 0.7, 4.0)
@@ -275,9 +271,6 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 		var knot := _hedge_knot(spine)
 		var waist := 0.22 + 0.78 * knot
 		var width := (0.95 + scale * 0.42) * bulge * waist
-		# ponytail: 0.45 stem on canopy walls; raise if the crest reads as sticks.
-		if _crest_wall(origin.z) and absf(along.z) < 0.01:
-			width *= 0.45
 		if _hedge_gap(spine) or _far_open(spine):
 			open = true
 		for point in profile:
@@ -306,17 +299,11 @@ func _north_notch(x: float, wide: bool) -> bool:
 func _crest_wall(z: float) -> bool:
 	return z > 6.2 or (z > 2.95 and z < 3.45)
 
-func _hedge_gap(at: Vector3) -> bool:
-	if at.z > 6.2 and _north_notch(at.x, false):
-		return true
-	# ponytail: the same 2.5m rhythm cuts the lower body, not only the high crest.
-	if _crest_wall(at.z):
-		return posmod(int(floor(at.x * 0.4)), 2) == 0
-	return _hedge_knot(at) < 0.72
+func _hedge_gap(_at: Vector3) -> bool:
+	return false
 
-# Cells that were solid under the 50/50 rhythm. Opening them here keeps the shared rng count.
-func _far_open(at: Vector3) -> bool:
-	return at.z > 6.2 and posmod(int(floor(at.x * 0.4)), 4) == 3
+func _far_open(_at: Vector3) -> bool:
+	return false
 
 func _room_box(at: Vector3) -> bool:
 	# ponytail: the bed hedge is the plot grid; the parish wall stays. Rng still runs.
