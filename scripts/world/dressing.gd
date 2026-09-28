@@ -17,22 +17,14 @@ func build(parent: Node3D) -> void:
 	_hedge_coat(parent)
 	_hedge_bulges(parent)
 	_hedge_volume(parent)
-	_scatter_grass(parent)
-	_track_grass(parent)
-	_room_cover(parent)
+	# Change 1: floor is lawn texture plus bed-border flowers. Spike grass, red
+	# leaf cards, cone shrubs, and the interior willow come out of the hedge room.
 	_flowers(parent)
 	_flower_rows(parent)
-	_shrubs(parent)
 	_trees(parent)
 	_gap_fill(parent)
-	_willow(parent)
 	_groundcover(parent)
-	_lawn_tufts(parent)
-	_lawn_meadow(parent)
-	_room_clumps(parent)
-	_room_carpet(parent)
 	_room_beds(parent)
-	_room_floor(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -215,8 +207,8 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 					chip_colors.append(Color("#9a8c78").lerp(Color("#5e554c"), rng.randf()))
 				else:
 					rng.randf()
-	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true)
-	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false)
+	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true, [], true)
+	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false, [], true)
 
 func _hedge(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
@@ -233,6 +225,7 @@ func _hedge(parent: Node3D) -> void:
 	node.material_override = _hedge_material()
 	node.name = "Hedge"
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
@@ -446,7 +439,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 	material.set_shader_parameter("tint", Color("#3d7a34"))
 	# ponytail: crest leaf cards lift pale under this sun; raise if the hedge goes black.
 	material.set_shader_parameter("gain", 0.58)
-	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false)
+	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false, [], true)
 
 func _room_cover(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
@@ -521,7 +514,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 				points.append(Transform3D(basis, at))
 				colors.append(tint)
 				customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs, true)
 
 func _hedge_tuft() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -607,7 +600,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
 					colors.append(tint)
 					customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs, true)
 
 func _hedge_coat(parent: Node3D) -> void:
 	var mesh := _hedge_leaf_card()
@@ -678,13 +671,13 @@ func _hedge_coat(parent: Node3D) -> void:
 							_rng.randf()
 							_rng.randf_range(0.75, 1.15)
 							_rng.randf()
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs, true)
 	var ball_mesh := SphereMesh.new()
 	ball_mesh.radius = 0.28
 	ball_mesh.height = 0.4
 	ball_mesh.radial_segments = 7
 	ball_mesh.rings = 4
-	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false)
+	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false, [], true)
 
 func _hedge_bulges(parent: Node3D) -> void:
 	var mesh := _hedge_tuft()
@@ -732,7 +725,7 @@ func _hedge_bulges(parent: Node3D) -> void:
 					points.append(card)
 					colors.append(tint)
 					customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs, true)
 
 func _hedge_volume(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
@@ -789,7 +782,7 @@ func _hedge_volume(parent: Node3D) -> void:
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
 	material.set_shader_parameter("tint", Color("#3a7a32"))
 	material.set_shader_parameter("gain", 0.58)
-	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false)
+	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false, [], true)
 
 func _hedge_leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -1096,6 +1089,7 @@ func _gap_fill(parent: Node3D) -> void:
 		node.position = Vector3(x, y + 1.075 * h, z)
 		node.scale = Vector3(rng.randf_range(0.95, 1.12), h, rng.randf_range(0.92, 1.08))
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_to_group("signoff_ok")
 		parent.add_child(node)
 		x += rng.randf_range(1.02, 1.18)
 
@@ -1147,7 +1141,7 @@ func _groundcover(parent: Node3D) -> void:
 			continue
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
 		colors.append(tint)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false, [], true)
 
 func _lawn_tufts(parent: Node3D) -> void:
 	var mesh := _leaf_card()
@@ -1515,7 +1509,7 @@ func _stones(parent: Node3D) -> void:
 		points.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(scale), Vector3(x, y, z)))
 		# ponytail: pale stones clip under this sun; raise if the path goes muddy.
 		colors.append(Color("#6e6458").lerp(Color("#5c5146"), _rng.randf()))
-	_multimesh(parent, mesh, points, colors, _standard(Color.WHITE, 0.9), "Stones", false)
+	_multimesh(parent, mesh, points, colors, _standard(Color.WHITE, 0.9), "Stones", false, [], true)
 
 func _blade() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -1558,7 +1552,7 @@ func _flower() -> ArrayMesh:
 	tool.generate_normals()
 	return tool.commit()
 
-func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: Array[Color], material: Material, node_name: String, shadows: bool, customs: Array[Color] = []) -> void:
+func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: Array[Color], material: Material, node_name: String, shadows: bool, customs: Array[Color] = [], ok := false) -> void:
 	if points.is_empty():
 		return
 	var multi := MultiMesh.new()
@@ -1577,6 +1571,8 @@ func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: 
 	node.material_override = material
 	node.name = node_name
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if ok:
+		node.add_to_group("signoff_ok")
 	parent.add_child(node)
 
 func _foliage_material() -> ShaderMaterial:
@@ -1624,8 +1620,6 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Giant_Sunflower_big_1.fbx", Vector3(6.8, 0, -5.6), 1.05, 0.8],
 		["FBX/Flowering_Garlic_1.fbx", Vector3(-3.6, 0, -8.4), 1.0, 1.7],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(1.6, 0, -8.0), 1.15, 0.3],
-		["FBX/Grass_Simple_small.fbx", Vector3(-2.2, 0, -8.8), 1.3, 0.5],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(2.4, 0, 2.2), 1.2, 1.4],
 		["FBX/Bench_1.fbx", Vector3(-1.4, 0, 3.6), 1.0, 0.2],
 		["FBX/Planter_1_Terracotta.fbx", Vector3(-5.4, 0, 4.4), 1.0, 1.1],
 		["FBX/Table_1.fbx", Vector3(-2.55, 0, 6.15), 0.78, 0.35],
@@ -1640,19 +1634,15 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(0.4, 0, -8.4), 1.0, 2.0],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(2.6, 0, -7.4), 0.85, 0.9],
 		["FBX/Flowering_Garlic_1.fbx", Vector3(-5.2, 0, -8.6), 0.9, 1.3],
-		["FBX/Grass_Simple_small.fbx", Vector3(-6.8, 0, 4.4), 1.25, 0.6],
-		["FBX/Grass_Simple_small.fbx", Vector3(4.2, 0, 4.6), 1.1, 1.8],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(11.0, 0, 1.4), 1.15, 0.3],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(-12.2, 0, -6.4), 1.2, 2.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-6.4, 0, -7.25), 1.0, 0.3],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(-0.4, 0, -7.35), 1.05, 1.1],
 		["FBX/Larkspur_1_Purple.fbx", Vector3(2.15, 0, -7.15), 1.0, 0.7],
 		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(4.7, 0, -0.6), 1.0, 0.9],
-		["FBX/Grass_Simple_small.fbx", Vector3(-9.15, 0, -0.8), 1.25, 0.4],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(-9.05, 0, 1.7), 1.15, 1.4],
 	]
 	for item in layout:
 		var file := str(item[0])
+		if file.find("Sun_Umbrella") != -1:
+			continue
 		var at: Vector3 = item[1]
 		var packed := load(_PACK + file) as PackedScene
 		if packed == null:

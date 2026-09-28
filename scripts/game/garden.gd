@@ -8938,6 +8938,7 @@ func _build_bed_turf() -> void:
 	bed_turf.multimesh = multi
 	bed_turf.material_override = material
 	bed_turf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bed_turf.visible = false
 	add_child(bed_turf)
 
 func _build_bed_blades() -> void:
@@ -8959,6 +8960,7 @@ func _build_bed_blades() -> void:
 	bed_blades.multimesh = multi
 	bed_blades.material_override = material
 	bed_blades.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bed_blades.visible = false
 	add_child(bed_blades)
 
 func _bed_blade_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
@@ -8989,6 +8991,7 @@ func _build_bed_frame() -> void:
 	bed_frame.material_override = material
 	bed_frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	bed_frame.custom_aabb = AABB(Vector3(-14.0, -1.0, -12.0), Vector3(28.0, 4.0, 24.0))
+	bed_frame.visible = false
 	add_child(bed_frame)
 
 func _bed_flower_count() -> int:
@@ -9358,17 +9361,10 @@ func _fill_bed_meadow() -> void:
 		for n in inside.size():
 			inside_multi.set_instance_transform(n, inside[n])
 	if bed_turf != null:
-		var turf_multi := bed_turf.multimesh
-		turf_multi.instance_count = turf.size()
-		for n in turf.size():
-			turf_multi.set_instance_transform(n, turf[n])
+		bed_turf.multimesh.instance_count = 0
 	if bed_blades != null:
-		var blade_multi := bed_blades.multimesh
-		blade_multi.instance_count = blades.size()
-		for n in blades.size():
-			blade_multi.set_instance_transform(n, blades[n])
-			blade_multi.set_instance_color(n, blade_tints[n])
-			blade_multi.set_instance_custom_data(n, Color(float(n % 7) / 7.0, 0.0, 0.0, 1.0))
+		# Change 1: triangle spike blades off the lids. Flower counts stay on bed_blooms.
+		bed_blades.multimesh.instance_count = 0
 
 func _meadow_outline(inside_rows: Array) -> void:
 	# ponytail: one ribbon joins the four beds across the seam; a hull if the boxes still read apart.

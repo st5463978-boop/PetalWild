@@ -1,6 +1,8 @@
 class_name Atmosphere
 extends Node
 
+const GODRAY_CARDS_ENABLED := false
+
 var world_environment: WorldEnvironment
 var sun: DirectionalLight3D
 var moon: DirectionalLight3D
@@ -136,7 +138,8 @@ func apply(hour: float, weather: String, camera: Camera3D) -> void:
 	if camera:
 		rain.global_position = camera.global_position + Vector3(0, 8.0, 0)
 	rain.emitting = weather == "rain" and not photosensitivity
-	var shafts_on := day > 0.45 and weather != "rain" and not photosensitivity
+	rain.visible = rain.emitting
+	var shafts_on := GODRAY_CARDS_ENABLED and day > 0.45 and weather != "rain" and not photosensitivity
 	for beam in shafts:
 		beam.visible = shafts_on
 		var tint := Color(1.0, 0.88, 0.58, 0.05)

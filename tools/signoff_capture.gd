@@ -7,7 +7,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.4, 1.1, 7.0), "look": Vector3(0, 0.2, 1.0), "fov": 55.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false},
-	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, 4.2), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
+	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "@resident", "pos": Vector3(0.5, 1.1, 2.2), "look": Vector3(0, 0.75, 0), "fov": 38.0, "size": Vector2i(1440, 900), "hud": false},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true},
@@ -38,10 +38,11 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	for i in 30:
-		await process_frame
-	_freeze_time()
 	var scene: Node = current_scene
+	_freeze_time()
+	_hide_debug(scene)
+	for i in 12:
+		await process_frame
 	_stage_subjects(scene)
 	play_cam = root.get_camera_3d()
 	audit["scene"] = _audit_tree(scene)
@@ -102,10 +103,7 @@ func _freeze_time() -> void:
 	if scene != null:
 		if "gossip_done" in scene:
 			scene.set("gossip_done", true)
-		if "debug_overlay" in scene:
-			var overlay: Variant = scene.get("debug_overlay")
-			if overlay is CanvasLayer:
-				(overlay as CanvasLayer).visible = false
+		_hide_debug(scene)
 	audit["test_state"] = {"hour": hour, "weather": weather, "live_sync": false, "time_scale": 1.0}
 	seed(20260928)
 
@@ -148,7 +146,21 @@ func _camera_for(scene: Node, shot: Dictionary) -> Camera3D:
 
 func _set_hud(scene: Node, on: bool) -> void:
 	for n: Node in scene.find_children("*", "CanvasLayer", true, false):
+		if n is DebugOverlay:
+			(n as CanvasLayer).visible = false
+			continue
 		(n as CanvasLayer).visible = on
+
+func _hide_debug(scene: Node) -> void:
+	if scene != null and "debug_overlay" in scene:
+		var overlay: Variant = scene.get("debug_overlay")
+		if overlay is CanvasLayer:
+			(overlay as CanvasLayer).visible = false
+	for n: Node in scene.find_children("*", "Label3D", true, false):
+		var label := n as Label3D
+		if label.is_in_group("parish_stall_sign"):
+			continue
+		label.visible = false
 
 func _mesh_class(m: Mesh) -> String:
 	return m.get_class() if m != null else ""

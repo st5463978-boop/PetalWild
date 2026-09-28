@@ -59,6 +59,7 @@ func _stall(parent: Node3D) -> void:
 	sign.outline_size = 12
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.add_to_group("parish_stall_sign")
+	sign.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	root.add_child(sign)
