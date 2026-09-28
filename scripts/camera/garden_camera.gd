@@ -95,10 +95,10 @@ func _pan(relative: Vector2) -> void:
 	target += (-right.normalized() * relative.x + forward.normalized() * relative.y) * 0.012 * distance * 0.18
 
 func _apply() -> void:
-	var shown_pitch := home_pitch
-	var shown_yaw := home_yaw - 8.0
-	var shown_distance := clampf(home_distance + 3.0, 7.0, 22.0)
-	var shown_target := home_target
+	var shown_pitch := 18.0
+	var shown_yaw := home_yaw - 16.0
+	var shown_distance := 26.0
+	var shown_target := home_target + Vector3(0, 1.4, -2.0)
 	var k := smoothstep(0.0, 1.0, intro)
 	var use_pitch := lerpf(shown_pitch, pitch, k)
 	var use_yaw := lerpf(shown_yaw, yaw, k)
