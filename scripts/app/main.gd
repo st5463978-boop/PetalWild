@@ -63,10 +63,10 @@ func _build() -> void:
 	var box := VBoxContainer.new()
 	box.name = "Box"
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 18
-	box.offset_top = 16
-	box.offset_right = -18
-	box.offset_bottom = -16
+	box.offset_left = 48
+	box.offset_top = 40
+	box.offset_right = -48
+	box.offset_bottom = -40
 	box.add_theme_constant_override("separation", 8)
 	panel.add_child(box)
 	_show_new()

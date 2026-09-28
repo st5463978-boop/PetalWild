@@ -27,28 +27,32 @@ func build(owner: Node) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 10
 	var theme := ThemeKit.make_theme()
+	ThemeKit.apply_cursor()
 	_top(theme)
 	_tools(theme)
 	_journal(theme)
 	_shop(theme)
 	_pause(theme)
 	_proposal(theme)
-	toast_label = ThemeKit.label("", ThemeKit.size(16), ThemeKit.CREAM)
+	toast_label = ThemeKit.outline_label("", 16)
 	toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	toast_label.offset_top = 86
+	toast_label.offset_top = 78
 	toast_label.offset_left = -280
 	toast_label.offset_right = 280
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
+	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   kettle / crate   H hands   click a face   Space   F8 play   J journal   C town   M vale   B stall", 13, ThemeKit.CREAM)
+	hint_label = ThemeKit.outline_label("kettle / crate   click a face   Space   F8 play   C town   M vale", 13)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	hint_label.offset_bottom = -80
+	hint_label.offset_bottom = -96
+	hint_label.offset_top = -118
 	hint_label.offset_left = -420
 	hint_label.offset_right = 420
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hint_label)
-	photo_label = ThemeKit.title("Photo  ·  Esc", 18)
+	photo_label = ThemeKit.outline_label("Photo  ·  Esc", 18)
+	photo_label.add_theme_font_override("font", ThemeKit.font_semibold)
 	photo_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	photo_label.offset_top = 24
 	photo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -62,16 +66,17 @@ func _inspect_card(theme: Theme) -> void:
 	inspect_panel.visible = false
 	inspect_panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	inspect_panel.offset_left = 16
-	inspect_panel.offset_top = 92
-	inspect_panel.offset_right = 292
-	inspect_panel.offset_bottom = 368
+	inspect_panel.offset_top = 88
+	inspect_panel.offset_right = 340
+	inspect_panel.offset_bottom = 420
 	add_child(inspect_panel)
+	_gild(inspect_panel)
 	inspect_box = VBoxContainer.new()
 	inspect_box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	inspect_box.offset_left = 10
-	inspect_box.offset_top = 8
-	inspect_box.offset_right = -10
-	inspect_box.offset_bottom = -8
+	inspect_box.offset_left = 48
+	inspect_box.offset_top = 44
+	inspect_box.offset_right = -48
+	inspect_box.offset_bottom = -44
 	inspect_box.add_theme_constant_override("separation", 4)
 	inspect_panel.add_child(inspect_box)
 
@@ -116,10 +121,10 @@ func set_status(clock_text: String, weather: String, coins: int, hover: String, 
 	if clock_label:
 		clock_label.text = clock_text
 		weather_label.text = weather.capitalize()
-		coin_label.text = "%d petal" % coins
+		coin_label.text = str(coins)
 		hover_label.text = hover
 	if seed_button:
-		seed_button.text = "2  Seed\n%s" % seed_name
+		seed_button.tooltip_text = seed_name
 
 func toast(text: String) -> void:
 	toast_label.text = text
@@ -130,8 +135,7 @@ func set_tool(tool_name: String) -> void:
 	for key in tool_buttons.keys():
 		var button: Button = tool_buttons[key]
 		var on: bool = str(key) == tool_name
-		button.add_theme_stylebox_override("normal", ThemeKit.button_box(on))
-		button.add_theme_color_override("font_color", ThemeKit.CREAM if on else ThemeKit.INK)
+		_skin_slot(button, on)
 
 func show_journal(rows: Array, events: Array, residents: int, bites: Array = []) -> void:
 	_clear(journal_box)
@@ -539,102 +543,145 @@ func show_pause(on: bool) -> void:
 func _top(theme: Theme) -> void:
 	var bar := Panel.new()
 	bar.theme = theme
+	bar.add_theme_stylebox_override("panel", ThemeKit.topbar_slice)
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	bar.offset_left = 16
-	bar.offset_right = -16
-	bar.offset_top = 12
-	bar.offset_bottom = 56
+	bar.offset_left = 48
+	bar.offset_right = -48
+	bar.offset_top = 6
+	bar.offset_bottom = 62
+	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bar)
 	var row := HBoxContainer.new()
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 8
-	row.offset_right = -8
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 28)
+	row.offset_left = 84
+	row.offset_right = -18
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	row.add_theme_constant_override("separation", 14)
 	bar.add_child(row)
-	clock_label = ThemeKit.title("Day 1  ·  Golden", 20)
-	weather_label = ThemeKit.label("Golden", 16, ThemeKit.MOSS_DEEP)
-	coin_label = ThemeKit.title("36 petal", 20)
-	hover_label = ThemeKit.label("Hedge Hollow", 14)
+	clock_label = ThemeKit.outline_label("Day 1  ·  Morning", 18)
+	clock_label.add_theme_font_override("font", ThemeKit.font_semibold)
+	clock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	weather_label = ThemeKit.outline_label("Clear", 16, ThemeKit.GOLD)
+	weather_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var petal := TextureRect.new()
+	petal.texture = ThemeKit.kit_tex("ui_icon_petal", "2x")
+	petal.custom_minimum_size = Vector2(28, 28)
+	petal.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	petal.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	petal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	coin_label = ThemeKit.outline_label("36", 18)
+	coin_label.add_theme_font_override("font", ThemeKit.font_semibold)
+	coin_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_label = ThemeKit.outline_label("Hedge Hollow", 14)
+	hover_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hover_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(clock_label)
 	row.add_child(weather_label)
+	row.add_child(petal)
 	row.add_child(coin_label)
 	row.add_child(hover_label)
+	var badge := TextureRect.new()
+	badge.texture = ThemeKit.kit_tex("ui_badge_weather", "2x")
+	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	badge.offset_left = 14
+	badge.offset_top = 0
+	badge.offset_right = 86
+	badge.offset_bottom = 72
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(badge)
 
-func _tools(theme: Theme) -> void:
-	var bar := Panel.new()
-	bar.theme = theme
-	bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	bar.offset_left = 12
-	bar.offset_right = -12
-	bar.offset_top = -76
-	bar.offset_bottom = -12
-	add_child(bar)
+func _tools(_theme: Theme) -> void:
 	var row := HBoxContainer.new()
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 8
-	row.offset_right = -8
+	row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	row.offset_left = -380
+	row.offset_right = 380
+	row.offset_top = -86
+	row.offset_bottom = -10
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 6)
-	bar.add_child(row)
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(row)
 	var specs := [
-		["till", "1  Tiller"],
-		["seed", "2  Seed"],
-		["water", "3  Raincan"],
-		["feed", "4  Fertilize"],
-		["tend", "5  Tend"],
-		["scoop", "6  Scoop"],
-		["home", "7  Home"],
-		["hands", "H  Hands"],
+		["till", "1", "ui_tool_tiller"],
+		["seed", "2", "ui_tool_seed"],
+		["water", "3", "ui_tool_raincan"],
+		["feed", "4", "ui_tool_fertilize"],
+		["tend", "5", "ui_tool_tend"],
+		["scoop", "6", "ui_tool_scoop"],
+		["home", "7", "ui_tool_home"],
+		["hands", "H", "ui_tool_hands"],
 	]
 	for spec in specs:
-		var button := Button.new()
-		button.text = spec[1]
-		button.custom_minimum_size = Vector2(112, 48)
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var id := str(spec[0])
-		button.pressed.connect(func(): host.set_tool(id))
+		var button := _slot_button(str(spec[2]), str(spec[1]), func(): host.set_tool(id))
 		row.add_child(button)
 		tool_buttons[id] = button
 		if id == "seed":
 			seed_button = button
-	var journal_button := Button.new()
-	journal_button.text = "J  Journal"
-	journal_button.custom_minimum_size = Vector2(112, 48)
-	journal_button.pressed.connect(toggle_journal)
-	row.add_child(journal_button)
-	var stall_button := Button.new()
-	stall_button.text = "B  Stall"
-	stall_button.custom_minimum_size = Vector2(100, 48)
-	stall_button.pressed.connect(toggle_shop)
-	row.add_child(stall_button)
+	row.add_child(_slot_button("ui_tool_journal", "J", toggle_journal))
+	row.add_child(_slot_button("ui_tool_stall", "B", toggle_shop))
+
+func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
+	var button := Button.new()
+	button.text = ""
+	button.custom_minimum_size = Vector2(68, 68)
+	button.icon = ThemeKit.kit_tex(icon_stem, "2x")
+	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	button.add_theme_constant_override("icon_max_width", 40)
+	button.pressed.connect(on_press)
+	_skin_slot(button, false)
+	var key_label := ThemeKit.outline_label(key, 14)
+	key_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	key_label.offset_left = 7
+	key_label.offset_top = 3
+	key_label.offset_right = 28
+	key_label.offset_bottom = 22
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(key_label)
+	return button
+
+func _skin_slot(button: Button, on: bool) -> void:
+	var box: StyleBox = ThemeKit.slot_selected if on else ThemeKit.slot_normal
+	var hover: StyleBox = ThemeKit.slot_selected if on else ThemeKit.slot_hover
+	button.add_theme_stylebox_override("normal", box)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", ThemeKit.slot_selected)
+	button.add_theme_stylebox_override("focus", hover)
+	button.add_theme_stylebox_override("disabled", ThemeKit.slot_normal)
 
 func _journal(theme: Theme) -> void:
 	journal = Panel.new()
 	journal.theme = theme
+	journal.add_theme_stylebox_override("panel", ThemeKit.journal_slice)
 	journal.visible = false
 	journal.set_anchors_preset(Control.PRESET_LEFT_WIDE)
-	journal.offset_left = 16
-	journal.offset_top = 90
-	journal.offset_bottom = -120
-	journal.offset_right = 460
+	journal.offset_left = 12
+	journal.offset_top = 80
+	journal.offset_bottom = -110
+	journal.offset_right = 520
 	add_child(journal)
 	var tabs := HBoxContainer.new()
-	tabs.position = Vector2(12, 10)
-	tabs.size = Vector2(420, 36)
+	tabs.position = Vector2(64, 64)
+	tabs.size = Vector2(390, 36)
 	journal.add_child(tabs)
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(8, 52)
-	scroll.size = Vector2(428, 520)
+	scroll.position = Vector2(56, 108)
+	scroll.size = Vector2(400, 520)
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_left = 8
-	scroll.offset_top = 52
-	scroll.offset_right = -8
-	scroll.offset_bottom = -8
+	scroll.offset_left = 56
+	scroll.offset_top = 108
+	scroll.offset_right = -56
+	scroll.offset_bottom = -56
 	journal.add_child(scroll)
 	journal_box = VBoxContainer.new()
 	journal_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	journal_box.custom_minimum_size = Vector2(400, 0)
+	journal_box.custom_minimum_size = Vector2(380, 0)
 	scroll.add_child(journal_box)
 	for spec in [["journal", "Garden"], ["people", "People"], ["trust", "Trust"], ["place", "Parish"], ["vale", "Vale"]]:
 		var button := Button.new()
@@ -650,17 +697,18 @@ func _shop(theme: Theme) -> void:
 	shop.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	shop.anchor_left = 1.0
 	shop.anchor_right = 1.0
-	shop.offset_left = -420
-	shop.offset_right = -16
-	shop.offset_top = 90
-	shop.offset_bottom = -120
+	shop.offset_left = -500
+	shop.offset_right = -12
+	shop.offset_top = 80
+	shop.offset_bottom = -110
 	add_child(shop)
+	_gild(shop)
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_left = 8
-	scroll.offset_top = 8
-	scroll.offset_right = -8
-	scroll.offset_bottom = -8
+	scroll.offset_left = 48
+	scroll.offset_top = 44
+	scroll.offset_right = -48
+	scroll.offset_bottom = -44
 	shop.add_child(scroll)
 	shop_box = VBoxContainer.new()
 	shop_box.custom_minimum_size = Vector2(360, 0)
@@ -671,17 +719,18 @@ func _pause(theme: Theme) -> void:
 	pause_panel.theme = theme
 	pause_panel.visible = false
 	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	pause_panel.offset_left = -220
-	pause_panel.offset_right = 220
-	pause_panel.offset_top = -230
-	pause_panel.offset_bottom = 230
+	pause_panel.offset_left = -240
+	pause_panel.offset_right = 240
+	pause_panel.offset_top = -250
+	pause_panel.offset_bottom = 250
 	add_child(pause_panel)
+	_gild(pause_panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 16
-	box.offset_top = 16
-	box.offset_right = -16
-	box.offset_bottom = -16
+	box.offset_left = 48
+	box.offset_top = 44
+	box.offset_right = -48
+	box.offset_bottom = -44
 	pause_panel.add_child(box)
 	box.add_child(ThemeKit.title("Paused", 28))
 	var resume := Button.new()
@@ -729,11 +778,22 @@ func _proposal(theme: Theme) -> void:
 	proposal.theme = theme
 	proposal.visible = false
 	proposal.set_anchors_preset(Control.PRESET_CENTER)
-	proposal.offset_left = -260
-	proposal.offset_right = 260
-	proposal.offset_top = -180
-	proposal.offset_bottom = 180
+	proposal.offset_left = -280
+	proposal.offset_right = 280
+	proposal.offset_top = -200
+	proposal.offset_bottom = 200
 	add_child(proposal)
+
+func _gild(host_panel: Panel, well := 40) -> void:
+	var inner := Panel.new()
+	inner.add_theme_stylebox_override("panel", ThemeKit.panel(0.94))
+	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inner.offset_left = well
+	inner.offset_top = well
+	inner.offset_right = -well
+	inner.offset_bottom = -well
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host_panel.add_child(inner)
 
 func _show_lumen() -> void:
 	_fill_proposal(
@@ -778,12 +838,13 @@ func show_nessa() -> void:
 func _fill_proposal(title: String, body: String, accept_label: String, accept: Callable) -> void:
 	for child in proposal.get_children():
 		child.free()
+	_gild(proposal)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 16
-	box.offset_top = 12
-	box.offset_right = -16
-	box.offset_bottom = -12
+	box.offset_left = 48
+	box.offset_top = 44
+	box.offset_right = -48
+	box.offset_bottom = -44
 	proposal.add_child(box)
 	box.add_child(ThemeKit.title(title, 22))
 	var copy := ThemeKit.label(body, 15)
