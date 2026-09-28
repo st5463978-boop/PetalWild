@@ -40,6 +40,7 @@ run_script res://tests/test_systems.gd SYSTEMS_OK
 run_script res://tests/test_integrate.gd PETAL_CONTRACTS_OK
 run_script res://tests/test_foundation.gd FOUNDATION_OK
 run_script res://tests/test_jelly.gd JELLY_FEEL_OK
+run_script res://tests/test_jelly_activity.gd JELLY_ACTIVITY_OK
 run_script res://tests/test_resident_life.gd RESIDENT_LIFE_OK
 run_script res://tests/test_town.gd TOWN_OK
 run_script res://tests/test_region.gd REGION_OK
