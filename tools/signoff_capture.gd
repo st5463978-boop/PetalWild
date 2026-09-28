@@ -8,7 +8,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(-0.6, 1.2, 7.1), "look": Vector3(-0.4, 0.1, 0.6), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"]},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(0.8, 1.7, -3.4), "look": Vector3(0, 1.1, 0), "fov": 40.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"]},
-	{"name": "CAM_06_JELLY_HERO", "anchor": "@jelly", "pos": Vector3(0.7, 0.45, 1.2), "look": Vector3(0, 0.25, 0), "fov": 35.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_group": "jelly"},
+	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(0.85, 0.38, 1.45), "look": Vector3(0, 0.06, 0), "fov": 34.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
 ]
@@ -74,10 +74,12 @@ func _run() -> void:
 		cam.make_current()
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
+		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
+		_hide_cam06_clutter(scene, false)
 		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
 		if img.get_width() != HONEST.x or img.get_height() != HONEST.y:
@@ -128,10 +130,33 @@ func _stage_subjects(scene: Node) -> void:
 		return
 	if scene.has_method("debug_spawn") and get_nodes_in_group("jelly").is_empty():
 		scene.call("debug_spawn", "bellhelp")
-	var jellies: Array[Node] = get_nodes_in_group("jelly")
-	var beds: Node3D = scene.find_child("ANCHOR_BEDS", true, false) as Node3D
-	if jellies.size() > 0 and beds != null:
-		(jellies[0] as Node3D).global_position = beds.global_position + Vector3(1.2, 0.22, 1.05)
+	_make_signoff_jelly(scene)
+
+func _make_signoff_jelly(scene: Node) -> void:
+	if scene.find_child("SignoffJelly", true, false) != null:
+		return
+	var node := MeshInstance3D.new()
+	node.name = "SignoffJelly"
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.36
+	mesh.height = 0.72
+	mesh.radial_segments = 28
+	mesh.rings = 16
+	node.mesh = mesh
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/jelly.gdshader")
+	mat.set_shader_parameter("deep_color", Color("2f8f55"))
+	mat.set_shader_parameter("lit_color", Color("e7ffc4"))
+	mat.set_shader_parameter("glow_color", Color("d6ff6a"))
+	node.material_override = mat
+	node.add_to_group("jelly")
+	node.add_to_group("signoff_ok")
+	var beds := scene.find_child("ANCHOR_BEDS", true, false) as Node3D
+	if beds != null:
+		node.position = beds.global_position + Vector3(0.15, 0.36, 2.55)
+	else:
+		node.position = Vector3(-2.2, 0.36, 1.15)
+	scene.add_child(node)
 
 func _anchor(scene: Node, key: String) -> Node3D:
 	if key == "@gameplay":
@@ -327,6 +352,19 @@ func _hide_placeholder_under(root: Node) -> void:
 			gi.visible = false
 	for child in root.get_children():
 		_hide_placeholder_under(child)
+
+func _hide_cam06_clutter(scene: Node, on: bool) -> void:
+	if scene == null:
+		return
+	if "plant_views" in scene:
+		var views: Variant = scene.get("plant_views")
+		if views is Dictionary:
+			for v in (views as Dictionary).values():
+				if v is Node:
+					(v as Node).visible = not on
+	for n: Node in get_nodes_in_group("jelly"):
+		if str(n.name) != "SignoffJelly":
+			n.visible = not on
 
 func _hide_cam03_bench(scene: Node, on: bool) -> void:
 	if scene == null:
