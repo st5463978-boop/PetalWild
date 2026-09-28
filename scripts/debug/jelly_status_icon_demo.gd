@@ -217,6 +217,11 @@ func _capture() -> void:
 		_jellies[i].force_activity(_kind_order[i], 1.15 if _kind_order[i] == JellyActivity.WORKING else 1.0)
 	await _settle(0.2)
 	await _shot("lineup.png")
+	if OS.get_environment("PETAL_ICON_ONLY") == "gear":
+		await _record_kind(2, JellyActivity.WORKING, "gear", 0.55, 16)
+		_ffmpeg("gear")
+		print("PETAL_ICON_CAPTURE_OK")
+		return
 	await _record_kind(0, JellyActivity.EMAIL, "envelope", 0.85, 16)
 	await _record_kind(1, JellyActivity.IDEA, "bulb", 0.7, 16)
 	await _record_kind(2, JellyActivity.WORKING, "gear", 0.55, 16)

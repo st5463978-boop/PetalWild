@@ -608,15 +608,33 @@ func _bulb() -> Array:
 
 
 func _gear() -> Array:
-	var paths: Array = []
-	paths.append(_arc(Vector2.ZERO, 0.175, 0.0, TAU, 28))
-	paths.append(_arc(Vector2.ZERO, 0.08, 0.0, TAU, 16))
-	var teeth := 6
+	# Ring + 8 rectangular teeth + hub hole. Sides of each tooth run
+	# along the radius so they read as a cog, not sun rays.
+	var r_ring := 0.168
+	var tooth_h := 0.135
+	var da := 0.24
+	var teeth := 8
+	var outline := PackedVector2Array()
 	for i in teeth:
-		var ang := TAU * float(i) / float(teeth)
-		var dir := Vector2(cos(ang), sin(ang))
-		paths.append(PackedVector2Array([dir * 0.175, dir * 0.3]))
-	return paths
+		var a := TAU * float(i) / float(teeth)
+		var d := Vector2(cos(a), sin(a))
+		var inner_a := Vector2(cos(a - da), sin(a - da)) * r_ring
+		var inner_b := Vector2(cos(a + da), sin(a + da)) * r_ring
+		outline.append(inner_a)
+		outline.append(inner_a + d * tooth_h)
+		outline.append(inner_b + d * tooth_h)
+		outline.append(inner_b)
+		var a_next := TAU * float(i + 1) / float(teeth)
+		var ang0 := a + da
+		var ang1 := a_next - da
+		if ang1 < ang0:
+			ang1 += TAU
+		for s in 4:
+			var t := float(s + 1) / 5.0
+			var ang := lerpf(ang0, ang1, t)
+			outline.append(Vector2(cos(ang), sin(ang)) * r_ring)
+	outline.append(outline[0])
+	return [outline, _arc(Vector2.ZERO, 0.078, 0.0, TAU, 18)]
 
 
 func _heart() -> Array:
