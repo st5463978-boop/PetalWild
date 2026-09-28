@@ -57,10 +57,10 @@ func set_mode(next: int) -> void:
 			target_pivot = Vector3(0.0, 0.15, 0.4)
 			camera.fov = 40.0
 		Mode.POND_EDGE:
-			target_yaw = 3.55
+			target_yaw = 0.92
 			target_pitch = 0.12
-			target_distance = 6.4
-			target_pivot = Vector3(1.1, 0.35, 0.2)
+			target_distance = 5.6
+			target_pivot = Vector3(0.25, 0.22, 0.15)
 			camera.fov = 55.0
 		Mode.FREE:
 			free_pos = camera.global_position

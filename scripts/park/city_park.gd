@@ -56,7 +56,7 @@ func _build_lights() -> void:
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.6
+	environment.ambient_light_energy = 0.85
 	environment.ambient_light_sky_contribution = 0.85
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
 	environment.tonemap_exposure = 0.95
@@ -101,7 +101,7 @@ func _build_lights() -> void:
 
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("e3ca82")
-	sun.light_energy = 0.95 if soft else 1.55
+	sun.light_energy = 1.15 if soft else 1.55
 	sun.light_angular_distance = 1.5
 	sun.shadow_enabled = not soft
 	sun.shadow_blur = 1.5
@@ -152,8 +152,8 @@ func _apply_look() -> void:
 		sun.light_energy = 0.12
 	else:
 		sun.light_energy = (0.9 if _soft_gpu() else 1.5) + golden * 0.12
-	sky_mat.sky_top_color = Color("b7c7d2").lerp(Color("12272f"), night)
-	sky_mat.sky_horizon_color = Color("cfdbe1").lerp(Color("e4d7b8"), golden).lerp(Color("466177"), night)
+	sky_mat.sky_top_color = Color("b7c7d2").lerp(Color("c39042"), golden * 0.35).lerp(Color("12272f"), night)
+	sky_mat.sky_horizon_color = Color("f7deb1").lerp(Color("e4d7b8"), 1.0 - golden).lerp(Color("466177"), night)
 	sky_mat.ground_horizon_color = Color("61661a")
 	sky_mat.ground_bottom_color = Color("343a12")
 	sky_mat.sun_angle_max = 28.0
@@ -239,7 +239,11 @@ func _shots() -> void:
 	DirAccess.make_dir_recursive_absolute(out)
 	get_window().size = Vector2i(1920, 1080)
 	DisplayServer.window_set_size(Vector2i(1920, 1080))
-	await get_tree().create_timer(1.6).timeout
+	for lab in get_tree().get_nodes_in_group("park_debug_label"):
+		lab.visible = false
+	if hud:
+		hud.visible = false
+	await get_tree().create_timer(1.8).timeout
 	var modes: Array = [
 		[ParkCamera.Mode.RING, "ring"],
 		[ParkCamera.Mode.BUILDER, "builder"],

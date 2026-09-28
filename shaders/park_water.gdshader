@@ -1,13 +1,13 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
-uniform vec3 deep_color : source_color = vec3(0.07, 0.28, 0.32);
-uniform vec3 shallow_color : source_color = vec3(0.28, 0.66, 0.58);
+uniform vec3 deep_color : source_color = vec3(0.08, 0.38, 0.42);
+uniform vec3 shallow_color : source_color = vec3(0.32, 0.78, 0.70);
 uniform vec3 sparkle_color : source_color = vec3(0.95, 0.88, 0.62);
 uniform float wave_height = 0.028;
 uniform float caustic_strength = 0.22;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-uniform bool use_refraction = true;
+uniform bool use_refraction = false;
 
 varying vec3 world_pos;
 
@@ -43,7 +43,7 @@ void fragment() {
 	METALLIC = 0.08;
 	SPECULAR = 0.72;
 	EMISSION = sparkle_color * spark * 0.28 + vec3(0.45, 0.72, 0.55) * caustic * caustic_strength + shallow_color * fres * 0.08;
-	ALPHA = mix(0.78, 0.94, fres);
+	ALPHA = mix(0.88, 0.96, fres);
 	NORMAL_MAP = vec3(n1 * 0.5 + 0.5, n2 * 0.5 + 0.5, 1.0);
 	NORMAL_MAP_DEPTH = 0.55;
 }

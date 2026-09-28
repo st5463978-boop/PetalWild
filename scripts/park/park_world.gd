@@ -99,17 +99,44 @@ func _kind(ix: int, iz: int) -> String:
 
 
 func _ground() -> void:
-	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(48, 48)
-	mesh.subdivide_width = 8
-	mesh.subdivide_depth = 8
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var half := 24.0
+	var step := 0.7
+	var n := int(half * 2.0 / step)
+	for iz in n:
+		for ix in n:
+			var x0 := -half + float(ix) * step
+			var z0 := -half + float(iz) * step
+			if pond_amount(x0 + step * 0.5, z0 + step * 0.5) > 0.12:
+				continue
+			_ground_quad(tool, x0, z0, step)
+	tool.generate_normals()
+	tool.generate_tangents()
 	var node := MeshInstance3D.new()
-	node.mesh = mesh
-	node.position = Vector3(0.0, -0.02, 0.0)
+	node.mesh = tool.commit()
 	node.material_override = mats.lawn
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.name = "ParkLawn"
 	parent.add_child(node)
+
+
+func _ground_quad(tool: SurfaceTool, x0: float, z0: float, step: float) -> void:
+	var x1 := x0 + step
+	var z1 := z0 + step
+	tool.set_uv(Vector2(x0, z0))
+	tool.set_color(Color.WHITE)
+	tool.add_vertex(Vector3(x0, -0.02, z0))
+	tool.set_uv(Vector2(x1, z0))
+	tool.add_vertex(Vector3(x1, -0.02, z0))
+	tool.set_uv(Vector2(x1, z1))
+	tool.add_vertex(Vector3(x1, -0.02, z1))
+	tool.set_uv(Vector2(x0, z0))
+	tool.add_vertex(Vector3(x0, -0.02, z0))
+	tool.set_uv(Vector2(x1, z1))
+	tool.add_vertex(Vector3(x1, -0.02, z1))
+	tool.set_uv(Vector2(x0, z1))
+	tool.add_vertex(Vector3(x0, -0.02, z1))
 
 
 func _tiles() -> void:
@@ -244,7 +271,7 @@ func _pond_vert(tool: SurfaceTool, t: float, angle: float) -> void:
 	var bite := clampf(1.0 - (((x - 2.1) / 2.3) * ((x - 2.1) / 2.3) + ((z - 1.3) / 1.8) * ((z - 1.3) / 1.8)), 0.0, 1.0)
 	x -= bite * 0.55 * t
 	z -= bite * 0.35 * t
-	var y := lerpf(-0.16, -0.42, 1.0 - t * t) + 0.02
+	var y := lerpf(-0.02, -0.38, 1.0 - t * t)
 	tool.set_uv(Vector2(x * 0.18, z * 0.18))
 	tool.add_vertex(Vector3(x, y, z))
 
@@ -286,7 +313,7 @@ func _grass() -> void:
 	var cols: Array[Color] = []
 	var custom: Array[Color] = []
 	var tries := 0
-	while xf.size() < 900 and tries < 6000:
+	while xf.size() < 420 and tries < 4000:
 		tries += 1
 		var x := rng.randf_range(-11.0, 11.0)
 		var z := rng.randf_range(-11.0, 11.0)
@@ -296,7 +323,7 @@ func _grass() -> void:
 		if pond_amount(x, z) > 0.02:
 			continue
 		var y := height_at(x, z)
-		var s := rng.randf_range(0.9, 1.7)
+		var s := rng.randf_range(0.55, 1.05)
 		var b := Basis.from_euler(Vector3(rng.randf_range(-0.15, 0.2), rng.randf() * TAU, 0.0))
 		xf.append(Transform3D(b.scaled(Vector3(s, s * rng.randf_range(0.85, 1.4), s)), Vector3(x, y, z)))
 		cols.append(Color("447826").lerp(Color("82a834"), rng.randf()))
@@ -415,24 +442,31 @@ func _trees() -> void:
 
 
 func _willow() -> void:
-	# East bank, for the pond-edge shot looking toward townhouses.
-	var root := Vector3(5.05, 0.0, 1.55)
-	_kit("tree_tall.fbx", 4.6, root, 0.4)
-	_kit("hanging_moss.fbx", 1.6, root + Vector3(0.4, 1.8, 0.2), 0.2)
+	# East bank willow: blob canopy + hanging strands.
+	var root := Vector3(5.2, 0.0, 1.35)
+	var trunk := CylinderMesh.new()
+	trunk.top_radius = 0.12
+	trunk.bottom_radius = 0.22
+	trunk.height = 3.4
+	trunk.radial_segments = 10
+	_add_mesh(trunk, mats.bark, root + Vector3(0, 1.7, 0), "WillowTrunk")
+	var canopy := ParkMesh.lumpy_sphere(1.45, 1.15, 10)
+	_add_mesh(canopy, mats.hedge, root + Vector3(0.15, 3.35, 0.1), "WillowCanopy")
 	var strand := CapsuleMesh.new()
-	strand.radius = 0.04
-	strand.height = 1.7
+	strand.radius = 0.028
+	strand.height = 2.2
 	var xf: Array[Transform3D] = []
 	var cols: Array[Color] = []
-	for i in 90:
-		var angle := TAU * float(i) / 90.0
-		var hang := 1.35 + rng.randf_range(0.0, 0.9)
-		var radial := 0.85 + rng.randf() * 0.7
-		var at := root + Vector3(cos(angle) * radial, 3.15 - hang * 0.42, sin(angle) * radial)
-		var basis := Basis.from_euler(Vector3(0.95, angle, 0.0)).scaled(Vector3(1, hang, 1))
+	for i in 56:
+		var angle := TAU * float(i) / 56.0
+		var radial := 0.35 + rng.randf() * 0.95
+		var hang := 1.6 + rng.randf() * 0.7
+		var at := root + Vector3(cos(angle) * radial, 3.05 - hang * 0.35, sin(angle) * radial)
+		var tilt := Vector3(0.25 + rng.randf() * 0.2, angle, 0.0)
+		var basis := Basis.from_euler(tilt).scaled(Vector3(1.0, hang / 2.2, 1.0))
 		xf.append(Transform3D(basis, at))
-		cols.append(Color("3d7725").lerp(Color("80b64a"), rng.randf() * 0.5))
-	_multi(strand, xf, cols, mats.foliage, "WillowHang")
+		cols.append(Color("3d7725").lerp(Color("80b64a"), rng.randf() * 0.45))
+	_multi(strand, xf, cols, mats.hedge, "WillowHang")
 
 
 func _lilies_reeds() -> void:
@@ -444,7 +478,7 @@ func _lilies_reeds() -> void:
 		if pond_amount(x, z) < 0.2:
 			continue
 		var file := "lily_large.fbx" if i % 2 == 0 else "lily_small.fbx"
-		_kit(file, rng.randf_range(0.12, 0.22), Vector3(x, -0.14, z), rng.randf() * TAU)
+		_kit(file, 0.0, Vector3(x, height_at(x, z) + 0.07, z), rng.randf() * TAU, 1.15)
 	# pink lily heads
 	var head := SphereMesh.new()
 	head.radius = 0.09
@@ -458,7 +492,7 @@ func _lilies_reeds() -> void:
 		var t := 0.35 + 0.08 * sin(float(i))
 		var x := cos(a) * 4.4 * t - 0.8
 		var z := sin(a) * 2.9 * t + 0.4
-		xf.append(Transform3D(Basis.from_euler(Vector3(0, a, 0)), Vector3(x, -0.08, z)))
+		xf.append(Transform3D(Basis.from_euler(Vector3(0, a, 0)), Vector3(x, height_at(x, z) + 0.1, z)))
 		cols.append(Color("e48d63").lerp(Color("dba3ab"), rng.randf()))
 	_multi(head, xf, cols, mats.solid(Color("e48d63"), 0.55), "LilyBlooms")
 	# reeds / cattails on west and south banks
@@ -476,7 +510,7 @@ func _lilies_reeds() -> void:
 	var sc: Array[Color] = []
 	var hxf: Array[Transform3D] = []
 	var hc: Array[Color] = []
-	for i in 36:
+	for i in 22:
 		var a := PI * 0.7 + rng.randf_range(-0.8, 0.9)
 		var r := 4.7 + rng.randf_range(-0.3, 0.5)
 		var x := cos(a) * r * 1.15 - 0.4
@@ -491,9 +525,8 @@ func _lilies_reeds() -> void:
 
 
 func _bridge() -> void:
-	# Wooden footbridge on the west bank, spanning a short bite of water.
-	_kit("bridge_woodRound.fbx", 1.15, Vector3(-4.55, -0.02, 0.15), PI * 0.5)
-	_kit("bridge_wood.fbx", 1.05, Vector3(-4.35, -0.02, 0.15), PI * 0.5)
+	# Kenney bridges are already garden-scale; do not height-fit (that inflates the deck).
+	_kit("bridge_woodRound.glb", 0.0, Vector3(-4.7, -0.02, 0.15), PI * 0.5, 0.85)
 
 
 func _gazebo() -> void:
@@ -730,7 +763,7 @@ func _city() -> void:
 		var w := rng.randf_range(2.4, 3.6)
 		var d := rng.randf_range(2.6, 3.4)
 		var h := rng.randf_range(4.4, 6.8)
-		var z := -16.6 - rng.randf_range(0.0, 1.4)
+		var z := -15.4 - rng.randf_range(0.0, 1.2)
 		_house(Vector3(x + w * 0.5, 0.0, z), w, d, h, tints[n % tints.size()], n % 2 == 0)
 		x += w + 0.35
 		n += 1
@@ -756,35 +789,48 @@ func _city() -> void:
 
 
 func _house(at: Vector3, w: float, d: float, h: float, tint: Color, chim: bool) -> void:
-	var body := ParkMesh.pillow(Vector3(w, h, d), 6)
+	var body := BoxMesh.new()
+	body.size = Vector3(w, h, d)
 	_add_mesh(body, mats.tinted_brick(tint), at + Vector3(0, h * 0.5, 0), "House")
-	var roof := ParkMesh.gable_roof(w + 0.35, 1.35, d + 0.2)
-	_add_mesh(roof, mats.roof, at + Vector3(0, h + 0.02, 0), "HouseRoof")
-	# windows
-	var pane := ParkMesh.pillow(Vector3(0.38, 0.55, 0.06), 4)
-	var glass_mat := mats.solid(Color(0.35, 0.42, 0.4, 1), 0.15)
-	glass_mat.metallic = 0.2
-	glass_mat.roughness = 0.12
-	var wx := -w * 0.22
-	while wx < w * 0.25:
-		_add_mesh(pane, glass_mat, at + Vector3(wx, 1.55, d * 0.48), "Win")
-		_add_mesh(pane, glass_mat, at + Vector3(wx, 2.85, d * 0.48), "Win")
-		wx += 0.7
+	var trim := BoxMesh.new()
+	trim.size = Vector3(w + 0.12, 0.18, d + 0.12)
+	_add_mesh(trim, mats.tinted_brick(tint.darkened(0.12)), at + Vector3(0, h + 0.02, 0), "Cornice")
+	var roof := ParkMesh.gable_roof(w + 0.4, 1.45, d + 0.25)
+	_add_mesh(roof, mats.roof, at + Vector3(0, h + 0.1, 0), "HouseRoof")
+	var pane := BoxMesh.new()
+	pane.size = Vector3(0.36, 0.52, 0.05)
+	var glass_mat := mats.solid(Color(0.42, 0.5, 0.48, 1), 0.12)
+	glass_mat.metallic = 0.25
+	glass_mat.roughness = 0.1
+	var wx := -w * 0.28
+	while wx < w * 0.3:
+		_add_mesh(pane, glass_mat, at + Vector3(wx, 1.45, d * 0.5 + 0.01), "Win")
+		if h > 4.2:
+			_add_mesh(pane, glass_mat, at + Vector3(wx, 2.7, d * 0.5 + 0.01), "Win")
+		wx += 0.72
+	var door := BoxMesh.new()
+	door.size = Vector3(0.42, 1.05, 0.06)
+	_add_mesh(door, mats.tinted_wood(Color("6c543e")), at + Vector3(0.0, 0.55, d * 0.5 + 0.02), "Door")
 	if chim:
-		var ch := ParkMesh.pillow(Vector3(0.32, 0.7, 0.32), 4)
-		_add_mesh(ch, mats.tinted_brick(tint.darkened(0.1)), at + Vector3(w * 0.28, h + 1.1, -d * 0.15), "Chimney")
+		var ch := BoxMesh.new()
+		ch.size = Vector3(0.34, 0.85, 0.34)
+		_add_mesh(ch, mats.tinted_brick(tint.darkened(0.15)), at + Vector3(w * 0.28, h + 1.15, -d * 0.12), "Chimney")
 
 
 func _clock_tower() -> void:
-	var origin := Vector3(7.8, 0.0, -18.4)
-	var body := ParkMesh.pillow(Vector3(3.2, 11.2, 3.2), 7)
-	_add_mesh(body, mats.tinted_brick(Color("a86850")), origin + Vector3(0, 5.6, 0), "Tower")
+	var origin := Vector3(3.4, 0.0, -14.8)
+	var body := BoxMesh.new()
+	body.size = Vector3(3.1, 12.4, 3.1)
+	_add_mesh(body, mats.tinted_brick(Color("a86850")), origin + Vector3(0, 6.2, 0), "Tower")
+	var belt := BoxMesh.new()
+	belt.size = Vector3(3.3, 0.28, 3.3)
+	_add_mesh(belt, mats.tinted_brick(Color("8a5644")), origin + Vector3(0, 9.4, 0), "TowerBelt")
 	var roof := CylinderMesh.new()
-	roof.top_radius = 0.05
-	roof.bottom_radius = 2.35
-	roof.height = 2.6
+	roof.top_radius = 0.06
+	roof.bottom_radius = 2.4
+	roof.height = 2.8
 	roof.radial_segments = 8
-	_add_mesh(roof, mats.roof, origin + Vector3(0, 12.7, 0), "TowerRoof")
+	_add_mesh(roof, mats.roof, origin + Vector3(0, 13.6, 0), "TowerRoof")
 	var face := CylinderMesh.new()
 	face.top_radius = 0.85
 	face.bottom_radius = 0.85
@@ -883,6 +929,7 @@ func _marker(at: Vector3, group: String, color: Color) -> void:
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.outline_size = 4
+	label.add_to_group("park_debug_label")
 	parent.add_child(label)
 
 
@@ -907,13 +954,42 @@ func _cutout() -> ShaderMaterial:
 	return material
 
 
-func _kit(file_name: String, height: float, at: Vector3, yaw: float) -> void:
-	var node: Node3D = Kit.spawn(file_name, height)
+func _kit(file_name: String, height: float, at: Vector3, yaw: float, uniform_scale: float = 1.0) -> void:
+	var glb := file_name.replace(".fbx", ".glb")
+	var path := "res://assets/third_party/kenney/nature-kit/Models/GLTF format/" + glb
+	if not ResourceLoader.exists(path):
+		path = "res://assets/third_party/kenney/nature-kit/Models/FBX format/" + file_name.replace(".glb", ".fbx")
+	if not ResourceLoader.exists(path):
+		return
+	var packed := load(path) as PackedScene
+	if packed == null:
+		return
+	var node := packed.instantiate() as Node3D
 	if node == null:
 		return
+	if height > 0.05:
+		var mesh_node := _find_mesh(node)
+		if mesh_node != null:
+			var h := mesh_node.get_aabb().size.y
+			if h > 0.05:
+				node.scale = Vector3.ONE * (height / h)
+	elif uniform_scale != 1.0:
+		node.scale = Vector3.ONE * uniform_scale
 	node.position = at
 	node.rotation.y = yaw
+	if glb.begins_with("tree_") or glb.begins_with("plant_"):
+		_paint(node, mats.hedge)
 	parent.add_child(node)
+
+
+func _find_mesh(node: Node) -> MeshInstance3D:
+	if node is MeshInstance3D:
+		return node as MeshInstance3D
+	for child in node.get_children():
+		var found := _find_mesh(child)
+		if found != null:
+			return found
+	return null
 
 
 func _aq(file_name: String, at: Vector3, scale: float, yaw: float, material: Material) -> void:
@@ -956,10 +1032,9 @@ func _multi(mesh: Mesh, xforms: Array[Transform3D], colors: Array[Color], materi
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	mm.use_custom_data = custom.size() > 0
 	mm.mesh = mesh
 	mm.instance_count = xforms.size()
-	if custom.size() > 0:
-		mm.use_custom_data = true
 	for i in xforms.size():
 		mm.set_instance_transform(i, xforms[i])
 		if i < colors.size():
