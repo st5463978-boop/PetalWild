@@ -3,10 +3,13 @@ extends Node
 const PLACES: Dictionary = {
 	7: "apartment", 8: "apartment", 9: "apartment", 10: "apartment",
 	15: "church", 16: "restaurant", 17: "cafe", 18: "clinic", 19: "school",
+	20: "shop", 21: "library", 22: "bakery", 23: "post", 24: "hall", 25: "inn",
 }
 const TITLES: Dictionary = {
 	"apartment": "Apartment", "church": "Church", "restaurant": "Restaurant",
 	"cafe": "Cafe", "clinic": "Clinic", "school": "School",
+	"shop": "Shop", "library": "Library", "bakery": "Bakery",
+	"post": "Post office", "hall": "Town hall", "inn": "Inn",
 }
 const RITUALS: Array[Dictionary] = [
 	{"place": "apartment", "id": "sit", "label": "Sit a minute", "room": "living", "at": Vector3(-1.3, 0.08, -0.2), "size": Vector3(0.8, 0.16, 0.7), "color": Color(0.44, 0.32, 0.55)},
@@ -31,6 +34,24 @@ const RITUALS: Array[Dictionary] = [
 	{"place": "school", "id": "lesson", "label": "Read a lesson", "room": "hall", "at": Vector3(-1.15, 0.1, -0.35), "size": Vector3(0.8, 0.12, 0.5), "color": Color(0.55, 0.4, 0.28)},
 	{"place": "school", "id": "bell", "label": "Ring the bell", "room": "hall", "at": Vector3(1.3, 0.2, -0.9), "size": Vector3(0.2, 0.36, 0.2), "color": Color(0.72, 0.62, 0.28)},
 	{"place": "school", "id": "board", "label": "Check the board", "room": "hall", "at": Vector3(0.35, 0.12, -1.15), "size": Vector3(0.55, 0.2, 0.08), "color": Color(0.25, 0.38, 0.32)},
+	{"place": "shop", "id": "shelves", "label": "Browse the shelves", "room": "hall", "at": Vector3(-1.25, 0.2, -0.4), "size": Vector3(0.35, 0.4, 0.7), "color": Color(0.55, 0.38, 0.24)},
+	{"place": "shop", "id": "till", "label": "Pay at the counter", "room": "hall", "at": Vector3(1.15, 0.14, -0.55), "size": Vector3(0.55, 0.16, 0.35), "color": Color(0.72, 0.5, 0.3)},
+	{"place": "shop", "id": "bag", "label": "Pack a bag", "room": "hall", "at": Vector3(1.2, 0.1, 0.5), "size": Vector3(0.28, 0.16, 0.22), "color": Color(0.82, 0.7, 0.4)},
+	{"place": "library", "id": "stacks", "label": "Find a book", "room": "hall", "at": Vector3(-1.3, 0.22, -0.15), "size": Vector3(0.3, 0.44, 0.8), "color": Color(0.42, 0.3, 0.22)},
+	{"place": "library", "id": "desk", "label": "Ask the desk", "room": "hall", "at": Vector3(1.15, 0.12, -0.5), "size": Vector3(0.6, 0.12, 0.35), "color": Color(0.55, 0.42, 0.3)},
+	{"place": "library", "id": "nook", "label": "Read a while", "room": "hall", "at": Vector3(0.95, 0.1, 0.85), "size": Vector3(0.5, 0.14, 0.35), "color": Color(0.48, 0.4, 0.55)},
+	{"place": "bakery", "id": "loaf", "label": "Take a loaf", "room": "hall", "at": Vector3(1.15, 0.12, -0.35), "size": Vector3(0.4, 0.1, 0.28), "color": Color(0.86, 0.68, 0.38)},
+	{"place": "bakery", "id": "oven", "label": "Check the oven", "room": "hall", "at": Vector3(-1.25, 0.2, -0.4), "size": Vector3(0.4, 0.4, 0.4), "color": Color(0.45, 0.28, 0.22)},
+	{"place": "bakery", "id": "crumb", "label": "Sweep the counter", "room": "hall", "at": Vector3(1.1, 0.1, 0.55), "size": Vector3(0.5, 0.1, 0.3), "color": Color(0.9, 0.82, 0.68)},
+	{"place": "post", "id": "letter", "label": "Post a letter", "room": "hall", "at": Vector3(1.1, 0.14, -0.55), "size": Vector3(0.4, 0.2, 0.2), "color": Color(0.75, 0.32, 0.28)},
+	{"place": "post", "id": "slot", "label": "Check the slot", "room": "hall", "at": Vector3(-1.2, 0.16, -0.2), "size": Vector3(0.2, 0.28, 0.12), "color": Color(0.35, 0.45, 0.55)},
+	{"place": "post", "id": "parcel", "label": "Collect a parcel", "room": "hall", "at": Vector3(1.15, 0.12, 0.5), "size": Vector3(0.35, 0.2, 0.3), "color": Color(0.62, 0.48, 0.32)},
+	{"place": "hall", "id": "notice", "label": "Read the notice", "room": "hall", "at": Vector3(0.2, 0.16, -1.2), "size": Vector3(0.7, 0.3, 0.06), "color": Color(0.32, 0.38, 0.32)},
+	{"place": "hall", "id": "clerk", "label": "Ask the clerk", "room": "hall", "at": Vector3(1.2, 0.12, -0.4), "size": Vector3(0.55, 0.12, 0.32), "color": Color(0.55, 0.5, 0.42)},
+	{"place": "hall", "id": "queue", "label": "Wait your turn", "room": "hall", "at": Vector3(-1.2, 0.1, 0.05), "size": Vector3(0.7, 0.14, 0.35), "color": Color(0.48, 0.42, 0.36)},
+	{"place": "inn", "id": "rest", "label": "Take a rest", "room": "hall", "at": Vector3(-1.15, 0.12, -0.35), "size": Vector3(0.7, 0.16, 0.45), "color": Color(0.48, 0.32, 0.38)},
+	{"place": "inn", "id": "key", "label": "Collect a key", "room": "hall", "at": Vector3(1.25, 0.12, -0.7), "size": Vector3(0.2, 0.12, 0.12), "color": Color(0.75, 0.62, 0.28)},
+	{"place": "inn", "id": "supper", "label": "Have supper", "room": "hall", "at": Vector3(1.1, 0.1, 0.45), "size": Vector3(0.55, 0.1, 0.4), "color": Color(0.62, 0.4, 0.28)},
 ]
 
 var open_home := false

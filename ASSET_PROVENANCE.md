@@ -30,4 +30,4 @@ Wave 0 (27 September 2026) copied no candidate code and no candidate art into th
 
 The Godot store pass the same day added Kenney's Starter Kit City Builder (commit `4535092`) under `third_party/kenney_city_builder/`. Code is MIT. Models, sprites, and sounds are CC0. Lilita One is SIL OFL 1.1. `sample map/map.res` is that kit's sample town, re-saved for the paths in this tree. Viva Piñata files were not added. CityCrafter3D was not added.
 
-`assets/civic/` is original geometry for the extra placeable buildings (church, restaurant, cafe, clinic, school). It is not from the Kenney kit.
+`assets/civic/` is original geometry for the extra placeable buildings (church, restaurant, cafe, clinic, school, shop, library, bakery, post office, town hall, inn). It is not from the Kenney kit.

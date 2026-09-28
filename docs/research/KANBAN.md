@@ -28,7 +28,7 @@ INTEGRATION COST: already in the tree. `run/main_scene` is `scenes/parish.tscn`.
 
 RISKS: Replacing the grove with the grid. Vendoring CityCrafter's 200-unit blocks or the Viva Piñata launcher.
 
-RECOMMENDED ACTION: Keep the fifteen kit structures and the F3 sample map in their original order. Church, restaurant, cafe, clinic, and school are appended after them. Enter on a small apartment or one of those five opens that building.
+RECOMMENDED ACTION: Keep the fifteen kit structures and the F3 sample map in their original order. Church, restaurant, cafe, clinic, school, shop, library, bakery, post office, town hall, and inn are appended after them. Enter on a small apartment or one of those opens that building.
 
 DO NOT: Import VivaPiñataPlus. Build Grove Park out of this grid. Insert a structure ahead of the sample indices.
 

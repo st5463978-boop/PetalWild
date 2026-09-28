@@ -54,7 +54,7 @@ func _boot() -> void:
 		return
 	home.close_home()
 	var library: MeshLibrary = grid.mesh_library
-	if library.get_item_list().size() != 20 or library.get_item_mesh(15) == null or library.get_item_mesh(19) == null:
+	if library.get_item_list().size() != 26 or library.get_item_mesh(15) == null or library.get_item_mesh(25) == null:
 		push_error("civic buildings missing from the mesh library")
 		quit(1)
 		return
@@ -84,6 +84,27 @@ func _boot() -> void:
 		return
 	if home.done.size() != 0:
 		push_error("restaurant shared the church day")
+		quit(1)
+		return
+	home.close_home()
+	grid.set_cell_item(Vector3i(8, 0, 3), 20, 0)
+	grid.set_cell_item(Vector3i(10, 0, 3), 21, 0)
+	if not home.try_enter(Vector3(8, 0, 3)) or home.title.text != "Shop":
+		push_error("shop did not open")
+		quit(1)
+		return
+	home.complete("shelves")
+	if home.done.size() != 1:
+		push_error("shop ritual did not stick")
+		quit(1)
+		return
+	home.close_home()
+	if not home.try_enter(Vector3(10, 0, 3)) or home.title.text != "Library":
+		push_error("library did not open")
+		quit(1)
+		return
+	if home.done.size() != 0:
+		push_error("library shared the shop day")
 		quit(1)
 		return
 	print("APARTMENT_OK ", home.done.size())

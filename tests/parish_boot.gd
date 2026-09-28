@@ -16,7 +16,7 @@ func _boot() -> void:
 	var pieces: int = main.get_node("Builder").structures.size()
 	var cash: String = main.get_node("CanvasLayer/Top/Cash").text
 	print("BOOT_CELLS ", grid.get_used_cells().size(), " PIECES ", pieces, " CASH ", cash)
-	if grid.get_used_cells().size() != 0 or pieces != 20 or cash != "$10000":
+	if grid.get_used_cells().size() != 0 or pieces != 26 or cash != "$10000":
 		push_error("boot state is not the kit")
 		quit(1)
 		return
