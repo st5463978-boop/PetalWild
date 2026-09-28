@@ -32,7 +32,6 @@ func build(parent: Node3D) -> void:
 	# Bed-border flowers only. Interior scatter hid the soil and lawn.
 	_trees(parent)
 	_gap_fill(parent)
-	_room_beds(parent)
 	_stones(parent)
 	_cc0_props(parent)
 

@@ -47,9 +47,9 @@ void fragment() {
 	grass *= macro;
 	vec2 splat_uv = (uv - splat_origin_size.xy) / splat_origin_size.zw;
 	vec3 splat = texture(splat_tex, splat_uv).rgb;
-	vec3 flag = texture(flagstone_tex, uv / 1.5).rgb;
+	vec3 flag = texture(flagstone_tex, uv / 1.5).rgb * vec3(0.78, 0.74, 0.68);
 	vec3 dirt = texture(dirt_tex, uv / 2.0).rgb;
-	vec3 grav = texture(gravel_tex, uv).rgb;
+	vec3 grav = texture(gravel_tex, uv).rgb * vec3(0.86, 0.82, 0.74);
 	float luma = dot(flag, vec3(0.3, 0.5, 0.2));
 	float moss_amt = (1.0 - smoothstep(0.35, 0.55, luma)) * splat.r;
 	flag = mix(flag, vec3(0.45, 0.45, 0.27), moss_amt * 0.45);
@@ -66,6 +66,6 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = mix(0.85, 0.75, splat.r);
 	SPECULAR = 0.25;
-	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.4) * 0.04;
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.4) * 0.02;
 	EMISSION = vec3(0.72, 0.62, 0.48) * rim;
 }
