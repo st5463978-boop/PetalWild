@@ -119,6 +119,100 @@ static func oct_roof(radius: float, height: float) -> ArrayMesh:
 	return tool.commit()
 
 
+static func leaf_cross(width: float, height: float, drape: bool) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_leaf_card(tool, width, height, 0.0, drape)
+	_leaf_card(tool, width, height, PI * 0.5, drape)
+	tool.generate_normals()
+	tool.generate_tangents()
+	return tool.commit()
+
+
+static func lily_pad(radius: float) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings := 5
+	var segs := 22
+	var verts: Array[Vector3] = []
+	var uvs: Array[Vector2] = []
+	for ring in rings + 1:
+		var t := float(ring) / float(rings)
+		for seg in segs + 1:
+			var u := float(seg) / float(segs)
+			var theta := u * TAU
+			var notch := smoothstep(0.15, 0.0, absf(angle_delta(theta, 0.15)))
+			var r := radius * t * lerpf(1.0, 0.08, notch * smoothstep(0.25, 1.0, t))
+			var curl := t * t * 0.045 + sin(theta * 2.0) * t * 0.02
+			verts.append(Vector3(cos(theta) * r, curl, sin(theta) * r))
+			uvs.append(Vector2(u, t))
+	for ring in rings:
+		for seg in segs:
+			var i := ring * (segs + 1) + seg
+			_tri(tool, verts, uvs, i, i + segs + 1, i + 1)
+			_tri(tool, verts, uvs, i + 1, i + segs + 1, i + segs + 2)
+	tool.generate_normals()
+	tool.generate_tangents()
+	return tool.commit()
+
+
+static func water_lily() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var petals := 8
+	for i in petals:
+		var a := TAU * float(i) / float(petals)
+		var dir := Vector3(cos(a), 0.0, sin(a))
+		var side := Vector3(-dir.z, 0.0, dir.x) * 0.045
+		var root := dir * 0.03 + Vector3(0, 0.02, 0)
+		var tip := dir * 0.16 + Vector3(0, 0.07, 0)
+		var mid := dir * 0.1 + Vector3(0, 0.055, 0)
+		_face3(tool, root - side, tip, root + side, Vector2(0, 1), Vector2(0.5, 0), Vector2(1, 1))
+		_face3(tool, root - side, mid + Vector3(0, 0.02, 0), tip, Vector2(0, 1), Vector2(0.3, 0.4), Vector2(0.5, 0))
+	var center := 6
+	for i in center:
+		var a0 := TAU * float(i) / float(center)
+		var a1 := TAU * float(i + 1) / float(center)
+		var p0 := Vector3(cos(a0) * 0.035, 0.045, sin(a0) * 0.035)
+		var p1 := Vector3(cos(a1) * 0.035, 0.045, sin(a1) * 0.035)
+		_face3(tool, Vector3(0, 0.05, 0), p1, p0, Vector2(0.5, 0.5), Vector2(1, 1), Vector2(0, 1))
+	tool.generate_normals()
+	tool.generate_tangents()
+	return tool.commit()
+
+
+static func angle_delta(a: float, b: float) -> float:
+	var d := fmod(a - b + PI, TAU) - PI
+	return absf(d)
+
+
+static func _leaf_card(tool: SurfaceTool, width: float, height: float, yaw: float, drape: bool) -> void:
+	var c := cos(yaw)
+	var s := sin(yaw)
+	var hw := width * 0.5
+	var p0 := Vector3(-hw * c, 0.0, -hw * s)
+	var p1 := Vector3(hw * c, 0.0, hw * s)
+	var p2 := Vector3(hw * c, height, hw * s)
+	var p3 := Vector3(-hw * c, height, -hw * s)
+	var tip0 := 0.05 if drape else 0.0
+	var tip1 := 1.0 if drape else 1.0
+	if drape:
+		tip0 = 1.0
+		tip1 = 0.05
+	_leaf_vert(tool, p0, Vector2(0, 1), tip0)
+	_leaf_vert(tool, p1, Vector2(1, 1), tip0)
+	_leaf_vert(tool, p2, Vector2(1, 0), tip1)
+	_leaf_vert(tool, p0, Vector2(0, 1), tip0)
+	_leaf_vert(tool, p2, Vector2(1, 0), tip1)
+	_leaf_vert(tool, p3, Vector2(0, 0), tip1)
+
+
+static func _leaf_vert(tool: SurfaceTool, p: Vector3, uv: Vector2, tip: float) -> void:
+	tool.set_uv(uv)
+	tool.set_color(Color(1, 1, 1, tip))
+	tool.add_vertex(p)
+
+
 static func gable_roof(width: float, height: float, depth: float) -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)

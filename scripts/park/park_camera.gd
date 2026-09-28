@@ -46,10 +46,10 @@ func set_mode(next: int) -> void:
 	match mode:
 		Mode.RING:
 			target_yaw = -0.42
-			target_pitch = 0.58
-			target_distance = 22.5
-			target_pivot = Vector3(0.2, 0.7, -2.2)
-			camera.fov = 46.0
+			target_pitch = 0.40
+			target_distance = 27.0
+			target_pivot = Vector3(0.2, 0.9, -3.0)
+			camera.fov = 50.0
 		Mode.BUILDER:
 			target_yaw = 0.04
 			target_pitch = 1.28
@@ -119,8 +119,8 @@ func _process(delta: float) -> void:
 	if intro < 1.0:
 		intro = minf(1.0, intro + delta * 0.32)
 		var t := smoothstep(0.0, 1.0, intro)
-		target_distance = lerpf(28.0, 22.5, t)
-		target_pitch = lerpf(0.82, 0.58, t)
+		target_distance = lerpf(32.0, 27.0, t)
+		target_pitch = lerpf(0.62, 0.40, t)
 	if mode == Mode.FREE:
 		_free_move(delta)
 		return

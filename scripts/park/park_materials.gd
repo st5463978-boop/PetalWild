@@ -16,6 +16,11 @@ var glass: StandardMaterial3D
 var water: ShaderMaterial
 var foliage: ShaderMaterial
 var blooms: ShaderMaterial
+var leaf: ShaderMaterial
+var strand: ShaderMaterial
+var bed: ShaderMaterial
+var lily: StandardMaterial3D
+var petal: StandardMaterial3D
 var lantern_glass: ShaderMaterial
 var awning: StandardMaterial3D
 var sand: ShaderMaterial
@@ -139,6 +144,7 @@ func load_all() -> void:
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 	water = ShaderMaterial.new()
 	water.shader = load("res://shaders/park_water.gdshader")
+	water.render_priority = 1
 	foliage = ShaderMaterial.new()
 	foliage.shader = load("res://shaders/park_foliage.gdshader")
 	blooms = ShaderMaterial.new()
@@ -146,6 +152,40 @@ func load_all() -> void:
 	if ResourceLoader.exists(AQ_TEX + "Plants_Atlas_1_Basecolor.png"):
 		blooms.set_shader_parameter("albedo_tex", load(AQ_TEX + "Plants_Atlas_1_Basecolor.png"))
 		blooms.set_shader_parameter("opacity_tex", load(AQ_TEX + "Plants_Atlas_1_Opacity.png"))
+	leaf = ShaderMaterial.new()
+	leaf.shader = load("res://shaders/park_leaf.gdshader")
+	var leaf_dir := "res://assets/third_party/ambientcg/leafset017/"
+	if ResourceLoader.exists(leaf_dir + "LeafSet017_1K-JPG_Color.jpg"):
+		leaf.set_shader_parameter("albedo_tex", load(leaf_dir + "LeafSet017_1K-JPG_Color.jpg"))
+		leaf.set_shader_parameter("opacity_tex", load(leaf_dir + "LeafSet017_1K-JPG_Opacity.jpg"))
+		leaf.set_shader_parameter("normal_tex", load(leaf_dir + "LeafSet017_1K-JPG_NormalGL.jpg"))
+	leaf.set_shader_parameter("sway", 0.18)
+	leaf.set_shader_parameter("tint", Vector3(0.78, 1.08, 0.62))
+	strand = ShaderMaterial.new()
+	strand.shader = load("res://shaders/park_leaf.gdshader")
+	var strand_path := "res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_002.png"
+	if ResourceLoader.exists(strand_path):
+		var strand_tex := load(strand_path)
+		strand.set_shader_parameter("albedo_tex", strand_tex)
+		strand.set_shader_parameter("opacity_tex", strand_tex)
+		strand.set_shader_parameter("normal_tex", strand_tex)
+	strand.set_shader_parameter("alpha_from_albedo", true)
+	strand.set_shader_parameter("use_normal", false)
+	strand.set_shader_parameter("sway", 0.28)
+	strand.set_shader_parameter("tint", Vector3(0.72, 0.95, 0.58))
+	bed = ShaderMaterial.new()
+	bed.shader = load("res://shaders/park_bed.gdshader")
+	lily = StandardMaterial3D.new()
+	lily.albedo_color = Color("2f8a3a")
+	lily.roughness = 0.18
+	lily.metallic = 0.04
+	lily.clearcoat_enabled = true
+	lily.clearcoat = 0.55
+	lily.clearcoat_roughness = 0.18
+	petal = StandardMaterial3D.new()
+	petal.albedo_color = Color("f3a8c0")
+	petal.roughness = 0.42
+	petal.cull_mode = BaseMaterial3D.CULL_DISABLED
 	lantern_glass = ShaderMaterial.new()
 	lantern_glass.shader = load("res://shaders/lantern_glass.gdshader")
 	lantern_glass.set_shader_parameter("glow", 0.55)

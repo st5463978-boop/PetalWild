@@ -31,7 +31,7 @@ func _ready() -> void:
 	_build_lights()
 	_apply_look()
 	if OS.get_environment("PETAL_PARK_SMOKE") == "1":
-		print("PETAL_PARK_OK tiles=square cameras=ring,builder,pond,free weather=", weather_override)
+		print("PETAL_PARK_OK tiles=square cameras=ring,builder,pond,free weather=", weather_override, " forward=", _forward_plus(), " adapter=", RenderingServer.get_video_adapter_name())
 		await get_tree().process_frame
 		get_tree().quit()
 		return
@@ -59,43 +59,47 @@ func _build_lights() -> void:
 	environment.ambient_light_energy = 1.22
 	environment.ambient_light_sky_contribution = 0.72
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
-	environment.tonemap_exposure = 1.18
+	environment.tonemap_exposure = 1.02
 	environment.tonemap_white = 6.0
 	environment.adjustment_enabled = true
 	environment.adjustment_contrast = 1.08
 	environment.adjustment_saturation = 1.12
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.38
-	environment.glow_bloom = 0.03
+	environment.glow_intensity = 0.32
+	environment.glow_bloom = 0.07
+	environment.glow_hdr_threshold = 1.05
+	environment.glow_hdr_scale = 2.0
 	environment.fog_enabled = true
-	environment.fog_light_color = Color("e8d7b0")
-	environment.fog_density = 0.0018
-	environment.fog_aerial_perspective = 0.32
-	environment.fog_sky_affect = 0.18
-	var soft := _soft_gpu()
-	if not soft:
+	environment.fog_light_color = Color("f0d9a8")
+	environment.fog_density = 0.0013
+	environment.fog_aerial_perspective = 0.35
+	environment.fog_sky_affect = 0.2
+	# WATER_PLAN v1: screen-space reflections stay off. The sheet fakes sky with Fresnel.
+	environment.ssr_enabled = false
+	var forward := _forward_plus()
+	var soft := _software_adapter()
+	if forward:
 		environment.ssao_enabled = true
-		environment.ssao_radius = 0.6
-		environment.ssao_intensity = 1.8
-		environment.ssil_enabled = true
-		environment.ssil_radius = 3.0
-		environment.ssil_intensity = 0.8
-		environment.ssr_enabled = true
-		environment.ssr_max_steps = 32
-		environment.sdfgi_enabled = true
-		environment.sdfgi_use_occlusion = true
-		environment.sdfgi_min_cell_size = 0.2
-		environment.sdfgi_cascades = 4
-		environment.sdfgi_bounce_feedback = 0.4
-		environment.volumetric_fog_enabled = true
-		environment.volumetric_fog_density = 0.008
-		environment.volumetric_fog_albedo = Color("e3ca82")
-		environment.volumetric_fog_anisotropy = 0.6
-		environment.volumetric_fog_length = 48.0
-		environment.volumetric_fog_ambient_inject = 0.35
+		environment.ssao_radius = 0.55
+		environment.ssao_intensity = 1.6
+		environment.ssil_enabled = not soft
+		environment.ssil_radius = 2.4
+		environment.ssil_intensity = 0.7
+		if not soft:
+			environment.sdfgi_enabled = true
+			environment.sdfgi_use_occlusion = true
+			environment.sdfgi_min_cell_size = 0.25
+			environment.sdfgi_cascades = 4
+			environment.sdfgi_bounce_feedback = 0.35
+			environment.volumetric_fog_enabled = true
+			environment.volumetric_fog_density = 0.006
+			environment.volumetric_fog_albedo = Color("e3ca82")
+			environment.volumetric_fog_anisotropy = 0.55
+			environment.volumetric_fog_length = 48.0
+			environment.volumetric_fog_ambient_inject = 0.3
 	else:
 		environment.ssao_enabled = false
-		environment.glow_intensity = 0.28
+		environment.glow_intensity = 0.24
 	env_node.environment = environment
 	add_child(env_node)
 
@@ -126,9 +130,17 @@ func _build_lights() -> void:
 	add_child(moon)
 
 
-func _soft_gpu() -> bool:
+func _software_adapter() -> bool:
 	var name := RenderingServer.get_video_adapter_name().to_lower()
-	return name.find("llvmpipe") != -1 or name.find("software") != -1
+	return name.find("llvmpipe") != -1 or name.find("lavapipe") != -1 or name.find("software") != -1
+
+
+func _forward_plus() -> bool:
+	return RenderingServer.get_rendering_device() != null
+
+
+func _soft_gpu() -> bool:
+	return _software_adapter()
 
 
 func _apply_look() -> void:
@@ -159,8 +171,10 @@ func _apply_look() -> void:
 	sky_mat.sun_angle_max = 28.0
 	var environment := env_node.environment
 	environment.fog_light_color = Color("f0d9a8") if weather == "golden" else Color("cfdbe1")
-	environment.tonemap_exposure = 1.12 + golden * 0.1
+	environment.tonemap_exposure = 0.98 + golden * 0.06
 	environment.ambient_light_energy = 1.05 + golden * 0.18
+	if mats != null and mats.water != null and sun != null:
+		mats.water.set_shader_parameter("sun_dir_world", sun.global_transform.basis.z)
 	var glow := 0.2 + golden * 1.4
 	if hour < 8.0 or hour > 19.0:
 		glow = 1.6
@@ -259,6 +273,6 @@ func _shots() -> void:
 		var img := get_viewport().get_texture().get_image()
 		var path := "%s/park_%s.png" % [out, str(item[1])]
 		img.save_png(path)
-		print("PARK_SHOT ", path)
+		print("PARK_SHOT ", path, " forward=", _forward_plus(), " adapter=", RenderingServer.get_video_adapter_name())
 	print("PETAL_PARK_SHOT_OK")
 	get_tree().quit()

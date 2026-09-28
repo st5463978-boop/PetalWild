@@ -8,7 +8,12 @@ This restores the **square-tile garden** and **Viva Piñata ring camera** that t
 
 ```bash
 # from repo root, pinned Godot 4.8-dev6
+# default driver is OpenGL3 (Compatibility)
 DISPLAY=:1 ./tools/run.sh res://scenes/city_park.tscn
+
+# Forward+ on Vulkan. On a real GPU this is the look preset (SSAO, SDFGI, volumetric fog).
+# This VM's lavapipe device reports itself as llvmpipe, so SDFGI and volumetric fog stay off.
+DISPLAY=:1 PETAL_RENDER=forward ./tools/run.sh res://scenes/city_park.tscn
 ```
 
 Or from the title screen, **City Park**.
@@ -23,7 +28,8 @@ DISPLAY=:1 PETAL_PARK_SMOKE=1 ./tools/run.sh res://scenes/city_park.tscn
 Screenshots (1920×1080):
 
 ```bash
-DISPLAY=:1 PETAL_PARK_SHOT=1 PETAL_PARK_SHOT_DIR=/workspace/docs/screenshots/city-park \
+DISPLAY=:1 PETAL_RENDER=forward PETAL_PARK_SHOT=1 \
+  PETAL_PARK_SHOT_DIR=/workspace/docs/screenshots/city-park \
   ./tools/run.sh res://scenes/city_park.tscn
 ```
 
@@ -83,17 +89,18 @@ Character art is still incoming: `jelly_spawn` and `veg_spawn` are ground rings,
 
 ## Honest gaps vs the three concepts
 
-These 1920×1080 frames are llvmpipe / OpenGL3. Forward+ (SDFGI, volumetric sunbeams, SSR, DOF) is wired for a real GPU and will not show in VM captures.
+Sign-off frames are 1920×1080, captured with **Forward+** (`PETAL_RENDER=forward`, Vulkan). The device is lavapipe and Godot names it llvmpipe, so the software preset ran: ACES, golden-hour sun, fog, glow, SSAO. SDFGI and volumetric fog are on only when the adapter is not software. Environment SSR stays off on every GPU; water v1 fakes the sky with Fresnel. A real GPU using the same `PETAL_RENDER=forward` path gets SSAO, SSIL, SDFGI, volumetric fog, and shadows.
 
-- Kenney Nature Kit has no colormap in this tree, so trees are re-tinted green low-poly, not photoreal oaks.
-- Gazebo, greenhouse, clock tower and townhouses are procedural PBR, not hero-sculpted meshes. The gazebo roof is an octagonal hip.
-- The wood bridge is four Kenney narrow decks. It reads as a footbridge, and it is still plainer than the carved arch in the concepts.
-- Lily pads are discs with sphere petals, plus a few Kenney lilies, until `PETAL-08-103`.
-- The willow is a trunk, a canopy, and hanging leaf cards. It frames the pond-edge shot, and it is not a photoreal curtain.
-- Iron railings are a short run of posts, lighter than concept 2.
-- Jellies and veg folk are spawn rings, not characters (`PETAL-08-101`, `102`). They are hidden in the sign-off frames.
-- Builder view is a steep orbit, not a locked orthographic Sims camera.
-- Square plots read, but the stone edging is simpler than the concept's pillow-bevelled beds.
+The approved paintings are not in `docs/reference/city-park/` (that folder is empty), so these frames are the sign-off set rather than a baked side-by-side composite.
+
+- Foliage is alpha-cut leaf cards (ambientCG LeafSet017) with wind sway, plus Kenney Foliage Pack strands on the willow. Quaternius Stylized Nature is Drive-only and is not vendored. The willow is a trunk, leaning limbs, and a hanging card curtain, not a scanned tree.
+- Plot edges are pillow-stone kerbs and corner stones on CC0 rock, over turf, soil, and gravel. The 1 m squares stay readable. They are not the concept's heavy bevelled stone photography.
+- Lily pads are notched, curled meshes with a clearcoat. Flowers are an 8-petal mesh plus a yellow center. Reeds are thin cards with cattail heads. They are still generated, not `PETAL-08-103` sculpts.
+- Townhouses, the clock tower, and the gazebo posts are Kenney Fantasy Town Kit modules (walls, shuttered windows, doors, overhangs, gable and point roofs) with the pack colormap. The gazebo roof is still the octagonal hip. The greenhouse and stall are still built from primitives.
+- Water v1 follows the PR #15 plan: a low-roughness sheet, two scrolling normals, Fresnel sky, and sparse emissive glints aimed at the glow pass, over a separate painted pond bed. No planar reflection, no ripple simulation, no screen refraction.
+- The footbridge is still four Kenney narrow decks. Railings are a short run of posts.
+- Jellies and veg folk are spawn rings (`PETAL-08-101`, `102`), hidden in the sign-off frames.
+- Builder view is a steep orbit, not a locked orthographic camera.
 
 Captures: `docs/screenshots/city-park/park_ring.png`, `park_builder.png`, `park_pond_edge.png`.
 

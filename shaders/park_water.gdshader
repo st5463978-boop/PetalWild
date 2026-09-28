@@ -1,49 +1,47 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
-uniform vec3 deep_color : source_color = vec3(0.10, 0.42, 0.48);
-uniform vec3 shallow_color : source_color = vec3(0.28, 0.72, 0.68);
-uniform vec3 sparkle_color : source_color = vec3(0.95, 0.90, 0.68);
-uniform float wave_height = 0.012;
-uniform float caustic_strength = 0.16;
-uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-uniform bool use_refraction = false;
+// v1 sheet from docs/water/WATER_PLAN.md: low roughness, dual normals, emissive glints, Fresnel sky.
+// The painted bed is a separate mesh. Environment SSR stays off.
+uniform vec3 shallow_tint : source_color = vec3(0.42, 0.62, 0.48);
+uniform vec3 sky_tint : source_color = vec3(0.96, 0.72, 0.38);
+uniform float fresnel_power = 3.6;
+uniform float normal_strength = 0.34;
+uniform float sparkle_power = 96.0;
+uniform float sparkle_intensity = 3.2;
+uniform vec3 sun_dir_world = vec3(0.42, 0.48, 0.28);
 
 varying vec3 world_pos;
 
 void vertex() {
 	vec3 p = VERTEX;
-	float w1 = sin(p.x * 1.7 + TIME * 1.35) * wave_height;
-	float w2 = cos(p.z * 2.15 + TIME * 1.05) * wave_height * 0.78;
-	float w3 = sin((p.x + p.z) * 3.4 + TIME * 1.9) * wave_height * 0.42;
-	p.y += w1 + w2 + w3;
+	p.y += sin(p.x * 1.7 + TIME * 0.85) * 0.004 + cos(p.z * 2.1 + TIME * 0.65) * 0.0035;
 	VERTEX = p;
 	world_pos = (MODEL_MATRIX * vec4(p, 1.0)).xyz;
 }
 
 void fragment() {
-	vec2 n_uv = world_pos.xz * 0.28;
-	float n1 = sin(n_uv.x * 3.4 + TIME * 0.85) * cos(n_uv.y * 2.8 - TIME * 0.7);
-	float n2 = sin((n_uv.x + n_uv.y) * 4.6 + TIME * 1.05);
-	vec3 nrm = vec3(n1 * 0.12, 1.0, n2 * 0.1);
-	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 2.35);
-	vec3 water = mix(deep_color, shallow_color, clamp(fres * 0.85 + 0.12, 0.0, 1.0));
-	vec3 col = water;
-	if (use_refraction) {
-		vec2 suv = SCREEN_UV + vec2(n1, n2) * 0.018;
-		vec3 refr = texture(screen_texture, suv).rgb;
-		col = mix(refr * 0.42 + water * 0.58, water, 0.28 + fres * 0.55);
-	}
-	float c1 = sin(world_pos.x * 10.0 + TIME * 1.65) * sin(world_pos.z * 8.4 - TIME * 1.25);
-	float c2 = sin((world_pos.x - world_pos.z) * 13.0 + TIME * 2.3);
-	float caustic = smoothstep(0.45, 0.92, c1 * 0.55 + c2 * 0.45);
-	float spark = smoothstep(0.9, 1.0, sin(world_pos.x * 6.4 + TIME * 2.1) * sin(world_pos.z * 5.2 - TIME * 1.5));
-	ALBEDO = col;
-	ROUGHNESS = mix(0.05, 0.16, 1.0 - fres);
-	METALLIC = 0.08;
-	SPECULAR = 0.72;
-	EMISSION = sparkle_color * spark * 0.28 + vec3(0.45, 0.72, 0.55) * caustic * caustic_strength + shallow_color * fres * 0.08;
-	ALPHA = mix(0.58, 0.82, fres);
-	NORMAL_MAP = vec3(n1 * 0.5 + 0.5, n2 * 0.5 + 0.5, 1.0);
-	NORMAL_MAP_DEPTH = 0.22;
+	vec2 uv_a = world_pos.xz * 0.55 + vec2(TIME * 0.028, TIME * 0.016);
+	vec2 uv_b = world_pos.xz * 0.91 + vec2(-TIME * 0.02, TIME * 0.033);
+	float n1 = sin(uv_a.x * 8.0) * cos(uv_a.y * 6.4);
+	float n2 = sin(uv_b.x * 12.0 + uv_b.y * 5.0);
+	vec3 map_n = normalize(vec3(n1 * normal_strength, n2 * normal_strength, 1.0));
+	NORMAL = normalize(TANGENT * map_n.x + BINORMAL * map_n.y + NORMAL * map_n.z);
+
+	vec3 n_world = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	vec3 v_world = normalize(CAMERA_POSITION_WORLD - world_pos);
+	vec3 l_world = normalize(sun_dir_world);
+	vec3 h_world = normalize(l_world + v_world);
+	float ndv = clamp(dot(n_world, v_world), 0.0, 1.0);
+	float fres = pow(1.0 - ndv, fresnel_power);
+	float spec = pow(clamp(dot(n_world, h_world), 0.0, 1.0), sparkle_power);
+	float mask = sin(world_pos.x * 18.0 + TIME * 1.4) * sin(world_pos.z * 15.0 - TIME * 1.1);
+	float glint = spec * smoothstep(0.86, 0.995, mask);
+
+	ALBEDO = mix(shallow_tint, sky_tint, fres);
+	ROUGHNESS = mix(0.04, 0.18, 1.0 - fres);
+	SPECULAR = 0.9;
+	METALLIC = 0.0;
+	EMISSION = vec3(1.0, 0.95, 0.7) * glint * sparkle_intensity;
+	ALPHA = mix(0.04, 0.66, fres);
 }
