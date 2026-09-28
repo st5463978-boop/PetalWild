@@ -27,6 +27,7 @@ func build(parent: Node3D) -> void:
 	# Crest cards stay off: the VP24 pillow mesh is the wall.
 	# Bed-border flowers only. Interior scatter hid the soil and lawn.
 	_trees(parent)
+	_lawn_meadow(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
