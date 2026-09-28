@@ -597,10 +597,10 @@ func _tools(_theme: Theme) -> void:
 	var row := HBoxContainer.new()
 	row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	row.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	row.offset_left = -380
-	row.offset_right = 380
-	row.offset_top = -86
-	row.offset_bottom = -10
+	row.offset_left = -400
+	row.offset_right = 400
+	row.offset_top = -90
+	row.offset_bottom = -8
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 6)
 	row.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -628,7 +628,7 @@ func _tools(_theme: Theme) -> void:
 func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	var button := Button.new()
 	button.text = ""
-	button.custom_minimum_size = Vector2(68, 68)
+	button.custom_minimum_size = Vector2(72, 72)
 	button.icon = ThemeKit.kit_tex(icon_stem, "2x")
 	button.expand_icon = true
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -636,13 +636,14 @@ func _slot_button(icon_stem: String, key: String, on_press: Callable) -> Button:
 	button.pressed.connect(on_press)
 	button.clip_contents = false
 	_skin_slot(button, false)
-	var key_label := ThemeKit.outline_label(key, 15, ThemeKit.PARCHMENT, 5)
+	var key_label := ThemeKit.outline_label(key, 16, ThemeKit.PARCHMENT, 5)
 	key_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	key_label.offset_left = 16
-	key_label.offset_top = 12
-	key_label.offset_right = 42
-	key_label.offset_bottom = 32
+	key_label.offset_left = 10
+	key_label.offset_top = 6
+	key_label.offset_right = 52
+	key_label.offset_bottom = 40
 	key_label.z_index = 8
+	key_label.clip_text = false
 	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(key_label)
 	return button
