@@ -222,8 +222,8 @@ func _pop_in(kind: String) -> void:
 		JellyActivity.HAPPY:
 			_beat()
 		JellyActivity.ROMANCE_INTERESTED:
-			_energy = 0.42
-			_bloom = 0.52
+			_energy = 0.62
+			_bloom = 0.58
 			_pop = 0.78
 			tw.tween_property(self, "_alpha", 1.0, 0.22)
 			tw.parallel().tween_property(self, "_pop", 0.94, 0.22)
@@ -290,17 +290,17 @@ func _work_loop() -> void:
 
 func _interest_loop() -> void:
 	_looping = true
-	_energy = 0.42
-	_bloom = 0.52
+	_energy = 0.62
+	_bloom = 0.58
 	if _reduce_motion:
 		_pop = 0.92
 		return
 	var tw := _motion()
 	tw.set_loops()
-	tw.tween_property(self, "_pop", 0.98, 1.15).set_trans(Tween.TRANS_SINE)
-	tw.parallel().tween_property(self, "_energy", 0.52, 1.15).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(self, "_pop", 0.86, 1.15).set_trans(Tween.TRANS_SINE)
-	tw.parallel().tween_property(self, "_energy", 0.34, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(self, "_pop", 1.04, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(self, "_energy", 0.78, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(self, "_pop", 0.82, 1.15).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(self, "_energy", 0.5, 1.15).set_trans(Tween.TRANS_SINE)
 
 
 func _lock_loop() -> void:
@@ -350,10 +350,10 @@ func _spawn_burst() -> void:
 		mat.set_shader_parameter("fade", 1.0)
 		node.material_override = mat
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		node.position = Vector3(0.0, 0.02, 0.05)
-		node.scale = Vector3.ONE * 0.2
-		_face.add_child(node)
 		var ang := TAU * float(i) / 5.0 + 0.18
+		node.position = Vector3(cos(ang) * 0.12, 0.04, 0.05)
+		node.scale = Vector3.ONE * 0.28
+		_face.add_child(node)
 		_sparks.append({
 			"node": node,
 			"mat": mat,

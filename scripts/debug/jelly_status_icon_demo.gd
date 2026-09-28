@@ -104,7 +104,7 @@ func _spawn_jellies() -> void:
 		{"id": "idea", "name": "Glim", "shape": "stacked", "deep": "#2f8f55", "lit": "#d5ffb0", "glow": "#b6ff6a", "eye": "#f4ffd2", "radius": 0.32},
 		{"id": "work", "name": "Cog", "shape": "crown", "deep": "#1b8a86", "lit": "#b8fff4", "glow": "#5bffd4", "eye": "#e7fff8", "radius": 0.33},
 		{"id": "crush", "name": "Pip", "shape": "lobes", "deep": "#c4457a", "lit": "#ffd0e8", "glow": "#ff7eb6", "eye": "#fff0f6", "radius": 0.34},
-		{"id": "pair", "name": "Vee", "shape": "bell", "deep": "#9a2f6a", "lit": "#ffc4e4", "glow": "#ff5fa8", "eye": "#fff0f6", "radius": 0.33},
+		{"id": "pair", "name": "Vee", "shape": "stacked", "deep": "#7a1f58", "lit": "#ffc4e4", "glow": "#ff5fa8", "eye": "#fff0f6", "radius": 0.33},
 	]
 	for i in defs.size():
 		var jelly := Jelly.new()
@@ -277,7 +277,7 @@ func _record_locked() -> void:
 		var img := await _grab()
 		img.save_png("%s/heart_locked_%02d.png" % [_CAPTURE_DIR, i])
 		images.append(img)
-		if i == 3:
+		if i == 0:
 			img.save_png("%s/heart_locked.png" % _CAPTURE_DIR)
 			img.save_png("%s/heart_locked.png" % _ARTIFACT_DIR)
 			print("SHOT heart_locked.png ", img.get_width(), "x", img.get_height())
