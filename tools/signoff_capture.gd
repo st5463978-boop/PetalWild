@@ -49,9 +49,13 @@ func _run() -> void:
 		await process_frame
 	_stage_subjects(scene)
 	_hide_debug(scene)
-	if scene != null:
-		scene.process_mode = Node.PROCESS_MODE_DISABLED
 	play_cam = root.get_camera_3d()
+	if play_cam != null and play_cam.has_method("snap_home"):
+		play_cam.call("snap_home")
+	if scene != null and "atmosphere" in scene:
+		var atmo: Variant = scene.get("atmosphere")
+		if atmo != null:
+			atmo.set("frozen", true)
 	audit["scene"] = _audit_tree(scene)
 	audit["renderer"] = RenderingServer.get_current_rendering_method()
 	audit["adapter"] = RenderingServer.get_video_adapter_name()

@@ -12,6 +12,7 @@ var rain: CPUParticles3D
 var sky_material: Material
 var shafts: Array[MeshInstance3D] = []
 var photosensitivity := false
+var frozen := false
 
 func _build_shafts(parent: Node3D) -> void:
 	for i in 3:
@@ -86,6 +87,8 @@ func build(parent: Node3D) -> void:
 	parent.add_child(rain)
 
 func apply(hour: float, weather: String, camera: Camera3D) -> void:
+	if frozen:
+		return
 	var environment := world_environment.environment
 	if camera and camera.attributes == null:
 		camera.attributes = QualityTier.make_camera_attributes()
