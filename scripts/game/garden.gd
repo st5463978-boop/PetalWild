@@ -1642,6 +1642,20 @@ func _lane_who() -> String:
 		return lane_body.display_name
 	return _lane_household_name()
 
+func _lane_where() -> String:
+	if lane_body == null or not Trust.has_action("parish_road_rumour"):
+		return ""
+	var who := _lane_who()
+	if inside_lane:
+		return "%s is in the cottage kitchen." % who
+	if lane_walking and lane_walk_home:
+		return "%s is walking home." % who
+	if lane_walking:
+		return "%s is walking to Grove Park." % who
+	if lane_on_lawn:
+		return "%s is on the Grove Park lawn." % who
+	return "%s is at the cottage door." % who
+
 func _send_lane_home() -> bool:
 	if lane_body == null or not lane_body.visible:
 		toast("Nobody is out.")
@@ -9059,6 +9073,10 @@ func _run_town_shot() -> void:
 		push_error("town shot: reload sent the household home")
 		get_tree().quit(1)
 		return
+	if _lane_where().find("Grove Park lawn") == -1:
+		push_error("town shot: the page lost the lawn")
+		get_tree().quit(1)
+		return
 	if camera:
 		camera.pitch = 20.0
 		camera.yaw = 150.0
@@ -9085,6 +9103,10 @@ func _run_town_shot() -> void:
 			break
 	if not saw_gate or not home or lane_body.global_position.distance_to(door_spot) > 0.6:
 		push_error("town shot: the walk home missed the gate or the door")
+		get_tree().quit(1)
+		return
+	if _lane_where().find("cottage door") == -1:
+		push_error("town shot: the page lost the door")
 		get_tree().quit(1)
 		return
 	if camera:
@@ -12954,6 +12976,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow") + (1 if vale_crate_crop != "" else 0)
 	stats["lane_passers"] = _lane_passers()
 	stats["vale_line"] = region.headline()
+	stats["lane_where"] = _lane_where()
 	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
