@@ -63,6 +63,7 @@ var scoop_root: Node3D
 var home_root: Node3D
 var highlight: MeshInstance3D
 var tool := "till"
+var click_at := Vector2(-1, -1)
 var held: Jelly
 var events: Array = []
 var directory_page := "journal"
@@ -1307,14 +1308,49 @@ func _jam_worker() -> bool:
 		return false
 	return _stall_open()
 
+func _pointer() -> Vector2:
+	if click_at.x >= 0.0:
+		return click_at
+	return get_viewport().get_mouse_position()
+
+func _ray_hits(point: Vector3, radius: float) -> bool:
+	if camera == null:
+		return false
+	var origin := camera.project_ray_origin(_pointer())
+	var direction := camera.project_ray_normal(_pointer())
+	var along := (point - origin).dot(direction)
+	if along < 0.0:
+		return false
+	return (origin + direction * along).distance_to(point) <= radius
+
+func _prop_at(root: Node3D, node_name: String) -> Vector3:
+	var node := root.get_node_or_null(node_name) as Node3D if root != null else null
+	return node.global_position if node != null else Vector3(9999, 9999, 9999)
+
+func _near_anchor(hit: Vector3, anchor: Vector3, radius: float) -> bool:
+	return Vector2(hit.x - anchor.x, hit.z - anchor.z).length() < radius
+
+# ponytail: a click on the counter meets y=0 outside the porch radius. Ray the prop that moved inside.
 func _near_tea(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.TEA.x, hit.z - GardenLayout.TEA.z).length() < 1.45
+	if _near_anchor(hit, GardenLayout.TEA, 1.45):
+		return true
+	return inside_tea and _ray_hits(_prop_at(_tea_house(), "Kettle"), 0.36)
 
 func _near_stall(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.STALL.x, hit.z - GardenLayout.STALL.z).length() < 1.55
+	if _near_anchor(hit, GardenLayout.STALL, 1.55):
+		return true
+	if not inside_stall:
+		return false
+	var stall := _petal_stall()
+	for node_name in ["StallCrateL", "StallCup", "StallJar"]:
+		if _ray_hits(_prop_at(stall, node_name), 0.28):
+			return true
+	return false
 
 func _near_shed(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.SHED.x, hit.z - GardenLayout.SHED.z).length() < 1.55
+	if _near_anchor(hit, GardenLayout.SHED, 1.55):
+		return true
+	return inside_shed and _ray_hits(_prop_at(_potting_shed(), "Pan"), 0.5)
 
 func _use_kettle() -> void:
 	if Economy.mill.brew == ParishChain.TEA or Economy.mill.pot_count() > 0:
@@ -10109,9 +10145,17 @@ func _run_tea_house_shot() -> void:
 	var coins := Economy.coins
 	Economy.add("peach", 1)
 	Economy.add("meadowbell", 1)
-	stock_kettle()
+	var aim := kettle.global_position + Vector3(0.0, 0.14, 0.0)
+	click_at = camera.unproject_position(aim)
+	var porch_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if porch_hit != null and _near_anchor(porch_hit, GardenLayout.TEA, 1.45):
+		push_error("tea house: the porch still owns the kettle click")
+		get_tree().quit(1)
+		return
+	_click_prop(aim)
 	if Economy.mill.brew != ParishChain.TEA or Economy.coins != coins or fill.visible:
-		push_error("tea house: the kettle did not start")
+		push_error("tea house: the kettle click did not brew")
 		get_tree().quit(1)
 		return
 	_sync_mill()
@@ -10198,9 +10242,17 @@ func _run_shed_shot() -> void:
 		return
 	var coins := Economy.coins
 	Economy.add("bramble", 1)
-	stock_jam()
+	var pan_aim := pan.global_position
+	click_at = camera.unproject_position(pan_aim)
+	var shed_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if shed_hit != null and _near_anchor(shed_hit, GardenLayout.SHED, 1.55):
+		push_error("shed: the step still owns the pan click")
+		get_tree().quit(1)
+		return
+	_click_prop(pan_aim)
 	if Economy.mill.brew != ParishChain.JAM or Economy.coins != coins or not steam.visible:
-		push_error("shed: the pan did not start")
+		push_error("shed: the pan click did not cook")
 		get_tree().quit(1)
 		return
 	_sync_mill()
@@ -10335,16 +10387,24 @@ func _run_stall_shot() -> void:
 	lumen.say("The counter is open.")
 	await _shot("/workspace/docs/screenshots/petal_stall_inside.png")
 	var tea_crates := Economy.mill.crate_count()
-	sell_tea()
+	var crate_aim := crate.global_position
+	click_at = camera.unproject_position(crate_aim)
+	var stall_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if stall_hit != null and _near_anchor(stall_hit, GardenLayout.STALL, 1.55):
+		push_error("stall: the front still owns the crate click")
+		get_tree().quit(1)
+		return
+	_click_prop(crate_aim)
 	if Economy.coins <= coins or Economy.mill.crate_count() != tea_crates - 1 or not inside_stall:
-		push_error("stall: tea did not pay")
+		push_error("stall: the counter click did not sell tea")
 		get_tree().quit(1)
 		return
 	var after_tea := Economy.coins
 	var jam_crates := Economy.mill.crate_count(ParishChain.JAM)
-	sell_jam()
+	_click_prop(jar.global_position)
 	if Economy.coins <= after_tea or Economy.mill.crate_count(ParishChain.JAM) != jam_crates - 1 or not inside_stall:
-		push_error("stall: jam did not pay")
+		push_error("stall: the counter click did not sell jam")
 		get_tree().quit(1)
 		return
 	Economy.add("peach", 1)
@@ -11587,8 +11647,17 @@ func _apply_shift(snap: bool) -> void:
 func _person(id: String) -> VegPerson:
 	return people.get(id)
 
+func _click_prop(point: Vector3) -> void:
+	if camera == null:
+		return
+	click_at = camera.unproject_position(point)
+	_primary_down()
+	click_at = Vector2(-1, -1)
+
 func _primary_down() -> void:
-	if _over_ui() or held:
+	if held:
+		return
+	if click_at.x < 0.0 and _over_ui():
 		return
 	var face := _pick_face()
 	if face:
@@ -11810,7 +11879,7 @@ func _home_box(root: Node3D, size: Vector3, at: Vector3, color: Color) -> MeshIn
 	return node
 
 func _ground_hit():
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	if absf(direction.y) < 0.0001:
@@ -11821,7 +11890,7 @@ func _ground_hit():
 	return origin + direction * t
 
 func _pick_jelly() -> Jelly:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
@@ -11843,7 +11912,7 @@ func _pick_jelly() -> Jelly:
 func _pick_face() -> Jelly:
 	if camera == null or ecology == null:
 		return null
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
@@ -11985,7 +12054,7 @@ func _clear_inspect() -> void:
 		hud.hide_inspect()
 
 func _pick_person() -> VegPerson:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: VegPerson
@@ -12014,7 +12083,7 @@ func _over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
 func _hold_point(jelly: Jelly) -> Vector3:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var size := get_viewport().get_visible_rect().size
 	var lift := clampf((1.0 - mouse.y / maxf(size.y, 1.0)) * 2.35, 0.48, 2.05)
 	var hit = _ground_hit()
