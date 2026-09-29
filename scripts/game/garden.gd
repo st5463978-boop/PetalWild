@@ -1471,7 +1471,10 @@ func _sync_lane() -> void:
 		var window := house.get_node_or_null("Window") as MeshInstance3D
 		if window != null and window.material_override is StandardMaterial3D:
 			var glass := window.material_override as StandardMaterial3D
-			glass.emission_energy_multiplier = 1.15 if show and index < lit else 0.0
+			var on := show and index < lit
+			if house.get_node_or_null("Interior") != null and lane_body != null:
+				on = show and not lane_on_lawn and not lane_walking
+			glass.emission_energy_multiplier = 1.15 if on else 0.0
 		index += 1
 	for node in get_tree().get_nodes_in_group("south_lane_sign"):
 		var sign := node as Node3D
@@ -1700,6 +1703,15 @@ func _icon_eye_count(jelly: Jelly) -> int:
 		(child as MeshInstance3D).visible = true
 		eyes += 1
 	return eyes
+
+func _cottage_window_energy() -> float:
+	var house := _first_lane_house()
+	if house == null:
+		return 0.0
+	var window := house.get_node_or_null("Window") as MeshInstance3D
+	if window == null or not (window.material_override is StandardMaterial3D):
+		return 0.0
+	return (window.material_override as StandardMaterial3D).emission_energy_multiplier
 
 func _lawn_count() -> int:
 	var n := town.occupancy("grove_park")
@@ -9174,6 +9186,11 @@ func _run_town_shot() -> void:
 		push_error("town shot: the lawn sign ignored the household (%s)" % board)
 		get_tree().quit(1)
 		return
+	_sync_lane()
+	if _cottage_window_energy() > 0.2:
+		push_error("town shot: the cottage window stayed lit on the lawn")
+		get_tree().quit(1)
+		return
 	var lawn_jelly := _stage_lawn_jelly(spot)
 	var eye_count := _icon_eye_count(lawn_jelly)
 	if lawn_jelly == null or eye_count < 2 or lawn_jelly.global_position.distance_to(spot) > 2.2:
@@ -9223,6 +9240,11 @@ func _run_town_shot() -> void:
 		return
 	if _lane_where().find("cottage door") == -1:
 		push_error("town shot: the page lost the door")
+		get_tree().quit(1)
+		return
+	_sync_lane()
+	if _cottage_window_energy() < 0.8:
+		push_error("town shot: the cottage window stayed dark at the door")
 		get_tree().quit(1)
 		return
 	var lied := false
