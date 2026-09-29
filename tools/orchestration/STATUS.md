@@ -15,6 +15,17 @@ System-1 routes call JEV-H on the Pi Hailo-10H (port 8771). That is the small Ha
 
 A health check alone is not proof. A real decide must return a choice.
 
+## Smoke (2026-09-29)
+
+Caller with no `HAILO_DECIDE_URL`. Discovery from the jevh-decide ntfy topic, then a real `POST /v1/decide`.
+
+| Call | Result | Latency |
+| --- | --- | --- |
+| resolve + `POST /v1/decide` | HTTP 200, response returned, choice `yes`, index 0, model `hailojev_student_ettin68m_seq128.hef (352c0f6d)` | 205.6 ms client / 51.8 ms server |
+| failed origin, one refresh, one retry | HTTP 200 after origin change, choice `yes`, same JEV-H model | 589.2 ms client / 50.2 ms server |
+
+Dispatcher unit tests: 17/17 OK.
+
 ## Earlier smoke (2026-09-24)
 
 Recorded against the previous Qwen3 chat decide service on port 8766.
