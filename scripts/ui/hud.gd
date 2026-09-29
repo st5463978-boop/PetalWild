@@ -58,12 +58,12 @@ func build(owner: Node) -> void:
 	toast_panel.add_child(toast_label)
 	toast_panel.visible = false
 	add_child(toast_panel)
-	hint_label = ThemeKit.outline_label("kettle / crate   click a face   Space   F8 play   C town   M vale", 13)
+	hint_label = ThemeKit.outline_label("Enter cottage   T tea   G park   click a face   C town   M vale", 13)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -96
 	hint_label.offset_top = -118
-	hint_label.offset_left = -420
-	hint_label.offset_right = 420
+	hint_label.offset_left = -520
+	hint_label.offset_right = 520
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hint_label)
@@ -149,7 +149,6 @@ func toast(text: String) -> void:
 	_toast_time = 3.4
 	if toast_panel:
 		toast_panel.visible = text != ""
-	hint_label.visible = false
 
 func set_tool(tool_name: String) -> void:
 	for key in tool_buttons.keys():
@@ -195,6 +194,23 @@ func show_trust(lines: Array, audit: Array) -> void:
 func show_place(stats: Dictionary) -> void:
 	_clear(journal_box)
 	journal_box.add_child(ThemeKit.title(str(stats.get("name", "Hedge Hollow")), 22))
+	var lane_where := str(stats.get("lane_where", ""))
+	if lane_where != "":
+		journal_box.add_child(ThemeKit.label(lane_where, 16))
+	for key in ["keeper_where", "cook_where", "kettle_where"]:
+		var pose := str(stats.get(key, ""))
+		if pose == "":
+			continue
+		var seen := false
+		for town_line in stats.get("town_lines", []):
+			if str(town_line).find(pose) != -1:
+				seen = true
+				break
+		if not seen:
+			journal_box.add_child(ThemeKit.label(pose, 16))
+	var lane_memory := str(stats.get("lane_memory", ""))
+	if lane_memory != "":
+		journal_box.add_child(ThemeKit.label(lane_memory, 15))
 	journal_box.add_child(ThemeKit.label("Phase %s · one parish. The lane beyond the hedge counts ripe beds." % str(stats.get("phase", "A")), 14))
 	for line in stats.get("town_lines", []):
 		journal_box.add_child(ThemeKit.label(str(line), 14))

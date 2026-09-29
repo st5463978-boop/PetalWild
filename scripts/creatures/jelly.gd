@@ -2,6 +2,7 @@ class_name Jelly
 extends Node3D
 
 signal reacted(kind: String, jelly: Jelly)
+signal activity_changed(kind: String, jelly: Jelly)
 
 var species_id := ""
 var display_name := ""
@@ -55,6 +56,15 @@ var pet_time := 0.0
 var nuzzled := false
 var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
+var art_card: Sprite3D
+var icon_root: Node3D
+var work_intensity := 0.0
+var mail_pending := false
+var romance := ""
+var activity := "none"
+var status_icon: JellyStatusIcon
+var _forced_activity := ""
+var _happy_playing := false
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -65,12 +75,113 @@ func setup(definition: Dictionary) -> void:
 	_apply_tune(definition)
 	add_to_group("jelly")
 	_build(definition)
+	_mount_status_icon()
 	var here := Vector3.ZERO
 	if is_inside_tree():
 		here = global_position
 	attract = here
 	goal = here
 	last_safe = here
+
+func _mount_status_icon() -> void:
+	status_icon = JellyStatusIcon.new()
+	add_child(status_icon)
+	status_icon.bind(self)
+	if not status_icon.finished.is_connected(_on_status_icon_finished):
+		status_icon.finished.connect(_on_status_icon_finished)
+
+func set_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	elif kind == JellyActivity.NONE:
+		work_intensity = 0.0
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	if kind == JellyActivity.ROMANCE_INTERESTED:
+		romance = "interested"
+	elif kind == JellyActivity.ROMANCE_LOCKED:
+		romance = "locked"
+	_forced_activity = ""
+	_apply_activity(kind)
+
+func force_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	if kind == JellyActivity.NONE:
+		_forced_activity = ""
+		_happy_playing = false
+		work_intensity = 0.0
+		refresh_activity()
+		return
+	_forced_activity = kind
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	_apply_activity(kind)
+
+func clear_force() -> void:
+	_forced_activity = ""
+	refresh_activity()
+
+func offer_mail() -> void:
+	mail_pending = true
+	refresh_activity()
+
+func handle_mail() -> void:
+	if not mail_pending:
+		return
+	mail_pending = false
+	refresh_activity()
+
+func pulse_happy() -> void:
+	_happy_playing = true
+	_apply_activity(JellyActivity.HAPPY, true)
+
+func show_interest() -> void:
+	if romance == "locked":
+		refresh_activity()
+		return
+	romance = "interested"
+	refresh_activity()
+
+func lock_romance() -> void:
+	romance = "locked"
+	refresh_activity()
+
+func clear_romance() -> void:
+	romance = ""
+	refresh_activity()
+
+func refresh_activity() -> void:
+	_apply_activity(JellyActivity.derive(self))
+
+func _apply_activity(kind: String, restart := false) -> void:
+	var changed := kind != activity
+	if not changed and not restart:
+		if status_icon != null and kind == JellyActivity.WORKING:
+			status_icon.set_intensity(work_intensity)
+		return
+	activity = kind
+	if status_icon != null:
+		if restart and kind == JellyActivity.HAPPY and not changed:
+			status_icon.replay()
+		else:
+			status_icon.set_activity(kind, work_intensity)
+	if changed:
+		activity_changed.emit(kind, self)
+
+func _on_status_icon_finished(kind: String) -> void:
+	if kind != JellyActivity.HAPPY:
+		return
+	_happy_playing = false
+	if _forced_activity == JellyActivity.HAPPY:
+		_forced_activity = ""
+	refresh_activity()
 
 func hit_radius() -> float:
 	var fit := _young_fit()
@@ -83,7 +194,7 @@ func set_select(on: bool, grabbed := false) -> void:
 	selected = on or grabbed
 	if halo == null:
 		return
-	halo.visible = selected
+	halo.visible = selected and icon_root == null
 	if halo_mat == null:
 		return
 	if grabbed:
@@ -175,18 +286,6 @@ func _build(definition: Dictionary) -> void:
 	body_root = root
 	_halo()
 	var shape := str(definition.get("shape", "droplet"))
-	var card := art_path(shape, str(definition.get("id", "")))
-	var card_abs := ProjectSettings.globalize_path(card)
-	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
-		var sprite := make_card(card, maxf(radius * 1.7, 0.44))
-		sprite.name = "Art"
-		root.add_child(sprite)
-		face_z = -radius * 0.2
-		_face(root, definition, radius * 0.18)
-		_hide_meshes(eye_l)
-		_hide_meshes(eye_r)
-		_hide_meshes(mouth)
-		return
 	face_z = -radius * 1.05
 	var eye_y := _shape(root, shape)
 	var organ_y := eye_y * 0.5
@@ -194,14 +293,101 @@ func _build(definition: Dictionary) -> void:
 		organ_y = radius * 0.95
 	_organ(root, definition, organ_y)
 	_face(root, definition, eye_y)
+	var card := art_path(shape, str(definition.get("id", "")))
+	var card_abs := ProjectSettings.globalize_path(card)
+	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
+		art_card = make_card(card, maxf(radius * 1.7, 0.44))
+		art_card.name = "Art"
+		root.add_child(art_card)
+	_icon_body(root, shape)
+	_sync_presentation()
 
-func _hide_meshes(n: Node) -> void:
-	if n == null:
+func _icon_body(root: Node3D, shape: String) -> void:
+	icon_root = Node3D.new()
+	icon_root.name = "Icon"
+	root.add_child(icon_root)
+	var body := MeshInstance3D.new()
+	body.name = "IconBody"
+	var sphere := SphereMesh.new()
+	sphere.radius = radius * 0.92
+	sphere.height = radius * 1.84
+	sphere.radial_segments = 24
+	sphere.rings = 16
+	body.mesh = sphere
+	var icon_mat := StandardMaterial3D.new()
+	icon_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	icon_mat.roughness = 0.38
+	icon_mat.metallic = 0.0
+	icon_mat.metallic_specular = 0.22
+	var deep: Color = mat.get_shader_parameter("deep_color")
+	icon_mat.albedo_color = deep
+	body.material_override = icon_mat
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	match shape:
+		"long":
+			body.scale = Vector3(0.72, 1.35, 0.72)
+		"flat":
+			body.scale = Vector3(1.25, 0.62, 1.05)
+		"stacked":
+			body.scale = Vector3(1.05, 1.05, 1.05)
+			var box := BoxMesh.new()
+			box.size = Vector3(radius * 1.55, radius * 1.45, radius * 1.55)
+			body.mesh = box
+		"lobes", "crown":
+			body.scale = Vector3(1.2, 0.92, 1.05)
+		"pear":
+			body.scale = Vector3(0.86, 1.2, 0.86)
+		_:
+			body.scale = Vector3.ONE
+	body.position = Vector3(0.0, radius * body.scale.y, 0.0)
+	icon_root.add_child(body)
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	eye_mat.albedo_color = Color(0.02, 0.02, 0.025)
+	eye_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var eye_y := body.position.y + radius * 0.48 * body.scale.y
+	for side in [-1.0, 1.0]:
+		var eye := MeshInstance3D.new()
+		eye.name = "IconEyeL" if side < 0.0 else "IconEyeR"
+		var slab := BoxMesh.new()
+		slab.size = Vector3(radius * 0.18, radius * 0.78, radius * 0.08)
+		eye.mesh = slab
+		eye.material_override = eye_mat
+		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 0.98)
+		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		icon_root.add_child(eye)
+
+func _show_volume() -> bool:
+	if art_card == null:
+		return true
+	if held or nuzzled or is_hungry():
+		return true
+	if feel != "idle":
+		return true
+	if deform.stretch > 0.04 or absf(squash - 1.0) > 0.08:
+		return true
+	if poke_time > 0.0:
+		return true
+	return false
+
+func _sync_presentation() -> void:
+	var show_body := _show_volume()
+	if art_card != null:
+		art_card.visible = not show_body
+	if icon_root != null:
+		icon_root.visible = show_body or art_card == null
+	if halo != null and icon_root != null:
+		halo.visible = false
+	# The petal bell reads as a bush. The icon is the body the player holds.
+	_set_procedural_visible(body_root, icon_root == null and (art_card == null or show_body))
+
+func _set_procedural_visible(n: Node, on: bool) -> void:
+	if n == null or n == art_card or n.name == "Icon":
 		return
 	if n is GeometryInstance3D:
-		(n as GeometryInstance3D).visible = false
+		(n as GeometryInstance3D).visible = on
 	for child in n.get_children():
-		_hide_meshes(child)
+		_set_procedural_visible(child, on)
 
 func _shape(root: Node3D, shape: String) -> float:
 	match shape:
@@ -427,7 +613,9 @@ func poke() -> void:
 func inspect_face() -> void:
 	inspected = true
 	tier = 0
+	handle_mail()
 	poke()
+	pulse_happy()
 
 func clear_inspect() -> void:
 	inspected = false
@@ -440,6 +628,7 @@ func snack() -> void:
 	bite_wait = 4.0
 	poke_time = 0.55
 	reacted.emit("snack", self)
+	pulse_happy()
 
 func _eye(root: Node3D, at: Vector3, color: Color, keep_iris := false) -> Node3D:
 	var pivot := Node3D.new()
@@ -697,7 +886,7 @@ func _apply_deform() -> void:
 	else:
 		body_root.position = Vector3.ZERO
 		body_root.scale = feel_scale
-	if held:
+	if held and is_inside_tree():
 		var pull := hold_target - global_position
 		pull.y = 0.0
 		if pull.length() > 0.08 and deform.stretch <= 0.08:
@@ -715,6 +904,32 @@ func _apply_deform() -> void:
 	if halo:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
+	_sync_presentation()
+	_face_icon(feel_scale)
+
+func _face_icon(feel_scale: Vector3 = Vector3.ONE) -> void:
+	if icon_root == null or not icon_root.visible or not is_inside_tree():
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	_seat_icon(cam.global_position, feel_scale)
+
+func _seat_icon(at: Vector3, feel_scale: Vector3) -> void:
+	if icon_root == null or body_root == null or not is_inside_tree():
+		return
+	var level := at
+	level.y = icon_root.global_position.y
+	at = level.lerp(at, 0.42)
+	if at.distance_squared_to(icon_root.global_position) < 0.04:
+		return
+	var parent_basis := body_root.global_transform.basis
+	# ponytail: camera-space squash. The pull axis stays on the hidden body until the icon can stretch along the grab.
+	var origin := icon_root.global_position
+	icon_root.global_transform = Transform3D(Basis.IDENTITY, origin)
+	icon_root.look_at(at, Vector3.UP)
+	var face := icon_root.global_transform.basis
+	icon_root.transform.basis = JellyFeel.icon_basis(parent_basis, face, feel_scale)
 
 func _halo() -> void:
 	halo = MeshInstance3D.new()

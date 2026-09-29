@@ -348,12 +348,20 @@ func _tally(ctx: Dictionary) -> void:
 		riders = int(ctx.get("passers", 0)) + int(ctx.get("traffic", 0)) + int(ctx.get("vale", 0))
 	var vale := int(ctx.get("vale", 0))
 	var headline := "Hedge Hollow stands alone."
+	var at_door := bool(ctx.get("near_lane", false)) and bool(districts.get("lane", {}).get("now_open", false))
 	if bool(districts.get("park", {}).get("now_open", false)):
-		headline = "Grove Park is a public lawn. The lane holds houses. Nobody walks them in hero detail."
+		headline = "Grove Park is a public lawn. The lane holds houses."
+		if at_door:
+			headline += " One household stands at the door. Enter steps inside."
+		else:
+			headline += " Nobody walks them in hero detail."
 	elif int(stats.get("tea_occ", 0)) > 0:
 		headline = "Hedge tea draws the lane to the porch. They sit as a count."
 	elif bool(districts.get("lane", {}).get("now_open", false)):
-		headline = "South Lane holds houses beyond the hedge. They tick as counts."
+		if at_door:
+			headline = "South Lane holds houses beyond the hedge. One household stands at the door."
+		else:
+			headline = "South Lane holds houses beyond the hedge. They tick as counts."
 	if vale > 0:
 		headline += " A vale cart is on the gate road."
 	stats["garden_pop"] = garden

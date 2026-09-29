@@ -246,6 +246,7 @@ func _spawn(definition: Dictionary, companion: bool, young := false) -> Jelly:
 	if returning and not companion:
 		# ponytail: one repeat rank; a visit count if the journal keeps a history.
 		_raise(jelly.species_id, "repeat")
+		jelly.offer_mail()
 		event_happened.emit("%s is back for another look." % name)
 	else:
 		if not returning:

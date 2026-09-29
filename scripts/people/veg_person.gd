@@ -19,10 +19,12 @@ var activity := "work"
 var memories: Array = []
 var tier := 1
 var waypoints: Array[Vector3] = []
+var loop_route := true
 var chore := Vector3.ZERO
 var has_chore := false
 var index := 0
 var pause := 0.0
+var stay := false
 var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
@@ -94,6 +96,8 @@ func _process(delta: float) -> void:
 			speech.visible = false
 	if body:
 		body.visible = present and tier < 4
+	if stay:
+		return
 	# ponytail: one point is a home; two or more is a loop. A chore is one bed, then the route resumes.
 	if not has_chore and waypoints.is_empty():
 		return
@@ -106,6 +110,9 @@ func _process(delta: float) -> void:
 	var gap := flat.length()
 	if gap < 0.18:
 		if has_chore:
+			return
+		if not loop_route and index >= waypoints.size() - 1:
+			pause = 1.2
 			return
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)
@@ -198,6 +205,11 @@ func _mount_mesh() -> bool:
 		return false
 	mesh_root.name = "FolkMesh"
 	body.add_child(mesh_root)
+	# The leek mesh is a 8 cm stalk. The carrot is three times as wide at the same height.
+	if family == "leek":
+		mesh_root.scale = Vector3(1.7, 1.7, 1.7)
+	elif family == "pea":
+		mesh_root.scale = Vector3(1.6, 1.6, 1.6)
 	_skin(mesh_root)
 	return true
 

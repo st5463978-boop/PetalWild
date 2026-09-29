@@ -12,6 +12,26 @@ var audio: GardenAudio
 var bees: GardenBees
 var birds: GardenBirds
 var people := {}
+var lane_body: VegPerson
+var lane_on_lawn := false
+var lane_walking := false
+var lane_walk_home := false
+var lane_drank := false
+var inside_lane := false
+var inside_tea := false
+var inside_shed := false
+var inside_stall := false
+var lumen_stall_back := Vector3.ZERO
+var lumen_at_counter := false
+var bram_pan_back := Vector3.ZERO
+var bram_at_pan := false
+var nessa_kettle_back := Vector3.ZERO
+var nessa_at_kettle := false
+var lane_return_target := Vector3.ZERO
+var lane_return_yaw := 0.0
+var lane_return_pitch := 0.0
+var lane_return_distance := 8.0
+var lane_return_fov := 40.0
 var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
@@ -43,6 +63,7 @@ var scoop_root: Node3D
 var home_root: Node3D
 var highlight: MeshInstance3D
 var tool := "till"
+var click_at := Vector2(-1, -1)
 var held: Jelly
 var events: Array = []
 var directory_page := "journal"
@@ -94,11 +115,26 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_KETTLE_SHOT") == "1":
 		await _run_kettle_shot()
 		return
+	if OS.get_environment("PETAL_TEA_HOUSE_SHOT") == "1":
+		await _run_tea_house_shot()
+		return
+	if OS.get_environment("PETAL_SHED_SHOT") == "1":
+		await _run_shed_shot()
+		return
+	if OS.get_environment("PETAL_STALL_SHOT") == "1":
+		await _run_stall_shot()
+		return
 	if OS.get_environment("PETAL_FACE_SHOT") == "1":
 		await _run_face_shot()
 		return
 	if OS.get_environment("PETAL_JELLY_PLAY") == "1":
 		await _run_jelly_play()
+		return
+	if OS.get_environment("PETAL_KITCHEN_SALE") == "1":
+		await _run_kitchen_sale()
+		return
+	if OS.get_environment("PETAL_KITCHEN_LIVE") == "1":
+		await _run_kitchen_live()
 		return
 	if OS.get_environment("PETAL_TOWN_SHOT") == "1":
 		await _run_town_shot()
@@ -238,6 +274,7 @@ func _process(delta: float) -> void:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 	SimLod.note_vale(region.fidelity())
 	_tick_town(world)
+	_note_lane_arrival()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -270,6 +307,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				_focus_next()
 			KEY_P:
 				_toggle_photo()
+			KEY_ENTER, KEY_KP_ENTER:
+				_enter_from_key()
+			KEY_T:
+				_sip_kitchen_tea()
+			KEY_G:
+				if lane_on_lawn:
+					_send_lane_home()
+				elif not lane_walking:
+					_send_lane_to_park()
 			KEY_ESCAPE:
 				_esc()
 			KEY_F3:
@@ -1120,6 +1166,7 @@ func sell_tea() -> void:
 	toast("Sold hedge tea for %d petal." % (price + extra))
 	_person("lumen").say("A cup for the lane.")
 	_sync_mill()
+	_sync_cottage_tea()
 	refresh_panels()
 
 func stock_jam() -> void:
@@ -1261,14 +1308,49 @@ func _jam_worker() -> bool:
 		return false
 	return _stall_open()
 
+func _pointer() -> Vector2:
+	if click_at.x >= 0.0:
+		return click_at
+	return get_viewport().get_mouse_position()
+
+func _ray_hits(point: Vector3, radius: float) -> bool:
+	if camera == null:
+		return false
+	var origin := camera.project_ray_origin(_pointer())
+	var direction := camera.project_ray_normal(_pointer())
+	var along := (point - origin).dot(direction)
+	if along < 0.0:
+		return false
+	return (origin + direction * along).distance_to(point) <= radius
+
+func _prop_at(root: Node3D, node_name: String) -> Vector3:
+	var node := root.get_node_or_null(node_name) as Node3D if root != null else null
+	return node.global_position if node != null else Vector3(9999, 9999, 9999)
+
+func _near_anchor(hit: Vector3, anchor: Vector3, radius: float) -> bool:
+	return Vector2(hit.x - anchor.x, hit.z - anchor.z).length() < radius
+
+# ponytail: a click on the counter meets y=0 outside the porch radius. Ray the prop that moved inside.
 func _near_tea(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.TEA.x, hit.z - GardenLayout.TEA.z).length() < 1.45
+	if _near_anchor(hit, GardenLayout.TEA, 1.45):
+		return true
+	return inside_tea and _ray_hits(_prop_at(_tea_house(), "Kettle"), 0.36)
 
 func _near_stall(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.STALL.x, hit.z - GardenLayout.STALL.z).length() < 1.55
+	if _near_anchor(hit, GardenLayout.STALL, 1.55):
+		return true
+	if not inside_stall:
+		return false
+	var stall := _petal_stall()
+	for node_name in ["StallCrateL", "StallCup", "StallJar"]:
+		if _ray_hits(_prop_at(stall, node_name), 0.28):
+			return true
+	return false
 
 func _near_shed(hit: Vector3) -> bool:
-	return Vector2(hit.x - GardenLayout.SHED.x, hit.z - GardenLayout.SHED.z).length() < 1.55
+	if _near_anchor(hit, GardenLayout.SHED, 1.55):
+		return true
+	return inside_shed and _ray_hits(_prop_at(_potting_shed(), "Pan"), 0.5)
 
 func _use_kettle() -> void:
 	if Economy.mill.brew == ParishChain.TEA or Economy.mill.pot_count() > 0:
@@ -1310,6 +1392,7 @@ func _sync_mill() -> void:
 	var jars := Economy.mill.crate_count(ParishChain.JAM) > 0
 	for node in get_tree().get_nodes_in_group("parish_jar"):
 		node.visible = jars
+	_sync_cottage_tea()
 
 func _mill_row() -> Dictionary:
 	var extra := 1 if _lane_passers() > 0 else 0
@@ -1421,7 +1504,7 @@ func _sync_park() -> void:
 	var show := Trust.has_action("parish_park")
 	if show:
 		parish.open_park()
-	var n := town.occupancy("grove_park")
+	var n := _lawn_count()
 	for node in get_tree().get_nodes_in_group("grove_park"):
 		var body := node as Node3D
 		if body == null:
@@ -1436,6 +1519,806 @@ func _sync_park() -> void:
 				count.text = "%s on the lawn" % str(n)
 			else:
 				count.text = "the lawn is quiet"
+	_sync_lane()
+
+func _sync_lane() -> void:
+	var show := Trust.has_action("parish_road_rumour")
+	var lit := town.occupancy("lane")
+	var index := 0
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		var house := node as Node3D
+		if house == null:
+			continue
+		house.visible = show
+		var window := house.get_node_or_null("Window") as MeshInstance3D
+		if window != null and window.material_override is StandardMaterial3D:
+			var glass := window.material_override as StandardMaterial3D
+			var on := show and index < lit
+			if house.get_node_or_null("Interior") != null and lane_body != null:
+				on = show and not lane_on_lawn and not lane_walking
+			glass.emission_energy_multiplier = 1.15 if on else 0.0
+		index += 1
+	for node in get_tree().get_nodes_in_group("south_lane_sign"):
+		var sign := node as Node3D
+		if sign:
+			sign.visible = show
+	_sync_lane_body(show and lit > 0)
+
+func _lane_near() -> bool:
+	if camera == null:
+		return false
+	var gate := GardenLayout.GATE
+	if camera.global_position.distance_to(gate) < 18.0:
+		return true
+	return camera.target.distance_to(gate) < 12.0
+
+func _first_lane_house() -> Node3D:
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		var house := node as Node3D
+		if house != null and house.visible:
+			return house
+	return null
+
+func _lane_household_name() -> String:
+	for row in town.folk:
+		var rec: Dictionary = row
+		if str(rec.get("kind", "")) != "house":
+			continue
+		if str(rec.get("layer", "")) == "individual":
+			return str(rec.get("name", "Reed"))
+	return "Reed"
+
+func _sync_lane_body(wanted: bool) -> void:
+	if inside_lane:
+		_sync_cottage_tea()
+		_pin_lane_body(_lane_hearth())
+		return
+	if lane_walking:
+		_ensure_lane_body()
+		if lane_body != null:
+			lane_body.present = true
+			lane_body.visible = true
+			if lane_body.body:
+				lane_body.body.visible = true
+		return
+	if lane_on_lawn and Trust.has_action("parish_park"):
+		if not _lane_lawn_near():
+			if lane_body != null:
+				lane_body.present = false
+				lane_body.visible = false
+			return
+		_ensure_lane_body()
+		var spot := _lane_lawn_spot()
+		_pin_lane_body(spot)
+		if lane_body != null:
+			var face := GardenLayout.PARK - spot
+			lane_body.rotation.y = atan2(face.x, face.z)
+		return
+	if not wanted or not _lane_near():
+		if lane_body != null:
+			lane_body.present = false
+			lane_body.visible = false
+		return
+	var house := _first_lane_house()
+	if house == null:
+		return
+	_ensure_lane_body()
+	var who := _lane_household_name()
+	if lane_body.display_name == "":
+		lane_body.display_name = who
+	lane_body.present = true
+	lane_body.visible = true
+	var door := house.get_node_or_null("Door") as Node3D
+	var at := door.global_position if door != null else house.global_position
+	at.y = 0.0
+	lane_body.global_position = at
+	var face_x := 1.0 if house.position.x < 0.0 else -1.0
+	lane_body.rotation.y = atan2(face_x, 0.0)
+	if lane_body.body:
+		lane_body.body.visible = true
+
+func _lane_lawn_spot() -> Vector3:
+	return GardenLayout.PARK + Vector3(-1.35, 0.0, 0.65)
+
+func _lane_lawn_near() -> bool:
+	if camera == null:
+		return false
+	var park := GardenLayout.PARK
+	if camera.global_position.distance_to(park) < 18.0 or camera.target.distance_to(park) < 14.0:
+		return true
+	return _lane_near()
+
+func _ensure_lane_body() -> void:
+	if lane_body != null:
+		return
+	lane_body = VegPerson.new()
+	lane_body.name = "LaneHousehold"
+	add_child(lane_body)
+	lane_body.setup({
+		"id": "lane_house",
+		"name": "Reed",
+		"family": "pea",
+		"starts_present": true,
+	})
+	lane_body.remove_from_group("resident")
+	lane_body.display_name = _lane_household_name()
+
+func _lane_route() -> Array[Vector3]:
+	var start := Vector3.ZERO
+	var house := _first_lane_house()
+	if house != null:
+		var door := house.get_node_or_null("Door") as Node3D
+		start = door.global_position if door != null else house.global_position
+	elif lane_body != null:
+		start = lane_body.global_position
+	start.y = 0.0
+	var gate := GardenLayout.GATE
+	gate.y = 0.0
+	var spot := _lane_lawn_spot()
+	var points: Array[Vector3] = [start, gate, spot]
+	return points
+
+func _note_lane_arrival() -> void:
+	if not lane_walking or lane_body == null:
+		return
+	var goal := _lane_door_spot() if lane_walk_home else _lane_lawn_spot()
+	if lane_body.global_position.distance_to(goal) > 0.45:
+		return
+	var heading_home := lane_walk_home
+	lane_walking = false
+	lane_on_lawn = not heading_home
+	lane_walk_home = false
+	lane_body.waypoints.clear()
+	lane_body.loop_route = false
+	if lane_on_lawn:
+		_beckon_lawn_jelly()
+
+func _send_lane_to_park() -> bool:
+	if not Trust.has_action("parish_park"):
+		toast("Grove Park is not filed yet.")
+		return false
+	if lane_body == null or (not lane_body.visible and not inside_lane):
+		toast("Nobody is at the cottage.")
+		return false
+	if lane_body.display_name == "":
+		lane_body.display_name = _lane_household_name()
+	var who := lane_body.display_name
+	lane_on_lawn = false
+	lane_walking = true
+	if inside_lane:
+		_leave_lane_house()
+	_ensure_lane_body()
+	var route := _lane_route()
+	lane_body.loop_route = false
+	lane_body.present = true
+	lane_body.visible = true
+	var snap := lane_body.global_position.distance_to(route[0]) > 0.8
+	lane_body.set_route(route, snap)
+	toast("%s walks to the Grove Park lawn." % who)
+	return true
+
+func _lane_door_spot() -> Vector3:
+	var house := _first_lane_house()
+	if house == null:
+		return GardenLayout.GATE
+	var door := house.get_node_or_null("Door") as Node3D
+	var at := door.global_position if door != null else house.global_position
+	at.y = 0.0
+	return at
+
+func _lane_who() -> String:
+	if lane_body != null and lane_body.display_name != "":
+		return lane_body.display_name
+	return _lane_household_name()
+
+func _lane_where() -> String:
+	if lane_body == null or not Trust.has_action("parish_road_rumour"):
+		return ""
+	var who := _lane_who()
+	if inside_lane:
+		return "%s is in the cottage kitchen." % who
+	if lane_walking and lane_walk_home:
+		return "%s is walking home." % who
+	if lane_walking:
+		return "%s is walking to Grove Park." % who
+	if lane_on_lawn:
+		return "%s is on the Grove Park lawn." % who
+	return "%s is at the cottage door." % who
+
+func _room_where(open: bool, id: String, at: String) -> String:
+	if not open:
+		return ""
+	var person := _person(id)
+	if person == null or not person.stay or person.display_name == "":
+		return ""
+	return "%s is %s." % [person.display_name.split(" ")[0], at]
+
+func _lane_speech() -> String:
+	if lane_drank:
+		return _lane_memory()
+	var where := _lane_where()
+	if where != "":
+		return where
+	return "Hello."
+
+func _speak_lane() -> void:
+	if lane_body == null:
+		return
+	lane_body.say(_lane_speech())
+	if lane_body.speech == null:
+		return
+	lane_body.speech.pixel_size = 0.0016
+	var ahead := Vector3.ZERO
+	if camera != null:
+		ahead = camera.global_position - lane_body.global_position
+		ahead.y = 0.0
+		if ahead.length() > 0.1:
+			ahead = ahead.normalized() * 0.55
+	lane_body.speech.global_position = lane_body.global_position + Vector3(0.0, 1.05, 0.0) + ahead
+
+func _lane_memory() -> String:
+	if not lane_drank:
+		return ""
+	return "%s drank the hedge tea." % _lane_who()
+
+func _place_hungry_jelly(jelly: Jelly, near: Vector3) -> void:
+	jelly.hunger = 0.16
+	jelly.mood = "hungry"
+	jelly.life = "settler"
+	jelly.leaving = false
+	jelly.bound = false
+	jelly.held = false
+	jelly.feel = "idle"
+	jelly.vel = Vector3.ZERO
+	jelly.hop_wait = 99.0
+	jelly.global_position = near + Vector3(1.15, 0.2, 0.35)
+	jelly._apply_deform()
+	var icon := jelly.find_child("Icon", true, false) as Node3D
+	if icon != null:
+		icon.visible = true
+	for child in jelly.find_children("*", "MeshInstance3D", true, false):
+		if str(child.name) == "IconBody":
+			continue
+		if str(child.name).begins_with("IconEye"):
+			(child as MeshInstance3D).visible = true
+
+func _beckon_lawn_jelly() -> void:
+	if ecology == null:
+		return
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		return
+	_place_hungry_jelly(jelly, _lane_lawn_spot())
+
+func _stage_lawn_jelly(near: Vector3) -> Jelly:
+	if ecology == null:
+		return null
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+	_place_hungry_jelly(jelly, near)
+	return jelly
+
+func _icon_eye_count(jelly: Jelly) -> int:
+	if jelly == null:
+		return 0
+	var icon := jelly.find_child("Icon", true, false) as Node3D
+	if icon == null:
+		return 0
+	icon.visible = true
+	var eyes := 0
+	for child in icon.get_children():
+		if not (child is MeshInstance3D) or str(child.name) == "IconBody":
+			continue
+		(child as MeshInstance3D).visible = true
+		eyes += 1
+	return eyes
+
+func _cottage_window_energy() -> float:
+	var house := _first_lane_house()
+	if house == null:
+		return 0.0
+	var window := house.get_node_or_null("Window") as MeshInstance3D
+	if window == null or not (window.material_override is StandardMaterial3D):
+		return 0.0
+	return (window.material_override as StandardMaterial3D).emission_energy_multiplier
+
+func _lawn_count() -> int:
+	var n := town.occupancy("grove_park")
+	if lane_on_lawn and lane_body != null and lane_body.visible and Trust.has_action("parish_park"):
+		n += 1
+	return n
+
+func _lane_place() -> String:
+	if inside_lane:
+		return "in the kitchen"
+	if lane_walking and lane_walk_home:
+		return "walking home"
+	if lane_walking:
+		return "walking to Grove Park"
+	if lane_on_lawn:
+		return "on the Grove Park lawn"
+	return "at the cottage door"
+
+func _town_page_lines() -> PackedStringArray:
+	var lines := town.page_lines()
+	if lane_body == null or _lane_where() == "":
+		return lines
+	var who := _lane_who()
+	var needle := "Near  %s ·" % who
+	var rewritten := PackedStringArray()
+	for line in lines:
+		var text := str(line)
+		if text.begins_with(needle):
+			rewritten.append("Near  %s · %s" % [who, _lane_place()])
+		elif lane_on_lawn and text.begins_with("Grove Park  open"):
+			rewritten.append("Grove Park  open · %s on the lawn" % str(_lawn_count()))
+		else:
+			rewritten.append(text)
+	return rewritten
+
+func _send_lane_home() -> bool:
+	if lane_body == null or not lane_body.visible:
+		toast("Nobody is out.")
+		return false
+	if lane_walking:
+		toast("%s is already on the path." % _lane_who())
+		return false
+	if not lane_on_lawn:
+		toast("%s is already home." % _lane_who())
+		return false
+	var who := _lane_who()
+	lane_on_lawn = false
+	lane_walk_home = true
+	lane_walking = true
+	var gate := GardenLayout.GATE
+	gate.y = 0.0
+	var points: Array[Vector3] = [lane_body.global_position, gate, _lane_door_spot()]
+	lane_body.loop_route = false
+	lane_body.present = true
+	lane_body.visible = true
+	lane_body.set_route(points, false)
+	toast("%s walks home." % who)
+	return true
+
+func _lane_room() -> Node3D:
+	var house := _first_lane_house()
+	if house == null:
+		return null
+	return house.get_node_or_null("Interior") as Node3D
+
+func _lane_hearth() -> Vector3:
+	var room := _lane_room()
+	if room == null:
+		return Vector3.ZERO
+	var hearth := room.get_node_or_null("Hearth") as Node3D
+	if hearth == null:
+		return room.global_position
+	return hearth.global_position
+
+func _kitchen_in_frame(node: Node3D) -> bool:
+	if camera == null or node == null:
+		return false
+	var screen := camera.unproject_position(node.global_position)
+	return screen.x > 80.0 and screen.x < 1360.0 and screen.y > 60.0 and screen.y < 820.0
+
+func _cottage_has_tea() -> bool:
+	return Economy.mill.pot_count() + Economy.mill.crate_count() > 0
+
+func _sync_cottage_tea() -> void:
+	var room := _lane_room()
+	if room == null:
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	if fill != null:
+		fill.visible = _cottage_has_tea()
+
+func _pin_lane_body(at: Vector3) -> void:
+	if lane_body == null:
+		return
+	lane_body.present = true
+	lane_body.visible = true
+	lane_body.global_position = Vector3(at.x, 0.0, at.z)
+	if inside_lane and camera != null:
+		var toward := camera.global_position - lane_body.global_position
+		lane_body.rotation.y = atan2(-toward.x, -toward.z)
+	if lane_body.body:
+		lane_body.body.visible = true
+
+func _set_lane_shell(house: Node3D, show_shell: bool) -> void:
+	var room := house.get_node_or_null("Interior") as Node3D
+	if room != null:
+		room.visible = not show_shell
+	for child in house.get_children():
+		var child_name := str(child.name)
+		if child_name == "Interior" or child_name == "Door" or child_name == "Kettle" or child_name == "Steam" or child_name == "Pan" or child_name == "Jam" or child_name == "Handle" or child_name == "JamSteam" or child_name == "StallCrateL" or child_name == "StallCup" or child_name == "StallJar":
+			continue
+		if child is Node3D:
+			(child as Node3D).visible = show_shell
+
+func _remember_view() -> void:
+	lane_return_target = camera.target
+	lane_return_yaw = camera.yaw
+	lane_return_pitch = camera.pitch
+	lane_return_distance = camera.distance
+	lane_return_fov = camera.fov
+
+func _frame_interior(view: Node3D, look: Vector3) -> void:
+	var offset := view.global_position - look
+	var span := maxf(offset.length(), 0.4) * 1.22
+	camera.target = look
+	camera.distance = span
+	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
+	camera.yaw = rad_to_deg(atan2(offset.x, offset.z))
+	camera.fov = 58.0
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera._apply()
+
+func _restore_view() -> void:
+	if camera == null:
+		return
+	camera.target = lane_return_target
+	camera.yaw = lane_return_yaw
+	camera.pitch = lane_return_pitch
+	camera.distance = lane_return_distance
+	camera.fov = lane_return_fov
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera._apply()
+
+func _enter_from_key() -> void:
+	if inside_lane:
+		_enter_lane_house(false)
+		return
+	if inside_tea:
+		_leave_tea_house()
+		return
+	if inside_shed:
+		_leave_potting_shed()
+		return
+	if inside_stall:
+		_leave_stall()
+		return
+	var tea_d := _door_distance(_tea_house())
+	var shed_d := _door_distance(_potting_shed())
+	var stall_d := _door_distance(_petal_stall())
+	if tea_d <= 9.0 and tea_d <= shed_d and tea_d <= stall_d:
+		_enter_tea_house(false)
+		return
+	if shed_d <= 9.0 and shed_d <= stall_d:
+		_enter_potting_shed(false)
+		return
+	if stall_d <= 9.0:
+		_enter_stall(false)
+		return
+	_enter_lane_house(false)
+
+func _door_distance(node: Node3D) -> float:
+	if node == null or camera == null:
+		return 999.0
+	return camera.target.distance_to(node.global_position)
+
+func _tea_house() -> Node3D:
+	return find_child("HedgeTeaHouse", true, false) as Node3D
+
+func _tea_close() -> bool:
+	var house := _tea_house()
+	if house == null or camera == null:
+		return false
+	return camera.target.distance_to(house.global_position) <= 9.0
+
+func _enter_tea_house(force: bool) -> bool:
+	if inside_tea:
+		_leave_tea_house()
+		return false
+	if inside_lane or inside_shed or inside_stall:
+		return false
+	var house := _tea_house()
+	var room := house.get_node_or_null("Interior") as Node3D if house != null else null
+	if house == null or room == null or camera == null:
+		if not force:
+			toast("The tea house has no room yet.")
+		return false
+	if not force and not _tea_close():
+		toast("Walk up to the tea house.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var kettle := house.get_node_or_null("Kettle") as Node3D
+	if view == null or kettle == null:
+		return false
+	_remember_view()
+	inside_tea = true
+	_set_lane_shell(house, false)
+	_seat_kettle(true)
+	_seat_brewer(true)
+	_sync_cottage_tea()
+	_frame_interior(view, kettle.global_position + Vector3(0.0, 0.12, 0.0))
+	toast("Hedge Tea House. Esc steps back out.")
+	return true
+
+func _seat_kettle(inside: bool) -> void:
+	var house := _tea_house()
+	if house == null:
+		return
+	var kettle := house.get_node_or_null("Kettle") as Node3D
+	var steam := house.get_node_or_null("Steam") as Node3D
+	if kettle != null:
+		kettle.position = Vector3(0.05, 1.72, 2.15) if inside else Vector3(0.48, 0.22, -0.95)
+	if steam != null:
+		steam.position = Vector3(0.05, 2.04, 2.15) if inside else Vector3(0.48, 0.54, -0.95)
+
+func _seat_brewer(inside: bool) -> void:
+	var nessa := _person("nessa")
+	if nessa == null:
+		return
+	if inside:
+		var house := _tea_house()
+		if house == null:
+			return
+		nessa_kettle_back = nessa.global_position
+		nessa_at_kettle = true
+		nessa.stay = true
+		# ponytail: the pea mesh already exists; show it for this room. Arrival still owns present.
+		nessa.visible = true
+		if nessa.body:
+			nessa.body.visible = true
+		nessa.global_position = house.to_global(Vector3(-0.62, 1.4, 2.65))
+		nessa.look_at(house.to_global(Vector3(0.15, 1.55, 2.1)), Vector3.UP)
+		nessa.say("The kettle is on.")
+		return
+	nessa.stay = false
+	if nessa_at_kettle:
+		nessa.global_position = nessa_kettle_back
+		nessa.visible = nessa.present
+		if nessa.body:
+			nessa.body.visible = nessa.present
+		nessa_at_kettle = false
+
+func _leave_tea_house() -> void:
+	if not inside_tea:
+		return
+	inside_tea = false
+	_seat_kettle(false)
+	_seat_brewer(false)
+	var house := _tea_house()
+	if house != null:
+		_set_lane_shell(house, true)
+	_restore_view()
+	_sync_cottage_tea()
+
+func _potting_shed() -> Node3D:
+	return find_child("PottingShed", true, false) as Node3D
+
+func _shed_close() -> bool:
+	var shed := _potting_shed()
+	if shed == null or camera == null:
+		return false
+	return camera.target.distance_to(shed.global_position) <= 9.0
+
+func _enter_potting_shed(force: bool) -> bool:
+	if inside_shed:
+		_leave_potting_shed()
+		return false
+	if inside_lane or inside_tea or inside_stall:
+		return false
+	var shed := _potting_shed()
+	var room := shed.get_node_or_null("Interior") as Node3D if shed != null else null
+	if shed == null or room == null or camera == null:
+		if not force:
+			toast("The potting shed has no room yet.")
+		return false
+	if not force and not _shed_close():
+		toast("Walk up to the potting shed.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var pan := shed.get_node_or_null("Pan") as Node3D
+	if view == null or pan == null:
+		return false
+	_remember_view()
+	inside_shed = true
+	_set_lane_shell(shed, false)
+	_seat_pan(true)
+	_seat_cook(true)
+	_frame_interior(view, pan.global_position + Vector3(0.0, 0.18, 0.0))
+	toast("Potting shed. Esc steps back out.")
+	return true
+
+func _seat_pan(inside: bool) -> void:
+	var shed := _potting_shed()
+	if shed == null:
+		return
+	var pan := shed.get_node_or_null("Pan") as Node3D
+	var jam := shed.get_node_or_null("Jam") as Node3D
+	var handle := shed.get_node_or_null("Handle") as Node3D
+	var steam := shed.get_node_or_null("JamSteam") as Node3D
+	if pan != null:
+		pan.position = Vector3(0.05, 1.72, 8.95) if inside else Vector3(0.0, 0.22, 1.42)
+	if jam != null:
+		jam.position = Vector3(0.05, 1.82, 8.95) if inside else Vector3(0.0, 0.32, 1.42)
+	if handle != null:
+		handle.position = Vector3(0.47, 1.78, 8.95) if inside else Vector3(0.42, 0.28, 1.42)
+	if steam != null:
+		steam.position = Vector3(0.05, 2.08, 8.95) if inside else Vector3(0.0, 0.58, 1.42)
+
+func _seat_cook(inside: bool) -> void:
+	var bram := _person("bram")
+	if bram == null:
+		return
+	if inside:
+		var shed := _potting_shed()
+		if shed == null:
+			return
+		bram_pan_back = bram.global_position
+		bram_at_pan = true
+		bram.stay = true
+		bram.global_position = shed.to_global(Vector3(-0.62, 1.4, 9.45))
+		bram.look_at(shed.to_global(Vector3(0.15, 1.55, 8.9)), Vector3.UP)
+		bram.say("The pan is on.")
+		return
+	bram.stay = false
+	if bram_at_pan:
+		bram.global_position = bram_pan_back
+		bram_at_pan = false
+
+func _leave_potting_shed() -> void:
+	if not inside_shed:
+		return
+	inside_shed = false
+	_seat_pan(false)
+	_seat_cook(false)
+	var shed := _potting_shed()
+	if shed != null:
+		_set_lane_shell(shed, true)
+	_restore_view()
+
+func _petal_stall() -> Node3D:
+	return find_child("PetalStall", true, false) as Node3D
+
+func _enter_stall(force: bool) -> bool:
+	if inside_stall:
+		_leave_stall()
+		return false
+	if inside_lane or inside_tea or inside_shed:
+		return false
+	var stall := _petal_stall()
+	var room := stall.get_node_or_null("Interior") as Node3D if stall != null else null
+	if stall == null or room == null or camera == null:
+		if not force:
+			toast("The stall has no room yet.")
+		return false
+	if not force and _door_distance(stall) > 9.0:
+		toast("Walk up to the stall.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D
+	if view == null or crate == null:
+		return false
+	_remember_view()
+	inside_stall = true
+	_set_lane_shell(stall, false)
+	_seat_stall_goods(true)
+	_seat_keeper(true)
+	_sync_mill()
+	_frame_interior(view, crate.global_position + Vector3(0.0, 0.2, 0.0))
+	_set_hint("Esc out   sell tea and jam   B stall")
+	toast("Petal Stall. Esc steps back out.")
+	return true
+
+func _seat_stall_goods(inside: bool) -> void:
+	var stall := _petal_stall()
+	if stall == null:
+		return
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D
+	var cup := stall.get_node_or_null("StallCup") as Node3D
+	var jar := stall.get_node_or_null("StallJar") as Node3D
+	if crate != null:
+		crate.position = Vector3(0.0, 1.79, 6.75) if inside else Vector3(-1.35, 0.16, 0.7)
+	if cup != null:
+		cup.position = Vector3(0.0, 2.03, 6.75) if inside else Vector3(-1.35, 0.42, 0.7)
+	if jar != null:
+		jar.position = Vector3(0.32, 1.70, 6.82) if inside else Vector3(1.25, 0.42, 0.62)
+
+func _seat_keeper(inside: bool) -> void:
+	var lumen := _person("lumen")
+	if lumen == null:
+		return
+	if inside:
+		var stall := _petal_stall()
+		if stall == null:
+			return
+		lumen_stall_back = lumen.global_position
+		lumen_at_counter = true
+		lumen.stay = true
+		lumen.global_position = stall.to_global(Vector3(-0.62, 1.4, 7.25))
+		lumen.look_at(stall.to_global(Vector3(0.15, 1.55, 6.7)), Vector3.UP)
+		lumen.say("The counter is open.")
+		return
+	lumen.stay = false
+	if lumen_at_counter:
+		lumen.global_position = lumen_stall_back
+		lumen_at_counter = false
+
+func _set_hint(text: String) -> void:
+	if hud != null and hud.hint_label != null:
+		hud.hint_label.text = text
+
+func _leave_stall() -> void:
+	if not inside_stall:
+		return
+	inside_stall = false
+	_seat_stall_goods(false)
+	_seat_keeper(false)
+	_set_hint("Enter cottage   T tea   G park   click a face   C town   M vale")
+	var stall := _petal_stall()
+	if stall != null:
+		_set_lane_shell(stall, true)
+	_restore_view()
+
+func _enter_lane_house(force: bool) -> bool:
+	if inside_lane:
+		_leave_lane_house()
+		return false
+	if inside_shed or inside_tea or inside_stall:
+		return false
+	if not Trust.has_action("parish_road_rumour"):
+		if not force:
+			toast("South Lane is still a rumour.")
+		return false
+	var house := _first_lane_house()
+	var room := _lane_room()
+	if house == null or room == null or camera == null:
+		if not force:
+			toast("That cottage has no room yet.")
+		return false
+	if not force and camera.target.distance_to(house.global_position) > 9.0:
+		toast("Walk up to the cottage door.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var hearth := room.get_node_or_null("Hearth") as Node3D
+	if view == null or hearth == null:
+		return false
+	_remember_view()
+	inside_lane = true
+	_set_lane_shell(house, false)
+	_sync_cottage_tea()
+	_pin_lane_body(hearth.global_position)
+	var pane := room.get_node_or_null("InsideWindow") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	var look := hearth.global_position + Vector3(0.0, 0.85, 0.2)
+	if pane != null and cup != null:
+		look = (pane.global_position + cup.global_position + hearth.global_position) / 3.0
+	_frame_interior(view, look)
+	toast("%s's kitchen. T drinks. Esc steps back out." % _lane_who())
+	return true
+
+func _sip_kitchen_tea() -> bool:
+	if not inside_lane:
+		toast("Step into the cottage first.")
+		return false
+	var drank := false
+	if Economy.mill.crate_count() > 0:
+		drank = Economy.mill.take_crate()
+	elif Economy.mill.pot_count() > 0:
+		drank = Economy.mill.take_pot()
+	if not drank:
+		toast("The cup is empty.")
+		_sync_cottage_tea()
+		return false
+	_sync_cottage_tea()
+	lane_drank = true
+	toast("%s drinks the hedge tea." % _lane_who())
+	return true
+
+func _leave_lane_house() -> void:
+	if not inside_lane:
+		return
+	inside_lane = false
+	var house := _first_lane_house()
+	if house != null:
+		_set_lane_shell(house, true)
+	_restore_view()
+	_sync_lane()
 
 func _lane_tea_line() -> String:
 	if not Trust.has_action("parish_road_rumour"):
@@ -1933,6 +2816,57 @@ func debug_spawn(id: String) -> void:
 	jelly.global_position = GardenLayout.cell_center(2, 2)
 	toast("Spawned %s." % id)
 
+func debug_jelly_activity(kind: String) -> void:
+	var jelly := focus
+	if jelly == null or not is_instance_valid(jelly):
+		jelly = ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+		jelly.global_position = GardenLayout.cell_center(2, 2)
+	jelly.leaving = false
+	jelly.tier = 0
+	if kind == "":
+		jelly.clear_force()
+		toast("%s icon follows live state." % jelly.display_name)
+		return
+	jelly.force_activity(kind, 1.25 if kind == JellyActivity.WORKING else 1.0)
+	toast("%s icon: %s" % [jelly.display_name, kind])
+
+func _sync_jelly_activity() -> void:
+	var adults := {}
+	for actor in ecology.actors:
+		if not is_instance_valid(actor):
+			continue
+		var body: Jelly = actor
+		if body.young or body.leaving:
+			continue
+		adults[body.species_id] = int(adults.get(body.species_id, 0)) + 1
+	for actor in ecology.actors:
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if str(jelly.get("_forced_activity")) != "":
+			continue
+		if jelly.held or jelly.leaving or jelly.wants_sleep:
+			jelly.work_intensity = 0.0
+		elif jelly.is_hungry() and jelly.global_position.distance_to(jelly.goal) > 0.55:
+			jelly.work_intensity = clampf(1.35 - jelly.hunger * 1.2, 0.75, 1.65)
+		else:
+			jelly.work_intensity = 0.0
+		jelly.romance = _romance_for(jelly, int(adults.get(jelly.species_id, 0)))
+		jelly.refresh_activity()
+
+func _romance_for(jelly: Jelly, adults: int) -> String:
+	if jelly.young or jelly.leaving:
+		return ""
+	var sid := jelly.species_id
+	if str(ecology.states.get(sid, "")) == "breeding" or adults >= 2:
+		return "locked"
+	var definition: Dictionary = ContentDB.species_def(sid)
+	if definition.has("romance") and ecology.rules.rank_of(jelly.life) >= ecology.rules.rank_of("resident"):
+		return "interested"
+	return ""
+
 func debug_coins(amount: int) -> void:
 	Economy.earn(amount)
 
@@ -2139,6 +3073,8 @@ func to_state() -> Dictionary:
 		"region": region.to_dict(),
 		"region_stamp": region_stamp,
 		"vale_crate_crop": vale_crate_crop,
+		"lane_on_lawn": lane_on_lawn,
+		"lane_drank": lane_drank,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -2221,6 +3157,8 @@ func apply_state(data: Dictionary) -> void:
 		region.boot(saved_region)
 	region_stamp = int(data.get("region_stamp", -1))
 	vale_crate_crop = str(data.get("vale_crate_crop", ""))
+	lane_on_lawn = bool(data.get("lane_on_lawn", false))
+	lane_drank = bool(data.get("lane_drank", false))
 	_sync_vale_crate()
 	_clear_plants()
 	_sync_plants()
@@ -8180,6 +9118,41 @@ func _run_smoke() -> void:
 		push_error("smoke: the crate hid the jar")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(21.0)
+	var shut_jam_tin := Economy.coins
+	var shut_jam := Economy.mill.crate_count(ParishChain.JAM)
+	sell_jam()
+	if Economy.coins != shut_jam_tin or Economy.mill.crate_count(ParishChain.JAM) != shut_jam:
+		push_error("smoke: jam sold after dusk")
+		get_tree().quit(1)
+		return
+	Economy.add("bramble", 1)
+	if not Economy.stock_jam() or not Economy.mill.tick(12.0) or not Economy.carry_jam():
+		push_error("smoke: a second jar missed the crate")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	var jam_tin := Economy.coins
+	var jam_crates := Economy.mill.crate_count(ParishChain.JAM)
+	sell_jam()
+	if Economy.coins < jam_tin + 16 or Economy.mill.crate_count(ParishChain.JAM) != jam_crates - 1:
+		push_error("smoke: morning jam did not pay")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the jam crate did not save")
+		get_tree().quit(1)
+		return
+	var kept_jam_tin := Economy.coins
+	var kept_jam := Economy.mill.crate_count(ParishChain.JAM)
+	Economy.coins = 0
+	Economy.mill.reset()
+	apply_state(SaveGame.read_slot(1))
+	if Economy.coins != kept_jam_tin or Economy.mill.crate_count(ParishChain.JAM) != kept_jam or kept_jam < 1:
+		push_error("smoke: the jam crate did not reload")
+		get_tree().quit(1)
+		return
+	print("JAM_CRATE_SOLD_OK")
 	if region.ids().size() != 5:
 		push_error("smoke: the vale is missing")
 		get_tree().quit(1)
@@ -8496,7 +9469,7 @@ func _run_jelly_play() -> void:
 	jelly.hop_wait = 99.0
 	jelly.hunger = 0.16
 	jelly.mood = "hungry"
-	var hungry_pad := GardenLayout.STALL + Vector3(1.55, 0.18, 1.4)
+	var hungry_pad := GardenLayout.STALL + Vector3(0.35, 0.22, -1.55)
 	jelly.global_position = hungry_pad
 	jelly.attract = hungry_pad
 	jelly.goal = hungry_pad
@@ -8508,13 +9481,15 @@ func _run_jelly_play() -> void:
 	jelly._update_face()
 	jelly._apply_deform()
 	if camera:
-		camera.pitch = 18.0
-		camera.yaw = 180.0
-		camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.4)
+		# The south lip is hedge and the low yaw-180 orbit sits under the awning.
+		camera.pitch = 38.0
+		camera.yaw = 162.0
+		camera.focus_on(jelly.global_position + Vector3(0.0, 0.2, 0.0), 4.8)
+		camera._apply()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/jelly_hungry.png")
-	var pad := GardenLayout.PARK + Vector3(0.2, 0.18, 0.15)
+	var pad := GardenLayout.PARK + Vector3(-1.15, 0.2, -0.35)
 	jelly.global_position = pad
 	jelly.attract = pad
 	jelly.goal = pad
@@ -8522,7 +9497,7 @@ func _run_jelly_play() -> void:
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	held = jelly
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	_frame_park(jelly)
 	await get_tree().create_timer(0.2).timeout
 	jelly.grab(jelly.global_position + Vector3(0.55, 1.05, 0.08))
 	for _i in 16:
@@ -8532,7 +9507,7 @@ func _run_jelly_play() -> void:
 		get_tree().quit(1)
 		return
 	jelly.set_select(true, true)
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	_frame_park(jelly)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_held.png")
 	jelly.hold_target = jelly.global_position + Vector3(0.03, 0.22, 0.0)
@@ -8545,13 +9520,13 @@ func _run_jelly_play() -> void:
 		get_tree().quit(1)
 		return
 	jelly.set_select(true, true)
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	_frame_park(jelly)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_nuzzle.png")
 	jelly.sample_pos.clear()
 	jelly.sample_ms.clear()
 	jelly.sample_pos.append(jelly.global_position)
-	jelly.sample_pos.append(jelly.global_position + Vector3(0.45, 0.95, 0.12))
+	jelly.sample_pos.append(jelly.global_position + Vector3(-0.04, 0.78, -0.06))
 	jelly.sample_ms.append(0)
 	jelly.sample_ms.append(140)
 	jelly.release()
@@ -8577,12 +9552,135 @@ func _run_jelly_play() -> void:
 		return
 	print("jelly_play land_y=%s feel=%s pos=%s" % [jelly.global_position.y, jelly.feel, jelly.global_position])
 	hud.set_photo(true)
-	_pin_overhead(jelly.global_position)
+	jelly._apply_deform()
+	_frame_park(jelly)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_land.png")
+	jelly.tier = 0
+	jelly.force_activity(JellyActivity.WORKING, 1.25)
+	_frame_park(jelly)
+	await get_tree().create_timer(0.45).timeout
+	if not _icon_clears_eyes(jelly):
+		push_error("jelly play: the status mark covered the eyes")
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/jelly_icon.png")
+	print("JELLY_ICON_OK")
 	print("JELLY_PLAY_OK")
+	get_tree().quit(0)
+
+func _run_kitchen_sale() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	for _cup in 2:
+		Economy.add("peach", 1)
+		Economy.add("meadowbell", 1)
+		if not Economy.stock_kettle() or not Economy.mill.tick(18.0) or not Economy.carry_tea():
+			push_error("kitchen sale: the crate missed a cup")
+			get_tree().quit(1)
+			return
+	if Economy.mill.crate_count() != 2 or Economy.mill.pot_count() != 0:
+		push_error("kitchen sale: expected two carried cups")
+		get_tree().quit(1)
+		return
+	if not _enter_lane_house(true):
+		push_error("kitchen sale: the kitchen did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	if room == null:
+		push_error("kitchen sale: the kitchen has no room")
+		get_tree().quit(1)
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	if fill == null or cup == null or not fill.visible or not _cottage_has_tea() or not _kitchen_in_frame(cup):
+		push_error("kitchen sale: the open cup did not start full")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	sell_tea()
+	if Economy.coins <= coins or Economy.mill.crate_count() != 1 or not _cottage_has_tea() or not fill.visible:
+		push_error("kitchen sale: a leftover crate emptied the cup")
+		get_tree().quit(1)
+		return
+	coins = Economy.coins
+	sell_tea()
+	if Economy.coins <= coins or Economy.mill.crate_count() != 0 or Economy.mill.pot_count() != 0 or _cottage_has_tea() or fill.visible or not inside_lane:
+		push_error("kitchen sale: the open kitchen kept a full cup")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.25).timeout
+	await _shot("/workspace/docs/screenshots/cottage_sold.png")
+	print("KITCHEN_CUP_SOLD_OK")
+	get_tree().quit(0)
+
+func _run_kitchen_live() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	Economy.mill.reset()
+	if not _enter_lane_house(true):
+		push_error("kitchen live: the kitchen did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	var fill := room.get_node_or_null("TeaFill") as Node3D if room != null else null
+	var coins := Economy.coins
+	if fill == null or fill.visible or _cottage_has_tea() or not inside_lane:
+		push_error("kitchen live: the open cup did not start empty")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle() or not Economy.mill.tick(18.0) or Economy.mill.pot_count() != 1 or Economy.mill.crate_count() != 0:
+		push_error("kitchen live: the pot did not finish")
+		get_tree().quit(1)
+		return
+	if fill.visible:
+		push_error("kitchen live: the pot refreshed the cup before the carry")
+		get_tree().quit(1)
+		return
+	carry_tea()
+	if Economy.coins != coins or Economy.mill.crate_count() != 1 or Economy.mill.pot_count() != 0 or not fill.visible or not _cottage_has_tea():
+		push_error("kitchen live: carrying tea left the open cup empty")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.25).timeout
+	await _shot("/workspace/docs/screenshots/cottage_brewed.png")
+	last_sip_hour = -1
+	parish.lives["lumen"]["activity"] = "eat"
+	_tick_mill(0.0)
+	if Economy.coins != coins or Economy.mill.crate_count() != 0 or Economy.mill.pot_count() != 0 or _cottage_has_tea() or fill.visible:
+		push_error("kitchen live: the resident left the open cup full")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.2).timeout
+	await _shot("/workspace/docs/screenshots/cottage_resident.png")
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("kitchen live: the kettle refused the next pot")
+		get_tree().quit(1)
+		return
+	_tick_mill(18.0)
+	if Economy.coins != coins or Economy.mill.pot_count() != 1 or Economy.mill.crate_count() != 0 or not fill.visible or not _cottage_has_tea():
+		push_error("kitchen live: a new pot left the open cup empty")
+		get_tree().quit(1)
+		return
+	fill.visible = false
+	_person("nessa").present = true
+	_tick_mill(0.0)
+	if Economy.coins != coins or Economy.mill.crate_count() != 1 or Economy.mill.pot_count() != 0 or not fill.visible or not _cottage_has_tea() or not inside_lane:
+		push_error("kitchen live: the mill carry left the open cup empty")
+		get_tree().quit(1)
+		return
+	print("KITCHEN_CUP_LIVE_OK")
 	get_tree().quit(0)
 
 func _run_town_shot() -> void:
@@ -8599,6 +9697,211 @@ func _run_town_shot() -> void:
 	_tick_town(world_snapshot())
 	_sync_park()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if camera:
+		camera.pitch = 16.0
+		camera.yaw = 8.0
+		camera.focus_on(Vector3(0.0, 0.7, -13.4), 9.0)
+		camera._apply()
+	_sync_lane()
+	if lane_body == null or not lane_body.visible:
+		push_error("town shot: the near cottage has no household")
+		get_tree().quit(1)
+		return
+	var door_house := _first_lane_house()
+	if door_house == null or lane_body.global_position.distance_to(door_house.global_position) > 2.4:
+		push_error("town shot: the household left the cottage")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/south_lane.png")
+	if not _enter_lane_house(true):
+		push_error("town shot: the cottage door did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	var hearth: Node3D = null
+	if room != null:
+		hearth = room.get_node_or_null("Hearth") as Node3D
+	if room == null or not room.visible or hearth == null or lane_body == null or lane_body.global_position.distance_to(hearth.global_position) > 0.6:
+		push_error("town shot: the household is not in the kitchen")
+		get_tree().quit(1)
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	if fill == null or fill.visible != _cottage_has_tea() or not _cottage_has_tea():
+		push_error("town shot: the kitchen cup does not match the kettle")
+		get_tree().quit(1)
+		return
+	var pane := room.get_node_or_null("InsideWindow") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	if pane == null or cup == null or not _kitchen_in_frame(pane) or not _kitchen_in_frame(cup):
+		var pane_at := camera.unproject_position(pane.global_position) if pane != null else Vector2.ZERO
+		var cup_at := camera.unproject_position(cup.global_position) if cup != null else Vector2.ZERO
+		push_error("town shot: the window or the cup left the kitchen frame window=%s cup=%s" % [pane_at, cup_at])
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/cottage_inside.png")
+	var before_crate := Economy.mill.crate_count()
+	var before_pot := Economy.mill.pot_count()
+	if not _sip_kitchen_tea():
+		push_error("town shot: the kitchen could not drink")
+		get_tree().quit(1)
+		return
+	if Economy.mill.crate_count() + Economy.mill.pot_count() != before_crate + before_pot - 1:
+		push_error("town shot: the sip did not spend a tea")
+		get_tree().quit(1)
+		return
+	if _cottage_has_tea() or fill.visible:
+		push_error("town shot: the cup stayed full after the last tea")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.2).timeout
+	await _shot("/workspace/docs/screenshots/cottage_sipped.png")
+	var herald := ecology.first("bellhelp")
+	if herald == null:
+		herald = ecology.force_spawn("bellhelp")
+	herald.global_position = GardenLayout.STALL
+	if not _send_lane_to_park():
+		push_error("town shot: the household did not leave for the lawn")
+		get_tree().quit(1)
+		return
+	var spot := _lane_lawn_spot()
+	var saw_gate := false
+	var arrived := false
+	for _step in 700:
+		lane_body.pause = 0.0
+		lane_body._process(0.05)
+		if lane_body.global_position.distance_to(GardenLayout.GATE) < 1.35:
+			saw_gate = true
+		_note_lane_arrival()
+		if lane_on_lawn:
+			arrived = true
+			break
+	if not saw_gate or not arrived or lane_body.global_position.distance_to(spot) > 0.5:
+		push_error("town shot: the walk missed the gate or the lawn")
+		get_tree().quit(1)
+		return
+	if herald.global_position.distance_to(spot) > 2.4:
+		push_error("town shot: arrival did not bring the jelly")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("town shot: lawn save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not lane_on_lawn or lane_body == null or lane_body.global_position.distance_to(spot) > 0.8:
+		push_error("town shot: reload sent the household home")
+		get_tree().quit(1)
+		return
+	if _lane_where().find("Grove Park lawn") == -1:
+		push_error("town shot: the page lost the lawn")
+		get_tree().quit(1)
+		return
+	if _lane_memory().find("drank the hedge tea") == -1:
+		push_error("town shot: reload forgot the tea")
+		get_tree().quit(1)
+		return
+	_sync_park()
+	var board := ""
+	for node in get_tree().get_nodes_in_group("grove_park"):
+		var count := node.get_node_or_null("ParkCount") as Label3D
+		if count != null:
+			board = count.text
+	var expected := "%s on the lawn" % str(_lawn_count())
+	if board != expected or _lawn_count() != town.occupancy("grove_park") + 1:
+		push_error("town shot: the lawn sign ignored the household (%s)" % board)
+		get_tree().quit(1)
+		return
+	_sync_lane()
+	if _cottage_window_energy() > 0.2:
+		push_error("town shot: the cottage window stayed lit on the lawn")
+		get_tree().quit(1)
+		return
+	var lawn_jelly := _stage_lawn_jelly(spot)
+	var eye_count := _icon_eye_count(lawn_jelly)
+	if lawn_jelly == null or eye_count < 2 or lawn_jelly.global_position.distance_to(spot) > 2.2:
+		push_error("town shot: the lawn jelly lost its eyes count=%s" % eye_count)
+		get_tree().quit(1)
+		return
+	if camera:
+		var pair := (spot + lawn_jelly.global_position) * 0.5
+		camera.pitch = 24.0
+		camera.yaw = 140.0
+		camera.focus_on(pair + Vector3(0.0, 0.3, 0.0), 5.6)
+		camera.fov = 48.0
+		camera._apply()
+		if not _kitchen_in_frame(lane_body) or not _kitchen_in_frame(lawn_jelly):
+			push_error("town shot: the lawn pair left the frame")
+			get_tree().quit(1)
+			return
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/grove_together.png")
+	if camera:
+		camera.pitch = 20.0
+		camera.yaw = 150.0
+		camera.focus_on(spot + Vector3(0.0, 0.35, 0.0), 4.4)
+		camera.fov = lane_return_fov if lane_return_fov > 1.0 else 40.0
+		camera._apply()
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/cottage_to_park.png")
+	if not _send_lane_home():
+		push_error("town shot: the household did not start home")
+		get_tree().quit(1)
+		return
+	var door_spot := _lane_door_spot()
+	saw_gate = false
+	var home := false
+	for _back in 700:
+		lane_body.pause = 0.0
+		lane_body._process(0.05)
+		if lane_body.global_position.distance_to(GardenLayout.GATE) < 1.35:
+			saw_gate = true
+		_note_lane_arrival()
+		if not lane_walking and not lane_on_lawn:
+			home = true
+			break
+	if not saw_gate or not home or lane_body.global_position.distance_to(door_spot) > 0.6:
+		push_error("town shot: the walk home missed the gate or the door")
+		get_tree().quit(1)
+		return
+	if _lane_where().find("cottage door") == -1:
+		push_error("town shot: the page lost the door")
+		get_tree().quit(1)
+		return
+	_sync_lane()
+	if _cottage_window_energy() < 0.8:
+		push_error("town shot: the cottage window stayed dark at the door")
+		get_tree().quit(1)
+		return
+	_speak_lane()
+	if lane_body.speech == null or str(lane_body.speech.text).find("drank the hedge tea") == -1:
+		push_error("town shot: the household did not say the tea")
+		get_tree().quit(1)
+		return
+	var lied := false
+	for line in _town_page_lines():
+		var text := str(line)
+		if text.begins_with("Near  %s ·" % _lane_who()) and text.find("still no body") != -1:
+			lied = true
+		if text.begins_with("Near  %s ·" % _lane_who()) and text.find("cottage door") == -1:
+			lied = true
+	if lied:
+		push_error("town shot: the book still says the household has no body")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 30.0
+		camera.focus_on(door_spot + Vector3(0.0, 0.4, 0.0), 4.8)
+		camera._apply()
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/cottage_home.png")
+	_leave_lane_house()
+	if room.visible:
+		push_error("town shot: the kitchen stayed open")
+		get_tree().quit(1)
+		return
 	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.55, 0.4), 7.6)
 	await get_tree().create_timer(0.4).timeout
 	await _shot("/workspace/docs/screenshots/town_park.png")
@@ -8669,17 +9972,73 @@ func _run_resident_shot() -> void:
 	_tick_parish(0.2)
 	Clock.running = true
 	for id in ["lumen", "bram"]:
-		var dest: Vector3 = parish.destination(id)
-		if dest.x == INF:
+		var trip := _life_route(id)
+		if trip.is_empty():
 			continue
-		dest += _life_offset(id)
-		_person(id).global_position = dest
-		var stay: Array[Vector3] = [dest]
-		_person(id).set_route(stay, true)
-		_person(id).set_activity(parish.label_for(id))
-	_person("bram").say(parish._line("bram", "leisure"))
+		var walker := _person(id)
+		walker.loop_route = false
+		walker.global_position = trip[0]
+		walker.set_route(trip, false)
+		walker.set_activity(parish.label_for(id))
+		for _step in 36:
+			walker.pause = 0.0
+			walker._process(0.05)
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 180.0
+		camera.focus_on(GardenLayout.GATE + Vector3(0.0, 0.4, -0.8), 6.2)
+		camera._apply()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.focus_on(GardenLayout.PARK + Vector3(0.4, 0.5, 0.6), 6.4)
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/residents_park_gate.png")
+	for id in ["lumen", "bram"]:
+		var walker := _person(id)
+		for _step in 240:
+			if walker.waypoints.is_empty():
+				break
+			var goal := walker.waypoints[walker.waypoints.size() - 1]
+			if walker.global_position.distance_to(goal) < 0.35:
+				break
+			walker.pause = 0.0
+			walker._process(0.05)
+		if not walker.waypoints.is_empty():
+			var lawn := walker.waypoints[walker.waypoints.size() - 1]
+			if walker.global_position.distance_to(lawn) > 0.35:
+				walker.global_position = lawn
+	var lumen_at := _person("lumen").global_position
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("park reload: save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if _person("lumen").global_position.distance_to(lumen_at) > 0.35:
+		push_error("park reload moved Lumen off the lawn")
+		get_tree().quit(1)
+		return
+	if _life_route("lumen").size() != 1 or _life_route("bram").size() != 1:
+		push_error("park reload sent the lawn party back to the gate")
+		get_tree().quit(1)
+		return
+	_person("bram").say(parish._line("bram", "leisure"))
+	var jelly: Jelly = null
+	if ecology != null:
+		jelly = ecology.first("bellhelp")
+		if jelly == null:
+			jelly = ecology.force_spawn("bellhelp")
+	if jelly != null:
+		jelly.hunger = 0.18
+		jelly.mood = "content"
+		jelly.vel = Vector3.ZERO
+		jelly.global_position = GardenLayout.PARK + Vector3(0.05, 0.2, -0.15)
+		jelly._apply_deform()
+	for id in ["lumen", "bram"]:
+		_person(id).rotation.y = 0.0
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if camera:
+		camera.pitch = 10.0
+		camera.yaw = 176.0
+		camera.focus_on(GardenLayout.PARK + Vector3(0.1, 0.4, -0.7), 3.6)
+		camera._apply()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/residents_park.png")
 	show_directory("people")
@@ -8700,9 +10059,20 @@ func _run_kettle_shot() -> void:
 		return
 	_sync_mill()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.yaw = 176.0
-	camera.pitch = 28.0
-	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.2, -0.95), 3.6)
+	camera.yaw = 210.0
+	camera.pitch = 64.0
+	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.08, -0.95), 2.35)
+	camera._apply()
+	var kettle := get_tree().get_first_node_in_group("parish_kettle") as Node3D
+	if kettle == null or camera.target.distance_to(kettle.global_position) > 0.9:
+		push_error("kettle-shot: the plate left the kettle")
+		get_tree().quit(1)
+		return
+	var kettle_screen := camera.unproject_position(kettle.global_position)
+	if kettle_screen.x < 360.0 or kettle_screen.x > 1080.0 or kettle_screen.y < 160.0 or kettle_screen.y > 720.0:
+		push_error("kettle-shot: the kettle left the frame at %s" % kettle_screen)
+		get_tree().quit(1)
+		return
 	await get_tree().create_timer(0.55).timeout
 	await _shot("/workspace/docs/screenshots/kettle_brew.png")
 	Economy.mill.tick(18.0)
@@ -8716,9 +10086,10 @@ func _run_kettle_shot() -> void:
 		get_tree().quit(1)
 		return
 	_sync_mill()
-	camera.yaw = 176.0
-	camera.pitch = 20.0
-	camera.focus_on(GardenLayout.SHED + Vector3(0.0, 0.35, 0.55), 6.6)
+	camera.yaw = 32.0
+	camera.pitch = 16.0
+	camera.focus_on(GardenLayout.SHED + Vector3(0.05, 0.3, 1.42), 3.1)
+	camera._apply()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/jam_pan.png")
 	Economy.mill.tick(12.0)
@@ -8732,6 +10103,351 @@ func _run_kettle_shot() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/kettle_crate.png")
 	print("PETAL_KETTLE_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_tea_house_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	if bool(ContentDB.venues.get("tea_house", {}).get("active", true)) or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("tea house: the catalog went active")
+		get_tree().quit(1)
+		return
+	var house := _tea_house()
+	var room := house.get_node_or_null("Interior") as Node3D if house != null else null
+	var shell := house.get_node_or_null("Shell") as Node3D if house != null else null
+	var kettle := house.get_node_or_null("Kettle") as Node3D if house != null else null
+	if house == null or room == null or shell == null or kettle == null or room.visible:
+		push_error("tea house: the room was already open")
+		get_tree().quit(1)
+		return
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.is_inside_tree() or nessa.body == null:
+		push_error("tea house: Nessa is not in the scene")
+		get_tree().quit(1)
+		return
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera.target = house.global_position + Vector3(0.2, 0.6, -2.0)
+	camera._apply()
+	if not _enter_tea_house(false) or not inside_tea or not room.visible or shell.visible:
+		push_error("tea house: Enter did not open")
+		get_tree().quit(1)
+		return
+	var fill_room := _lane_room()
+	var fill := fill_room.get_node_or_null("TeaFill") as Node3D if fill_room != null else null
+	if fill == null or fill.visible or _cottage_has_tea():
+		push_error("tea house: the kitchen cup did not start empty")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	var aim := kettle.global_position + Vector3(0.0, 0.14, 0.0)
+	click_at = camera.unproject_position(aim)
+	var porch_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if porch_hit != null and _near_anchor(porch_hit, GardenLayout.TEA, 1.45):
+		push_error("tea house: the porch still owns the kettle click")
+		get_tree().quit(1)
+		return
+	_click_prop(aim)
+	if Economy.mill.brew != ParishChain.TEA or Economy.coins != coins or fill.visible:
+		push_error("tea house: the kettle click did not brew")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if not _kitchen_in_frame(kettle):
+		push_error("tea house: the kettle left the frame at %s" % camera.unproject_position(kettle.global_position))
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.45).timeout
+	if not inside_tea or not _kitchen_in_frame(kettle):
+		push_error("tea house: the kettle left the frame at %s" % camera.unproject_position(kettle.global_position))
+		get_tree().quit(1)
+		return
+	var nessa_px := camera.unproject_position(nessa.global_position)
+	if not nessa.stay or not nessa.visible or nessa_px.x < 180.0 or nessa_px.x > 1100.0 or nessa_px.y < 140.0 or nessa_px.y > 760.0:
+		push_error("tea house: Nessa is not at the kettle %s" % nessa_px)
+		get_tree().quit(1)
+		return
+	if _room_where(inside_tea, "nessa", "at the kettle") != "Nessa is at the kettle.":
+		push_error("tea house: the page did not seat Nessa")
+		get_tree().quit(1)
+		return
+	hud.show_place(_place_stats(world_snapshot()))
+	var kettle_lines := 0
+	for node in hud.journal_box.get_children():
+		if node is Label and (node as Label).text == "Nessa is at the kettle.":
+			kettle_lines += 1
+	refresh_panels()
+	if kettle_lines != 1:
+		push_error("tea house: the page said Nessa at the kettle %s times" % kettle_lines)
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/tea_house_inside.png")
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("tea house: the kettle did not finish")
+		get_tree().quit(1)
+		return
+	if Economy.mill.pot_count() > 0:
+		carry_tea()
+	if Economy.coins != coins or Economy.mill.crate_count() < 1 or not _cottage_has_tea() or not fill.visible or not inside_tea:
+		push_error("tea house: carrying left the kitchen cup empty")
+		get_tree().quit(1)
+		return
+	_esc()
+	if inside_tea or room.visible or not shell.visible:
+		push_error("tea house: Esc left the room open")
+		get_tree().quit(1)
+		return
+	if kettle.position.distance_to(Vector3(0.48, 0.22, -0.95)) > 0.02:
+		push_error("tea house: Esc left the kettle off the porch")
+		get_tree().quit(1)
+		return
+	if nessa.stay or nessa.visible != nessa.present or nessa.global_position.distance_to(nessa_kettle_back) > 0.2 or _room_where(inside_tea, "nessa", "at the kettle") != "":
+		push_error("tea house: Esc left Nessa inside")
+		get_tree().quit(1)
+		return
+	print("PETAL_TEA_HOUSE_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_shed_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.0)
+	if bool(ContentDB.venues.get("tea_house", {}).get("active", true)) or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("shed: the catalog went active")
+		get_tree().quit(1)
+		return
+	var shed := _potting_shed()
+	var room := shed.get_node_or_null("Interior") as Node3D if shed != null else null
+	var shell := shed.get_node_or_null("Shell") as Node3D if shed != null else null
+	var pan := shed.get_node_or_null("Pan") as Node3D if shed != null else null
+	var steam := shed.get_node_or_null("JamSteam") as Node3D if shed != null else null
+	if shed == null or room == null or shell == null or pan == null or steam == null or room.visible:
+		push_error("shed: the room was already open")
+		get_tree().quit(1)
+		return
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera.target = shed.global_position + Vector3(0.0, 0.4, 1.6)
+	camera._apply()
+	if not _enter_potting_shed(false) or not inside_shed or not room.visible or shell.visible:
+		push_error("shed: Enter did not open")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	Economy.add("bramble", 1)
+	var pan_aim := pan.global_position
+	click_at = camera.unproject_position(pan_aim)
+	var shed_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if shed_hit != null and _near_anchor(shed_hit, GardenLayout.SHED, 1.55):
+		push_error("shed: the step still owns the pan click")
+		get_tree().quit(1)
+		return
+	_click_prop(pan_aim)
+	if Economy.mill.brew != ParishChain.JAM or Economy.coins != coins or not steam.visible:
+		push_error("shed: the pan click did not cook")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if not _kitchen_in_frame(pan) or not _kitchen_in_frame(steam):
+		push_error("shed: the pan left the frame at %s" % camera.unproject_position(pan.global_position))
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.45).timeout
+	if not inside_shed or not _kitchen_in_frame(pan) or not _kitchen_in_frame(steam):
+		push_error("shed: the pan left the frame at %s" % camera.unproject_position(pan.global_position))
+		get_tree().quit(1)
+		return
+	var bram := _person("bram")
+	var bram_px := camera.unproject_position(bram.global_position) if bram != null else Vector2.ZERO
+	if bram == null or not bram.stay or bram_px.x < 180.0 or bram_px.x > 1100.0 or bram_px.y < 140.0 or bram_px.y > 760.0:
+		push_error("shed: Bram is not at the pan %s" % bram_px)
+		get_tree().quit(1)
+		return
+	if _room_where(inside_shed, "bram", "at the pan") != "Bram is at the pan.":
+		push_error("shed: the page did not seat Bram")
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/potting_shed_inside.png")
+	if Economy.mill.brewing() and not Economy.mill.tick(12.0):
+		push_error("shed: the pan did not finish")
+		get_tree().quit(1)
+		return
+	if Economy.mill.pot_count(ParishChain.JAM) > 0:
+		carry_jam()
+	if Economy.coins != coins or Economy.mill.crate_count(ParishChain.JAM) < 1 or not inside_shed:
+		push_error("shed: carrying moved coins")
+		get_tree().quit(1)
+		return
+	_esc()
+	if inside_shed or room.visible or not shell.visible:
+		push_error("shed: Esc left the room open")
+		get_tree().quit(1)
+		return
+	if pan.position.distance_to(Vector3(0.0, 0.22, 1.42)) > 0.02 or steam.position.distance_to(Vector3(0.0, 0.58, 1.42)) > 0.02:
+		push_error("shed: Esc left the pan off the step")
+		get_tree().quit(1)
+		return
+	if bram.stay or bram.global_position.distance_to(bram_pan_back) > 0.2 or _room_where(inside_shed, "bram", "at the pan") != "":
+		push_error("shed: Esc left Bram inside")
+		get_tree().quit(1)
+		return
+	print("PETAL_SHED_SHOT_OK")
+	get_tree().quit(0)
+
+func _run_stall_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.0)
+	if bool(ContentDB.venues.get("tea_house", {}).get("active", true)) or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("stall: the catalog went active")
+		get_tree().quit(1)
+		return
+	var stall := _petal_stall()
+	var room := stall.get_node_or_null("Interior") as Node3D if stall != null else null
+	var shell := stall.get_node_or_null("Shell") as Node3D if stall != null else null
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D if stall != null else null
+	var cup := stall.get_node_or_null("StallCup") as Node3D if stall != null else null
+	var jar := stall.get_node_or_null("StallJar") as Node3D if stall != null else null
+	if stall == null or room == null or shell == null or crate == null or cup == null or jar == null or room.visible:
+		push_error("stall: the room was already open")
+		get_tree().quit(1)
+		return
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		if node.visible:
+			push_error("stall: a cottage opened")
+			get_tree().quit(1)
+			return
+	camera.user_moved = true
+	camera.intro = 1.0
+	var outside := stall.global_position + Vector3(0.2, 0.6, -1.2)
+	camera.target = outside
+	camera._apply()
+	_enter_from_key()
+	if not inside_stall or not room.visible or shell.visible:
+		push_error("stall: Enter did not open")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	stock_kettle()
+	if Economy.mill.brew != ParishChain.TEA or Economy.coins != coins:
+		push_error("stall: the kettle did not start")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("stall: the kettle did not finish")
+		get_tree().quit(1)
+		return
+	carry_tea()
+	Economy.add("bramble", 1)
+	stock_jam()
+	if Economy.mill.brew != ParishChain.JAM or Economy.coins != coins:
+		push_error("stall: the pan did not start")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(12.0):
+		push_error("stall: the pan did not finish")
+		get_tree().quit(1)
+		return
+	carry_jam()
+	if Economy.coins != coins or Economy.mill.crate_count() < 1 or Economy.mill.crate_count(ParishChain.JAM) < 1 or not cup.visible or not jar.visible or not inside_stall:
+		push_error("stall: carrying did not show the goods")
+		get_tree().quit(1)
+		return
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if not _kitchen_in_frame(crate) or not _kitchen_in_frame(cup) or not _kitchen_in_frame(jar):
+		push_error("stall: the goods left the frame at %s cup %s jar %s" % [camera.unproject_position(crate.global_position), camera.unproject_position(cup.global_position), camera.unproject_position(jar.global_position)])
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.45).timeout
+	if not inside_stall or not _kitchen_in_frame(crate) or not _kitchen_in_frame(cup) or not _kitchen_in_frame(jar):
+		push_error("stall: the goods left the frame at %s" % camera.unproject_position(crate.global_position))
+		get_tree().quit(1)
+		return
+	var lumen := _person("lumen")
+	var lumen_px := camera.unproject_position(lumen.global_position) if lumen != null else Vector2.ZERO
+	if lumen == null or not lumen.stay or lumen_px.x < 180.0 or lumen_px.x > 1100.0 or lumen_px.y < 140.0 or lumen_px.y > 760.0:
+		push_error("stall: Lumen is not at the counter %s" % lumen_px)
+		get_tree().quit(1)
+		return
+	if _room_where(inside_stall, "lumen", "at the counter") != "Lumen is at the counter.":
+		push_error("stall: the page did not seat Lumen")
+		get_tree().quit(1)
+		return
+	lumen.say("The counter is open.")
+	await _shot("/workspace/docs/screenshots/petal_stall_inside.png")
+	var tea_crates := Economy.mill.crate_count()
+	var crate_aim := crate.global_position
+	click_at = camera.unproject_position(crate_aim)
+	var stall_hit = _ground_hit()
+	click_at = Vector2(-1, -1)
+	if stall_hit != null and _near_anchor(stall_hit, GardenLayout.STALL, 1.55):
+		push_error("stall: the front still owns the crate click")
+		get_tree().quit(1)
+		return
+	_click_prop(crate_aim)
+	if Economy.coins <= coins or Economy.mill.crate_count() != tea_crates - 1 or not inside_stall:
+		push_error("stall: the counter click did not sell tea")
+		get_tree().quit(1)
+		return
+	var after_tea := Economy.coins
+	var jam_crates := Economy.mill.crate_count(ParishChain.JAM)
+	_click_prop(jar.global_position)
+	if Economy.coins <= after_tea or Economy.mill.crate_count(ParishChain.JAM) != jam_crates - 1 or not inside_stall:
+		push_error("stall: the counter click did not sell jam")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("stall: dusk stock failed")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("stall: dusk brew failed")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() < 1:
+		push_error("stall: dusk carry failed")
+		get_tree().quit(1)
+		return
+	var held := Economy.coins
+	var held_crates := Economy.mill.crate_count()
+	Clock.set_hour(21.0)
+	sell_tea()
+	sell_jam()
+	if Economy.coins != held or Economy.mill.crate_count() != held_crates or not inside_stall:
+		push_error("stall: dusk still sold")
+		get_tree().quit(1)
+		return
+	_esc()
+	if inside_stall or room.visible or not shell.visible:
+		push_error("stall: Esc left the room open")
+		get_tree().quit(1)
+		return
+	if crate.position.distance_to(Vector3(-1.35, 0.16, 0.7)) > 0.02 or cup.position.distance_to(Vector3(-1.35, 0.42, 0.7)) > 0.02 or jar.position.distance_to(Vector3(1.25, 0.42, 0.62)) > 0.02:
+		push_error("stall: Esc left the goods off the stall")
+		get_tree().quit(1)
+		return
+	if camera.target.distance_to(outside) > 0.05:
+		push_error("stall: Esc left the camera inside")
+		get_tree().quit(1)
+		return
+	if lumen.stay or lumen.global_position.distance_to(lumen_stall_back) > 0.2 or _room_where(inside_stall, "lumen", "at the counter") != "":
+		push_error("stall: Lumen stayed at the counter")
+		get_tree().quit(1)
+		return
+	print("PETAL_STALL_SHOT_OK")
 	get_tree().quit(0)
 
 func _run_garden_look_shot() -> void:
@@ -8764,23 +10480,37 @@ func _run_garden_look_shot() -> void:
 	print("PETAL_GARDEN_LOOK_OK")
 	get_tree().quit(0)
 
+func _frame_park(jelly: Jelly) -> void:
+	if camera == null or jelly == null:
+		return
+	camera.pitch = 18.0
+	camera.yaw = 148.0
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.35, 0.0), 5.6)
+	camera._apply()
+	if jelly.is_inside_tree():
+		var face_at := camera.global_position
+		face_at.y = jelly.global_position.y
+		jelly.look_at(face_at, Vector3.UP)
+
+func _icon_clears_eyes(jelly: Jelly) -> bool:
+	var mark := jelly.get_node_or_null("StatusIcon") as Node3D
+	var left := jelly.find_child("IconEyeL", true, false) as Node3D
+	var right := jelly.find_child("IconEyeR", true, false) as Node3D
+	if mark == null or left == null or right == null or not mark.visible or camera == null:
+		return false
+	if mark.global_position.y <= left.global_position.y or mark.global_position.y <= right.global_position.y:
+		return false
+	var mark_px := camera.unproject_position(mark.global_position)
+	var left_px := camera.unproject_position(left.global_position)
+	var right_px := camera.unproject_position(right.global_position)
+	return mark_px.y < left_px.y - 8.0 and mark_px.y < right_px.y - 8.0
+
 func _shot(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute("/workspace/docs/screenshots")
 	var err := image.save_png(path)
 	print("SHOT ", path, " ", err, " ", image.get_width(), "x", image.get_height())
-
-func _pin_overhead(point: Vector3) -> void:
-	if camera == null:
-		return
-	camera.pitch = 62.0
-	camera.yaw = 180.0
-	camera.distance = 3.6
-	camera.target = Vector3(point.x, 0.22, point.z)
-	camera.user_moved = true
-	camera.intro = 1.0
-	camera._apply()
 
 func _opening_plants() -> void:
 	# ponytail: tall enough for the bells to read; ripe bells if Bellhelp should visit on the first day.
@@ -9853,7 +11583,7 @@ func _boot_parish() -> void:
 		"gate": GardenLayout.GATE,
 		"pond": GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
 		"plots": GardenLayout.cell_center(2, 2),
-		"park": GardenLayout.PARK + Vector3(0.8, 0, 1.15),
+		"park": GardenLayout.PARK + Vector3(0.15, 0.0, -1.05),
 	}, lines)
 	if Trust.has_action("parish_park"):
 		parish.open_park()
@@ -9917,8 +11647,17 @@ func _apply_shift(snap: bool) -> void:
 func _person(id: String) -> VegPerson:
 	return people.get(id)
 
+func _click_prop(point: Vector3) -> void:
+	if camera == null:
+		return
+	click_at = camera.unproject_position(point)
+	_primary_down()
+	click_at = Vector2(-1, -1)
+
 func _primary_down() -> void:
-	if _over_ui() or held:
+	if held:
+		return
+	if click_at.x < 0.0 and _over_ui():
 		return
 	var face := _pick_face()
 	if face:
@@ -9936,6 +11675,9 @@ func _primary_down() -> void:
 			return
 		var person := _pick_person()
 		if person:
+			if person.person_id == "lane_house":
+				_speak_lane()
+				return
 			if person.person_id == "bram":
 				_ask_bram()
 				return
@@ -10137,7 +11879,7 @@ func _home_box(root: Node3D, size: Vector3, at: Vector3, color: Color) -> MeshIn
 	return node
 
 func _ground_hit():
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	if absf(direction.y) < 0.0001:
@@ -10148,7 +11890,7 @@ func _ground_hit():
 	return origin + direction * t
 
 func _pick_jelly() -> Jelly:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
@@ -10170,7 +11912,7 @@ func _pick_jelly() -> Jelly:
 func _pick_face() -> Jelly:
 	if camera == null or ecology == null:
 		return null
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: Jelly
@@ -10312,16 +12054,22 @@ func _clear_inspect() -> void:
 		hud.hide_inspect()
 
 func _pick_person() -> VegPerson:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var origin := camera.project_ray_origin(mouse)
 	var direction := camera.project_ray_normal(mouse)
 	var best: VegPerson
 	var best_distance := 0.7
+	var candidates: Array[VegPerson] = []
 	for id in people.keys():
-		var person: VegPerson = people[id]
+		var listed: VegPerson = people[id]
+		if listed != null and listed.present:
+			candidates.append(listed)
+	if lane_body != null and lane_body.visible:
+		candidates.append(lane_body)
+	for person in candidates:
 		if not person.present:
 			continue
-		var center := person.global_position + Vector3(0, 0.6, 0)
+		var center := person.global_position + Vector3(0, 0.5, 0)
 		var along := (center - origin).dot(direction)
 		if along < 0.0:
 			continue
@@ -10335,7 +12083,7 @@ func _over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
 func _hold_point(jelly: Jelly) -> Vector3:
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := _pointer()
 	var size := get_viewport().get_visible_rect().size
 	var lift := clampf((1.0 - mouse.y / maxf(size.y, 1.0)) * 2.35, 0.48, 2.05)
 	var hit = _ground_hit()
@@ -10798,6 +12546,7 @@ func _update_creatures(delta: float) -> void:
 	_seek_reeds()
 	_seek_bees()
 	_walk_shore()
+	_sync_jelly_activity()
 
 func _bowl_line(at: Vector3) -> float:
 	var rim := GardenLayout.POND_RADIUS
@@ -11860,12 +13609,15 @@ func _tick_parish(delta: float) -> void:
 			person.set_activity("")
 		if person.has_chore or not person.present:
 			continue
-		var dest: Vector3 = parish.destination(id)
-		if dest.x == INF:
+		var route := _life_route(str(id))
+		if route.is_empty():
 			continue
-		dest += _life_offset(str(id))
-		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
-			var route: Array[Vector3] = [dest]
+		person.loop_route = route.size() < 2
+		var goal := route[route.size() - 1]
+		var last := Vector3.INF
+		if person.waypoints.size() > 0:
+			last = person.waypoints[person.waypoints.size() - 1]
+		if last.x == INF or last.distance_to(goal) > 0.45:
 			person.set_route(route, false)
 	_serve_eat()
 	if Clock.running:
@@ -11873,6 +13625,20 @@ func _tick_parish(delta: float) -> void:
 			var speaker := _person(str(row.get("id", "")))
 			if speaker and speaker.present:
 				speaker.say(str(row.get("text", "")))
+
+func _life_route(id: String) -> Array[Vector3]:
+	var dest: Vector3 = parish.destination(id)
+	if dest.x == INF:
+		return []
+	dest += _life_offset(id)
+	var life: Dictionary = parish.lives.get(id, {})
+	var route: Array[Vector3] = []
+	if str(life.get("activity", "")) == "leisure" and str(life.get("places", {}).get("leisure", "")) == "park":
+		var here := _person(id).global_position
+		if here.distance_to(dest) > 1.4:
+			route.append(GardenLayout.GATE + Vector3(0.0, 0.0, 0.35))
+	route.append(dest)
+	return route
 
 func _life_offset(id: String) -> Vector3:
 	match id:
@@ -12368,6 +14134,11 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["stall_demand"] = _present_people() + ecology.resident_total() + _lane_passers() + region.traffic("hollow") + (1 if vale_crate_crop != "" else 0)
 	stats["lane_passers"] = _lane_passers()
 	stats["vale_line"] = region.headline()
+	stats["lane_where"] = _lane_where()
+	stats["keeper_where"] = _room_where(inside_stall, "lumen", "at the counter")
+	stats["cook_where"] = _room_where(inside_shed, "bram", "at the pan")
+	stats["kettle_where"] = _room_where(inside_tea, "nessa", "at the kettle")
+	stats["lane_memory"] = _lane_memory()
 	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()
@@ -12473,7 +14244,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_houses"] = town.occupancy("lane")
 	stats["town_tea"] = town.occupancy("tea")
 	stats["town_cover"] = town.coverage()
-	stats["town_lines"] = town.page_lines()
+	stats["town_lines"] = _town_page_lines()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	var vale_rows: Array = []
 	var vale_page: Dictionary = region.page()
@@ -12590,6 +14361,18 @@ func _toggle_photo() -> void:
 		camera.attributes = null
 
 func _esc() -> void:
+	if inside_tea:
+		_leave_tea_house()
+		return
+	if inside_shed:
+		_leave_potting_shed()
+		return
+	if inside_stall:
+		_leave_stall()
+		return
+	if inside_lane:
+		_leave_lane_house()
+		return
 	if photo:
 		_toggle_photo()
 		return

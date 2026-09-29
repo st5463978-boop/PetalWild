@@ -116,6 +116,12 @@ func take_crate(id: String = TEA) -> bool:
 	crate[id] = crate_count(id) - 1
 	return true
 
+func take_pot(id: String = TEA) -> bool:
+	if pot_count(id) < 1:
+		return false
+	pot[id] = pot_count(id) - 1
+	return true
+
 func price(id: String = TEA) -> int:
 	var rec: Dictionary = recipe(id)
 	if rec.is_empty():
