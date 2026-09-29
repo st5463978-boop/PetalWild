@@ -5,7 +5,7 @@ extends SceneTree
 const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_01_HERO_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(7, 9, 11), "look": Vector3(0, 0, -2), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0", "BedBody_1_0"]},
 	{"name": "CAM_02_BEDS_SOIL", "anchor": "ANCHOR_BEDS", "pos": Vector3(0, 3.2, 3.6), "look": Vector3(0, 0, 0.2), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "beds", "subject_nodes": ["BedBody_0_0", "BedBody_0_1", "BedBody_1_0", "BedBody_1_1"]},
-	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.25, 1.5, 6.95), "look": Vector3(0.05, 0.18, 0.55), "fov": 52.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
+	{"name": "CAM_03_LAWN_PATH", "anchor": "ANCHOR_BEDS", "pos": Vector3(0.1, 1.42, 3.6), "look": Vector3(0.0, 0.16, -0.2), "fov": 48.0, "size": Vector2i(1440, 900), "hud": false, "subject": "lawn path", "subject_nodes": ["Terrain"]},
 	{"name": "CAM_04_FOLIAGE_EDGE", "anchor": "ANCHOR_HEDGE_W", "pos": Vector3(4.5, 1.8, 2.5), "look": Vector3(0, 1.0, 0), "fov": 45.0, "size": Vector2i(1440, 900), "hud": false, "subject": "hedge", "subject_nodes": ["Hedge"], "blocked_on_art": true, "blocked_reason": "ART-DIRECTOR-007/008: hedges and trees await art"},
 	{"name": "CAM_05_MARKET_STALL", "anchor": "ANCHOR_STALL", "pos": Vector3(2.45, 1.48, 2.42), "look": Vector3(0.08, 1.38, 0.05), "fov": 46.0, "size": Vector2i(1440, 900), "hud": false, "subject": "stall", "subject_nodes": ["PetalStall"], "blocked_on_art": true, "blocked_reason": "ART-DIRECTOR-003: stall awaits art"},
 	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(0.55, 0.88, 1.4), "look": Vector3(0.0, 0.3, -0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
@@ -74,7 +74,7 @@ func _run() -> void:
 		cam.make_current()
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
-		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL")
+		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam05_crate(scene, shot_name == "CAM_05_MARKET_STALL")
 		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
