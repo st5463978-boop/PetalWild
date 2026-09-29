@@ -178,8 +178,11 @@ func _build(definition: Dictionary) -> void:
 	var card := art_path(shape, str(definition.get("id", "")))
 	var card_abs := ProjectSettings.globalize_path(card)
 	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
-		var sprite := make_card(card, maxf(radius * 1.7, 0.44))
+		var card_h := maxf(radius * 1.7, 0.44)
+		var sprite := make_card(card, card_h)
 		sprite.name = "Art"
+		# ponytail: the card is centered, so half of it was under the bed.
+		sprite.position.y = card_h * 0.5
 		root.add_child(sprite)
 		face_z = -radius * 0.2
 		_face(root, definition, radius * 0.18)

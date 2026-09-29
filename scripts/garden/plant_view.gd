@@ -63,8 +63,9 @@ func _build(id: String) -> void:
 			var bulb := _ball(Vector3(0, 0.55, 0), 0.09, Color("#ffd27a"))
 			var material := bulb.material_override as StandardMaterial3D
 			material.emission_enabled = true
-			material.emission = Color("#ffc14a")
-			material.emission_energy_multiplier = 1.4
+			material.emission = Color("#c47a28")
+			# ponytail: 1.4 blew the bulb out to a white ball under the 16:30 sun.
+			material.emission_energy_multiplier = 0.22
 			# ponytail: two dark leaves under the bulb; the bulb stays this size and color.
 			for side in [-1.0, 1.0]:
 				var leaf := BoxMesh.new()
