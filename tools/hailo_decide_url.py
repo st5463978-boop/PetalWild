@@ -1,6 +1,10 @@
-"""Resolve HAILO_DECIDE_URL from the Pi's public discovery topic (ntfy.sh).
+"""Resolve HAILO_DECIDE_URL from the Pi's public JEV-H discovery topic (ntfy.sh).
+
+JEV-H is port 8771. Port 8766 is the old Qwen3 chat decide service — do not use it.
+Do not hardcode a trycloudflare host; the public base changes when the tunnel restarts.
 
 Order: discovery (live tunnel, /health-checked) -> existing env HAILO_DECIDE_URL -> Tailscale default.
+HAILO_DECIDE_URL overrides when set on purpose and that origin is healthy.
 Usage:  eval "$(python3 tools/hailo_decide_url.py --export)"   # at startup
         from hailo_decide_url import resolve_decide_url; url = resolve_decide_url(force=True)  # on failure
 """
@@ -8,9 +12,9 @@ import json, os, sys, urllib.request
 
 DISCOVERY_URL = os.environ.get(
     "HAILO_DECIDE_DISCOVERY_URL",
-    "https://ntfy.sh/petalwild-hailo-decide-b71128b262bf79cd/raw?poll=1&since=latest",
+    "https://ntfy.sh/jevh-decide-05923aed092556ed/raw?poll=1&since=latest",
 )
-TAILSCALE_DEFAULT = "http://100.126.22.71:8766/v1/decide"
+TAILSCALE_DEFAULT = "http://100.126.22.71:8771/v1/decide"
 
 
 def _get(url, timeout=15):
@@ -19,11 +23,15 @@ def _get(url, timeout=15):
 
 
 def _healthy(base):
-    try:
-        s, body = _get(base.rstrip("/") + "/health", 20)
-        return s == 200 and json.loads(body).get("ok") is True
-    except Exception:
-        return False
+    root = base.rstrip("/")
+    for path in ("/health", "/v1/health"):
+        try:
+            s, body = _get(root + path, 20)
+            if s == 200 and json.loads(body).get("ok") is True:
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def discover_base():

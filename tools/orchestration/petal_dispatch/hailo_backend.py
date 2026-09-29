@@ -1,11 +1,11 @@
 """Pi Hailo decide client for system-1 routing.
 
-High-frequency choices go to the Pi `hailo-decision` service.
-`HAILO_DECIDE_URL` is resolved at startup from the ntfy discovery topic
-(health-checked tunnel), then the existing env value, then the Pi on
-Tailscale. A decide failure resolves again. This module does not call
-MinoJEV, an RLCD policy, a local Ollama tag, or `/v1/chat/completions`.
-It does not download or recompile HEFs.
+High-frequency choices go to JEV-H on the Pi (port 8771), not the Qwen3
+chat decide service on port 8766. `HAILO_DECIDE_URL` is resolved at
+startup from the ntfy discovery topic (health-checked tunnel), then the
+existing env value, then the Pi on Tailscale. A decide failure resolves
+again and retries once if the origin changed. This module does not call
+`/v1/chat/completions`. It does not download or recompile HEFs.
 """
 
 from __future__ import annotations
@@ -26,10 +26,11 @@ from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
 
-# Pi Tailscale. MagicDNS http://piai-1:8766/v1/decide is the same service.
-DEFAULT_DECIDE_URL = "http://100.126.22.71:8766/v1/decide"
-MAGICDNS_DECIDE_URL = "http://piai-1:8766/v1/decide"
-DECIDE_MODEL = "Qwen3-1.7B.hef"
+# Pi Tailscale JEV-H. MagicDNS http://piai-1:8771/v1/decide is the same service.
+# Port 8766 is the old Qwen3 chat decide service.
+DEFAULT_DECIDE_URL = "http://100.126.22.71:8771/v1/decide"
+MAGICDNS_DECIDE_URL = "http://piai-1:8771/v1/decide"
+DECIDE_MODEL = "JEV-H"
 DECIDE_TIMEOUT = 75.0
 
 
@@ -177,16 +178,25 @@ def post_decide(base_url: str, question: str, options: list[str], timeout: float
 
 
 def get_health(base_url: str, timeout: float = 5.0) -> dict:
-    request = urllib.request.Request(decide_origin(base_url) + "/health", method="GET")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        payload = json.loads(response.read().decode())
-    if not isinstance(payload, dict):
-        raise ValueError("health response was not an object")
-    return payload
+    errors: list[str] = []
+    for path in ("/health", "/v1/health"):
+        request = urllib.request.Request(decide_origin(base_url) + path, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = json.loads(response.read().decode())
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                errors.append(f"404 {path}")
+                continue
+            raise
+        if not isinstance(payload, dict):
+            raise ValueError("health response was not an object")
+        return payload
+    raise RuntimeError("health endpoint missing: " + ", ".join(errors))
 
 
 class HailoDecideBackend(Backend):
-    """System-1 owner choice via the Pi HEF. Chat completions are not used."""
+    """System-1 owner choice via JEV-H on the Pi. Chat completions are not used."""
 
     def __init__(self, base_url: str | None = None):
         self.base_url = (base_url or decide_url()).rstrip("/")
