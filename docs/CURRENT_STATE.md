@@ -51,12 +51,11 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 ## LATEST SCREENSHOTS
 
-`docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is on the Grove Park lawn, HUD `happy · held`, toast “Bellhelp nuzzles your hands.” The lawn walk runs to the hedge opening, and the garden is visible beyond it. A second jelly in the same frame shows the two black eyes. Bellhelp’s near body is still a pale sunlit facet; the eyes are easy to miss at this size.
+`docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is a flat species-green icon with two black vertical eyes, on the Grove Park lawn. HUD `happy · held`. Toast “Bellhelp nuzzles your hands.” The lawn walk runs to the hedge opening, and the garden is beyond it.
 
 ## KNOWN REGRESSIONS
 
 - `main` does not boot the campaign garden.
-- Bellhelp’s close icon still sun-lights into a pale facet, so the eyes are weaker than on the smaller jelly in the same shot.
 - `jam_pan.png` still shows the shed wall.
 - Tea house, hut, foundry, and hall are built in the scene and marked inactive in the catalog.
 - City Park pond scene and neon status icons are unmerged siblings of 08, not of 09.
@@ -67,11 +66,11 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Keep the icon one colour under this sun so both eyes read on a close Bellhelp.
-2. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
-3. Re-frame `jam_pan.png` off the shed wall.
-4. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-5. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
+1. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
+2. Re-frame `jam_pan.png` off the shed wall.
+3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
+4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
+5. Give the icon a little gel volume that does not wash the eyes back out under the sun.
 
 ## DO NOT REBUILD
 

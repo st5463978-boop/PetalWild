@@ -13,9 +13,9 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 
 ## NEXT
 
-- `PETAL_QA_SCRIPTS_OK` and `JELLY_PLAY_OK` are green on this tip (2026-09-29).
-- Make the close icon read as one colour with two eyes under the garden sun.
+- `PETAL_QA_SCRIPTS_OK` and `JELLY_PLAY_OK` are green on this tip (2026-09-29). The close Bellhelp is one green with two black eyes.
 - Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
+- Re-frame `jam_pan.png` off the shed wall.
 - Point `main` at this garden when the suite stays green. Do not replay the east-chain.
 
 ## LATER

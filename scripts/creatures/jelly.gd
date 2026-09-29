@@ -85,7 +85,7 @@ func set_select(on: bool, grabbed := false) -> void:
 	selected = on or grabbed
 	if halo == null:
 		return
-	halo.visible = selected
+	halo.visible = selected and icon_root == null
 	if halo_mat == null:
 		return
 	if grabbed:
@@ -205,10 +205,11 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	sphere.radial_segments = 24
 	sphere.rings = 16
 	body.mesh = sphere
-	var icon_mat := mat.duplicate() as ShaderMaterial
+	var icon_mat := StandardMaterial3D.new()
+	icon_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	icon_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	var deep: Color = mat.get_shader_parameter("deep_color")
-	icon_mat.set_shader_parameter("lit_color", deep.lightened(0.12))
-	icon_mat.set_shader_parameter("glow_color", deep.lightened(0.2))
+	icon_mat.albedo_color = deep
 	body.material_override = icon_mat
 	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	match shape:
@@ -230,19 +231,18 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	body.position = Vector3(0.0, radius * body.scale.y, 0.0)
 	icon_root.add_child(body)
 	var eye_mat := StandardMaterial3D.new()
-	eye_mat.albedo_color = Color(0.04, 0.04, 0.05)
-	eye_mat.roughness = 0.55
+	eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	eye_mat.albedo_color = Color(0.02, 0.02, 0.025)
 	eye_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	var eye_y := body.position.y + radius * 0.22 * body.scale.y
-	var eye_z := -radius * 0.78 * maxf(body.scale.z, 0.7)
+	var eye_y := body.position.y + radius * 0.48 * body.scale.y
 	for side in [-1.0, 1.0]:
 		var eye := MeshInstance3D.new()
 		eye.name = "IconEye"
 		var slab := BoxMesh.new()
-		slab.size = Vector3(radius * 0.1, radius * 0.58, radius * 0.08)
+		slab.size = Vector3(radius * 0.16, radius * 0.72, radius * 0.1)
 		eye.mesh = slab
 		eye.material_override = eye_mat
-		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 1.08)
+		eye.position = Vector3(side * radius * 0.36, eye_y, -radius * 0.95)
 		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		icon_root.add_child(eye)
 
@@ -265,6 +265,8 @@ func _sync_presentation() -> void:
 		art_card.visible = not show_body
 	if icon_root != null:
 		icon_root.visible = show_body or art_card == null
+	if halo != null and icon_root != null:
+		halo.visible = false
 	# The petal bell reads as a bush. The icon is the body the player holds.
 	_set_procedural_visible(body_root, icon_root == null and (art_card == null or show_body))
 
