@@ -134,7 +134,7 @@ func _lilies(parent: Node3D) -> void:
 		node.mesh = pad
 		node.position = Vector3(x, GardenLayout.pond_surface(x, z, GardenLayout.POND_RADIUS) + 0.05, z)
 		var material := StandardMaterial3D.new()
-		material.albedo_color = Color("#3e8a46") if i != 2 else Color("#c45a78")
+		material.albedo_color = Color("#3e8a46")
 		material.roughness = 0.72
 		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -142,6 +142,24 @@ func _lilies(parent: Node3D) -> void:
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		node.add_to_group("signoff_ok")
 		parent.add_child(node)
+		if i == 2:
+			var bloom := SphereMesh.new()
+			bloom.radius = 0.07
+			bloom.height = 0.08
+			bloom.radial_segments = 8
+			bloom.rings = 4
+			var flower := MeshInstance3D.new()
+			flower.mesh = bloom
+			flower.position = node.position + Vector3(0.0, 0.06, 0.0)
+			var petal := StandardMaterial3D.new()
+			petal.albedo_color = Color("#d07088")
+			petal.roughness = 0.6
+			petal.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+			petal.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			flower.material_override = petal
+			flower.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			flower.add_to_group("signoff_ok")
+			parent.add_child(flower)
 
 static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float) -> void:
 	var center := GardenLayout.POND_CENTER
@@ -157,7 +175,8 @@ func _paths(parent: Node3D) -> void:
 		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5), 0.44],
 		[Vector3(-2.35, 0, 3.5), Vector3(-2.35, 0, -6.35), 0.44],
 		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.44],
-		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5), 0.96],
+		# Stop on the bank. The old end sat inside the water and left stones floating.
+		[Vector3(2.6, 0, -2.5), Vector3(4.35, 0, -2.5), 0.96],
 	]
 	# Change 2: walks are the terrain splat. Stones stay as layout grit until change 4.
 	_path_stones(parent, strips)
@@ -210,6 +229,8 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 			var reach := 0.06 if narrow else 0.12
 			var lateral := rng.randf_range(-reach, reach)
 			var at := center + side * lateral + dir * rng.randf_range(-0.04, 0.04)
+			if GardenLayout.pond_distance(at.x, at.z) < GardenLayout.POND_RADIUS + 0.35:
+				continue
 			at.y = 0.07
 			var yaw := atan2(dir.x, dir.z) + rng.randf_range(-0.22, 0.22)
 			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
@@ -1525,6 +1546,8 @@ func _stones(parent: Node3D) -> void:
 		if not GardenLayout.on_path(x, z) and _rng.randf() > 0.35:
 			continue
 		if GardenLayout.in_plots(x, z, 0.2):
+			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.45:
 			continue
 		var y := maxf(GardenLayout.height_at(x, z), 0.02)
 		var scale := Vector3(_rng.randf_range(0.4, 1.1), _rng.randf_range(0.25, 0.55), _rng.randf_range(0.4, 0.9))

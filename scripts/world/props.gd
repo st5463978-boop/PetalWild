@@ -263,14 +263,20 @@ func _lantern(parent: Node3D, at: Vector3) -> void:
 	light.add_to_group("parish_lantern")
 
 func _reeds(parent: Node3D) -> void:
-	for i in 16:
-		var angle := TAU * float(i) / 16.0
-		var radius := GardenLayout.POND_RADIUS + 0.15
-		var at := GardenLayout.POND_CENTER + Vector3(cos(angle) * radius, 0, sin(angle) * radius)
-		if at.x < 5.2:
+	# Clumps on the bank. A full ring read as poles, and the heads sat in the water.
+	var angles: Array[float] = [0.6, 1.7, 2.5, 4.4, 5.3]
+	for angle in angles:
+		var radius := GardenLayout.POND_RADIUS + 0.7
+		var base := GardenLayout.POND_CENTER + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
+		if base.x < 5.4:
 			continue
-		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.025, 0.03, 0.9, Color("#5a8a3c"))
-		_sphere(parent, at + Vector3(0, 0.98, 0), 0.045, Color("#6a4a28"))
+		var ground := GardenLayout.height_at(base.x, base.z)
+		for k in 3:
+			var sway := Vector3(cos(angle + float(k)) * 0.08, 0.0, sin(angle + float(k)) * 0.08)
+			var height := 0.72 + float(k) * 0.16
+			var at := base + sway
+			_cylinder(parent, at + Vector3(0.0, ground + height * 0.5, 0.0), 0.018, 0.024, height, Color("#5a8a3c"))
+			_sphere(parent, at + Vector3(0.0, ground + height + 0.04, 0.0), 0.035, Color("#6a4a28"))
 
 func _gate_crate(parent: Node3D) -> void:
 	var root := Node3D.new()
