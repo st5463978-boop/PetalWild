@@ -46,8 +46,9 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-- `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` on the previous tip. This pass re-ran `tests/test_town.gd` → `TOWN_OK`.
-- `PETAL_TOWN_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body.
+- `tests/test_town.gd` → `TOWN_OK`.
+- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body.
+- `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
@@ -55,6 +56,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 `docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is a flat species-green icon with two black vertical eyes, on the Grove Park lawn.
 
 `docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench. The hedge gate and the garden are in the background. Photo mode is on.
+
+`docs/screenshots/kettle_brew.png` (1440×900). The dark kettle and its white steam sit on the tea-house porch. The line reads “The kettle is brewing hedge tea.”
 
 `docs/screenshots/jam_pan.png` (1440×900). The shed pan is a copper pot of red jam with a puff of steam. The shed wall is behind it.
 
@@ -76,8 +79,8 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Keep the kettle brew plate on the kettle, the way the pan plate stays on the pan.
-2. Give the jelly icon a little gel volume that does not wash the eyes out under the sun.
+1. Give the jelly icon a little gel volume that does not wash the eyes out under the sun.
+2. Keep the resting cut-out for a fed idle jelly, and the gel icon for hunger and a grab.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.

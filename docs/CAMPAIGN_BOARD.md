@@ -16,6 +16,7 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 - `PETAL_QA_SCRIPTS_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The park frame shows the gate, the lawn, Bellhelp, and both veg folk.
 - Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
 - `PETAL_TOWN_SHOT_OK` shows a tomato household at the near cottage door.
+- `kettle_brew.png` keeps the brewing kettle and its steam in frame.
 - `jam_pan.png` now shows the copper pan, the jam, and the steam. The shed wall is behind it.
 - Point `main` at this garden when the suite stays green. Do not replay the east-chain.
 

@@ -8855,9 +8855,20 @@ func _run_kettle_shot() -> void:
 		return
 	_sync_mill()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.yaw = 176.0
-	camera.pitch = 28.0
-	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.2, -0.95), 3.6)
+	camera.yaw = 210.0
+	camera.pitch = 64.0
+	camera.focus_on(GardenLayout.TEA + Vector3(0.48, 0.08, -0.95), 2.35)
+	camera._apply()
+	var kettle := get_tree().get_first_node_in_group("parish_kettle") as Node3D
+	if kettle == null or camera.target.distance_to(kettle.global_position) > 0.9:
+		push_error("kettle-shot: the plate left the kettle")
+		get_tree().quit(1)
+		return
+	var kettle_screen := camera.unproject_position(kettle.global_position)
+	if kettle_screen.x < 360.0 or kettle_screen.x > 1080.0 or kettle_screen.y < 160.0 or kettle_screen.y > 720.0:
+		push_error("kettle-shot: the kettle left the frame at %s" % kettle_screen)
+		get_tree().quit(1)
+		return
 	await get_tree().create_timer(0.55).timeout
 	await _shot("/workspace/docs/screenshots/kettle_brew.png")
 	Economy.mill.tick(18.0)
