@@ -81,26 +81,34 @@ func _shed(parent: Node3D) -> void:
 	root.name = "PottingShed"
 	root.position = GardenLayout.SHED
 	parent.add_child(root)
-	_box(root, Vector3(0, 0.85, 0), Vector3(2.3, 1.7, 1.8), Color("#4a453e"))
-	_box(root, Vector3(0, 0.75, 0.9), Vector3(0.55, 1.15, 0.06), Color("#3f6a5c"))
-	_warm_pane(root, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
-	_warm_pane(root, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
-	_warm_pane(root, Vector3(0.0, 1.05, -0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
-	var roof_l := _box(root, Vector3(0, 1.95, -0.15), Vector3(2.6, 0.08, 1.15), Color("#c47c74"))
+	# ponytail: one pan mesh. Shell hides on Enter; Pan stays so the shed shot and the room share it.
+	var shell := Node3D.new()
+	shell.name = "Shell"
+	root.add_child(shell)
+	_box(shell, Vector3(0, 0.85, 0), Vector3(2.3, 1.7, 1.8), Color("#4a453e"))
+	_box(shell, Vector3(0, 0.75, 0.9), Vector3(0.55, 1.15, 0.06), Color("#3f6a5c"))
+	_warm_pane(shell, Vector3(-0.7, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_warm_pane(shell, Vector3(0.72, 1.05, 0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	_warm_pane(shell, Vector3(0.0, 1.05, -0.92), Vector3(0.42, 0.42, 0.05), Color("#2f5c56"))
+	var roof_l := _box(shell, Vector3(0, 1.95, -0.15), Vector3(2.6, 0.08, 1.15), Color("#c47c74"))
 	roof_l.rotation_degrees = Vector3(-22, 0, 0)
-	var roof_r := _box(root, Vector3(0, 1.95, 0.35), Vector3(2.6, 0.08, 1.15), Color("#524c44"))
+	var roof_r := _box(shell, Vector3(0, 1.95, 0.35), Vector3(2.6, 0.08, 1.15), Color("#524c44"))
 	roof_r.rotation_degrees = Vector3(22, 0, 0)
-	_cylinder(root, Vector3(-0.85, 0.16, 1.15), 0.12, 0.14, 0.22, Color("#c46a45"))
-	_sphere(root, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
-	_cylinder(root, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
-	_sphere(root, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
+	_cylinder(shell, Vector3(-0.85, 0.16, 1.15), 0.12, 0.14, 0.22, Color("#c46a45"))
+	_sphere(shell, Vector3(-0.85, 0.38, 1.15), 0.12, Color("#3f8a3a"))
+	_cylinder(shell, Vector3(0.9, 0.12, 1.2), 0.1, 0.12, 0.18, Color("#b85b3c"))
+	_sphere(shell, Vector3(0.9, 0.32, 1.2), 0.1, Color("#e07a92"))
 	var pan := _cylinder(root, Vector3(0.0, 0.22, 1.42), 0.3, 0.34, 0.24, Color("#c47c4a"))
+	pan.name = "Pan"
 	pan.add_to_group("parish_pan")
 	var jam := _cylinder(root, Vector3(0.0, 0.32, 1.42), 0.22, 0.22, 0.06, Color("#8a3048"))
+	jam.name = "Jam"
 	jam.add_to_group("parish_pan")
 	var handle := _box(root, Vector3(0.42, 0.28, 1.42), Vector3(0.22, 0.05, 0.08), Color("#6b4a32"))
+	handle.name = "Handle"
 	handle.add_to_group("parish_pan")
 	var jam_steam := _sphere(root, Vector3(0.0, 0.58, 1.42), 0.08, Color("#f2e6d2"))
+	jam_steam.name = "JamSteam"
 	jam_steam.add_to_group("parish_jam_steam")
 	jam_steam.visible = false
 	var light := OmniLight3D.new()
@@ -109,9 +117,46 @@ func _shed(parent: Node3D) -> void:
 	light.light_energy = 0.16
 	light.omni_range = 3.2
 	light.shadow_enabled = false
-	root.add_child(light)
+	shell.add_child(light)
 	_room_lamp(light, 0.16)
+	_shed_room(root)
 	_unmark_ok(root)
+
+
+func _shed_room(shed: Node3D) -> void:
+	var room := Node3D.new()
+	room.name = "Interior"
+	room.visible = false
+	shed.add_child(room)
+	# The shed stands in the west hedge corridor. This room is north of that hedge. The pan slides onto the bench only while it is open.
+	_box(room, Vector3(0.15, 1.35, 10.0), Vector3(4.6, 0.1, 6.4), Color("#6b4e3a"))
+	var back := _box(room, Vector3(0.15, 2.7, 7.25), Vector3(4.8, 3.2, 0.16), Color("#c4b090"))
+	back.name = "BackWall"
+	_box(room, Vector3(-1.7, 2.7, 10.0), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(2.0, 2.7, 10.0), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(0.15, 2.7, 13.1), Vector3(4.8, 3.2, 0.16), Color("#c4b090"))
+	_box(room, Vector3(0.15, 4.25, 10.0), Vector3(4.8, 0.12, 6.4), Color("#8a7060"))
+	var counter := _box(room, Vector3(0.05, 1.55, 8.95), Vector3(1.2, 0.16, 0.72), Color("#5c4030"))
+	counter.name = "Counter"
+	var pane := _box(room, Vector3(-0.95, 2.55, 7.38), Vector3(0.7, 0.62, 0.06), Color("#ffd2a4"))
+	pane.name = "InsideWindow"
+	var glass := pane.material_override as StandardMaterial3D
+	if glass:
+		glass.emission_enabled = true
+		glass.emission = Color("#ffe0b0")
+		glass.emission_energy_multiplier = 1.6
+	var view := Node3D.new()
+	view.name = "InsideView"
+	view.position = Vector3(0.15, 2.7, 10.5)
+	room.add_child(view)
+	var lamp := OmniLight3D.new()
+	lamp.name = "RoomLamp"
+	lamp.position = Vector3(0.1, 3.4, 9.6)
+	lamp.light_color = Color("ffd2a4")
+	lamp.light_energy = 2.2
+	lamp.omni_range = 7.0
+	lamp.shadow_enabled = false
+	room.add_child(lamp)
 
 func _tea(parent: Node3D) -> void:
 	var root := Node3D.new()
