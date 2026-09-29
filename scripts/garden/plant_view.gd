@@ -59,7 +59,7 @@ func _build(id: String) -> void:
 			_mosspear()
 		"nightlantern":
 			# ponytail: a dark stem vanished on the soil and left the bulb in the air.
-			_stem(0.22, 0.05, Color("#3f8a3a"))
+			_stem(0.22, 0.05, Color("#5a9a38"), Vector3.ZERO, true)
 			var bulb := _ball(Vector3(0, 0.16, 0), 0.09, Color("#ffd27a"))
 			var material := bulb.material_override as StandardMaterial3D
 			material.emission_enabled = true
@@ -72,31 +72,34 @@ func _build(id: String) -> void:
 				leaf.size = Vector3(0.16, 0.018, 0.07)
 				var card := _paint(leaf, Color("#243628"))
 				leaf.size = Vector3(0.22, 0.018, 0.08)
-				card.position = Vector3(side * 0.14, 0.14, 0.0)
-				card.rotation = Vector3(0.5, 0.0, side * 0.9)
+				card.position = Vector3(side * 0.16, 0.12, 0.0)
+				card.rotation = Vector3(-1.15, 0.2, side * 0.35)
 				add_child(card)
 		_:
 			_ball(Vector3(0, 0.2, 0), 0.12, Color("#7eac4c"))
 	_rosette()
 
 func _rosette() -> void:
-	# ponytail: a low fan the bed camera can see; wider if it still vanishes on the soil.
+	# ponytail: flat bright blades; dark green vanishes into this soil under the 16:30 sun.
 	for i in 6:
 		var angle := TAU * float(i) / 6.0
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.07, 0.22, 0.02)
-		var leaf := _paint(mesh, Color("#3f7a38"))
-		leaf.position = Vector3(cos(angle) * 0.16, 0.04, sin(angle) * 0.16)
-		leaf.rotation = Vector3(-0.85, -angle, 0.0)
+		mesh.size = Vector3(0.09, 0.2, 0.028)
+		var leaf := _paint(mesh, Color("#5a9a38"))
+		_flat(leaf)
+		leaf.position = Vector3(cos(angle) * 0.16, 0.03, sin(angle) * 0.16)
+		leaf.rotation = Vector3(-0.35, -angle, 0.0)
 		add_child(leaf)
 
-func _stem(height: float, radius: float, color: Color, offset := Vector3.ZERO) -> MeshInstance3D:
+func _stem(height: float, radius: float, color: Color, offset := Vector3.ZERO, flat := false) -> MeshInstance3D:
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = radius * 0.7
 	mesh.bottom_radius = radius
 	mesh.height = height
 	mesh.radial_segments = 6
 	var node := _paint(mesh, color)
+	if flat:
+		_flat(node)
 	node.position = offset + Vector3(0, height * 0.5, 0)
 	add_child(node)
 	return node
@@ -119,10 +122,11 @@ func _peach() -> void:
 	# ponytail: a brighter fruit clips to 255 under this sun.
 	_ball(Vector3(0.0, 0.1, 0.0), 0.14, Color("#8a4e22"))
 	var leaf := BoxMesh.new()
-	leaf.size = Vector3(0.26, 0.02, 0.1)
-	var card := _paint(leaf, Color("#3f7a38"))
-	card.position = Vector3(0.12, 0.2, 0.0)
-	card.rotation = Vector3(0.4, 0.3, 0.7)
+	leaf.size = Vector3(0.28, 0.02, 0.12)
+	var card := _paint(leaf, Color("#5a9a38"))
+	_flat(card)
+	card.position = Vector3(0.16, 0.16, 0.0)
+	card.rotation = Vector3(-0.35, 0.4, 0.2)
 	add_child(card)
 
 func _berry_leaf(at: Vector3) -> void:
@@ -135,7 +139,7 @@ func _berry_leaf(at: Vector3) -> void:
 
 func _mosspear() -> void:
 	# ponytail: one fruit beside a stem the bed cameras can see; a brighter pear clips.
-	_stem(0.28, 0.04, Color("#3d4a28"))
+	_stem(0.28, 0.05, Color("#5a9a38"), Vector3.ZERO, true)
 	_ball(Vector3(0.12, 0.16, 0.0), 0.12, Color("#4e5c2e"), Vector3(0.9, 1.25, 0.9))
 	var pear_leaf := BoxMesh.new()
 	pear_leaf.size = Vector3(0.16, 0.018, 0.08)
@@ -152,43 +156,50 @@ func _mosspear() -> void:
 
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
+	# ponytail: dark olive sticks vanished on this soil; keep the heads this color.
 	var stems: Array = [
-		[0.36, 0.045, Color("#4f8a3c"), Vector3(-0.18, 0, 0.02), 0.45],
-		[0.3, 0.04, Color("#6a9a44"), Vector3(0.16, 0, 0.08), -0.4],
-		[0.33, 0.042, Color("#3f7a34"), Vector3(0.02, 0, -0.16), 0.15],
+		[0.34, 0.055, Color("#7aaa48"), Vector3(-0.14, 0, 0.02)],
+		[0.28, 0.05, Color("#8fbe55"), Vector3(0.14, 0, 0.06)],
+		[0.31, 0.052, Color("#6a9a40"), Vector3(0.0, 0, -0.14)],
 	]
 	for stem in stems:
 		var height: float = stem[0]
 		var at: Vector3 = stem[3]
-		var stick := _stem(height, stem[1], stem[2], at)
-		stick.rotation.z = float(stem[4])
+		_stem(height, stem[1], stem[2], at, true)
 		# ponytail: straw on a ripe head; the young brown if a brighter gold clips under this sun.
 		var head := Color("#9a7040") if built_ripe else Color("#6a4a28")
-		var lean := float(stem[4])
-		_ball(at + Vector3(sin(lean) * height * 0.55, height * 0.72, 0.0), 0.09, head, Vector3(0.95, 1.15, 0.95))
+		_ball(at + Vector3(0, height * 0.82, 0), 0.08, head)
 
 func _meadowbell() -> void:
-	# ponytail: flat petals large enough for the bed camera; sphere rings read as pebbles.
-	# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
-	var petal := Color("#a24a5c")
-	var heart := Color("#a07830")
-	_stem(0.22, 0.035, Color("#3f8a3c"))
-	_blossom(Vector3(0, 0.2, 0), petal, heart, 1.0)
-	_stem(0.16, 0.03, Color("#357834"), Vector3(0.28, 0, 0.06))
-	_blossom(Vector3(0.28, 0.14, 0.06), Color("#8e4454"), Color("#946828"), 0.85)
-	_stem(0.14, 0.028, Color("#2f6a34"), Vector3(-0.26, 0, 0.1))
-	_blossom(Vector3(-0.26, 0.12, 0.1), Color("#b05868"), heart, 0.8)
+	# ponytail: petals face the bed camera; edge-on cards vanished, and cream clips to white.
+	var petal := Color("#c45a78")
+	var heart := Color("#e0a040")
+	_stem(0.18, 0.04, Color("#5a9a38"), Vector3.ZERO, true)
+	_blossom(Vector3(0, 0.16, 0), petal, heart, 1.0)
+	_stem(0.14, 0.035, Color("#6aaa40"), Vector3(0.32, 0, 0.04), true)
+	_blossom(Vector3(0.32, 0.12, 0.04), Color("#b45070"), Color("#d09038"), 0.85)
+	_stem(0.12, 0.032, Color("#4e8e34"), Vector3(-0.3, 0, 0.08), true)
+	_blossom(Vector3(-0.3, 0.1, 0.08), Color("#d07088"), heart, 0.8)
 
-func _blossom(at: Vector3, petal: Color, heart: Color, scale := 1.0) -> void:
-	_ball(at, 0.055 * scale, heart)
+func _blossom(at: Vector3, petal: Color, heart: Color, bloom := 1.0) -> void:
+	var heart_ball := _ball(at + Vector3(0, 0.03, 0), 0.06 * bloom, heart)
+	_flat(heart_ball)
 	for i in 5:
 		var angle := TAU * float(i) / 5.0
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.2, 0.016, 0.08) * scale
+		mesh.size = Vector3(0.22, 0.012, 0.09) * bloom
 		var card := _paint(mesh, petal)
-		card.position = at + Vector3(cos(angle) * 0.12 * scale, 0.02, sin(angle) * 0.12 * scale)
-		card.rotation = Vector3(-0.55, -angle, 0.0)
+		_flat(card)
+		card.position = at + Vector3(cos(angle) * 0.13 * bloom, 0.02, sin(angle) * 0.13 * bloom)
+		card.rotation = Vector3(-0.2, -angle, 0.0)
 		add_child(card)
+
+func _flat(node: MeshInstance3D) -> void:
+	var mat := node.material_override as StandardMaterial3D
+	if mat == null:
+		return
+	# ponytail: the 16:30 sun turns a lit petal the color of the soil.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 func _paint(mesh: Mesh, color: Color) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
