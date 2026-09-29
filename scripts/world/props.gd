@@ -118,26 +118,67 @@ func _tea(parent: Node3D) -> void:
 	root.name = "HedgeTeaHouse"
 	root.position = GardenLayout.TEA
 	parent.add_child(root)
-	_box(root, Vector3(0, 0.7, 0), Vector3(1.8, 1.4, 1.5), Color("#4a3a30"))
-	_box(root, Vector3(0, 0.55, -0.76), Vector3(0.46, 0.9, 0.06), Color("#2c4038"))
-	_warm_pane(root, Vector3(0.48, 0.85, -0.78), Vector3(0.32, 0.32, 0.05), Color("#6a5340"))
-	_box(root, Vector3(0, 1.52, 0), Vector3(2.05, 0.1, 1.75), Color("#3a322c"))
-	_box(root, Vector3(0, 0.08, -1.05), Vector3(1.1, 0.08, 0.4), Color("#5c4a3c"))
-	_cylinder(root, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
-	var kettle := _cylinder(root, Vector3(0.48, 0.22, -0.95), 0.09, 0.11, 0.28, Color("#2a3034"))
-	kettle.add_to_group("parish_kettle")
-	var steam := _sphere(root, Vector3(0.48, 0.54, -0.95), 0.11, Color("#efe8dc"))
-	steam.add_to_group("parish_steam")
-	steam.visible = false
+	# ponytail: one kettle mesh. Shell hides on Enter; Kettle stays so the porch shot and the room share it.
+	var shell := Node3D.new()
+	shell.name = "Shell"
+	root.add_child(shell)
+	_box(shell, Vector3(0, 0.7, 0), Vector3(1.8, 1.4, 1.5), Color("#4a3a30"))
+	_box(shell, Vector3(0, 0.55, -0.76), Vector3(0.46, 0.9, 0.06), Color("#2c4038"))
+	_warm_pane(shell, Vector3(0.48, 0.85, -0.78), Vector3(0.32, 0.32, 0.05), Color("#6a5340"))
+	_box(shell, Vector3(0, 1.52, 0), Vector3(2.05, 0.1, 1.75), Color("#3a322c"))
+	_box(shell, Vector3(0, 0.08, -1.05), Vector3(1.1, 0.08, 0.4), Color("#5c4a3c"))
+	_cylinder(shell, Vector3(-0.55, 0.18, -0.95), 0.08, 0.1, 0.16, Color("#2a3034"))
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.05, -0.3)
 	light.light_color = Color("ffd2a4")
 	light.light_energy = 0.1
 	light.omni_range = 2.6
 	light.shadow_enabled = false
-	root.add_child(light)
+	shell.add_child(light)
 	_room_lamp(light, 0.1)
+	var kettle := _cylinder(root, Vector3(0.48, 0.22, -0.95), 0.09, 0.11, 0.28, Color("#2a3034"))
+	kettle.name = "Kettle"
+	kettle.add_to_group("parish_kettle")
+	var steam := _sphere(root, Vector3(0.48, 0.54, -0.95), 0.11, Color("#efe8dc"))
+	steam.name = "Steam"
+	steam.add_to_group("parish_steam")
+	steam.visible = false
+	_tea_room(root)
 	_unmark_ok(root)
+
+
+func _tea_room(house: Node3D) -> void:
+	var room := Node3D.new()
+	room.name = "Interior"
+	room.visible = false
+	house.add_child(room)
+	_box(room, Vector3(0.48, 0.03, -0.2), Vector3(4.4, 0.06, 4.2), Color("#6b4e3a"))
+	_box(room, Vector3(0.48, 1.2, -1.85), Vector3(4.6, 2.5, 0.16), Color("#c4a882"))
+	_box(room, Vector3(-1.7, 1.2, -0.2), Vector3(0.16, 2.5, 4.0), Color("#b89a78"))
+	_box(room, Vector3(2.65, 1.2, -0.2), Vector3(0.16, 2.5, 4.0), Color("#b89a78"))
+	_box(room, Vector3(0.48, 1.2, 1.7), Vector3(4.6, 2.5, 0.16), Color("#c4a882"))
+	_box(room, Vector3(0.48, 2.4, -0.2), Vector3(4.6, 0.1, 4.2), Color("#8a7060"))
+	var counter := _box(room, Vector3(0.48, 0.08, -0.95), Vector3(0.9, 0.1, 0.58), Color("#5c4030"))
+	counter.name = "Counter"
+	var pane := _box(room, Vector3(-1.6, 1.25, -0.55), Vector3(0.06, 0.55, 0.7), Color("#ffd2a4"))
+	pane.name = "InsideWindow"
+	var glass := pane.material_override as StandardMaterial3D
+	if glass:
+		glass.emission_enabled = true
+		glass.emission = Color("#ffe0b0")
+		glass.emission_energy_multiplier = 1.6
+	var view := Node3D.new()
+	view.name = "InsideView"
+	view.position = Vector3(0.85, 0.85, -0.15)
+	room.add_child(view)
+	var lamp := OmniLight3D.new()
+	lamp.name = "RoomLamp"
+	lamp.position = Vector3(0.48, 1.75, -0.35)
+	lamp.light_color = Color("ffd2a4")
+	lamp.light_energy = 1.4
+	lamp.omni_range = 4.6
+	lamp.shadow_enabled = false
+	room.add_child(lamp)
 
 func _hut(parent: Node3D) -> void:
 	var root := Node3D.new()

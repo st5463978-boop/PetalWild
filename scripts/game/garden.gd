@@ -18,6 +18,7 @@ var lane_walking := false
 var lane_walk_home := false
 var lane_drank := false
 var inside_lane := false
+var inside_tea := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
@@ -104,6 +105,9 @@ func _ready() -> void:
 		return
 	if OS.get_environment("PETAL_KETTLE_SHOT") == "1":
 		await _run_kettle_shot()
+		return
+	if OS.get_environment("PETAL_TEA_HOUSE_SHOT") == "1":
+		await _run_tea_house_shot()
 		return
 	if OS.get_environment("PETAL_FACE_SHOT") == "1":
 		await _run_face_shot()
@@ -289,7 +293,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_P:
 				_toggle_photo()
 			KEY_ENTER, KEY_KP_ENTER:
-				_enter_lane_house(false)
+				_enter_from_key()
 			KEY_T:
 				_sip_kitchen_tea()
 			KEY_G:
@@ -1868,10 +1872,100 @@ func _set_lane_shell(house: Node3D, show_shell: bool) -> void:
 	if room != null:
 		room.visible = not show_shell
 	for child in house.get_children():
-		if str(child.name) == "Interior" or str(child.name) == "Door":
+		var child_name := str(child.name)
+		if child_name == "Interior" or child_name == "Door" or child_name == "Kettle" or child_name == "Steam":
 			continue
 		if child is Node3D:
 			(child as Node3D).visible = show_shell
+
+func _remember_view() -> void:
+	lane_return_target = camera.target
+	lane_return_yaw = camera.yaw
+	lane_return_pitch = camera.pitch
+	lane_return_distance = camera.distance
+	lane_return_fov = camera.fov
+
+func _frame_interior(view: Node3D, look: Vector3) -> void:
+	var offset := view.global_position - look
+	var span := maxf(offset.length(), 0.4) * 1.22
+	camera.target = look
+	camera.distance = span
+	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
+	camera.yaw = rad_to_deg(atan2(offset.x, offset.z))
+	camera.fov = 58.0
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera._apply()
+
+func _restore_view() -> void:
+	if camera == null:
+		return
+	camera.target = lane_return_target
+	camera.yaw = lane_return_yaw
+	camera.pitch = lane_return_pitch
+	camera.distance = lane_return_distance
+	camera.fov = lane_return_fov
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera._apply()
+
+func _enter_from_key() -> void:
+	if inside_lane:
+		_enter_lane_house(false)
+		return
+	if inside_tea:
+		_leave_tea_house()
+		return
+	if _tea_close():
+		_enter_tea_house(false)
+		return
+	_enter_lane_house(false)
+
+func _tea_house() -> Node3D:
+	return find_child("HedgeTeaHouse", true, false) as Node3D
+
+func _tea_close() -> bool:
+	var house := _tea_house()
+	if house == null or camera == null:
+		return false
+	return camera.target.distance_to(house.global_position) <= 9.0
+
+func _enter_tea_house(force: bool) -> bool:
+	if inside_tea:
+		_leave_tea_house()
+		return false
+	if inside_lane:
+		return false
+	var house := _tea_house()
+	var room := house.get_node_or_null("Interior") as Node3D if house != null else null
+	if house == null or room == null or camera == null:
+		if not force:
+			toast("The tea house has no room yet.")
+		return false
+	if not force and not _tea_close():
+		toast("Walk up to the tea house.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var kettle := house.get_node_or_null("Kettle") as Node3D
+	if view == null or kettle == null:
+		return false
+	_remember_view()
+	inside_tea = true
+	_set_lane_shell(house, false)
+	_sync_cottage_tea()
+	_frame_interior(view, kettle.global_position + Vector3(0.0, 0.12, 0.0))
+	toast("Hedge Tea House. Esc steps back out.")
+	return true
+
+func _leave_tea_house() -> void:
+	if not inside_tea:
+		return
+	inside_tea = false
+	var house := _tea_house()
+	if house != null:
+		_set_lane_shell(house, true)
+	_restore_view()
+	_sync_cottage_tea()
 
 func _enter_lane_house(force: bool) -> bool:
 	if inside_lane:
@@ -1894,11 +1988,7 @@ func _enter_lane_house(force: bool) -> bool:
 	var hearth := room.get_node_or_null("Hearth") as Node3D
 	if view == null or hearth == null:
 		return false
-	lane_return_target = camera.target
-	lane_return_yaw = camera.yaw
-	lane_return_pitch = camera.pitch
-	lane_return_distance = camera.distance
-	lane_return_fov = camera.fov
+	_remember_view()
 	inside_lane = true
 	_set_lane_shell(house, false)
 	_sync_cottage_tea()
@@ -1908,16 +1998,7 @@ func _enter_lane_house(force: bool) -> bool:
 	var look := hearth.global_position + Vector3(0.0, 0.85, 0.2)
 	if pane != null and cup != null:
 		look = (pane.global_position + cup.global_position + hearth.global_position) / 3.0
-	var offset := view.global_position - look
-	var span := maxf(offset.length(), 0.4) * 1.22
-	camera.target = look
-	camera.distance = span
-	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
-	camera.yaw = rad_to_deg(atan2(offset.x, offset.z))
-	camera.fov = 58.0
-	camera.user_moved = true
-	camera.intro = 1.0
-	camera._apply()
+	_frame_interior(view, look)
 	toast("%s's kitchen. T drinks. Esc steps back out." % _lane_who())
 	return true
 
@@ -1946,15 +2027,7 @@ func _leave_lane_house() -> void:
 	var house := _first_lane_house()
 	if house != null:
 		_set_lane_shell(house, true)
-	if camera != null:
-		camera.target = lane_return_target
-		camera.yaw = lane_return_yaw
-		camera.pitch = lane_return_pitch
-		camera.distance = lane_return_distance
-		camera.fov = lane_return_fov
-		camera.user_moved = true
-		camera.intro = 1.0
-		camera._apply()
+	_restore_view()
 	_sync_lane()
 
 func _lane_tea_line() -> String:
@@ -9742,6 +9815,76 @@ func _run_kettle_shot() -> void:
 	print("PETAL_KETTLE_SHOT_OK")
 	get_tree().quit(0)
 
+func _run_tea_house_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	if bool(ContentDB.venues.get("tea_house", {}).get("active", true)) or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("tea house: the catalog went active")
+		get_tree().quit(1)
+		return
+	var house := _tea_house()
+	var room := house.get_node_or_null("Interior") as Node3D if house != null else null
+	var shell := house.get_node_or_null("Shell") as Node3D if house != null else null
+	var kettle := house.get_node_or_null("Kettle") as Node3D if house != null else null
+	if house == null or room == null or shell == null or kettle == null or room.visible:
+		push_error("tea house: the room was already open")
+		get_tree().quit(1)
+		return
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera.target = house.global_position + Vector3(0.2, 0.6, -2.0)
+	camera._apply()
+	if not _enter_tea_house(false) or not inside_tea or not room.visible or shell.visible:
+		push_error("tea house: Enter did not open")
+		get_tree().quit(1)
+		return
+	var fill_room := _lane_room()
+	var fill := fill_room.get_node_or_null("TeaFill") as Node3D if fill_room != null else null
+	if fill == null or fill.visible or _cottage_has_tea():
+		push_error("tea house: the kitchen cup did not start empty")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	stock_kettle()
+	if Economy.mill.brew != ParishChain.TEA or Economy.coins != coins or fill.visible:
+		push_error("tea house: the kettle did not start")
+		get_tree().quit(1)
+		return
+	_sync_mill()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if not _kitchen_in_frame(kettle):
+		push_error("tea house: the kettle left the frame at %s" % camera.unproject_position(kettle.global_position))
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.45).timeout
+	if not inside_tea or not _kitchen_in_frame(kettle):
+		push_error("tea house: the kettle left the frame at %s" % camera.unproject_position(kettle.global_position))
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/tea_house_inside.png")
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("tea house: the kettle did not finish")
+		get_tree().quit(1)
+		return
+	if Economy.mill.pot_count() > 0:
+		carry_tea()
+	if Economy.coins != coins or Economy.mill.crate_count() < 1 or not _cottage_has_tea() or not fill.visible or not inside_tea:
+		push_error("tea house: carrying left the kitchen cup empty")
+		get_tree().quit(1)
+		return
+	_esc()
+	if inside_tea or room.visible or not shell.visible:
+		push_error("tea house: Esc left the room open")
+		get_tree().quit(1)
+		return
+	print("PETAL_TEA_HOUSE_SHOT_OK")
+	get_tree().quit(0)
+
 func _run_garden_look_shot() -> void:
 	Settings.reduce_motion = true
 	DisplayServer.window_set_size(Vector2i(1440, 900))
@@ -13641,6 +13784,9 @@ func _toggle_photo() -> void:
 		camera.attributes = null
 
 func _esc() -> void:
+	if inside_tea:
+		_leave_tea_house()
+		return
 	if inside_lane:
 		_leave_lane_house()
 		return
