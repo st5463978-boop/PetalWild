@@ -75,6 +75,7 @@ func _run() -> void:
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH")
+		_hide_bed_folk(shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam05_crate(scene, shot_name == "CAM_05_MARKET_STALL")
 		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
@@ -83,6 +84,7 @@ func _run() -> void:
 		var img: Image = root.get_texture().get_image()
 		_hide_cam06_clutter(scene, false)
 		_hide_cam05_crate(scene, false)
+		_hide_bed_folk(false)
 		_hide_cam02_jelly(scene, false)
 		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
@@ -391,6 +393,16 @@ func _hide_cam05_crate(scene: Node, on: bool) -> void:
 	if tree != null:
 		for n: Node in tree.get_nodes_in_group("signoff_cam05_hide"):
 			n.visible = not on
+
+func _hide_bed_folk(on: bool) -> void:
+	# The soil and path shots are not the veg-folk camera. The stand-in stays on CAM_07.
+	for n: Node in get_nodes_in_group("resident"):
+		if on:
+			n.set_meta("signoff_folk_vis", n.visible)
+			n.visible = false
+		elif n.has_meta("signoff_folk_vis"):
+			n.visible = bool(n.get_meta("signoff_folk_vis"))
+			n.remove_meta("signoff_folk_vis")
 
 func _hide_cam02_jelly(scene: Node, on: bool) -> void:
 	if scene == null:
