@@ -1656,6 +1656,32 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _lane_place() -> String:
+	if inside_lane:
+		return "in the kitchen"
+	if lane_walking and lane_walk_home:
+		return "walking home"
+	if lane_walking:
+		return "walking to Grove Park"
+	if lane_on_lawn:
+		return "on the Grove Park lawn"
+	return "at the cottage door"
+
+func _town_page_lines() -> PackedStringArray:
+	var lines := town.page_lines()
+	if lane_body == null or _lane_where() == "":
+		return lines
+	var who := _lane_who()
+	var needle := "Near  %s ·" % who
+	var rewritten := PackedStringArray()
+	for line in lines:
+		var text := str(line)
+		if text.begins_with(needle):
+			rewritten.append("Near  %s · %s" % [who, _lane_place()])
+		else:
+			rewritten.append(text)
+	return rewritten
+
 func _send_lane_home() -> bool:
 	if lane_body == null or not lane_body.visible:
 		toast("Nobody is out.")
@@ -9109,6 +9135,17 @@ func _run_town_shot() -> void:
 		push_error("town shot: the page lost the door")
 		get_tree().quit(1)
 		return
+	var lied := false
+	for line in _town_page_lines():
+		var text := str(line)
+		if text.begins_with("Near  %s ·" % _lane_who()) and text.find("still no body") != -1:
+			lied = true
+		if text.begins_with("Near  %s ·" % _lane_who()) and text.find("cottage door") == -1:
+			lied = true
+	if lied:
+		push_error("town shot: the book still says the household has no body")
+		get_tree().quit(1)
+		return
 	if camera:
 		camera.pitch = 18.0
 		camera.yaw = 30.0
@@ -13082,7 +13119,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_houses"] = town.occupancy("lane")
 	stats["town_tea"] = town.occupancy("tea")
 	stats["town_cover"] = town.coverage()
-	stats["town_lines"] = town.page_lines()
+	stats["town_lines"] = _town_page_lines()
 	stats["tiers"] = SimLod.tiers.duplicate()
 	var vale_rows: Array = []
 	var vale_page: Dictionary = region.page()

@@ -79,7 +79,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/cottage_home.png` (1440×900). G again brought them back to the cottage door. The line reads “Reed walks home.”
 
-`docs/screenshots/town_parish.png` (1440×900). The place page opens with “Reed is at the cottage door.” The sim lines under it still say the lane records have no body.
+`docs/screenshots/town_parish.png` (1440×900). The place page opens with “Reed is at the cottage door.” The near-row for Reed says “at the cottage door.” Moss and the lawn visitors still read “still no body,” because those records are not this household.
 
 ## KNOWN REGRESSIONS
 
@@ -96,7 +96,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. The place page names where the cottage household is. The other five cottages stay closed. The sim’s “still no body” lines are the count records, not this embodied household.
+4. The place page names where the cottage household is, and Reed’s near-row matches that. The other five cottages stay closed. Moss and the lawn counts still have no body.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD
