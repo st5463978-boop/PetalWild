@@ -202,6 +202,9 @@ func _mount_mesh() -> bool:
 		return false
 	mesh_root.name = "FolkMesh"
 	body.add_child(mesh_root)
+	# The leek mesh is a 8 cm stalk. The carrot is three times as wide at the same height.
+	if family == "leek":
+		mesh_root.scale = Vector3(1.7, 1.7, 1.7)
 	_skin(mesh_root)
 	return true
 

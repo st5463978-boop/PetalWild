@@ -61,7 +61,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/residents_park_gate.png` (1440×900). Bram and Lumen walk through the hedge opening onto the park path. The garden beds and stall are behind them.
 
-`docs/screenshots/residents_park.png` (1440×900). They stand in the open grass in front of the benches. Bellhelp is between them with two black eyes. The count reads “2 on the lawn.” The hedge gate and the garden are behind the lawn.
+`docs/screenshots/residents_park.png` (1440×900). Bram the carrot and Lumen the leek both read as people in the open grass. Bellhelp is between them with two black eyes. The count reads “2 on the lawn.” The hedge gate and the garden are behind the lawn.
 
 ## KNOWN REGRESSIONS
 
