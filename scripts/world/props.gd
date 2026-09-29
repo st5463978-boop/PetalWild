@@ -302,13 +302,13 @@ func _cottage_room(house: Node3D) -> void:
 	_box(room, Vector3(0.16, 1.05, -0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.05, 0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.85, 0.0), Vector3(0.08, 0.5, 1.0), Color("#a88870"))
-	var pane := _box(room, Vector3(-2.44, 1.38, 0.55), Vector3(0.05, 0.48, 0.62), Color("#ffd2a4"))
+	var pane := _box(room, Vector3(-2.42, 1.25, 0.15), Vector3(0.06, 0.62, 0.78), Color("#ffd2a4"))
 	pane.name = "InsideWindow"
 	var glass := pane.material_override as StandardMaterial3D
 	if glass:
 		glass.emission_enabled = true
-		glass.emission = Color("#ffd2a4")
-		glass.emission_energy_multiplier = 0.8
+		glass.emission = Color("#ffe0b0")
+		glass.emission_energy_multiplier = 1.6
 	var table := _box(room, Vector3(-1.2, 0.42, 0.35), Vector3(0.85, 0.07, 0.5), Color("#8d6244"))
 	table.name = "Table"
 	var cup := _cylinder(room, Vector3(-0.95, 0.5, 0.48), 0.075, 0.06, 0.08, Color("#f3ead8"))

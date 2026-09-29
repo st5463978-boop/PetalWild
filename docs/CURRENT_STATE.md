@@ -47,7 +47,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` on this tip.
-- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, or if Esc leaves the room open.
+- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, if the window or the cup leaves the frame, or if Esc leaves the room open.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
 - `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes.
 - `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
@@ -71,7 +71,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/south_lane.png` (1440×900). The near cottage has a lit window and a tomato household at the door. The sign reads South Lane. Grove Park is beyond the path.
 
-`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. Moss stands by the table. The cup on the table has a red tea top because the kettle was carried. The line reads “Moss's kitchen. Esc steps back out.”
+`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. The lit window, Moss, the table, and the red tea top are in one frame. The line reads “Moss's kitchen. Esc steps back out.” A hedge sliver still shows through the doorway.
 
 ## KNOWN REGRESSIONS
 
@@ -88,7 +88,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. The kitchen cup follows the kettle. The other five cottages stay closed. Next is the lit window in that same frame.
+4. The kitchen frame holds the window, Moss, and the tea cup. The other five cottages stay closed. Next is closing the doorway gap that still shows the hedge.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD

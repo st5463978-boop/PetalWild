@@ -18,6 +18,7 @@ var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
 var lane_return_distance := 8.0
+var lane_return_fov := 40.0
 var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
@@ -1542,6 +1543,12 @@ func _lane_hearth() -> Vector3:
 		return room.global_position
 	return hearth.global_position
 
+func _kitchen_in_frame(node: Node3D) -> bool:
+	if camera == null or node == null:
+		return false
+	var screen := camera.unproject_position(node.global_position)
+	return screen.x > 80.0 and screen.x < 1360.0 and screen.y > 60.0 and screen.y < 820.0
+
 func _cottage_has_tea() -> bool:
 	return Economy.mill.pot_count() + Economy.mill.crate_count() > 0
 
@@ -1600,17 +1607,23 @@ func _enter_lane_house(force: bool) -> bool:
 	lane_return_yaw = camera.yaw
 	lane_return_pitch = camera.pitch
 	lane_return_distance = camera.distance
+	lane_return_fov = camera.fov
 	inside_lane = true
 	_set_lane_shell(house, false)
 	_sync_cottage_tea()
 	_pin_lane_body(hearth.global_position)
-	var look := hearth.global_position + Vector3(0.2, 0.45, 0.55)
+	var pane := room.get_node_or_null("InsideWindow") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	var look := hearth.global_position + Vector3(0.0, 0.85, 0.2)
+	if pane != null and cup != null:
+		look = (pane.global_position + cup.global_position + hearth.global_position) / 3.0
 	var offset := view.global_position - look
 	var span := maxf(offset.length(), 0.4)
 	camera.target = look
 	camera.distance = span
 	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
 	camera.yaw = rad_to_deg(atan2(offset.x, offset.z))
+	camera.fov = 58.0
 	camera.user_moved = true
 	camera.intro = 1.0
 	camera._apply()
@@ -1629,6 +1642,7 @@ func _leave_lane_house() -> void:
 		camera.yaw = lane_return_yaw
 		camera.pitch = lane_return_pitch
 		camera.distance = lane_return_distance
+		camera.fov = lane_return_fov
 		camera.user_moved = true
 		camera.intro = 1.0
 		camera._apply()
@@ -8831,6 +8845,12 @@ func _run_town_shot() -> void:
 	var fill := room.get_node_or_null("TeaFill") as Node3D
 	if fill == null or fill.visible != _cottage_has_tea() or not _cottage_has_tea():
 		push_error("town shot: the kitchen cup does not match the kettle")
+		get_tree().quit(1)
+		return
+	var pane := room.get_node_or_null("InsideWindow") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	if pane == null or cup == null or not _kitchen_in_frame(pane) or not _kitchen_in_frame(cup):
+		push_error("town shot: the window or the cup left the kitchen frame")
 		get_tree().quit(1)
 		return
 	await get_tree().create_timer(0.35).timeout
