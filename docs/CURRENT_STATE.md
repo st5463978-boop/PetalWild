@@ -71,7 +71,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/south_lane.png` (1440×900). The near cottage has a lit window and a tomato household at the door. The sign reads South Lane. Grove Park is beyond the path.
 
-`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. The lit window, Moss, the table, and the red tea top are in one frame. The line reads “Moss's kitchen. Esc steps back out.” A hedge sliver still shows through the doorway.
+`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. The lit window, Moss, the table, and the red tea top are in one frame. The line reads “Moss's kitchen. Esc steps back out.” The left of that frame has no hedge pixels.
 
 ## KNOWN REGRESSIONS
 
@@ -88,7 +88,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. The kitchen frame holds the window, Moss, and the tea cup. The other five cottages stay closed. Next is closing the doorway gap that still shows the hedge.
+4. The kitchen frame holds the window, Moss, and the tea cup, and the doorway no longer shows the hedge. The other five cottages stay closed.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD

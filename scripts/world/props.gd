@@ -295,13 +295,15 @@ func _cottage_room(house: Node3D) -> void:
 	room.visible = false
 	house.add_child(room)
 	_box(room, Vector3(-1.15, 0.03, 0.0), Vector3(2.6, 0.06, 2.4), Color("#6b4e3a"))
-	_box(room, Vector3(-2.48, 1.05, 0.0), Vector3(0.08, 2.1, 2.4), Color("#c4a882"))
-	_box(room, Vector3(-1.15, 1.05, 1.2), Vector3(2.6, 2.1, 0.08), Color("#b89a78"))
-	_box(room, Vector3(-1.15, 1.05, -1.2), Vector3(2.6, 2.1, 0.08), Color("#b89a78"))
+	_box(room, Vector3(-2.52, 1.05, 0.0), Vector3(0.16, 2.2, 2.7), Color("#c4a882"))
+	_box(room, Vector3(-0.4, 1.15, 1.28), Vector3(5.2, 2.5, 0.28), Color("#b89a78"))
+	_box(room, Vector3(-0.4, 1.15, -1.28), Vector3(5.2, 2.5, 0.28), Color("#b89a78"))
 	_box(room, Vector3(-1.15, 2.08, 0.0), Vector3(2.7, 0.08, 2.5), Color("#8a7060"))
 	_box(room, Vector3(0.16, 1.05, -0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.05, 0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.85, 0.0), Vector3(0.08, 0.5, 1.0), Color("#a88870"))
+	var door_panel := _box(room, Vector3(0.18, 0.8, 0.0), Vector3(0.1, 1.6, 1.08), Color("#6b4a32"))
+	door_panel.name = "DoorPanel"
 	var pane := _box(room, Vector3(-2.42, 1.25, 0.15), Vector3(0.06, 0.62, 0.78), Color("#ffd2a4"))
 	pane.name = "InsideWindow"
 	var glass := pane.material_override as StandardMaterial3D
@@ -324,7 +326,7 @@ func _cottage_room(house: Node3D) -> void:
 	room.add_child(hearth)
 	var view := Node3D.new()
 	view.name = "InsideView"
-	view.position = Vector3(-0.25, 1.32, 0.9)
+	view.position = Vector3(-0.32, 1.38, 0.55)
 	room.add_child(view)
 	var lamp := OmniLight3D.new()
 	lamp.name = "RoomLamp"

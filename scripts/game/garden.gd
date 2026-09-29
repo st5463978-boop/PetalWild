@@ -8850,7 +8850,9 @@ func _run_town_shot() -> void:
 	var pane := room.get_node_or_null("InsideWindow") as Node3D
 	var cup := room.get_node_or_null("TeaCup") as Node3D
 	if pane == null or cup == null or not _kitchen_in_frame(pane) or not _kitchen_in_frame(cup):
-		push_error("town shot: the window or the cup left the kitchen frame")
+		var pane_at := camera.unproject_position(pane.global_position) if pane != null else Vector2.ZERO
+		var cup_at := camera.unproject_position(cup.global_position) if cup != null else Vector2.ZERO
+		push_error("town shot: the window or the cup left the kitchen frame window=%s cup=%s" % [pane_at, cup_at])
 		get_tree().quit(1)
 		return
 	await get_tree().create_timer(0.35).timeout
