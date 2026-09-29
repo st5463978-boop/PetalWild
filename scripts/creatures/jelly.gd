@@ -2,6 +2,7 @@ class_name Jelly
 extends Node3D
 
 signal reacted(kind: String, jelly: Jelly)
+signal activity_changed(kind: String, jelly: Jelly)
 
 var species_id := ""
 var display_name := ""
@@ -57,6 +58,13 @@ var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
 var art_card: Sprite3D
 var icon_root: Node3D
+var work_intensity := 0.0
+var mail_pending := false
+var romance := ""
+var activity := "none"
+var status_icon: JellyStatusIcon
+var _forced_activity := ""
+var _happy_playing := false
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -67,12 +75,113 @@ func setup(definition: Dictionary) -> void:
 	_apply_tune(definition)
 	add_to_group("jelly")
 	_build(definition)
+	_mount_status_icon()
 	var here := Vector3.ZERO
 	if is_inside_tree():
 		here = global_position
 	attract = here
 	goal = here
 	last_safe = here
+
+func _mount_status_icon() -> void:
+	status_icon = JellyStatusIcon.new()
+	add_child(status_icon)
+	status_icon.bind(self)
+	if not status_icon.finished.is_connected(_on_status_icon_finished):
+		status_icon.finished.connect(_on_status_icon_finished)
+
+func set_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	elif kind == JellyActivity.NONE:
+		work_intensity = 0.0
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	if kind == JellyActivity.ROMANCE_INTERESTED:
+		romance = "interested"
+	elif kind == JellyActivity.ROMANCE_LOCKED:
+		romance = "locked"
+	_forced_activity = ""
+	_apply_activity(kind)
+
+func force_activity(kind: String, intensity := 1.0) -> void:
+	if not JellyActivity.is_kind(kind):
+		kind = JellyActivity.NONE
+	if kind == JellyActivity.WORKING:
+		work_intensity = maxf(intensity, 0.05)
+	if kind == JellyActivity.NONE:
+		_forced_activity = ""
+		_happy_playing = false
+		work_intensity = 0.0
+		refresh_activity()
+		return
+	_forced_activity = kind
+	if kind == JellyActivity.HAPPY:
+		pulse_happy()
+		return
+	_apply_activity(kind)
+
+func clear_force() -> void:
+	_forced_activity = ""
+	refresh_activity()
+
+func offer_mail() -> void:
+	mail_pending = true
+	refresh_activity()
+
+func handle_mail() -> void:
+	if not mail_pending:
+		return
+	mail_pending = false
+	refresh_activity()
+
+func pulse_happy() -> void:
+	_happy_playing = true
+	_apply_activity(JellyActivity.HAPPY, true)
+
+func show_interest() -> void:
+	if romance == "locked":
+		refresh_activity()
+		return
+	romance = "interested"
+	refresh_activity()
+
+func lock_romance() -> void:
+	romance = "locked"
+	refresh_activity()
+
+func clear_romance() -> void:
+	romance = ""
+	refresh_activity()
+
+func refresh_activity() -> void:
+	_apply_activity(JellyActivity.derive(self))
+
+func _apply_activity(kind: String, restart := false) -> void:
+	var changed := kind != activity
+	if not changed and not restart:
+		if status_icon != null and kind == JellyActivity.WORKING:
+			status_icon.set_intensity(work_intensity)
+		return
+	activity = kind
+	if status_icon != null:
+		if restart and kind == JellyActivity.HAPPY and not changed:
+			status_icon.replay()
+		else:
+			status_icon.set_activity(kind, work_intensity)
+	if changed:
+		activity_changed.emit(kind, self)
+
+func _on_status_icon_finished(kind: String) -> void:
+	if kind != JellyActivity.HAPPY:
+		return
+	_happy_playing = false
+	if _forced_activity == JellyActivity.HAPPY:
+		_forced_activity = ""
+	refresh_activity()
 
 func hit_radius() -> float:
 	var fit := _young_fit()
@@ -504,7 +613,9 @@ func poke() -> void:
 func inspect_face() -> void:
 	inspected = true
 	tier = 0
+	handle_mail()
 	poke()
+	pulse_happy()
 
 func clear_inspect() -> void:
 	inspected = false
@@ -517,6 +628,7 @@ func snack() -> void:
 	bite_wait = 4.0
 	poke_time = 0.55
 	reacted.emit("snack", self)
+	pulse_happy()
 
 func _eye(root: Node3D, at: Vector3, color: Color, keep_iris := false) -> Node3D:
 	var pivot := Node3D.new()

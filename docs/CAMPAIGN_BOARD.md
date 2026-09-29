@@ -7,7 +7,7 @@ NOW / NEXT / LATER. The long-term town-and-civilisation target is not this week'
 Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-jelly-body-9956`.
 
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
-- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes. The grab squash stays in camera space, so those eyes stay on the front.
+- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes. The grab squash stays in camera space, so those eyes stay on the front. A neon mark floats above that icon: cog while a hungry jelly is walking to food, envelope when a visitor comes back, heart for a snack or a click, locked heart when two adults of one species are here. The eyes stay clear.
 - Stall, jam, tea, journal. A carried jam crate sells at the Petal Stall for petal coins, the jam crate drops, dusk shuts that sale with the stall, and the save keeps the coins and the crate. Vale map on M. Town page on C. Selling the last carried tea empties the open South Lane kitchen cup. A crate left on the stall keeps that cup full. Carrying a pot, a resident finishing the crate, or a new pot refreshes that same open cup. Coins stay put unless it was a sale.
 - Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. South Lane puts six cottages on that path when the rumour is filed. A near camera stands one tomato household at the first door. Enter steps into that kitchen. T drinks one kettle tea. G walks that household through the gate to the lawn, the lawn count includes them, their cottage window goes dark while they are out, and arriving there draws a hungry Bellhelp onto that grass with both eyes showing. G again walks them home. The place page names where they are, keeps the tea sip after reload, and Reed’s near-row matches. Esc steps back out. The hint shows Enter, T, and G. Clicking the household says the tea line. Catalog stays `active: false`.
 
@@ -15,7 +15,7 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 
 - `PETAL_QA_SCRIPTS_OK`, `ICON_FACE_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The held plate and the landed plate show the gel with both eyes on the front. Carried tea already sells at the stall. Carried cane jam already sells too: `JAM_CRATE_SOLD_OK`.
 - `KITCHEN_CUP_SOLD_OK` covers the open kitchen after the last stall sale. `KITCHEN_CUP_LIVE_OK` covers that same open cup after a carry, after Lumen finishes the crate, and after a new pot.
-- Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
+- Neon status marks are on this branch. `JELLY_ICON_OK` is the plate where the cog sits above both eyes. The demo scene and gif reel stay on `cursor/jelly-status-icons-ffcb`.
 - `PETAL_TOWN_SHOT_OK` shows the door household, then the sealed kitchen with the window, Moss, and the tea cup, then the lawn again.
 - `kettle_brew.png` keeps the brewing kettle and its steam in frame.
 - `jam_pan.png` now shows the copper pan, the jam, and the steam. The shed wall is behind it.
