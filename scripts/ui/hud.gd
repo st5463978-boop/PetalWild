@@ -197,6 +197,17 @@ func show_place(stats: Dictionary) -> void:
 	var lane_where := str(stats.get("lane_where", ""))
 	if lane_where != "":
 		journal_box.add_child(ThemeKit.label(lane_where, 16))
+	for key in ["keeper_where", "cook_where"]:
+		var pose := str(stats.get(key, ""))
+		if pose == "":
+			continue
+		var seen := false
+		for town_line in stats.get("town_lines", []):
+			if str(town_line).find(pose) != -1:
+				seen = true
+				break
+		if not seen:
+			journal_box.add_child(ThemeKit.label(pose, 16))
 	var lane_memory := str(stats.get("lane_memory", ""))
 	if lane_memory != "":
 		journal_box.add_child(ThemeKit.label(lane_memory, 15))

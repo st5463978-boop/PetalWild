@@ -23,6 +23,8 @@ var inside_shed := false
 var inside_stall := false
 var lumen_stall_back := Vector3.ZERO
 var lumen_at_counter := false
+var bram_pan_back := Vector3.ZERO
+var bram_at_pan := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
@@ -1685,6 +1687,14 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _room_where(open: bool, id: String, at: String) -> String:
+	if not open:
+		return ""
+	var person := _person(id)
+	if person == null or not person.stay or person.display_name == "":
+		return ""
+	return "%s is %s." % [person.display_name.split(" ")[0], at]
+
 func _lane_speech() -> String:
 	if lane_drank:
 		return _lane_memory()
@@ -2042,6 +2052,7 @@ func _enter_potting_shed(force: bool) -> bool:
 	inside_shed = true
 	_set_lane_shell(shed, false)
 	_seat_pan(true)
+	_seat_cook(true)
 	_frame_interior(view, pan.global_position + Vector3(0.0, 0.18, 0.0))
 	toast("Potting shed. Esc steps back out.")
 	return true
@@ -2063,11 +2074,32 @@ func _seat_pan(inside: bool) -> void:
 	if steam != null:
 		steam.position = Vector3(0.05, 2.08, 8.95) if inside else Vector3(0.0, 0.58, 1.42)
 
+func _seat_cook(inside: bool) -> void:
+	var bram := _person("bram")
+	if bram == null:
+		return
+	if inside:
+		var shed := _potting_shed()
+		if shed == null:
+			return
+		bram_pan_back = bram.global_position
+		bram_at_pan = true
+		bram.stay = true
+		bram.global_position = shed.to_global(Vector3(-0.62, 1.4, 9.45))
+		bram.look_at(shed.to_global(Vector3(0.15, 1.55, 8.9)), Vector3.UP)
+		bram.say("The pan is on.")
+		return
+	bram.stay = false
+	if bram_at_pan:
+		bram.global_position = bram_pan_back
+		bram_at_pan = false
+
 func _leave_potting_shed() -> void:
 	if not inside_shed:
 		return
 	inside_shed = false
 	_seat_pan(false)
+	_seat_cook(false)
 	var shed := _potting_shed()
 	if shed != null:
 		_set_lane_shell(shed, true)
@@ -10123,6 +10155,16 @@ func _run_shed_shot() -> void:
 		push_error("shed: the pan left the frame at %s" % camera.unproject_position(pan.global_position))
 		get_tree().quit(1)
 		return
+	var bram := _person("bram")
+	var bram_px := camera.unproject_position(bram.global_position) if bram != null else Vector2.ZERO
+	if bram == null or not bram.stay or bram_px.x < 180.0 or bram_px.x > 1100.0 or bram_px.y < 140.0 or bram_px.y > 760.0:
+		push_error("shed: Bram is not at the pan %s" % bram_px)
+		get_tree().quit(1)
+		return
+	if _room_where(inside_shed, "bram", "at the pan") != "Bram is at the pan.":
+		push_error("shed: the page did not seat Bram")
+		get_tree().quit(1)
+		return
 	await _shot("/workspace/docs/screenshots/potting_shed_inside.png")
 	if Economy.mill.brewing() and not Economy.mill.tick(12.0):
 		push_error("shed: the pan did not finish")
@@ -10141,6 +10183,10 @@ func _run_shed_shot() -> void:
 		return
 	if pan.position.distance_to(Vector3(0.0, 0.22, 1.42)) > 0.02 or steam.position.distance_to(Vector3(0.0, 0.58, 1.42)) > 0.02:
 		push_error("shed: Esc left the pan off the step")
+		get_tree().quit(1)
+		return
+	if bram.stay or bram.global_position.distance_to(bram_pan_back) > 0.2 or _room_where(inside_shed, "bram", "at the pan") != "":
+		push_error("shed: Esc left Bram inside")
 		get_tree().quit(1)
 		return
 	print("PETAL_SHED_SHOT_OK")
@@ -10223,6 +10269,10 @@ func _run_stall_shot() -> void:
 		push_error("stall: Lumen is not at the counter %s" % lumen_px)
 		get_tree().quit(1)
 		return
+	if _room_where(inside_stall, "lumen", "at the counter") != "Lumen is at the counter.":
+		push_error("stall: the page did not seat Lumen")
+		get_tree().quit(1)
+		return
 	lumen.say("The counter is open.")
 	await _shot("/workspace/docs/screenshots/petal_stall_inside.png")
 	var tea_crates := Economy.mill.crate_count()
@@ -10274,7 +10324,7 @@ func _run_stall_shot() -> void:
 		push_error("stall: Esc left the camera inside")
 		get_tree().quit(1)
 		return
-	if lumen.stay or lumen.global_position.distance_to(lumen_stall_back) > 0.2:
+	if lumen.stay or lumen.global_position.distance_to(lumen_stall_back) > 0.2 or _room_where(inside_stall, "lumen", "at the counter") != "":
 		push_error("stall: Lumen stayed at the counter")
 		get_tree().quit(1)
 		return
@@ -13957,6 +14007,8 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_passers"] = _lane_passers()
 	stats["vale_line"] = region.headline()
 	stats["lane_where"] = _lane_where()
+	stats["keeper_where"] = _room_where(inside_stall, "lumen", "at the counter")
+	stats["cook_where"] = _room_where(inside_shed, "bram", "at the pan")
 	stats["lane_memory"] = _lane_memory()
 	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
