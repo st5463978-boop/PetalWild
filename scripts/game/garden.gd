@@ -8736,9 +8736,10 @@ func _run_kettle_shot() -> void:
 		get_tree().quit(1)
 		return
 	_sync_mill()
-	camera.yaw = 176.0
-	camera.pitch = 20.0
-	camera.focus_on(GardenLayout.SHED + Vector3(0.0, 0.35, 0.55), 6.6)
+	camera.yaw = 32.0
+	camera.pitch = 16.0
+	camera.focus_on(GardenLayout.SHED + Vector3(0.05, 0.3, 1.42), 3.1)
+	camera._apply()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/jam_pan.png")
 	Economy.mill.tick(12.0)

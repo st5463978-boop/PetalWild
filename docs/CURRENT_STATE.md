@@ -56,12 +56,13 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench. The hedge gate and the garden are in the background. Photo mode is on.
 
+`docs/screenshots/jam_pan.png` (1440×900). The shed pan is a copper pot of red jam with a puff of steam. The shed wall is behind it.
+
 `docs/screenshots/residents_park.png` (1440×900). Same lawn at dusk. The hedge gate opens onto the garden. Bellhelp stands on the grass with two black eyes. Bram (carrot) and Lumen (leek) stand on the open lawn. The count reads “2 on the lawn.”
 
 ## KNOWN REGRESSIONS
 
 - `main` does not boot the campaign garden.
-- `jam_pan.png` still shows the shed wall.
 - Tea house, hut, foundry, and hall are built in the scene and marked inactive in the catalog.
 - City Park pond scene and neon status icons are unmerged siblings of 08, not of 09.
 
@@ -71,8 +72,8 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Re-frame `jam_pan.png` off the shed wall.
-2. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
+1. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
+2. Keep the kettle brew plate on the kettle, the way the pan plate stays on the pan.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
 5. Give the icon a little gel volume that does not wash the eyes back out under the sun.
