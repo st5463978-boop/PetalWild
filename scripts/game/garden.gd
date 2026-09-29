@@ -111,6 +111,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_JELLY_PLAY") == "1":
 		await _run_jelly_play()
 		return
+	if OS.get_environment("PETAL_KITCHEN_SALE") == "1":
+		await _run_kitchen_sale()
+		return
 	if OS.get_environment("PETAL_TOWN_SHOT") == "1":
 		await _run_town_shot()
 		return
@@ -1141,6 +1144,7 @@ func sell_tea() -> void:
 	toast("Sold hedge tea for %d petal." % (price + extra))
 	_person("lumen").say("A cup for the lane.")
 	_sync_mill()
+	_sync_cottage_tea()
 	refresh_panels()
 
 func stock_jam() -> void:
@@ -9102,6 +9106,54 @@ func _run_jelly_play() -> void:
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_land.png")
 	print("JELLY_PLAY_OK")
+	get_tree().quit(0)
+
+func _run_kitchen_sale() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	for _cup in 2:
+		Economy.add("peach", 1)
+		Economy.add("meadowbell", 1)
+		if not Economy.stock_kettle() or not Economy.mill.tick(18.0) or not Economy.carry_tea():
+			push_error("kitchen sale: the crate missed a cup")
+			get_tree().quit(1)
+			return
+	if Economy.mill.crate_count() != 2 or Economy.mill.pot_count() != 0:
+		push_error("kitchen sale: expected two carried cups")
+		get_tree().quit(1)
+		return
+	if not _enter_lane_house(true):
+		push_error("kitchen sale: the kitchen did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	if room == null:
+		push_error("kitchen sale: the kitchen has no room")
+		get_tree().quit(1)
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	var cup := room.get_node_or_null("TeaCup") as Node3D
+	if fill == null or cup == null or not fill.visible or not _cottage_has_tea() or not _kitchen_in_frame(cup):
+		push_error("kitchen sale: the open cup did not start full")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	sell_tea()
+	if Economy.coins <= coins or Economy.mill.crate_count() != 1 or not _cottage_has_tea() or not fill.visible:
+		push_error("kitchen sale: a leftover crate emptied the cup")
+		get_tree().quit(1)
+		return
+	coins = Economy.coins
+	sell_tea()
+	if Economy.coins <= coins or Economy.mill.crate_count() != 0 or Economy.mill.pot_count() != 0 or _cottage_has_tea() or fill.visible or not inside_lane:
+		push_error("kitchen sale: the open kitchen kept a full cup")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.25).timeout
+	await _shot("/workspace/docs/screenshots/cottage_sold.png")
+	print("KITCHEN_CUP_SOLD_OK")
 	get_tree().quit(0)
 
 func _run_town_shot() -> void:
