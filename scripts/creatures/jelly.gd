@@ -793,21 +793,31 @@ func _apply_deform() -> void:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
 	_sync_presentation()
-	_face_icon()
+	_face_icon(feel_scale)
 
-func _face_icon() -> void:
+func _face_icon(feel_scale: Vector3 = Vector3.ONE) -> void:
 	if icon_root == null or not icon_root.visible or not is_inside_tree():
 		return
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
-	var at := cam.global_position
+	_seat_icon(cam.global_position, feel_scale)
+
+func _seat_icon(at: Vector3, feel_scale: Vector3) -> void:
+	if icon_root == null or body_root == null or not is_inside_tree():
+		return
 	var level := at
 	level.y = icon_root.global_position.y
 	at = level.lerp(at, 0.42)
 	if at.distance_squared_to(icon_root.global_position) < 0.04:
 		return
+	var parent_basis := body_root.global_transform.basis
+	# ponytail: camera-space squash. The pull axis stays on the hidden body until the icon can stretch along the grab.
+	var origin := icon_root.global_position
+	icon_root.global_transform = Transform3D(Basis.IDENTITY, origin)
 	icon_root.look_at(at, Vector3.UP)
+	var face := icon_root.global_transform.basis
+	icon_root.transform.basis = JellyFeel.icon_basis(parent_basis, face, feel_scale)
 
 func _halo() -> void:
 	halo = MeshInstance3D.new()

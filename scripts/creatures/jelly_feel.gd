@@ -162,6 +162,13 @@ static func stretch_amount(pull_len: float, speed: float, held: bool, gain: floa
 	return clampf(speed * 0.065, 0.0, 0.34)
 
 
+static func icon_basis(parent_basis: Basis, face: Basis, feel_scale: Vector3) -> Basis:
+	var aimed := face.orthonormalized().scaled(feel_scale)
+	if absf(parent_basis.determinant()) < 0.00001:
+		return aimed
+	return parent_basis.inverse() * aimed
+
+
 static func body_scale(squash: float, stretch: float) -> Vector3:
 	var sy := clampf(squash * (1.0 - stretch * 0.62), SQUASH_MIN, SQUASH_MAX)
 	var sx := clampf(sqrt(1.0 / maxf(sy, 0.2)) * (1.0 + stretch * 0.28), 0.58, 1.8)

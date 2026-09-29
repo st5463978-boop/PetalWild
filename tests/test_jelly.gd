@@ -17,6 +17,7 @@ func _init() -> void:
 	_park_land()
 	_deform()
 	_art_keeps_body()
+	_icon_faces_camera()
 	if failed:
 		quit(1)
 		return
@@ -212,6 +213,21 @@ func _art_keeps_body() -> void:
 	jelly._apply_deform()
 	_expect(not art.visible and jelly.icon_root.visible, "a grab shows the icon")
 	jelly.free()
+
+func _icon_faces_camera() -> void:
+	var deform := JellyDeform.new()
+	var parent := deform.basis_for(Vector3(1.0, 0.0, 0.0), 0.55).scaled(Vector3(1.7, 0.55, 1.7))
+	# Godot looks down -Z. A face aimed at +Z keeps local -Z toward the camera.
+	var face := Basis(Vector3(-1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, -1.0))
+	var feel := JellyFeel.body_scale(0.74, 0.48)
+	var local := JellyFeel.icon_basis(parent, face, feel)
+	var world := parent * local
+	var shown := world.get_scale()
+	_expect(shown.y < shown.x * 0.85, "the gel the player sees squashes")
+	for side in [-1.0, 1.0]:
+		var eye: Vector3 = world * Vector3(side * 0.11, 0.2, -0.3)
+		_expect(eye.z > 0.05, "a stretched grab keeps an eye on the camera side")
+	print("ICON_FACE_OK")
 
 func _mesh_count(n: Node) -> int:
 	if n == null or n.name == "Art":

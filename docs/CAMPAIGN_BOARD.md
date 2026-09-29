@@ -7,13 +7,14 @@ NOW / NEXT / LATER. The long-term town-and-civilisation target is not this week'
 Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-jelly-body-9956`.
 
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
-- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes.
+- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes. The grab squash stays in camera space, so those eyes stay on the front.
 - Stall, jam, tea, journal. Vale map on M. Town page on C.
 - Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. South Lane puts six cottages on that path when the rumour is filed. A near camera stands one tomato household at the first door. Enter steps into that kitchen. T drinks one kettle tea. G walks that household through the gate to the lawn, the lawn count includes them, their cottage window goes dark while they are out, and arriving there draws a hungry Bellhelp onto that grass with both eyes showing. G again walks them home. The place page names where they are, keeps the tea sip after reload, and Reed’s near-row matches. Esc steps back out. The hint shows Enter, T, and G. Clicking the household says the tea line. Catalog stays `active: false`.
 
 ## NEXT
 
-- `PETAL_QA_SCRIPTS_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The park frame shows the gate, the lawn, Bellhelp, and both veg folk.
+- `PETAL_QA_SCRIPTS_OK`, `ICON_FACE_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The held plate shows the squashed gel with both eyes on the front. Carried tea already sells at the stall.
+- Selling the last crate while the kitchen is open should empty the cup on the table.
 - Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
 - `PETAL_TOWN_SHOT_OK` shows the door household, then the sealed kitchen with the window, Moss, and the tea cup, then the lawn again.
 - `kettle_brew.png` keeps the brewing kettle and its steam in frame.
