@@ -8672,14 +8672,33 @@ func _run_resident_shot() -> void:
 	_tick_parish(0.2)
 	Clock.running = true
 	for id in ["lumen", "bram"]:
-		var dest: Vector3 = parish.destination(id)
-		if dest.x == INF:
+		var trip := _life_route(id)
+		if trip.is_empty():
 			continue
-		dest += _life_offset(id)
-		_person(id).global_position = dest
-		var stay: Array[Vector3] = [dest]
-		_person(id).set_route(stay, true)
-		_person(id).set_activity(parish.label_for(id))
+		var walker := _person(id)
+		walker.loop_route = false
+		walker.global_position = trip[0]
+		walker.set_route(trip, false)
+		walker.set_activity(parish.label_for(id))
+		for _step in 36:
+			walker._process(0.05)
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 180.0
+		camera.focus_on(GardenLayout.GATE + Vector3(0.0, 0.4, -0.8), 6.2)
+		camera._apply()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().process_frame
+	await _shot("/workspace/docs/screenshots/residents_park_gate.png")
+	for id in ["lumen", "bram"]:
+		var walker := _person(id)
+		for _step in 240:
+			if walker.waypoints.is_empty():
+				break
+			var goal := walker.waypoints[walker.waypoints.size() - 1]
+			if walker.global_position.distance_to(goal) < 0.35:
+				break
+			walker._process(0.05)
 	_person("bram").say(parish._line("bram", "leisure"))
 	var jelly: Jelly = null
 	if ecology != null:
@@ -11882,12 +11901,15 @@ func _tick_parish(delta: float) -> void:
 			person.set_activity("")
 		if person.has_chore or not person.present:
 			continue
-		var dest: Vector3 = parish.destination(id)
-		if dest.x == INF:
+		var route := _life_route(str(id))
+		if route.is_empty():
 			continue
-		dest += _life_offset(str(id))
-		if person.waypoints.size() != 1 or person.waypoints[0].distance_to(dest) > 0.45:
-			var route: Array[Vector3] = [dest]
+		person.loop_route = route.size() < 2
+		var goal := route[route.size() - 1]
+		var last := Vector3.INF
+		if person.waypoints.size() > 0:
+			last = person.waypoints[person.waypoints.size() - 1]
+		if last.x == INF or last.distance_to(goal) > 0.45:
 			person.set_route(route, false)
 	_serve_eat()
 	if Clock.running:
@@ -11895,6 +11917,18 @@ func _tick_parish(delta: float) -> void:
 			var speaker := _person(str(row.get("id", "")))
 			if speaker and speaker.present:
 				speaker.say(str(row.get("text", "")))
+
+func _life_route(id: String) -> Array[Vector3]:
+	var dest: Vector3 = parish.destination(id)
+	if dest.x == INF:
+		return []
+	dest += _life_offset(id)
+	var life: Dictionary = parish.lives.get(id, {})
+	var route: Array[Vector3] = []
+	if str(life.get("activity", "")) == "leisure" and str(life.get("places", {}).get("leisure", "")) == "park":
+		route.append(GardenLayout.GATE + Vector3(0.0, 0.0, 0.35))
+	route.append(dest)
+	return route
 
 func _life_offset(id: String) -> Vector3:
 	match id:

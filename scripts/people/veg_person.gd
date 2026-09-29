@@ -19,6 +19,7 @@ var activity := "work"
 var memories: Array = []
 var tier := 1
 var waypoints: Array[Vector3] = []
+var loop_route := true
 var chore := Vector3.ZERO
 var has_chore := false
 var index := 0
@@ -106,6 +107,9 @@ func _process(delta: float) -> void:
 	var gap := flat.length()
 	if gap < 0.18:
 		if has_chore:
+			return
+		if not loop_route and index >= waypoints.size() - 1:
+			pause = 1.2
 			return
 		index = (index + 1) % waypoints.size()
 		pause = randf_range(0.6, 1.8)

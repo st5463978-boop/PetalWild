@@ -9,7 +9,7 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
 - Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows the gel icon.
 - Stall, jam, tea, journal. Vale map on M. Town page on C.
-- Grove Park opens after the road rumour and Nessa's filing: lawn, benches, a walk to the hedge gate, and Lumen and Bram on the grass. Catalog stays `active: false`.
+- Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. Catalog stays `active: false`.
 
 ## NEXT
 
