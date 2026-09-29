@@ -15,6 +15,7 @@ var people := {}
 var lane_body: VegPerson
 var lane_on_lawn := false
 var lane_walking := false
+var lane_walk_home := false
 var inside_lane := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
@@ -285,7 +286,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_T:
 				_sip_kitchen_tea()
 			KEY_G:
-				_send_lane_to_park()
+				if lane_on_lawn:
+					_send_lane_home()
+				elif not lane_walking:
+					_send_lane_to_park()
 			KEY_ESCAPE:
 				_esc()
 			KEY_F3:
@@ -1591,10 +1595,12 @@ func _lane_route() -> Array[Vector3]:
 func _note_lane_arrival() -> void:
 	if not lane_walking or lane_body == null:
 		return
-	if lane_body.global_position.distance_to(_lane_lawn_spot()) > 0.45:
+	var goal := _lane_door_spot() if lane_walk_home else _lane_lawn_spot()
+	if lane_body.global_position.distance_to(goal) > 0.45:
 		return
 	lane_walking = false
-	lane_on_lawn = true
+	lane_on_lawn = not lane_walk_home
+	lane_walk_home = false
 	lane_body.waypoints.clear()
 	lane_body.loop_route = false
 
@@ -1620,6 +1626,44 @@ func _send_lane_to_park() -> bool:
 	var snap := lane_body.global_position.distance_to(route[0]) > 0.8
 	lane_body.set_route(route, snap)
 	toast("%s walks to the Grove Park lawn." % who)
+	return true
+
+func _lane_door_spot() -> Vector3:
+	var house := _first_lane_house()
+	if house == null:
+		return GardenLayout.GATE
+	var door := house.get_node_or_null("Door") as Node3D
+	var at := door.global_position if door != null else house.global_position
+	at.y = 0.0
+	return at
+
+func _lane_who() -> String:
+	if lane_body != null and lane_body.display_name != "":
+		return lane_body.display_name
+	return _lane_household_name()
+
+func _send_lane_home() -> bool:
+	if lane_body == null or not lane_body.visible:
+		toast("Nobody is out.")
+		return false
+	if lane_walking:
+		toast("%s is already on the path." % _lane_who())
+		return false
+	if not lane_on_lawn:
+		toast("%s is already home." % _lane_who())
+		return false
+	var who := _lane_who()
+	lane_on_lawn = false
+	lane_walk_home = true
+	lane_walking = true
+	var gate := GardenLayout.GATE
+	gate.y = 0.0
+	var points: Array[Vector3] = [lane_body.global_position, gate, _lane_door_spot()]
+	lane_body.loop_route = false
+	lane_body.present = true
+	lane_body.visible = true
+	lane_body.set_route(points, false)
+	toast("%s walks home." % who)
 	return true
 
 func _lane_room() -> Node3D:
@@ -1721,7 +1765,7 @@ func _enter_lane_house(force: bool) -> bool:
 	camera.user_moved = true
 	camera.intro = 1.0
 	camera._apply()
-	toast("%s's kitchen. T drinks. Esc steps back out." % _lane_household_name())
+	toast("%s's kitchen. T drinks. Esc steps back out." % _lane_who())
 	return true
 
 func _sip_kitchen_tea() -> bool:
@@ -1738,7 +1782,7 @@ func _sip_kitchen_tea() -> bool:
 		_sync_cottage_tea()
 		return false
 	_sync_cottage_tea()
-	toast("%s drinks the hedge tea." % _lane_household_name())
+	toast("%s drinks the hedge tea." % _lane_who())
 	return true
 
 func _leave_lane_house() -> void:
@@ -9023,6 +9067,33 @@ func _run_town_shot() -> void:
 		camera._apply()
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/cottage_to_park.png")
+	if not _send_lane_home():
+		push_error("town shot: the household did not start home")
+		get_tree().quit(1)
+		return
+	var door_spot := _lane_door_spot()
+	saw_gate = false
+	var home := false
+	for _back in 700:
+		lane_body.pause = 0.0
+		lane_body._process(0.05)
+		if lane_body.global_position.distance_to(GardenLayout.GATE) < 1.35:
+			saw_gate = true
+		_note_lane_arrival()
+		if not lane_walking and not lane_on_lawn:
+			home = true
+			break
+	if not saw_gate or not home or lane_body.global_position.distance_to(door_spot) > 0.6:
+		push_error("town shot: the walk home missed the gate or the door")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 30.0
+		camera.focus_on(door_spot + Vector3(0.0, 0.4, 0.0), 4.8)
+		camera._apply()
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/cottage_home.png")
 	_leave_lane_house()
 	if room.visible:
 		push_error("town shot: the kitchen stayed open")
