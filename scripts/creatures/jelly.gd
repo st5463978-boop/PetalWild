@@ -56,6 +56,7 @@ var nuzzled := false
 var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
 var art_card: Sprite3D
+var icon_root: Node3D
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -189,7 +190,61 @@ func _build(definition: Dictionary) -> void:
 		art_card = make_card(card, maxf(radius * 1.7, 0.44))
 		art_card.name = "Art"
 		root.add_child(art_card)
+	_icon_body(root, shape)
 	_sync_presentation()
+
+func _icon_body(root: Node3D, shape: String) -> void:
+	icon_root = Node3D.new()
+	icon_root.name = "Icon"
+	root.add_child(icon_root)
+	var body := MeshInstance3D.new()
+	body.name = "IconBody"
+	var sphere := SphereMesh.new()
+	sphere.radius = radius * 0.92
+	sphere.height = radius * 1.84
+	sphere.radial_segments = 24
+	sphere.rings = 16
+	body.mesh = sphere
+	var icon_mat := mat.duplicate() as ShaderMaterial
+	var deep: Color = mat.get_shader_parameter("deep_color")
+	icon_mat.set_shader_parameter("lit_color", deep.lightened(0.12))
+	icon_mat.set_shader_parameter("glow_color", deep.lightened(0.2))
+	body.material_override = icon_mat
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	match shape:
+		"long":
+			body.scale = Vector3(0.72, 1.35, 0.72)
+		"flat":
+			body.scale = Vector3(1.25, 0.62, 1.05)
+		"stacked":
+			body.scale = Vector3(1.05, 1.05, 1.05)
+			var box := BoxMesh.new()
+			box.size = Vector3(radius * 1.55, radius * 1.45, radius * 1.55)
+			body.mesh = box
+		"lobes", "crown":
+			body.scale = Vector3(1.2, 0.92, 1.05)
+		"pear":
+			body.scale = Vector3(0.86, 1.2, 0.86)
+		_:
+			body.scale = Vector3.ONE
+	body.position = Vector3(0.0, radius * body.scale.y, 0.0)
+	icon_root.add_child(body)
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.albedo_color = Color(0.04, 0.04, 0.05)
+	eye_mat.roughness = 0.55
+	eye_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var eye_y := body.position.y + radius * 0.22 * body.scale.y
+	var eye_z := -radius * 0.78 * maxf(body.scale.z, 0.7)
+	for side in [-1.0, 1.0]:
+		var eye := MeshInstance3D.new()
+		eye.name = "IconEye"
+		var slab := BoxMesh.new()
+		slab.size = Vector3(radius * 0.1, radius * 0.58, radius * 0.08)
+		eye.mesh = slab
+		eye.material_override = eye_mat
+		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 1.08)
+		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		icon_root.add_child(eye)
 
 func _show_volume() -> bool:
 	if art_card == null:
@@ -205,14 +260,16 @@ func _show_volume() -> bool:
 	return false
 
 func _sync_presentation() -> void:
-	if art_card == null:
-		return
 	var show_body := _show_volume()
-	art_card.visible = not show_body
-	_set_procedural_visible(body_root, show_body)
+	if art_card != null:
+		art_card.visible = not show_body
+	if icon_root != null:
+		icon_root.visible = show_body or art_card == null
+	# The petal bell reads as a bush. The icon is the body the player holds.
+	_set_procedural_visible(body_root, icon_root == null and (art_card == null or show_body))
 
 func _set_procedural_visible(n: Node, on: bool) -> void:
-	if n == null or n == art_card:
+	if n == null or n == art_card or n.name == "Icon":
 		return
 	if n is GeometryInstance3D:
 		(n as GeometryInstance3D).visible = on
@@ -713,7 +770,7 @@ func _apply_deform() -> void:
 	else:
 		body_root.position = Vector3.ZERO
 		body_root.scale = feel_scale
-	if held:
+	if held and is_inside_tree():
 		var pull := hold_target - global_position
 		pull.y = 0.0
 		if pull.length() > 0.08 and deform.stretch <= 0.08:
@@ -732,6 +789,19 @@ func _apply_deform() -> void:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
 	_sync_presentation()
+	_face_icon()
+
+func _face_icon() -> void:
+	if icon_root == null or not icon_root.visible or not is_inside_tree():
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var at := cam.global_position
+	at.y = icon_root.global_position.y
+	if at.distance_squared_to(icon_root.global_position) < 0.04:
+		return
+	icon_root.look_at(at, Vector3.UP)
 
 func _halo() -> void:
 	halo = MeshInstance3D.new()

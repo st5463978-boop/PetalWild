@@ -21,8 +21,9 @@ Grove Park lawn exists in the scene and stays hidden until Nessa files `parish_p
 ## WORKING SYSTEMS
 
 Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, hungry face, dusk park stroll, jam and tea, vale carts, ask-first map.
-Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows the deformable body and the face.
+Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a simple gel icon (one body, two black eyes) instead of the petal bell. The icon turns to face the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
+Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -44,18 +45,18 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-- `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` (rules, systems, contracts, foundation, jelly feel including the cut-out body check, residents, town, region).
-- `PETAL_JELLY_PLAY=1 tools/run.sh res://scenes/garden.tscn` → `JELLY_PLAY_OK`, land_y=0.015, feel=bounce, on the park lawn.
+- `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK`.
+- `PETAL_JELLY_PLAY=1 tools/run.sh res://scenes/garden.tscn` → `JELLY_PLAY_OK`.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
 
-`docs/screenshots/jelly_hungry.png` (1440×900). Bellhelp stands on the path in front of the stall. HUD reads `Bellhelp · hungry`. The face is the volume, not the resting card. `jelly_nuzzle.png` reads `happy · held` and “Bellhelp nuzzles your hands.” The lawn bush still covers the lower body.
+`docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is on the Grove Park lawn, HUD `happy · held`, toast “Bellhelp nuzzles your hands.” The lawn walk runs to the hedge opening, and the garden is visible beyond it. A second jelly in the same frame shows the two black eyes. Bellhelp’s near body is still a pale sunlit facet; the eyes are easy to miss at this size.
 
 ## KNOWN REGRESSIONS
 
 - `main` does not boot the campaign garden.
-- Grove Park nuzzle still sits in a lawn bush. The face reads; the skirt does not.
+- Bellhelp’s close icon still sun-lights into a pale facet, so the eyes are weaker than on the smaller jelly in the same shot.
 - `jam_pan.png` still shows the shed wall.
 - Tea house, hut, foundry, and hall are built in the scene and marked inactive in the catalog.
 - City Park pond scene and neon status icons are unmerged siblings of 08, not of 09.
@@ -66,8 +67,8 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Move the Grove Park grab pad off the lawn bush so nuzzle shows the whole body.
-2. Cherry-pick neon status icons only if they attach to the volume and leave the hungry face visible.
+1. Keep the icon one colour under this sun so both eyes read on a close Bellhelp.
+2. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
 3. Re-frame `jam_pan.png` off the shed wall.
 4. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 5. When this suite stays green, make this garden the boot line. `main` is still the stone tail.

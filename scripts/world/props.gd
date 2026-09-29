@@ -204,6 +204,12 @@ func _park(parent: Node3D) -> void:
 	parent.add_child(root)
 	_box(root, Vector3(0, 0.02, 0), Vector3(4.6, 0.04, 3.2), Color("#3f6a32"))
 	_box(root, Vector3(0, 0.035, 1.5), Vector3(0.72, 0.03, 2.6), Color("#6b5340"))
+	# One worn strip from the lawn to the hedge gate. Separate slabs read as debris.
+	var gate_z := GardenLayout.GATE.z - GardenLayout.PARK.z
+	var path_end := gate_z - 0.35
+	var path_start := 1.55
+	var walk := _box(root, Vector3(0.0, 0.028, (path_start + path_end) * 0.5), Vector3(1.35, 0.04, path_end - path_start), Color("#6a5a48"))
+	walk.name = "ParkPath"
 	_box(root, Vector3(-1.6, 0.04, -1.1), Vector3(0.7, 0.08, 0.5), Color("#4a4038"))
 	_box(root, Vector3(1.5, 0.04, 0.9), Vector3(0.6, 0.07, 0.42), Color("#4a4038"))
 	_bench(root, Vector3(-1.2, 0.0, 0.6))

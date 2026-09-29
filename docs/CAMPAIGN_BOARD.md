@@ -7,15 +7,15 @@ NOW / NEXT / LATER. The long-term town-and-civilisation target is not this week'
 Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-jelly-body-9956`.
 
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
-- Grab, nuzzle, throw. Hunger shows the face; a fed idle jelly shows the approved cut-out.
+- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows the gel icon.
 - Stall, jam, tea, journal. Vale map on M. Town page on C.
-- Grove Park lawn opens only after the road rumour and Nessa's filing. Catalog stays `active: false`.
+- Grove Park opens after the road rumour and Nessa's filing: lawn, benches, and a walk to the hedge gate. Catalog stays `active: false`.
 
 ## NEXT
 
 - `PETAL_QA_SCRIPTS_OK` and `JELLY_PLAY_OK` are green on this tip (2026-09-29).
-- Move the Grove Park nuzzle off the lawn bush.
-- Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the volume, not on a card that hides the face.
+- Make the close icon read as one colour with two eyes under the garden sun.
+- Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
 - Point `main` at this garden when the suite stays green. Do not replay the east-chain.
 
 ## LATER

@@ -1,5 +1,7 @@
 extends SceneTree
 
+var failed := false
+
 func _init() -> void:
 	_scale()
 	_release()
@@ -15,6 +17,9 @@ func _init() -> void:
 	_park_land()
 	_deform()
 	_art_keeps_body()
+	if failed:
+		quit(1)
+		return
 	print("JELLY_FEEL_OK")
 	quit(0)
 
@@ -177,38 +182,35 @@ func _deform() -> void:
 func _art_keeps_body() -> void:
 	var jelly := Jelly.new()
 	root.add_child(jelly)
-	var definition: Dictionary = {}
-	if ContentDB != null:
-		definition = ContentDB.species_def("bellhelp")
-	if definition.is_empty():
-		definition = {
-			"id": "bellhelp",
-			"name": "Bellhelp",
-			"shape": "bell",
-			"radius": 0.34,
-			"deep": "#3aaa66",
-			"lit": "#e7ffd2",
-			"glow": "#d6ff6a",
-			"eye": "#fff4c8",
-		}
+	var definition := {
+		"id": "bellhelp",
+		"name": "Bellhelp",
+		"shape": "bell",
+		"radius": 0.34,
+		"deep": "#3aaa66",
+		"lit": "#e7ffd2",
+		"glow": "#d6ff6a",
+		"eye": "#fff4c8",
+	}
 	jelly.setup(definition)
 	var body := jelly.get_node_or_null("Body") as Node3D
 	_expect(body != null, "jelly has a body")
 	_expect(_mesh_count(body) >= 3, "the deformable body stays when the cut-out exists")
 	var art := body.get_node_or_null("Art") as Sprite3D
 	_expect(art != null and art.visible, "a fed jelly rests on the approved card")
-	_expect(not _volume_visible(body), "the volume hides behind the resting card")
+	_expect(jelly.icon_root != null and not jelly.icon_root.visible, "the icon waits behind the resting card")
 	jelly.hunger = 0.16
 	jelly.mood = "hungry"
 	jelly._apply_deform()
-	_expect(not art.visible, "hunger puts the face back")
-	_expect(jelly.mouth != null and _volume_visible(body), "the hungry face is visible")
+	_expect(not art.visible, "hunger puts the card away")
+	var icon := body.get_node_or_null("Icon/IconBody") as MeshInstance3D
+	_expect(icon != null and jelly.icon_root.visible, "hunger shows the icon body")
 	jelly.hunger = 1.0
 	jelly.mood = "content"
 	jelly.feel = "idle"
 	jelly.held = true
 	jelly._apply_deform()
-	_expect(not art.visible and _volume_visible(body), "a grab shows the volume")
+	_expect(not art.visible and jelly.icon_root.visible, "a grab shows the icon")
 	jelly.free()
 
 func _mesh_count(n: Node) -> int:
@@ -221,18 +223,8 @@ func _mesh_count(n: Node) -> int:
 		count += _mesh_count(child)
 	return count
 
-func _volume_visible(n: Node) -> bool:
-	if n == null or n.name == "Art":
-		return false
-	if n is MeshInstance3D and (n as MeshInstance3D).visible and (n as MeshInstance3D).mesh != null:
-		return true
-	for child in n.get_children():
-		if _volume_visible(child):
-			return true
-	return false
-
 func _expect(ok: bool, label: String) -> void:
 	if ok:
 		return
+	failed = true
 	push_error("jelly: " + label)
-	quit(1)

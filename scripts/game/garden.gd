@@ -8516,7 +8516,7 @@ func _run_jelly_play() -> void:
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/jelly_hungry.png")
-	var pad := GardenLayout.PARK + Vector3(0.2, 0.18, 0.15)
+	var pad := GardenLayout.PARK + Vector3(-1.15, 0.2, -0.35)
 	jelly.global_position = pad
 	jelly.attract = pad
 	jelly.goal = pad
@@ -8524,7 +8524,7 @@ func _run_jelly_play() -> void:
 	jelly.vel = Vector3.ZERO
 	jelly.rotation.y = PI
 	held = jelly
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.2)
+	_frame_park(jelly)
 	await get_tree().create_timer(0.2).timeout
 	jelly.grab(jelly.global_position + Vector3(0.55, 1.05, 0.08))
 	for _i in 16:
@@ -8534,7 +8534,7 @@ func _run_jelly_play() -> void:
 		get_tree().quit(1)
 		return
 	jelly.set_select(true, true)
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	_frame_park(jelly)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_held.png")
 	jelly.hold_target = jelly.global_position + Vector3(0.03, 0.22, 0.0)
@@ -8547,7 +8547,7 @@ func _run_jelly_play() -> void:
 		get_tree().quit(1)
 		return
 	jelly.set_select(true, true)
-	camera.focus_on(jelly.global_position + Vector3(0.0, 0.38, 0.0), 2.05)
+	_frame_park(jelly)
 	await get_tree().process_frame
 	await _shot("/workspace/docs/screenshots/jelly_nuzzle.png")
 	jelly.sample_pos.clear()
@@ -8765,6 +8765,18 @@ func _run_garden_look_shot() -> void:
 	await _shot("/workspace/docs/screenshots/garden_stall.png")
 	print("PETAL_GARDEN_LOOK_OK")
 	get_tree().quit(0)
+
+func _frame_park(jelly: Jelly) -> void:
+	if camera == null or jelly == null:
+		return
+	camera.pitch = 18.0
+	camera.yaw = 148.0
+	camera.focus_on(jelly.global_position + Vector3(0.0, 0.35, 0.0), 5.6)
+	camera._apply()
+	if jelly.is_inside_tree():
+		var face_at := camera.global_position
+		face_at.y = jelly.global_position.y
+		jelly.look_at(face_at, Vector3.UP)
 
 func _shot(path: String) -> void:
 	await RenderingServer.frame_post_draw
