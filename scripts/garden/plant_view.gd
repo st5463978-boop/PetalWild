@@ -182,17 +182,13 @@ func _meadowbell() -> void:
 	_blossom(Vector3(-0.3, 0.1, 0.08), Color("#d07088"), heart, 0.8)
 
 func _blossom(at: Vector3, petal: Color, heart: Color, bloom := 1.0) -> void:
-	var heart_ball := _ball(at + Vector3(0, 0.03, 0), 0.06 * bloom, heart)
+	# ponytail: flat boxes vanished edge-on from the bed camera; squashed spheres keep a face.
+	var heart_ball := _ball(at + Vector3(0, 0.04, 0), 0.07 * bloom, heart, Vector3(1.15, 0.4, 1.15))
 	_flat(heart_ball)
 	for i in 5:
 		var angle := TAU * float(i) / 5.0
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.22, 0.012, 0.09) * bloom
-		var card := _paint(mesh, petal)
-		_flat(card)
-		card.position = at + Vector3(cos(angle) * 0.13 * bloom, 0.02, sin(angle) * 0.13 * bloom)
-		card.rotation = Vector3(-0.2, -angle, 0.0)
-		add_child(card)
+		var petal_ball := _ball(at + Vector3(cos(angle) * 0.16 * bloom, 0.03, sin(angle) * 0.16 * bloom), 0.08 * bloom, petal, Vector3(1.3, 0.38, 0.85))
+		_flat(petal_ball)
 
 func _flat(node: MeshInstance3D) -> void:
 	var mat := node.material_override as StandardMaterial3D
