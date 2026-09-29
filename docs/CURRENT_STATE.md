@@ -54,6 +54,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is a flat species-green icon with two black vertical eyes, on the Grove Park lawn.
 
+`docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench. The hedge gate and the garden are in the background. Photo mode is on.
+
 `docs/screenshots/residents_park.png` (1440×900). Same lawn at dusk. The hedge gate opens onto the garden. Bellhelp stands on the grass with two black eyes. Bram (carrot) and Lumen (leek) stand on the open lawn. The count reads “2 on the lawn.”
 
 ## KNOWN REGRESSIONS

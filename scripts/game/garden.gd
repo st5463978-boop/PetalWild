@@ -8553,7 +8553,7 @@ func _run_jelly_play() -> void:
 	jelly.sample_pos.clear()
 	jelly.sample_ms.clear()
 	jelly.sample_pos.append(jelly.global_position)
-	jelly.sample_pos.append(jelly.global_position + Vector3(0.45, 0.95, 0.12))
+	jelly.sample_pos.append(jelly.global_position + Vector3(-0.04, 0.78, -0.06))
 	jelly.sample_ms.append(0)
 	jelly.sample_ms.append(140)
 	jelly.release()
@@ -8579,7 +8579,8 @@ func _run_jelly_play() -> void:
 		return
 	print("jelly_play land_y=%s feel=%s pos=%s" % [jelly.global_position.y, jelly.feel, jelly.global_position])
 	hud.set_photo(true)
-	_pin_overhead(jelly.global_position)
+	jelly._apply_deform()
+	_frame_park(jelly)
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -8801,17 +8802,6 @@ func _shot(path: String) -> void:
 	DirAccess.make_dir_recursive_absolute("/workspace/docs/screenshots")
 	var err := image.save_png(path)
 	print("SHOT ", path, " ", err, " ", image.get_width(), "x", image.get_height())
-
-func _pin_overhead(point: Vector3) -> void:
-	if camera == null:
-		return
-	camera.pitch = 62.0
-	camera.yaw = 180.0
-	camera.distance = 3.6
-	camera.target = Vector3(point.x, 0.22, point.z)
-	camera.user_moved = true
-	camera.intro = 1.0
-	camera._apply()
 
 func _opening_plants() -> void:
 	# ponytail: tall enough for the bells to read; ripe bells if Bellhelp should visit on the first day.
