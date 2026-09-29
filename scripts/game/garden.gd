@@ -13,6 +13,11 @@ var bees: GardenBees
 var birds: GardenBirds
 var people := {}
 var lane_body: VegPerson
+var inside_lane := false
+var lane_return_target := Vector3.ZERO
+var lane_return_yaw := 0.0
+var lane_return_pitch := 0.0
+var lane_return_distance := 8.0
 var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
@@ -271,6 +276,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_focus_next()
 			KEY_P:
 				_toggle_photo()
+			KEY_ENTER, KEY_KP_ENTER:
+				_enter_lane_house(false)
 			KEY_ESCAPE:
 				_esc()
 			KEY_F3:
@@ -1484,6 +1491,9 @@ func _lane_household_name() -> String:
 	return "Reed"
 
 func _sync_lane_body(wanted: bool) -> void:
+	if inside_lane:
+		_pin_lane_body(_lane_hearth())
+		return
 	if not wanted or not _lane_near():
 		if lane_body != null:
 			lane_body.present = false
@@ -1515,6 +1525,101 @@ func _sync_lane_body(wanted: bool) -> void:
 	lane_body.rotation.y = atan2(face_x, 0.0)
 	if lane_body.body:
 		lane_body.body.visible = true
+
+func _lane_room() -> Node3D:
+	var house := _first_lane_house()
+	if house == null:
+		return null
+	return house.get_node_or_null("Interior") as Node3D
+
+func _lane_hearth() -> Vector3:
+	var room := _lane_room()
+	if room == null:
+		return Vector3.ZERO
+	var hearth := room.get_node_or_null("Hearth") as Node3D
+	if hearth == null:
+		return room.global_position
+	return hearth.global_position
+
+func _pin_lane_body(at: Vector3) -> void:
+	if lane_body == null:
+		return
+	lane_body.present = true
+	lane_body.visible = true
+	lane_body.global_position = Vector3(at.x, 0.0, at.z)
+	if inside_lane and camera != null:
+		var toward := camera.global_position - lane_body.global_position
+		lane_body.rotation.y = atan2(-toward.x, -toward.z)
+	if lane_body.body:
+		lane_body.body.visible = true
+
+func _set_lane_shell(house: Node3D, show_shell: bool) -> void:
+	var room := house.get_node_or_null("Interior") as Node3D
+	if room != null:
+		room.visible = not show_shell
+	for child in house.get_children():
+		if str(child.name) == "Interior" or str(child.name) == "Door":
+			continue
+		if child is Node3D:
+			(child as Node3D).visible = show_shell
+
+func _enter_lane_house(force: bool) -> bool:
+	if inside_lane:
+		_leave_lane_house()
+		return false
+	if not Trust.has_action("parish_road_rumour"):
+		if not force:
+			toast("South Lane is still a rumour.")
+		return false
+	var house := _first_lane_house()
+	var room := _lane_room()
+	if house == null or room == null or camera == null:
+		if not force:
+			toast("That cottage has no room yet.")
+		return false
+	if not force and camera.target.distance_to(house.global_position) > 9.0:
+		toast("Walk up to the cottage door.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var hearth := room.get_node_or_null("Hearth") as Node3D
+	if view == null or hearth == null:
+		return false
+	lane_return_target = camera.target
+	lane_return_yaw = camera.yaw
+	lane_return_pitch = camera.pitch
+	lane_return_distance = camera.distance
+	inside_lane = true
+	_set_lane_shell(house, false)
+	_pin_lane_body(hearth.global_position)
+	var look := hearth.global_position + Vector3(0.2, 0.45, 0.55)
+	var offset := view.global_position - look
+	var span := maxf(offset.length(), 0.4)
+	camera.target = look
+	camera.distance = span
+	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
+	camera.yaw = rad_to_deg(atan2(offset.x, offset.z))
+	camera.user_moved = true
+	camera.intro = 1.0
+	camera._apply()
+	toast("%s's kitchen. Esc steps back out." % _lane_household_name())
+	return true
+
+func _leave_lane_house() -> void:
+	if not inside_lane:
+		return
+	inside_lane = false
+	var house := _first_lane_house()
+	if house != null:
+		_set_lane_shell(house, true)
+	if camera != null:
+		camera.target = lane_return_target
+		camera.yaw = lane_return_yaw
+		camera.pitch = lane_return_pitch
+		camera.distance = lane_return_distance
+		camera.user_moved = true
+		camera.intro = 1.0
+		camera._apply()
+	_sync_lane()
 
 func _lane_tea_line() -> String:
 	if not Trust.has_action("parish_road_rumour"):
@@ -8698,6 +8803,25 @@ func _run_town_shot() -> void:
 		return
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/south_lane.png")
+	if not _enter_lane_house(true):
+		push_error("town shot: the cottage door did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	var hearth: Node3D = null
+	if room != null:
+		hearth = room.get_node_or_null("Hearth") as Node3D
+	if room == null or not room.visible or hearth == null or lane_body == null or lane_body.global_position.distance_to(hearth.global_position) > 0.6:
+		push_error("town shot: the household is not in the kitchen")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/cottage_inside.png")
+	_leave_lane_house()
+	if room.visible:
+		push_error("town shot: the kitchen stayed open")
+		get_tree().quit(1)
+		return
 	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.55, 0.4), 7.6)
 	await get_tree().create_timer(0.4).timeout
 	await _shot("/workspace/docs/screenshots/town_park.png")
@@ -12775,6 +12899,9 @@ func _toggle_photo() -> void:
 		camera.attributes = null
 
 func _esc() -> void:
+	if inside_lane:
+		_leave_lane_house()
+		return
 	if photo:
 		_toggle_photo()
 		return

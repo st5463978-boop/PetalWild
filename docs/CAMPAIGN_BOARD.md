@@ -9,13 +9,13 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
 - Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes.
 - Stall, jam, tea, journal. Vale map on M. Town page on C.
-- Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. South Lane puts six cottages on that path when the rumour is filed. A near camera stands one tomato household at the first door. Catalog stays `active: false`.
+- Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. South Lane puts six cottages on that path when the rumour is filed. A near camera stands one tomato household at the first door. Enter steps into that kitchen. Esc steps back out. Catalog stays `active: false`.
 
 ## NEXT
 
 - `PETAL_QA_SCRIPTS_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The park frame shows the gate, the lawn, Bellhelp, and both veg folk.
 - Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
-- `PETAL_TOWN_SHOT_OK` shows a tomato household at the near cottage door.
+- `PETAL_TOWN_SHOT_OK` shows the door household, then Moss in the kitchen, then the lawn again.
 - `kettle_brew.png` keeps the brewing kettle and its steam in frame.
 - `jam_pan.png` now shows the copper pan, the jam, and the steam. The shed wall is behind it.
 - Point `main` at this garden when the suite stays green. Do not replay the east-chain.

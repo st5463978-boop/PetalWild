@@ -281,11 +281,54 @@ func _cottage(parent: Node3D, at: Vector3, face: float) -> void:
 	door.name = "Door"
 	door.position = Vector3(face * 1.05, 0.0, 0.0)
 	house.add_child(door)
+	if face > 0.0 and absf(at.z + 12.3) < 0.05:
+		_cottage_room(house)
 	var glass := window.material_override as StandardMaterial3D
 	if glass:
 		glass.emission_enabled = true
 		glass.emission = Color("#ffd2a4")
 		glass.emission_energy_multiplier = 0.0
+
+func _cottage_room(house: Node3D) -> void:
+	var room := Node3D.new()
+	room.name = "Interior"
+	room.visible = false
+	house.add_child(room)
+	_box(room, Vector3(-1.15, 0.03, 0.0), Vector3(2.6, 0.06, 2.4), Color("#6b4e3a"))
+	_box(room, Vector3(-2.48, 1.05, 0.0), Vector3(0.08, 2.1, 2.4), Color("#c4a882"))
+	_box(room, Vector3(-1.15, 1.05, 1.2), Vector3(2.6, 2.1, 0.08), Color("#b89a78"))
+	_box(room, Vector3(-1.15, 1.05, -1.2), Vector3(2.6, 2.1, 0.08), Color("#b89a78"))
+	_box(room, Vector3(-1.15, 2.08, 0.0), Vector3(2.7, 0.08, 2.5), Color("#8a7060"))
+	_box(room, Vector3(0.16, 1.05, -0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
+	_box(room, Vector3(0.16, 1.05, 0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
+	_box(room, Vector3(0.16, 1.85, 0.0), Vector3(0.08, 0.5, 1.0), Color("#a88870"))
+	var pane := _box(room, Vector3(0.12, 1.35, 0.72), Vector3(0.05, 0.42, 0.36), Color("#ffd2a4"))
+	pane.name = "InsideWindow"
+	var glass := pane.material_override as StandardMaterial3D
+	if glass:
+		glass.emission_enabled = true
+		glass.emission = Color("#ffd2a4")
+		glass.emission_energy_multiplier = 0.8
+	var table := _box(room, Vector3(-1.2, 0.42, 0.35), Vector3(0.85, 0.07, 0.5), Color("#8d6244"))
+	table.name = "Table"
+	_box(room, Vector3(-1.45, 0.2, 0.15), Vector3(0.08, 0.4, 0.08), Color("#5c4030"))
+	_box(room, Vector3(-0.95, 0.2, 0.55), Vector3(0.08, 0.4, 0.08), Color("#5c4030"))
+	var hearth := Node3D.new()
+	hearth.name = "Hearth"
+	hearth.position = Vector3(-1.45, 0.0, -0.45)
+	room.add_child(hearth)
+	var view := Node3D.new()
+	view.name = "InsideView"
+	view.position = Vector3(-0.25, 1.55, 0.9)
+	room.add_child(view)
+	var lamp := OmniLight3D.new()
+	lamp.name = "RoomLamp"
+	lamp.position = Vector3(-1.15, 1.7, 0.0)
+	lamp.light_color = Color("ffd2a4")
+	lamp.light_energy = 1.35
+	lamp.omni_range = 4.2
+	lamp.shadow_enabled = false
+	room.add_child(lamp)
 
 func _bench(parent: Node3D, at: Vector3) -> void:
 	var root := Node3D.new()

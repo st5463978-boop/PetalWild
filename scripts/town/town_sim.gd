@@ -352,7 +352,7 @@ func _tally(ctx: Dictionary) -> void:
 	if bool(districts.get("park", {}).get("now_open", false)):
 		headline = "Grove Park is a public lawn. The lane holds houses."
 		if at_door:
-			headline += " One household stands at the door."
+			headline += " One household stands at the door. Enter steps inside."
 		else:
 			headline += " Nobody walks them in hero detail."
 	elif int(stats.get("tea_occ", 0)) > 0:
