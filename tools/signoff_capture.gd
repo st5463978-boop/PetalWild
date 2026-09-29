@@ -75,16 +75,19 @@ func _run() -> void:
 		_clamp_sun_disc(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam03_bench(scene, shot_name == "CAM_03_LAWN_PATH")
 		_hide_cam02_jelly(scene, shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH")
-		_hide_bed_folk(shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH")
+		var hide_folk := shot_name == "CAM_02_BEDS_SOIL" or shot_name == "CAM_03_LAWN_PATH"
+		_hide_bed_folk(scene, hide_folk)
 		_hide_cam05_crate(scene, shot_name == "CAM_05_MARKET_STALL")
 		_hide_cam06_clutter(scene, shot_name == "CAM_06_JELLY_HERO")
 		for i in 8:
+			if hide_folk:
+				_hide_bed_folk(scene, true)
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img: Image = root.get_texture().get_image()
 		_hide_cam06_clutter(scene, false)
 		_hide_cam05_crate(scene, false)
-		_hide_bed_folk(false)
+		_hide_bed_folk(scene, false)
 		_hide_cam02_jelly(scene, false)
 		_hide_cam03_bench(scene, false)
 		_clamp_sun_disc(scene, false)
@@ -394,15 +397,38 @@ func _hide_cam05_crate(scene: Node, on: bool) -> void:
 		for n: Node in tree.get_nodes_in_group("signoff_cam05_hide"):
 			n.visible = not on
 
-func _hide_bed_folk(on: bool) -> void:
+func _hide_bed_folk(scene: Node, on: bool) -> void:
 	# The soil and path shots are not the veg-folk camera. The stand-in stays on CAM_07.
+	if scene == null:
+		return
+	var roots: Array[Node] = []
 	for n: Node in get_nodes_in_group("resident"):
+		roots.append(n)
+	for mesh_name in ["FolkMesh", "CarrotBody", "CarrotLeaf", "CarrotFace", "CarrotCan"]:
+		for n: Node in scene.find_children(mesh_name, "", true, false):
+			var root: Node = n
+			while root.get_parent() != null and not root.is_in_group("resident") and root != scene:
+				root = root.get_parent()
+			if root.is_in_group("resident") and root not in roots:
+				roots.append(root)
+			elif on:
+				n.visible = false
+				n.set_meta("signoff_folk_part", true)
+			elif n.has_meta("signoff_folk_part"):
+				n.visible = true
+				n.remove_meta("signoff_folk_part")
+	for n: Node in roots:
 		if on:
-			n.set_meta("signoff_folk_vis", n.visible)
+			if not n.has_meta("signoff_folk_vis"):
+				n.set_meta("signoff_folk_vis", n.visible)
+				n.set_meta("signoff_folk_process", n.process_mode)
 			n.visible = false
+			n.process_mode = Node.PROCESS_MODE_DISABLED
 		elif n.has_meta("signoff_folk_vis"):
 			n.visible = bool(n.get_meta("signoff_folk_vis"))
+			n.process_mode = int(n.get_meta("signoff_folk_process", Node.PROCESS_MODE_INHERIT))
 			n.remove_meta("signoff_folk_vis")
+			n.remove_meta("signoff_folk_process")
 
 func _hide_cam02_jelly(scene: Node, on: bool) -> void:
 	if scene == null:
