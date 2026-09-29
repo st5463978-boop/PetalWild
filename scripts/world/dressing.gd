@@ -88,6 +88,7 @@ func _water(parent: Node3D) -> void:
 	node.add_to_group("parish_pond")
 	parent.add_child(node)
 	resize_pond(node, GardenLayout.POND_RADIUS)
+	_lilies(parent)
 
 static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 	# ponytail: the middle sits down; the rim meets the bank.
@@ -110,6 +111,37 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 	tool.generate_normals()
 	node.set_meta("rim", radius)
 	node.mesh = tool.commit()
+
+func _lilies(parent: Node3D) -> void:
+	# ponytail: a few pads so the bowl reads as a pond from the garden cameras.
+	var spots: Array[Vector2] = [
+		Vector2(0.55, 0.2),
+		Vector2(-0.85, 0.45),
+		Vector2(0.15, -0.95),
+		Vector2(1.15, -0.25),
+		Vector2(-0.35, 1.05),
+	]
+	for i in spots.size():
+		var spot: Vector2 = spots[i]
+		var x := GardenLayout.POND_CENTER.x + spot.x
+		var z := GardenLayout.POND_CENTER.z + spot.y
+		var pad := SphereMesh.new()
+		pad.radius = 0.28 + float(i % 3) * 0.04
+		pad.height = 0.06
+		pad.radial_segments = 10
+		pad.rings = 4
+		var node := MeshInstance3D.new()
+		node.mesh = pad
+		node.position = Vector3(x, GardenLayout.pond_surface(x, z, GardenLayout.POND_RADIUS) + 0.05, z)
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color("#3e8a46") if i != 2 else Color("#c45a78")
+		material.roughness = 0.72
+		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		node.material_override = material
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_to_group("signoff_ok")
+		parent.add_child(node)
 
 static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float) -> void:
 	var center := GardenLayout.POND_CENTER

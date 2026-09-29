@@ -11,6 +11,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "CAM_06_JELLY_HERO", "anchor": "SignoffJelly", "pos": Vector3(0.55, 0.88, 1.4), "look": Vector3(0.0, 0.3, -0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "jelly", "subject_nodes": ["SignoffJelly"]},
 	{"name": "CAM_07_VEG_FOLK", "anchor": "ANCHOR_STALL", "pos": Vector3(2.8, 1.55, -4.2), "look": Vector3(0.15, 0.55, 0.25), "fov": 42.0, "size": Vector2i(1440, 900), "hud": false, "subject": "veg folk", "subject_group": "resident", "blocked_on_art": true, "blocked_reason": "ART-DIRECTOR-002: veg folk await art"},
 	{"name": "CAM_08_PHONE_PLAY", "anchor": "@gameplay", "pos": Vector3.ZERO, "look": Vector3.ZERO, "fov": 0.0, "size": Vector2i(1440, 900), "hud": true, "subject": "garden", "subject_nodes": ["Hedge", "PetalStall", "BedBody_0_0"]},
+	{"name": "BEAUTY_POND", "anchor": "ANCHOR_BEDS", "pos": Vector3(12.6, 2.55, 4.4), "look": Vector3(10.35, 0.02, -1.1), "fov": 48.0, "size": Vector2i(1440, 900), "hud": false, "subject": "pond", "subject_nodes": ["Pond"]},
+	{"name": "BEAUTY_OVERVIEW", "anchor": "ANCHOR_BEDS", "pos": Vector3(9.2, 11.5, 14.8), "look": Vector3(4.6, 0.0, -0.4), "fov": 46.0, "size": Vector2i(1440, 900), "hud": false, "subject": "garden", "subject_nodes": ["Pond", "Hedge", "BedBody_0_0"]},
 ]
 const PLACEHOLDER_MESHES: Array[String] = ["BoxMesh", "CylinderMesh", "PrismMesh", "CapsuleMesh", "QuadMesh", "PlaneMesh"]
 const BAD_TEX := ["checker", "grid", "prototype", "uv_test", "uvtest", "placeholder", "dev_"]

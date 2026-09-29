@@ -269,7 +269,8 @@ func _reeds(parent: Node3D) -> void:
 		var at := GardenLayout.POND_CENTER + Vector3(cos(angle) * radius, 0, sin(angle) * radius)
 		if at.x < 5.2:
 			continue
-		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.02, 0.025, 0.9, Color("#6d7a3a"))
+		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.025, 0.03, 0.9, Color("#5a8a3c"))
+		_sphere(parent, at + Vector3(0, 0.98, 0), 0.045, Color("#6a4a28"))
 
 func _gate_crate(parent: Node3D) -> void:
 	var root := Node3D.new()
