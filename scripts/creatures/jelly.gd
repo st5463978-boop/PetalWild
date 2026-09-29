@@ -55,6 +55,7 @@ var pet_time := 0.0
 var nuzzled := false
 var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
+var art_card: Sprite3D
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -175,18 +176,6 @@ func _build(definition: Dictionary) -> void:
 	body_root = root
 	_halo()
 	var shape := str(definition.get("shape", "droplet"))
-	var card := art_path(shape, str(definition.get("id", "")))
-	var card_abs := ProjectSettings.globalize_path(card)
-	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
-		var sprite := make_card(card, maxf(radius * 1.7, 0.44))
-		sprite.name = "Art"
-		root.add_child(sprite)
-		face_z = -radius * 0.2
-		_face(root, definition, radius * 0.18)
-		_hide_meshes(eye_l)
-		_hide_meshes(eye_r)
-		_hide_meshes(mouth)
-		return
 	face_z = -radius * 1.05
 	var eye_y := _shape(root, shape)
 	var organ_y := eye_y * 0.5
@@ -194,14 +183,41 @@ func _build(definition: Dictionary) -> void:
 		organ_y = radius * 0.95
 	_organ(root, definition, organ_y)
 	_face(root, definition, eye_y)
+	var card := art_path(shape, str(definition.get("id", "")))
+	var card_abs := ProjectSettings.globalize_path(card)
+	if FileAccess.file_exists(card_abs) or ResourceLoader.exists(card):
+		art_card = make_card(card, maxf(radius * 1.7, 0.44))
+		art_card.name = "Art"
+		root.add_child(art_card)
+	_sync_presentation()
 
-func _hide_meshes(n: Node) -> void:
-	if n == null:
+func _show_volume() -> bool:
+	if art_card == null:
+		return true
+	if held or nuzzled or is_hungry():
+		return true
+	if feel != "idle":
+		return true
+	if deform.stretch > 0.04 or absf(squash - 1.0) > 0.08:
+		return true
+	if poke_time > 0.0:
+		return true
+	return false
+
+func _sync_presentation() -> void:
+	if art_card == null:
+		return
+	var show_body := _show_volume()
+	art_card.visible = not show_body
+	_set_procedural_visible(body_root, show_body)
+
+func _set_procedural_visible(n: Node, on: bool) -> void:
+	if n == null or n == art_card:
 		return
 	if n is GeometryInstance3D:
-		(n as GeometryInstance3D).visible = false
+		(n as GeometryInstance3D).visible = on
 	for child in n.get_children():
-		_hide_meshes(child)
+		_set_procedural_visible(child, on)
 
 func _shape(root: Node3D, shape: String) -> float:
 	match shape:
@@ -715,6 +731,7 @@ func _apply_deform() -> void:
 	if halo:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
+	_sync_presentation()
 
 func _halo() -> void:
 	halo = MeshInstance3D.new()

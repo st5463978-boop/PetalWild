@@ -8496,7 +8496,7 @@ func _run_jelly_play() -> void:
 	jelly.hop_wait = 99.0
 	jelly.hunger = 0.16
 	jelly.mood = "hungry"
-	var hungry_pad := GardenLayout.STALL + Vector3(1.55, 0.18, 1.4)
+	var hungry_pad := GardenLayout.STALL + Vector3(0.35, 0.22, -1.55)
 	jelly.global_position = hungry_pad
 	jelly.attract = hungry_pad
 	jelly.goal = hungry_pad
@@ -8508,9 +8508,11 @@ func _run_jelly_play() -> void:
 	jelly._update_face()
 	jelly._apply_deform()
 	if camera:
-		camera.pitch = 18.0
-		camera.yaw = 180.0
-		camera.focus_on(jelly.global_position + Vector3(0.0, 0.42, 0.0), 2.4)
+		# The south lip is hedge and the low yaw-180 orbit sits under the awning.
+		camera.pitch = 38.0
+		camera.yaw = 162.0
+		camera.focus_on(jelly.global_position + Vector3(0.0, 0.2, 0.0), 4.8)
+		camera._apply()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/jelly_hungry.png")
