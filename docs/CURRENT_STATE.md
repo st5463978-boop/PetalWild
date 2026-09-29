@@ -23,7 +23,7 @@ Grove Park lawn exists in the scene and stays hidden until Nessa files `parish_p
 Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, hungry face, dusk park stroll, jam and tea, vale carts, ask-first map.
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a simple gel icon (one body, two black eyes) instead of the petal bell. The icon turns to face the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
-Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. `grove_park.active` stays false.
+Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram take leisure there. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -47,11 +47,14 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK`.
 - `PETAL_JELLY_PLAY=1 tools/run.sh res://scenes/garden.tscn` → `JELLY_PLAY_OK`.
+- `PETAL_RESIDENT_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_RESIDENT_SHOT_OK`.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
 
-`docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is a flat species-green icon with two black vertical eyes, on the Grove Park lawn. HUD `happy · held`. Toast “Bellhelp nuzzles your hands.” The lawn walk runs to the hedge opening, and the garden is beyond it.
+`docs/screenshots/jelly_nuzzle.png` (1440×900). Bellhelp is a flat species-green icon with two black vertical eyes, on the Grove Park lawn.
+
+`docs/screenshots/residents_park.png` (1440×900). Same lawn at dusk. The hedge gate opens onto the garden. Bellhelp stands on the grass with two black eyes. Bram (carrot) and Lumen (leek) stand on the open lawn. The count reads “2 on the lawn.”
 
 ## KNOWN REGRESSIONS
 
@@ -66,8 +69,8 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
-2. Re-frame `jam_pan.png` off the shed wall.
+1. Re-frame `jam_pan.png` off the shed wall.
+2. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
 5. Give the icon a little gel volume that does not wash the eyes back out under the sun.

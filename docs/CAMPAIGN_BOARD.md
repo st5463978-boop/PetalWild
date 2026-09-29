@@ -9,11 +9,11 @@ Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-je
 - Tend the four beds. Feed a jelly from a ripe plant or the pouch.
 - Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows the gel icon.
 - Stall, jam, tea, journal. Vale map on M. Town page on C.
-- Grove Park opens after the road rumour and Nessa's filing: lawn, benches, and a walk to the hedge gate. Catalog stays `active: false`.
+- Grove Park opens after the road rumour and Nessa's filing: lawn, benches, a walk to the hedge gate, and Lumen and Bram on the grass. Catalog stays `active: false`.
 
 ## NEXT
 
-- `PETAL_QA_SCRIPTS_OK` and `JELLY_PLAY_OK` are green on this tip (2026-09-29). The close Bellhelp is one green with two black eyes.
+- `PETAL_QA_SCRIPTS_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The park frame shows the gate, the lawn, Bellhelp, and both veg folk.
 - Cherry-pick neon status icons (`cursor/jelly-status-icons-ffcb`) only if they sit on the icon and leave the eyes visible.
 - Re-frame `jam_pan.png` off the shed wall.
 - Point `main` at this garden when the suite stays green. Do not replay the east-chain.

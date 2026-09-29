@@ -8680,8 +8680,25 @@ func _run_resident_shot() -> void:
 		_person(id).set_route(stay, true)
 		_person(id).set_activity(parish.label_for(id))
 	_person("bram").say(parish._line("bram", "leisure"))
+	var jelly: Jelly = null
+	if ecology != null:
+		jelly = ecology.first("bellhelp")
+		if jelly == null:
+			jelly = ecology.force_spawn("bellhelp")
+	if jelly != null:
+		jelly.hunger = 0.18
+		jelly.mood = "content"
+		jelly.vel = Vector3.ZERO
+		jelly.global_position = GardenLayout.PARK + Vector3(0.0, 0.2, 0.45)
+		jelly._apply_deform()
+	for id in ["lumen", "bram"]:
+		_person(id).rotation.y = 0.0
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
-	camera.focus_on(GardenLayout.PARK + Vector3(0.4, 0.5, 0.6), 6.4)
+	if camera:
+		camera.pitch = 16.0
+		camera.yaw = 176.0
+		camera.focus_on(GardenLayout.PARK + Vector3(0.0, 0.45, 0.2), 6.4)
+		camera._apply()
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/residents_park.png")
 	show_directory("people")
@@ -9867,7 +9884,7 @@ func _boot_parish() -> void:
 		"gate": GardenLayout.GATE,
 		"pond": GardenLayout.POND_CENTER + Vector3(-2.4, 0, 0.5),
 		"plots": GardenLayout.cell_center(2, 2),
-		"park": GardenLayout.PARK + Vector3(0.8, 0, 1.15),
+		"park": GardenLayout.PARK + Vector3(-0.25, 0.0, -0.1),
 	}, lines)
 	if Trust.has_action("parish_park"):
 		parish.open_park()
