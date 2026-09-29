@@ -50,6 +50,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 - `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
 - `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes.
+- `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
