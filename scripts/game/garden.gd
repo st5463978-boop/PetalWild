@@ -16,6 +16,7 @@ var lane_body: VegPerson
 var lane_on_lawn := false
 var lane_walking := false
 var lane_walk_home := false
+var lane_drank := false
 var inside_lane := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
@@ -1656,6 +1657,11 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _lane_memory() -> String:
+	if not lane_drank:
+		return ""
+	return "%s drank the hedge tea." % _lane_who()
+
 func _stage_lawn_jelly(near: Vector3) -> Jelly:
 	if ecology == null:
 		return null
@@ -1869,6 +1875,7 @@ func _sip_kitchen_tea() -> bool:
 		_sync_cottage_tea()
 		return false
 	_sync_cottage_tea()
+	lane_drank = true
 	toast("%s drinks the hedge tea." % _lane_who())
 	return true
 
@@ -2593,6 +2600,7 @@ func to_state() -> Dictionary:
 		"region_stamp": region_stamp,
 		"vale_crate_crop": vale_crate_crop,
 		"lane_on_lawn": lane_on_lawn,
+		"lane_drank": lane_drank,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -2676,6 +2684,7 @@ func apply_state(data: Dictionary) -> void:
 	region_stamp = int(data.get("region_stamp", -1))
 	vale_crate_crop = str(data.get("vale_crate_crop", ""))
 	lane_on_lawn = bool(data.get("lane_on_lawn", false))
+	lane_drank = bool(data.get("lane_drank", false))
 	_sync_vale_crate()
 	_clear_plants()
 	_sync_plants()
@@ -9150,6 +9159,10 @@ func _run_town_shot() -> void:
 		push_error("town shot: the page lost the lawn")
 		get_tree().quit(1)
 		return
+	if _lane_memory().find("drank the hedge tea") == -1:
+		push_error("town shot: reload forgot the tea")
+		get_tree().quit(1)
+		return
 	_sync_park()
 	var board := ""
 	for node in get_tree().get_nodes_in_group("grove_park"):
@@ -13091,6 +13104,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_passers"] = _lane_passers()
 	stats["vale_line"] = region.headline()
 	stats["lane_where"] = _lane_where()
+	stats["lane_memory"] = _lane_memory()
 	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()
 	stats["road_line"] = _road_line()

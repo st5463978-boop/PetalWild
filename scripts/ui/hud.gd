@@ -198,6 +198,9 @@ func show_place(stats: Dictionary) -> void:
 	var lane_where := str(stats.get("lane_where", ""))
 	if lane_where != "":
 		journal_box.add_child(ThemeKit.label(lane_where, 16))
+	var lane_memory := str(stats.get("lane_memory", ""))
+	if lane_memory != "":
+		journal_box.add_child(ThemeKit.label(lane_memory, 15))
 	journal_box.add_child(ThemeKit.label("Phase %s · one parish. The lane beyond the hedge counts ripe beds." % str(stats.get("phase", "A")), 14))
 	for line in stats.get("town_lines", []):
 		journal_box.add_child(ThemeKit.label(str(line), 14))
