@@ -20,6 +20,7 @@ var lane_drank := false
 var inside_lane := false
 var inside_tea := false
 var inside_shed := false
+var inside_stall := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
@@ -112,6 +113,9 @@ func _ready() -> void:
 		return
 	if OS.get_environment("PETAL_SHED_SHOT") == "1":
 		await _run_shed_shot()
+		return
+	if OS.get_environment("PETAL_STALL_SHOT") == "1":
+		await _run_stall_shot()
 		return
 	if OS.get_environment("PETAL_FACE_SHOT") == "1":
 		await _run_face_shot()
@@ -1877,7 +1881,7 @@ func _set_lane_shell(house: Node3D, show_shell: bool) -> void:
 		room.visible = not show_shell
 	for child in house.get_children():
 		var child_name := str(child.name)
-		if child_name == "Interior" or child_name == "Door" or child_name == "Kettle" or child_name == "Steam" or child_name == "Pan" or child_name == "Jam" or child_name == "Handle" or child_name == "JamSteam":
+		if child_name == "Interior" or child_name == "Door" or child_name == "Kettle" or child_name == "Steam" or child_name == "Pan" or child_name == "Jam" or child_name == "Handle" or child_name == "JamSteam" or child_name == "StallCrateL" or child_name == "StallCup" or child_name == "StallJar":
 			continue
 		if child is Node3D:
 			(child as Node3D).visible = show_shell
@@ -1923,13 +1927,27 @@ func _enter_from_key() -> void:
 	if inside_shed:
 		_leave_potting_shed()
 		return
-	if _tea_close():
+	if inside_stall:
+		_leave_stall()
+		return
+	var tea_d := _door_distance(_tea_house())
+	var shed_d := _door_distance(_potting_shed())
+	var stall_d := _door_distance(_petal_stall())
+	if tea_d <= 9.0 and tea_d <= shed_d and tea_d <= stall_d:
 		_enter_tea_house(false)
 		return
-	if _shed_close():
+	if shed_d <= 9.0 and shed_d <= stall_d:
 		_enter_potting_shed(false)
 		return
+	if stall_d <= 9.0:
+		_enter_stall(false)
+		return
 	_enter_lane_house(false)
+
+func _door_distance(node: Node3D) -> float:
+	if node == null or camera == null:
+		return 999.0
+	return camera.target.distance_to(node.global_position)
 
 func _tea_house() -> Node3D:
 	return find_child("HedgeTeaHouse", true, false) as Node3D
@@ -1944,7 +1962,7 @@ func _enter_tea_house(force: bool) -> bool:
 	if inside_tea:
 		_leave_tea_house()
 		return false
-	if inside_lane or inside_shed:
+	if inside_lane or inside_shed or inside_stall:
 		return false
 	var house := _tea_house()
 	var room := house.get_node_or_null("Interior") as Node3D if house != null else null
@@ -2003,7 +2021,7 @@ func _enter_potting_shed(force: bool) -> bool:
 	if inside_shed:
 		_leave_potting_shed()
 		return false
-	if inside_lane or inside_tea:
+	if inside_lane or inside_tea or inside_stall:
 		return false
 	var shed := _potting_shed()
 	var room := shed.get_node_or_null("Interior") as Node3D if shed != null else null
@@ -2053,11 +2071,66 @@ func _leave_potting_shed() -> void:
 		_set_lane_shell(shed, true)
 	_restore_view()
 
+func _petal_stall() -> Node3D:
+	return find_child("PetalStall", true, false) as Node3D
+
+func _enter_stall(force: bool) -> bool:
+	if inside_stall:
+		_leave_stall()
+		return false
+	if inside_lane or inside_tea or inside_shed:
+		return false
+	var stall := _petal_stall()
+	var room := stall.get_node_or_null("Interior") as Node3D if stall != null else null
+	if stall == null or room == null or camera == null:
+		if not force:
+			toast("The stall has no room yet.")
+		return false
+	if not force and _door_distance(stall) > 9.0:
+		toast("Walk up to the stall.")
+		return false
+	var view := room.get_node_or_null("InsideView") as Node3D
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D
+	if view == null or crate == null:
+		return false
+	_remember_view()
+	inside_stall = true
+	_set_lane_shell(stall, false)
+	_seat_stall_goods(true)
+	_sync_mill()
+	_frame_interior(view, crate.global_position + Vector3(0.0, 0.2, 0.0))
+	toast("Petal Stall. Esc steps back out.")
+	return true
+
+func _seat_stall_goods(inside: bool) -> void:
+	var stall := _petal_stall()
+	if stall == null:
+		return
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D
+	var cup := stall.get_node_or_null("StallCup") as Node3D
+	var jar := stall.get_node_or_null("StallJar") as Node3D
+	if crate != null:
+		crate.position = Vector3(0.0, 1.79, 6.75) if inside else Vector3(-1.35, 0.16, 0.7)
+	if cup != null:
+		cup.position = Vector3(0.0, 2.03, 6.75) if inside else Vector3(-1.35, 0.42, 0.7)
+	if jar != null:
+		jar.position = Vector3(0.32, 1.70, 6.82) if inside else Vector3(1.25, 0.42, 0.62)
+
+func _leave_stall() -> void:
+	if not inside_stall:
+		return
+	inside_stall = false
+	_seat_stall_goods(false)
+	var stall := _petal_stall()
+	if stall != null:
+		_set_lane_shell(stall, true)
+	_restore_view()
+
 func _enter_lane_house(force: bool) -> bool:
 	if inside_lane:
 		_leave_lane_house()
 		return false
-	if inside_shed or inside_tea:
+	if inside_shed or inside_tea or inside_stall:
 		return false
 	if not Trust.has_action("parish_road_rumour"):
 		if not force:
@@ -10043,6 +10116,130 @@ func _run_shed_shot() -> void:
 	print("PETAL_SHED_SHOT_OK")
 	get_tree().quit(0)
 
+func _run_stall_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.0)
+	if bool(ContentDB.venues.get("tea_house", {}).get("active", true)) or bool(ContentDB.venues.get("grove_park", {}).get("active", true)):
+		push_error("stall: the catalog went active")
+		get_tree().quit(1)
+		return
+	var stall := _petal_stall()
+	var room := stall.get_node_or_null("Interior") as Node3D if stall != null else null
+	var shell := stall.get_node_or_null("Shell") as Node3D if stall != null else null
+	var crate := stall.get_node_or_null("StallCrateL") as Node3D if stall != null else null
+	var cup := stall.get_node_or_null("StallCup") as Node3D if stall != null else null
+	var jar := stall.get_node_or_null("StallJar") as Node3D if stall != null else null
+	if stall == null or room == null or shell == null or crate == null or cup == null or jar == null or room.visible:
+		push_error("stall: the room was already open")
+		get_tree().quit(1)
+		return
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		if node.visible:
+			push_error("stall: a cottage opened")
+			get_tree().quit(1)
+			return
+	camera.user_moved = true
+	camera.intro = 1.0
+	var outside := stall.global_position + Vector3(0.2, 0.6, -1.2)
+	camera.target = outside
+	camera._apply()
+	_enter_from_key()
+	if not inside_stall or not room.visible or shell.visible:
+		push_error("stall: Enter did not open")
+		get_tree().quit(1)
+		return
+	var coins := Economy.coins
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	stock_kettle()
+	if Economy.mill.brew != ParishChain.TEA or Economy.coins != coins:
+		push_error("stall: the kettle did not start")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("stall: the kettle did not finish")
+		get_tree().quit(1)
+		return
+	carry_tea()
+	Economy.add("bramble", 1)
+	stock_jam()
+	if Economy.mill.brew != ParishChain.JAM or Economy.coins != coins:
+		push_error("stall: the pan did not start")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(12.0):
+		push_error("stall: the pan did not finish")
+		get_tree().quit(1)
+		return
+	carry_jam()
+	if Economy.coins != coins or Economy.mill.crate_count() < 1 or Economy.mill.crate_count(ParishChain.JAM) < 1 or not cup.visible or not jar.visible or not inside_stall:
+		push_error("stall: carrying did not show the goods")
+		get_tree().quit(1)
+		return
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if not _kitchen_in_frame(crate) or not _kitchen_in_frame(cup) or not _kitchen_in_frame(jar):
+		push_error("stall: the goods left the frame at %s cup %s jar %s" % [camera.unproject_position(crate.global_position), camera.unproject_position(cup.global_position), camera.unproject_position(jar.global_position)])
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.45).timeout
+	if not inside_stall or not _kitchen_in_frame(crate) or not _kitchen_in_frame(cup) or not _kitchen_in_frame(jar):
+		push_error("stall: the goods left the frame at %s" % camera.unproject_position(crate.global_position))
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/petal_stall_inside.png")
+	var tea_crates := Economy.mill.crate_count()
+	sell_tea()
+	if Economy.coins <= coins or Economy.mill.crate_count() != tea_crates - 1 or not inside_stall:
+		push_error("stall: tea did not pay")
+		get_tree().quit(1)
+		return
+	var after_tea := Economy.coins
+	var jam_crates := Economy.mill.crate_count(ParishChain.JAM)
+	sell_jam()
+	if Economy.coins <= after_tea or Economy.mill.crate_count(ParishChain.JAM) != jam_crates - 1 or not inside_stall:
+		push_error("stall: jam did not pay")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("stall: dusk stock failed")
+		get_tree().quit(1)
+		return
+	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
+		push_error("stall: dusk brew failed")
+		get_tree().quit(1)
+		return
+	if not Economy.carry_tea() or Economy.mill.crate_count() < 1:
+		push_error("stall: dusk carry failed")
+		get_tree().quit(1)
+		return
+	var held := Economy.coins
+	var held_crates := Economy.mill.crate_count()
+	Clock.set_hour(21.0)
+	sell_tea()
+	sell_jam()
+	if Economy.coins != held or Economy.mill.crate_count() != held_crates or not inside_stall:
+		push_error("stall: dusk still sold")
+		get_tree().quit(1)
+		return
+	_esc()
+	if inside_stall or room.visible or not shell.visible:
+		push_error("stall: Esc left the room open")
+		get_tree().quit(1)
+		return
+	if crate.position.distance_to(Vector3(-1.35, 0.16, 0.7)) > 0.02 or cup.position.distance_to(Vector3(-1.35, 0.42, 0.7)) > 0.02 or jar.position.distance_to(Vector3(1.25, 0.42, 0.62)) > 0.02:
+		push_error("stall: Esc left the goods off the stall")
+		get_tree().quit(1)
+		return
+	if camera.target.distance_to(outside) > 0.05:
+		push_error("stall: Esc left the camera inside")
+		get_tree().quit(1)
+		return
+	print("PETAL_STALL_SHOT_OK")
+	get_tree().quit(0)
+
 func _run_garden_look_shot() -> void:
 	Settings.reduce_motion = true
 	DisplayServer.window_set_size(Vector2i(1440, 900))
@@ -13947,6 +14144,9 @@ func _esc() -> void:
 		return
 	if inside_shed:
 		_leave_potting_shed()
+		return
+	if inside_stall:
+		_leave_stall()
 		return
 	if inside_lane:
 		_leave_lane_house()

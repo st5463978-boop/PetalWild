@@ -23,15 +23,19 @@ func _stall(parent: Node3D) -> void:
 	root.name = "PetalStall"
 	root.position = GardenLayout.STALL
 	parent.add_child(root)
-	_box(root, Vector3(0, 0.42, 0), Vector3(2.3, 0.78, 0.85), Color("#8d6244"))
-	_box(root, Vector3(0, 0.84, 0), Vector3(2.4, 0.08, 0.95), Color("#4e3828"))
+	# ponytail: one crate mesh. Shell hides on Enter; the crate, cup, and jar stay so the counter and the room share them.
+	var shell := Node3D.new()
+	shell.name = "Shell"
+	root.add_child(shell)
+	_box(shell, Vector3(0, 0.42, 0), Vector3(2.3, 0.78, 0.85), Color("#8d6244"))
+	_box(shell, Vector3(0, 0.84, 0), Vector3(2.4, 0.08, 0.95), Color("#4e3828"))
 	for side in [-1.0, 1.0]:
-		_cylinder(root, Vector3(side * 1.05, 1.15, 0.35), 0.05, 0.05, 1.5, Color("#6b4a32"))
+		_cylinder(shell, Vector3(side * 1.05, 1.15, 0.35), 0.05, 0.05, 1.5, Color("#6b4a32"))
 	for i in 7:
 		# ponytail: the blue cloth clips to sky under this sun; raise if the stripe goes black.
 		var shut := Color("#4a3f34") if i % 2 == 0 else Color("#263444")
 		var open := Color("#c4895a") if i % 2 == 0 else Color("#8a5344")
-		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.74, 0.22), Vector3(0.34, 0.07, 1.28), shut)
+		var stripe := _box(shell, Vector3(-1.05 + float(i) * 0.35, 1.74, 0.22), Vector3(0.34, 0.07, 1.28), shut)
 		stripe.rotation_degrees = Vector3(14, 0, 0)
 		stripe.set_meta("open_color", open)
 		stripe.set_meta("shut_color", shut)
@@ -39,19 +43,21 @@ func _stall(parent: Node3D) -> void:
 	var crate_l := _crate(root, Vector3(-1.35, 0.16, 0.7))
 	crate_l.name = "StallCrateL"
 	crate_l.add_to_group("signoff_cam05_hide")
-	_crate(root, Vector3(1.25, 0.16, 0.62))
+	_crate(shell, Vector3(1.25, 0.16, 0.62))
 	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
+	cup.name = "StallCup"
 	cup.add_to_group("parish_cup")
 	cup.visible = false
 	var jar := _sphere(root, Vector3(1.25, 0.42, 0.62), 0.07, Color("#8a3a48"))
+	jar.name = "StallJar"
 	jar.add_to_group("parish_jar")
 	jar.visible = false
 	# ponytail: three flats beside the spur; the worn center stays |x+4.55|<0.42.
 	for at in [Vector3(-0.72, 0.06, -0.72), Vector3(0.78, 0.06, -0.66), Vector3(-0.82, 0.06, -1.05)]:
-		var stone := _box(root, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
+		var stone := _box(shell, at, Vector3(0.42, 0.06, 0.28), Color("#3a322c"))
 		stone.add_to_group("parish_stall_step")
 	for i in 5:
-		_sphere(root, Vector3(-0.3 + float(i) * 0.14, 0.96, 0.15), 0.08, Color("#e39a52"))
+		_sphere(shell, Vector3(-0.3 + float(i) * 0.14, 0.96, 0.15), 0.08, Color("#e39a52"))
 	var sign := Label3D.new()
 	sign.text = "Petal Stall"
 	sign.font_size = 56
@@ -66,15 +72,53 @@ func _stall(parent: Node3D) -> void:
 	sign.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
-	root.add_child(sign)
+	shell.add_child(sign)
 	var light := OmniLight3D.new()
 	light.position = Vector3(0, 1.5, 0.4)
 	light.light_color = Color("ffd2a4")
 	light.light_energy = 0.16
 	light.omni_range = 4.5
 	light.shadow_enabled = false
-	root.add_child(light)
+	shell.add_child(light)
 	light.add_to_group("parish_stall_lamp")
+	_stall_room(root)
+
+func _stall_room(stall: Node3D) -> void:
+	var room := Node3D.new()
+	room.name = "Interior"
+	room.visible = false
+	stall.add_child(room)
+	# North of the parish hedge. The stall crate, cup, and jar slide onto the counter only while this room is open.
+	_box(room, Vector3(0.15, 1.35, 7.8), Vector3(4.6, 0.1, 6.4), Color("#6b4e3a"))
+	var back := _box(room, Vector3(0.15, 2.7, 5.05), Vector3(4.8, 3.2, 0.16), Color("#c4a882"))
+	back.name = "BackWall"
+	_box(room, Vector3(-1.7, 2.7, 7.8), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(2.0, 2.7, 7.8), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(0.15, 2.7, 10.9), Vector3(4.8, 3.2, 0.16), Color("#c4a882"))
+	_box(room, Vector3(0.15, 4.25, 7.8), Vector3(4.8, 0.12, 6.4), Color("#8a7060"))
+	var counter := _box(room, Vector3(0.05, 1.55, 6.75), Vector3(1.2, 0.16, 0.72), Color("#5c4030"))
+	counter.name = "Counter"
+	var pane := _box(room, Vector3(-0.95, 2.55, 5.18), Vector3(0.7, 0.62, 0.06), Color("#ffd2a4"))
+	pane.name = "InsideWindow"
+	var glass := pane.material_override as StandardMaterial3D
+	if glass:
+		glass.emission_enabled = true
+		glass.emission = Color("#ffe0b0")
+		glass.emission_energy_multiplier = 1.6
+	var view := Node3D.new()
+	view.name = "InsideView"
+	view.position = Vector3(0.15, 2.7, 8.3)
+	room.add_child(view)
+	var lamp := OmniLight3D.new()
+	lamp.name = "RoomLamp"
+	lamp.position = Vector3(0.1, 3.4, 7.4)
+	lamp.light_color = Color("ffd2a4")
+	lamp.light_energy = 2.2
+	lamp.omni_range = 7.0
+	lamp.shadow_enabled = false
+	room.add_child(lamp)
+	for n in room.find_children("*", "GeometryInstance3D", true, false):
+		n.remove_from_group("signoff_ok")
 
 func _shed(parent: Node3D) -> void:
 	var root := Node3D.new()
