@@ -24,7 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a simple gel icon (one body, two black eyes) instead of the petal bell. The icon turns to face the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
-When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. The lane count stays a sim count.
+When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Farther houses stay counts. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -46,10 +46,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-- `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK`.
-- `PETAL_JELLY_PLAY=1 tools/run.sh res://scenes/garden.tscn` → `JELLY_PLAY_OK`.
-- `PETAL_RESIDENT_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_RESIDENT_SHOT_OK`.
-- `PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_SMOKE_OK`.
+- `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` on the previous tip. This pass re-ran `tests/test_town.gd` → `TOWN_OK`.
+- `PETAL_TOWN_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
@@ -64,7 +62,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/residents_park.png` (1440×900). Bram the carrot and Lumen the leek both read as people in the open grass. Bellhelp is between them with two black eyes. The count reads “2 on the lawn.” The hedge gate and the garden are behind the lawn.
 
-`docs/screenshots/south_lane.png` (1440×900). Six cottages were built; the near pair flanks the path, windows lit, sign reads South Lane, and Grove Park sits beyond them.
+`docs/screenshots/south_lane.png` (1440×900). The near cottage has a lit window and a tomato household at the door. The sign reads South Lane. Grove Park is beyond the path.
 
 ## KNOWN REGRESSIONS
 
@@ -78,11 +76,11 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Let one lane household be a body at their cottage when the camera is near, instead of only a lit window.
-2. Keep the kettle brew plate on the kettle, the way the pan plate stays on the pan.
+1. Keep the kettle brew plate on the kettle, the way the pan plate stays on the pan.
+2. Give the jelly icon a little gel volume that does not wash the eyes out under the sun.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.
-5. Give the icon a little gel volume that does not wash the eyes back out under the sun.
+5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD
 

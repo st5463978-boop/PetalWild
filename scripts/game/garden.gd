@@ -12,6 +12,7 @@ var audio: GardenAudio
 var bees: GardenBees
 var birds: GardenBirds
 var people := {}
+var lane_body: VegPerson
 var parish := ParishLife.new()
 var patches := {}
 var bed_blooms: Array[MultiMeshInstance3D] = []
@@ -1456,6 +1457,64 @@ func _sync_lane() -> void:
 		var sign := node as Node3D
 		if sign:
 			sign.visible = show
+	_sync_lane_body(show and lit > 0)
+
+func _lane_near() -> bool:
+	if camera == null:
+		return false
+	var gate := GardenLayout.GATE
+	if camera.global_position.distance_to(gate) < 18.0:
+		return true
+	return camera.target.distance_to(gate) < 12.0
+
+func _first_lane_house() -> Node3D:
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		var house := node as Node3D
+		if house != null and house.visible:
+			return house
+	return null
+
+func _lane_household_name() -> String:
+	for row in town.folk:
+		var rec: Dictionary = row
+		if str(rec.get("kind", "")) != "house":
+			continue
+		if str(rec.get("layer", "")) == "individual":
+			return str(rec.get("name", "Reed"))
+	return "Reed"
+
+func _sync_lane_body(wanted: bool) -> void:
+	if not wanted or not _lane_near():
+		if lane_body != null:
+			lane_body.present = false
+			lane_body.visible = false
+		return
+	var house := _first_lane_house()
+	if house == null:
+		return
+	if lane_body == null:
+		lane_body = VegPerson.new()
+		lane_body.name = "LaneHousehold"
+		add_child(lane_body)
+		lane_body.setup({
+			"id": "lane_house",
+			"name": "Reed",
+			"family": "pea",
+			"starts_present": true,
+		})
+		lane_body.remove_from_group("resident")
+	var who := _lane_household_name()
+	lane_body.display_name = who
+	lane_body.present = true
+	lane_body.visible = true
+	var door := house.get_node_or_null("Door") as Node3D
+	var at := door.global_position if door != null else house.global_position
+	at.y = 0.0
+	lane_body.global_position = at
+	var face_x := 1.0 if house.position.x < 0.0 else -1.0
+	lane_body.rotation.y = atan2(face_x, 0.0)
+	if lane_body.body:
+		lane_body.body.visible = true
 
 func _lane_tea_line() -> String:
 	if not Trust.has_action("parish_road_rumour"):
@@ -8627,6 +8686,16 @@ func _run_town_shot() -> void:
 		camera.yaw = 8.0
 		camera.focus_on(Vector3(0.0, 0.7, -13.4), 9.0)
 		camera._apply()
+	_sync_lane()
+	if lane_body == null or not lane_body.visible:
+		push_error("town shot: the near cottage has no household")
+		get_tree().quit(1)
+		return
+	var door_house := _first_lane_house()
+	if door_house == null or lane_body.global_position.distance_to(door_house.global_position) > 2.4:
+		push_error("town shot: the household left the cottage")
+		get_tree().quit(1)
+		return
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/south_lane.png")
 	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.55, 0.4), 7.6)

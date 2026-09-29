@@ -55,10 +55,12 @@ func _init() -> void:
 	town.tick(ctx)
 	_expect(town.individuals() > 0, "a near camera promotes a household")
 	_expect(int(town.stats.get("bodies", -1)) == 0, "a promoted household still has no body")
+	_expect(str(town.stats.get("headline", "")).find("stands at the door") != -1, "a near lane names the household at the door")
 	_expect(town.folk_ids() == far_ids, "promote keeps household ids")
 	ctx["near_lane"] = false
 	town.tick(ctx)
 	_expect(town.individuals() == 0, "leaving demotes the household")
+	_expect(str(town.stats.get("headline", "")).find("stands at the door") == -1, "a far camera keeps the household as a count")
 	_expect(town.folk_ids() == far_ids, "demote keeps household ids")
 	ctx["near_park"] = true
 	town.tick(ctx)

@@ -277,6 +277,10 @@ func _cottage(parent: Node3D, at: Vector3, face: float) -> void:
 	_box(house, Vector3(face * 0.68, 0.42, 0.0), Vector3(0.06, 0.7, 0.38), Color("#3a2a22"))
 	var window := _box(house, Vector3(face * 0.68, 0.95, 0.28), Vector3(0.06, 0.32, 0.28), Color("#2a241c"))
 	window.name = "Window"
+	var door := Node3D.new()
+	door.name = "Door"
+	door.position = Vector3(face * 1.05, 0.0, 0.0)
+	house.add_child(door)
 	var glass := window.material_override as StandardMaterial3D
 	if glass:
 		glass.emission_enabled = true
