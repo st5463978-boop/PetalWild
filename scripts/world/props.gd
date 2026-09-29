@@ -216,9 +216,9 @@ func _park(parent: Node3D) -> void:
 	walk.name = "ParkPath"
 	_box(root, Vector3(-1.6, 0.04, -1.1), Vector3(0.7, 0.08, 0.5), Color("#4a4038"))
 	_box(root, Vector3(1.5, 0.04, 0.9), Vector3(0.6, 0.07, 0.42), Color("#4a4038"))
-	_bench(root, Vector3(-1.2, 0.0, 0.6))
-	_bench(root, Vector3(1.1, 0.0, -0.7))
-	_bench(root, Vector3(0.15, 0.0, -1.15))
+	_bench(root, Vector3(-1.35, 0.0, 0.95))
+	_bench(root, Vector3(1.45, 0.0, 0.85))
+	_bench(root, Vector3(0.15, 0.0, 1.2))
 	var sign := Label3D.new()
 	sign.name = "ParkSign"
 	sign.text = "Grove Park"

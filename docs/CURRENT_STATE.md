@@ -48,6 +48,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK`.
 - `PETAL_JELLY_PLAY=1 tools/run.sh res://scenes/garden.tscn` → `JELLY_PLAY_OK`.
 - `PETAL_RESIDENT_SHOT=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_RESIDENT_SHOT_OK`.
+- `PETAL_SMOKE=1 tools/run.sh res://scenes/garden.tscn` → `PETAL_SMOKE_OK`.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
 ## LATEST SCREENSHOTS
@@ -58,7 +59,9 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/jam_pan.png` (1440×900). The shed pan is a copper pot of red jam with a puff of steam. The shed wall is behind it.
 
-`docs/screenshots/residents_park.png` (1440×900). Same lawn at dusk. The hedge gate opens onto the garden. Bellhelp stands on the grass with two black eyes. Bram (carrot) and Lumen (leek) stand on the open lawn. The count reads “2 on the lawn.”
+`docs/screenshots/residents_park_gate.png` (1440×900). Bram and Lumen walk through the hedge opening onto the park path. The garden beds and stall are behind them.
+
+`docs/screenshots/residents_park.png` (1440×900). They stand in the open grass in front of the benches. Bellhelp is between them with two black eyes. The count reads “2 on the lawn.” The hedge gate and the garden are behind the lawn.
 
 ## KNOWN REGRESSIONS
 
