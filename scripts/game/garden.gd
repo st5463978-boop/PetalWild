@@ -8704,6 +8704,41 @@ func _run_smoke() -> void:
 		push_error("smoke: the crate hid the jar")
 		get_tree().quit(1)
 		return
+	Clock.set_hour(21.0)
+	var shut_jam_tin := Economy.coins
+	var shut_jam := Economy.mill.crate_count(ParishChain.JAM)
+	sell_jam()
+	if Economy.coins != shut_jam_tin or Economy.mill.crate_count(ParishChain.JAM) != shut_jam:
+		push_error("smoke: jam sold after dusk")
+		get_tree().quit(1)
+		return
+	Economy.add("bramble", 1)
+	if not Economy.stock_jam() or not Economy.mill.tick(12.0) or not Economy.carry_jam():
+		push_error("smoke: a second jar missed the crate")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(10.0)
+	var jam_tin := Economy.coins
+	var jam_crates := Economy.mill.crate_count(ParishChain.JAM)
+	sell_jam()
+	if Economy.coins < jam_tin + 16 or Economy.mill.crate_count(ParishChain.JAM) != jam_crates - 1:
+		push_error("smoke: morning jam did not pay")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("smoke: the jam crate did not save")
+		get_tree().quit(1)
+		return
+	var kept_jam_tin := Economy.coins
+	var kept_jam := Economy.mill.crate_count(ParishChain.JAM)
+	Economy.coins = 0
+	Economy.mill.reset()
+	apply_state(SaveGame.read_slot(1))
+	if Economy.coins != kept_jam_tin or Economy.mill.crate_count(ParishChain.JAM) != kept_jam or kept_jam < 1:
+		push_error("smoke: the jam crate did not reload")
+		get_tree().quit(1)
+		return
+	print("JAM_CRATE_SOLD_OK")
 	if region.ids().size() != 5:
 		push_error("smoke: the vale is missing")
 		get_tree().quit(1)

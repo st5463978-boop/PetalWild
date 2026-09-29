@@ -48,12 +48,13 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK`. `tests/test_jelly.gd` also prints `ICON_FACE_OK`.
 - Carried hedge tea already sells at the Petal Stall. `sell_tea` pays the recipe price, drops one crate, refuses the sale after dusk, and the economy save keeps coins and the crate. The shop line is `Sell hedge tea`. The sale is the same call the crate and the shop button already use.
+- Carried cane jam already sells the same way. `sell_jam` pays the recipe price (16, plus a lane coin when the lane is busy), drops one jam crate, refuses the sale after dusk, and the economy save keeps the coins and the remaining jam crate. The shop line is `Sell cane jam`. `PETAL_SMOKE=1` prints `JAM_CRATE_SOLD_OK` before `PETAL_SMOKE_OK`.
 - `PETAL_KITCHEN_SALE=1` → `KITCHEN_CUP_SOLD_OK`. The shot quits if the open kitchen cup starts empty, if a leftover crate empties it, if the last sale leaves `TeaFill` full, or if coins do not rise.
 - `PETAL_KITCHEN_LIVE=1` → `KITCHEN_CUP_LIVE_OK`. The shot quits if the open cup starts full, if carrying a finished pot leaves `TeaFill` empty, if Lumen finishing the crate leaves it full, if a new pot leaves it empty, if Nessa's carry leaves it empty, or if coins move.
 - `PETAL_TOWN_SHOT=1` still passes with the control hint visible.
 - `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, if the window or the cup leaves the frame, if T does not spend one tea, if the walk misses the gate or the lawn, if the walk home misses the gate or the door, if the place page loses the lawn or the door, if reload sends them home early, if the lawn sign ignores them, if the cottage window stays lit on the lawn or dark at the door, if arrival does not bring the jelly, if reload forgets the tea, or if Esc leaves the room open.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
-- `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes.
+- `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes. The held plate and the landed plate still show two separate black eyes on the front of the gel. No eye change. The camera-space squash from `aec9f3b0` stays.
 - `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
 
@@ -61,11 +62,11 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/jelly_hungry.png` (1440×900). Bellhelp is a green gel sphere in front of the stall, with two black vertical eyes and a highlight. HUD reads `Bellhelp · hungry`.
 
-`docs/screenshots/jelly_held.png` (1440×900). The held gel is squashed wider than it is tall. Both black eyes sit on the front. HUD reads `Bellhelp · hungry · held`.
+`docs/screenshots/jelly_held.png` (1440×900). The held gel is squashed wider than it is tall. Both black eyes sit on the front, two dark vertical marks. HUD reads `Bellhelp · hungry · held`.
 
 `docs/screenshots/jelly_nuzzle.png` (1440×900). The same gel, held, still shows the black eyes on the front. The toast reads `Bellhelp nuzzles your hands.`
 
-`docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench. The hedge gate and the garden are in the background. Photo mode is on.
+`docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench, still with two black eyes. The hedge gate and the garden are in the background. Photo mode is on.
 
 `docs/screenshots/kettle_brew.png` (1440×900). The dark kettle and its white steam sit on the tea-house porch. The line reads “The kettle is brewing hedge tea.”
 
