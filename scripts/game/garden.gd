@@ -8681,6 +8681,7 @@ func _run_resident_shot() -> void:
 		walker.set_route(trip, false)
 		walker.set_activity(parish.label_for(id))
 		for _step in 36:
+			walker.pause = 0.0
 			walker._process(0.05)
 	if camera:
 		camera.pitch = 18.0
@@ -8698,7 +8699,26 @@ func _run_resident_shot() -> void:
 			var goal := walker.waypoints[walker.waypoints.size() - 1]
 			if walker.global_position.distance_to(goal) < 0.35:
 				break
+			walker.pause = 0.0
 			walker._process(0.05)
+		if not walker.waypoints.is_empty():
+			var lawn := walker.waypoints[walker.waypoints.size() - 1]
+			if walker.global_position.distance_to(lawn) > 0.35:
+				walker.global_position = lawn
+	var lumen_at := _person("lumen").global_position
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("park reload: save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if _person("lumen").global_position.distance_to(lumen_at) > 0.35:
+		push_error("park reload moved Lumen off the lawn")
+		get_tree().quit(1)
+		return
+	if _life_route("lumen").size() != 1 or _life_route("bram").size() != 1:
+		push_error("park reload sent the lawn party back to the gate")
+		get_tree().quit(1)
+		return
 	_person("bram").say(parish._line("bram", "leisure"))
 	var jelly: Jelly = null
 	if ecology != null:
@@ -11926,7 +11946,9 @@ func _life_route(id: String) -> Array[Vector3]:
 	var life: Dictionary = parish.lives.get(id, {})
 	var route: Array[Vector3] = []
 	if str(life.get("activity", "")) == "leisure" and str(life.get("places", {}).get("leisure", "")) == "park":
-		route.append(GardenLayout.GATE + Vector3(0.0, 0.0, 0.35))
+		var here := _person(id).global_position
+		if here.distance_to(dest) > 1.4:
+			route.append(GardenLayout.GATE + Vector3(0.0, 0.0, 0.35))
 	route.append(dest)
 	return route
 
