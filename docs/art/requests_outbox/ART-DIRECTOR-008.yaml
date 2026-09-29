@@ -1,0 +1,18 @@
+id: ART-DIRECTOR-008
+pass: ART-DIRECTOR
+kind: image
+subject: "Garden trees: blob-canopy tree modelling sheet (apple, oak, silver birch, flowering cherry) plus canopy leaf-card atlas, replacing Kenney faceted trees at hero distance"
+style: >
+  VISUAL_TARGET v2 section 3.4. Canopies of 3-7 overlapping soft blobs, chunky trunks tapering 1:0.6,
+  halfway bark #89613b, canopy #61661a / #8f8927 / #343a12. Autumn variant tints toward #eecd82 / #ae4c11 (A08).
+size: 2048x2048
+count: 2
+priority: normal
+target: assets/art/images/ART-DIRECTOR-008/garden_trees_sheet.png
+status: requested
+due: 2026-10-05
+lane_hint: A
+refs:
+  - "/workspace/petalwild-davinci/props/D03_apple_tree.png"
+  - "/workspace/petalwild-davinci/concept/A18_tree_canopy.png"
+  - "/workspace/petalwild-davinci/concept/A08_autumn_garden.png"

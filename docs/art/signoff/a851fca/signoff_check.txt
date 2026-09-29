@@ -1,0 +1,8 @@
+PASS CAM_01_HERO_OVERVIEW.png
+PASS CAM_02_BEDS_SOIL.png
+FAIL CAM_03_LAWN_PATH.png  <- clipped white 0.53%
+PASS CAM_04_FOLIAGE_EDGE.png
+PASS CAM_05_MARKET_STALL.png
+PASS CAM_06_JELLY_HERO.png
+FAIL CAM_07_VEG_FOLK.png  <- crushed black 21.04%; too grey: chroma 9.2; palette: 1/6 target hexes present (need 4)
+PASS CAM_08_PHONE_PLAY.png

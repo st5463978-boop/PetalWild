@@ -1,0 +1,235 @@
+{
+ "global": {
+  "delta_e": 14,
+  "min_hit_pct": 1.0,
+  "max_forbid_pct": 4.0,
+  "max_clip_white_pct": 0.5,
+  "max_crush_black_pct": 1.5,
+  "min_mean_chroma": 18,
+  "forbid": [
+   "#808080",
+   "#c0c0c0",
+   "#ffffff",
+   "#ff00ff",
+   "#d8c7a9"
+  ],
+  "max_flat_ground_score": 0.2,
+  "_v2_note": "v2 (28 Sep 2026): must_hit lists rebuilt from A01-A20 by calibrate_v2.py; crush-black limit 1.0->1.5% because approved daytime A scenes measure 0.2-1.5%. Captures are taken at the fixed test state (clear, 16:30, live weather/clock sync OFF).",
+  "test_state": {
+   "weather": "clear",
+   "hour": 16.5,
+   "live_sync": false,
+   "time_scale": 1.0
+  }
+ },
+ "cameras": {
+  "CAM_01_HERO_OVERVIEW": {
+   "subject": "garden",
+   "must_hit": [
+    "#644728",
+    "#67651f",
+    "#997431",
+    "#29280b",
+    "#cd9441",
+    "#e8d5b9",
+    "#ab9574"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A02.accent",
+    "concept.A20.accent",
+    "concept.A14.accent",
+    "concept.A20.ground",
+    "concept.A14.accent",
+    "concept.A02.top",
+    "concept.A02.ground"
+   ],
+   "refs": [
+    "A02",
+    "A20",
+    "A14"
+   ]
+  },
+  "CAM_02_BEDS_SOIL": {
+   "subject": "beds",
+   "must_hit": [
+    "#644728",
+    "#4c6f21",
+    "#e8d5b9",
+    "#6c6a42",
+    "#ab9574",
+    "#261c0d",
+    "#9d6837"
+   ],
+   "min_hits": 5,
+   "source": [
+    "concept.A02.accent",
+    "concept.A12.accent",
+    "concept.A02.top",
+    "concept.A12.top",
+    "concept.A02.ground",
+    "concept.A02.ground",
+    "concept.A12.accent"
+   ],
+   "refs": [
+    "A12",
+    "A02"
+   ]
+  },
+  "CAM_03_LAWN_PATH": {
+   "subject": "lawn path",
+   "must_hit": [
+    "#69601d",
+    "#9c872c",
+    "#1d250d",
+    "#585838",
+    "#948860",
+    "#aa3e36",
+    "#d4bea1"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A01.accent",
+    "concept.A01.accent",
+    "concept.A01.ground",
+    "concept.A01.mid",
+    "concept.A11.top",
+    "concept.A11.accent",
+    "concept.A01.mid"
+   ],
+   "refs": [
+    "A01",
+    "A11"
+   ]
+  },
+  "CAM_04_FOLIAGE_EDGE": {
+   "subject": "hedge",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-007/008: hedges and trees await art",
+   "must_hit": [
+    "#61661a",
+    "#8f8927",
+    "#192407",
+    "#574f26",
+    "#bd9c5c",
+    "#782d22",
+    "#c8af42"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A04.accent",
+    "concept.A04.accent",
+    "concept.A04.ground",
+    "concept.A20.ground",
+    "concept.A04.mid",
+    "concept.A20.accent",
+    "concept.A04.accent"
+   ],
+   "refs": [
+    "A04",
+    "A18",
+    "A20"
+   ]
+  },
+  "CAM_05_MARKET_STALL": {
+   "subject": "stall",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-003: stall awaits art",
+   "must_hit": [
+    "#653d15",
+    "#a16639",
+    "#292e13",
+    "#706924",
+    "#2f638c",
+    "#baac74",
+    "#c06427"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A05.accent",
+    "concept.A13.accent",
+    "concept.A05.ground",
+    "concept.A13.accent",
+    "concept.A05.accent",
+    "concept.A13.mid",
+    "concept.A05.accent"
+   ],
+   "refs": [
+    "A05",
+    "A13"
+   ]
+  },
+  "CAM_06_JELLY_HERO": {
+   "subject": "jelly",
+   "must_hit": [
+    "#60571a",
+    "#818125",
+    "#28240d",
+    "#b09b5a",
+    "#aa3e36",
+    "#d4c343"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A11.accent",
+    "concept.A10.accent",
+    "concept.A10.mid",
+    "concept.A11.mid",
+    "concept.A11.accent",
+    "concept.A10.accent"
+   ],
+   "refs": [
+    "A10",
+    "A11"
+   ]
+  },
+  "CAM_07_VEG_FOLK": {
+   "subject": "veg folk",
+   "blocked_on_art": true,
+   "blocked_reason": "ART-DIRECTOR-002: veg folk await art",
+   "must_hit": [
+    "#6b5a25",
+    "#4c6f21",
+    "#3d311e",
+    "#743d1d",
+    "#9d6837",
+    "#b6b04e"
+   ],
+   "min_hits": 4,
+   "source": [
+    "concept.A17.accent",
+    "concept.A12.accent",
+    "concept.A12.ground",
+    "concept.A12.accent",
+    "concept.A12.accent",
+    "concept.A12.accent"
+   ],
+   "refs": [
+    "A12",
+    "A17"
+   ]
+  },
+  "CAM_08_PHONE_PLAY": {
+   "subject": "garden",
+   "must_hit": [
+    "#644728",
+    "#67651f",
+    "#978b2c",
+    "#29280b",
+    "#e8d5b9"
+   ],
+   "min_hits": 3,
+   "source": [
+    "concept.A02.accent",
+    "concept.A20.accent",
+    "concept.A20.accent",
+    "concept.A20.ground",
+    "concept.A02.top"
+   ],
+   "refs": [
+    "A02",
+    "A20"
+   ]
+  }
+ }
+}

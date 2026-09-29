@@ -12,14 +12,15 @@ void vertex() {
 }
 
 void fragment() {
-	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.1);
-	vec3 deep = vec3(0.07, 0.28, 0.27);
-	vec3 lit = vec3(0.62, 0.84, 0.68);
-	vec3 col = mix(deep, lit, fres);
-	float spark = smoothstep(0.93, 1.0, sin(world_pos.x * 7.0 + TIME * 2.0) * sin(world_pos.z * 5.5 - TIME * 1.4));
+	// High cameras barely catch the rim, so the bowl itself has to read as water.
+	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.6);
+	vec3 deep = vec3(0.10, 0.42, 0.50);
+	vec3 lit = vec3(0.58, 0.84, 0.78);
+	vec3 col = mix(deep, lit, 0.4 + fres * 0.55);
+	float spark = smoothstep(0.94, 1.0, sin(world_pos.x * 6.0 + TIME * 1.6) * sin(world_pos.z * 4.8 - TIME * 1.2));
 	ALBEDO = col;
-	ROUGHNESS = 0.08;
-	SPECULAR = 0.55;
-	EMISSION = vec3(0.95, 0.82, 0.5) * spark * 0.4 + vec3(0.35, 0.7, 0.55) * fres * 0.1;
-	ALPHA = 0.86;
+	ROUGHNESS = 0.16;
+	SPECULAR = 0.42;
+	EMISSION = vec3(0.72, 0.9, 0.82) * spark * 0.22;
+	ALPHA = 0.92;
 }

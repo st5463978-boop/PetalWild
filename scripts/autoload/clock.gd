@@ -8,6 +8,7 @@ var day := 1
 var minute := 15.2 * 60.0
 var scale := 6.0
 var weather := "golden"
+var live_sync := false
 var _last_bucket := -1
 
 func _ready() -> void:
@@ -65,6 +66,11 @@ func set_hour(value: float) -> void:
 	weather = weather_for(hour(), day)
 	time_changed.emit(day, hour(), weather)
 	weather_changed.emit(weather)
+
+func set_weather(next: String) -> void:
+	weather = next
+	weather_changed.emit(weather)
+	time_changed.emit(day, hour(), weather)
 
 func reset_new() -> void:
 	running = false

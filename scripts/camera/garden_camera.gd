@@ -2,12 +2,12 @@ class_name GardenCamera
 extends Camera3D
 
 var yaw := 176.0
-var pitch := 18.0
-var distance := 18.0
+var pitch := 48.0
+var distance := 13.0
 var target := Vector3(-2.8, 0.55, -0.2)
 var home_yaw := 176.0
-var home_pitch := 18.0
-var home_distance := 18.0
+var home_pitch := 48.0
+var home_distance := 13.0
 var home_target := Vector3(-2.8, 0.55, -0.2)
 var user_moved := false
 var intro := 0.0
@@ -15,7 +15,7 @@ var focus_blend := 1.0
 
 func _ready() -> void:
 	current = true
-	fov = 42.0
+	fov = 40.0
 	near = 0.08
 	far = 220.0
 	_apply()
@@ -37,10 +37,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pan(event.relative)
 	elif event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			distance = clampf(distance - 1.05, 3.2, 30.0)
+			distance = clampf(distance - 1.05, 7.0, 22.0)
 			user_moved = true
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			distance = clampf(distance + 1.05, 3.2, 30.0)
+			distance = clampf(distance + 1.05, 7.0, 22.0)
 			user_moved = true
 
 func nudge(delta: float) -> void:
@@ -95,9 +95,9 @@ func _pan(relative: Vector2) -> void:
 	target += (-right.normalized() * relative.x + forward.normalized() * relative.y) * 0.012 * distance * 0.18
 
 func _apply() -> void:
-	var shown_pitch := home_pitch
+	var shown_pitch := 18.0
 	var shown_yaw := home_yaw - 16.0
-	var shown_distance := home_distance + 8.0
+	var shown_distance := 26.0
 	var shown_target := home_target + Vector3(0, 1.4, -2.0)
 	var k := smoothstep(0.0, 1.0, intro)
 	var use_pitch := lerpf(shown_pitch, pitch, k)

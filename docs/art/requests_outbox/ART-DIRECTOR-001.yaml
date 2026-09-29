@@ -1,0 +1,32 @@
+id: ART-DIRECTOR-001
+pass: ART-DIRECTOR
+kind: image
+subject: "Grok bot jelly bodies: the 8 Grok icon shapes (circle, oblong, square, pill, triangle, hexagon, cloud, teardrop) as gummy-candy garden creatures, turnaround sheets (front, 3/4, side, back) plus MorphCycle expression row (idle, thinking, working, waiting, blocked, done)"
+style: >
+  VISUAL_TARGET v2 section 3.6 overrides the house style: halfway between toy and real.
+  Each body is the Grok icon silhouette extruded into a thick rounded gummy (depth 0.55-0.7 x width,
+  edge radius >= 25% of depth, bottom flattened so it sits heavy), 0.35-0.45 m tall at garden scale.
+  Face = the two diagonal slash eyes from the icon sheet in eye ink #1b1b1f, no mouth by default.
+  Candy translucency: thin edges light through, glowing core, clearcoat gloss, faint sugar frost.
+  One sheet per shape in default teal #00a592; plus one palette sheet showing all 11 Grok flavours
+  (#f5f1ea white, #855c36, #e02135, #ff6700, #ff9800, #009957, #00a592, #0e74e0, #804ee0, #e02a88, #777777).
+  Match the original bots: grok-shapes.ts proportions (Altar-v1 cursor/grok-bot-jelly-cast-69cf) and
+  icon-face-layout.ts / face-expression.ts eye placement (cursor/grok-icon-jelly-cloud-cdfb).
+  CLEAN-ROOM: Altar-v1 jelly-baby/ is derived from GPL-3.0 Jelly-Baby, use as look/behaviour reference
+  only, copy no code, meshes, cages or EXRs. Do not use the Higgsfield gummies (Jelly-Baby look-alikes).
+  Neutral grey background, soft garden daylight #e3ca82 key. These sheets drive PETAL-03's mesh build (lane B turntable test afterwards).
+size: 2048x1024
+count: 9
+priority: high
+target: assets/art/images/ART-DIRECTOR-001/grok_jelly_turnaround.png
+status: requested
+due: 2026-10-02
+lane_hint: A
+refs:
+  - "/workspace/havenbrook-art/refs/grok-avatar-anim/grokbot-shapes-palette.png"
+  - "/workspace/havenbrook-art/refs/grok-avatar-anim/bloub-states.png"
+  - "Altar-v1@cursor/grok-bot-jelly-cast-69cf:jelly-baby/src/graphics/grok-shapes.ts"
+  - "Altar-v1@cursor/grok-icon-jelly-cloud-cdfb:jelly-baby/docs/living-grok.md"
+  - "/workspace/petalwild-fold/merged/addons/gg_groks/"
+  - "/workspace/petalwild-davinci/textures/R38_candy.png"
+  - "/workspace/petalwild-davinci/concept/A10_a_creature_home.png"

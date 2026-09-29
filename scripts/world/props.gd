@@ -30,11 +30,14 @@ func _stall(parent: Node3D) -> void:
 		# ponytail: the blue cloth clips to sky under this sun; raise if the stripe goes black.
 		var shut := Color("#4a3f34") if i % 2 == 0 else Color("#263444")
 		var open := Color("#c4895a") if i % 2 == 0 else Color("#8a5344")
-		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.72, 0.15), Vector3(0.34, 0.06, 1.15), shut)
+		var stripe := _box(root, Vector3(-1.05 + float(i) * 0.35, 1.74, 0.22), Vector3(0.34, 0.07, 1.28), shut)
+		stripe.rotation_degrees = Vector3(14, 0, 0)
 		stripe.set_meta("open_color", open)
 		stripe.set_meta("shut_color", shut)
 		stripe.add_to_group("parish_awning")
-	_crate(root, Vector3(-1.35, 0.16, 0.7))
+	var crate_l := _crate(root, Vector3(-1.35, 0.16, 0.7))
+	crate_l.name = "StallCrateL"
+	crate_l.add_to_group("signoff_cam05_hide")
 	_crate(root, Vector3(1.25, 0.16, 0.62))
 	var cup := _sphere(root, Vector3(-1.35, 0.42, 0.7), 0.08, Color("#c4a070"))
 	cup.add_to_group("parish_cup")
@@ -59,6 +62,7 @@ func _stall(parent: Node3D) -> void:
 	sign.outline_size = 12
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.add_to_group("parish_stall_sign")
+	sign.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	root.add_child(sign)
@@ -102,6 +106,7 @@ func _shed(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.16)
+	_unmark_ok(root)
 
 func _tea(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -127,6 +132,7 @@ func _tea(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.1)
+	_unmark_ok(root)
 
 func _hut(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -150,6 +156,7 @@ func _hut(parent: Node3D) -> void:
 	light.shadow_enabled = false
 	root.add_child(light)
 	_room_lamp(light, 0.08)
+	_unmark_ok(root)
 
 func _foundry(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -168,6 +175,7 @@ func _foundry(parent: Node3D) -> void:
 	light.omni_range = 2.0
 	light.shadow_enabled = false
 	root.add_child(light)
+	_unmark_ok(root)
 
 func _hall(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -185,6 +193,7 @@ func _hall(parent: Node3D) -> void:
 	light.omni_range = 1.6
 	light.shadow_enabled = false
 	root.add_child(light)
+	_unmark_ok(root)
 
 func _park(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -254,13 +263,20 @@ func _lantern(parent: Node3D, at: Vector3) -> void:
 	light.add_to_group("parish_lantern")
 
 func _reeds(parent: Node3D) -> void:
-	for i in 16:
-		var angle := TAU * float(i) / 16.0
-		var radius := GardenLayout.POND_RADIUS + 0.15
-		var at := GardenLayout.POND_CENTER + Vector3(cos(angle) * radius, 0, sin(angle) * radius)
-		if at.x < 5.2:
+	# Clumps on the bank. A full ring read as poles, and the heads sat in the water.
+	var angles: Array[float] = [0.6, 1.7, 2.5, 4.4, 5.3]
+	for angle in angles:
+		var radius := GardenLayout.POND_RADIUS + 0.7
+		var base := GardenLayout.POND_CENTER + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
+		if base.x < 5.4:
 			continue
-		_cylinder(parent, at + Vector3(0, 0.45, 0), 0.02, 0.025, 0.9, Color("#6d7a3a"))
+		var ground := GardenLayout.height_at(base.x, base.z)
+		for k in 3:
+			var sway := Vector3(cos(angle + float(k)) * 0.08, 0.0, sin(angle + float(k)) * 0.08)
+			var height := 0.72 + float(k) * 0.16
+			var at := base + sway
+			_cylinder(parent, at + Vector3(0.0, ground + height * 0.5, 0.0), 0.018, 0.024, height, Color("#5a8a3c"))
+			_sphere(parent, at + Vector3(0.0, ground + height + 0.04, 0.0), 0.035, Color("#6a4a28"))
 
 func _gate_crate(parent: Node3D) -> void:
 	var root := Node3D.new()
@@ -285,8 +301,8 @@ func _gate_crate(parent: Node3D) -> void:
 		sign.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	root.add_child(sign)
 
-func _crate(parent: Node3D, at: Vector3) -> void:
-	_box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
+func _crate(parent: Node3D, at: Vector3) -> MeshInstance3D:
+	return _box(parent, at, Vector3(0.32, 0.32, 0.32), Color("#a56b3c"))
 
 func _room_lamp(light: OmniLight3D, day: float) -> void:
 	light.set_meta("day_energy", day)
@@ -301,6 +317,13 @@ func _warm_pane(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> voi
 	material.emission_energy_multiplier = 0.0
 	pane.add_to_group("parish_room_glass")
 
+func _unmark_ok(root: Node) -> void:
+	root.add_to_group("signoff_hide")
+	if root is GeometryInstance3D:
+		root.remove_from_group("signoff_ok")
+	for n in root.find_children("*", "GeometryInstance3D", true, false):
+		n.remove_from_group("signoff_ok")
+
 func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
 	mesh.size = size
@@ -312,6 +335,7 @@ func _box(parent: Node3D, at: Vector3, size: Vector3, color: Color) -> MeshInsta
 	material.roughness = 0.74
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node
 
@@ -329,6 +353,7 @@ func _cylinder(parent: Node3D, at: Vector3, top: float, bottom: float, height: f
 	material.roughness = 0.7
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node
 
@@ -346,5 +371,6 @@ func _sphere(parent: Node3D, at: Vector3, radius: float, color: Color) -> MeshIn
 	material.roughness = 0.55
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 	return node

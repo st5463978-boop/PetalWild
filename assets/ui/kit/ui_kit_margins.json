@@ -1,0 +1,156 @@
+{
+ "ui_panel_9slice": {
+  "margins_1x_LTRB": [
+   48,
+   48,
+   48,
+   48
+  ],
+  "margins_2x_LTRB": [
+   96,
+   96,
+   96,
+   96
+  ],
+  "size_1x": [
+   192,
+   192
+  ]
+ },
+ "ui_topbar": {
+  "margins_1x_LTRB": [
+   120,
+   0,
+   120,
+   0
+  ],
+  "margins_2x_LTRB": [
+   240,
+   0,
+   240,
+   0
+  ],
+  "size_1x": [
+   1200,
+   88
+  ]
+ },
+ "ui_slot_normal": {
+  "margins_1x_LTRB": [
+   16,
+   16,
+   16,
+   16
+  ],
+  "margins_2x_LTRB": [
+   32,
+   32,
+   32,
+   32
+  ],
+  "size_1x": [
+   96,
+   96
+  ]
+ },
+ "ui_slot_hover": {
+  "margins_1x_LTRB": [
+   16,
+   16,
+   16,
+   16
+  ],
+  "margins_2x_LTRB": [
+   32,
+   32,
+   32,
+   32
+  ],
+  "size_1x": [
+   96,
+   96
+  ]
+ },
+ "ui_slot_selected": {
+  "margins_1x_LTRB": [
+   16,
+   16,
+   16,
+   16
+  ],
+  "margins_2x_LTRB": [
+   32,
+   32,
+   32,
+   32
+  ],
+  "size_1x": [
+   96,
+   96
+  ]
+ },
+ "ui_button_primary": {
+  "margins_1x_LTRB": [
+   32,
+   24,
+   32,
+   24
+  ],
+  "margins_2x_LTRB": [
+   64,
+   48,
+   64,
+   48
+  ],
+  "size_1x": [
+   240,
+   72
+  ]
+ },
+ "ui_button_secondary": {
+  "margins_1x_LTRB": [
+   32,
+   24,
+   32,
+   24
+  ],
+  "margins_2x_LTRB": [
+   64,
+   48,
+   64,
+   48
+  ],
+  "size_1x": [
+   240,
+   72
+  ]
+ },
+ "ui_journal_page": {
+  "margins_1x_LTRB": [
+   64,
+   64,
+   64,
+   64
+  ],
+  "margins_2x_LTRB": [
+   128,
+   128,
+   128,
+   128
+  ],
+  "size_1x": [
+   800,
+   560
+  ]
+ },
+ "ui_cursor": {
+  "hotspot_1x": [
+   2,
+   2
+  ],
+  "hotspot_2x": [
+   4,
+   4
+  ]
+ }
+}

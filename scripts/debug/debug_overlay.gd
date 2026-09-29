@@ -20,10 +20,10 @@ func build(owner: Node) -> void:
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 10
-	box.offset_top = 8
-	box.offset_right = -10
-	box.offset_bottom = -8
+	box.offset_left = 40
+	box.offset_top = 36
+	box.offset_right = -40
+	box.offset_bottom = -36
 	panel.add_child(box)
 	label = ThemeKit.label("", 13)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

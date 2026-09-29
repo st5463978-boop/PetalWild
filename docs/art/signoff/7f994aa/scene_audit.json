@@ -1,0 +1,228 @@
+{
+  "CAM_01_HERO_OVERVIEW": {
+    "blocked_on_art": false,
+    "camera": {
+      "fov": 42.0,
+      "pos": "Vector3(4.65, 9, 9.6)",
+      "rot_deg": "Vector3(-31.364689, 28.300753, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 100.0,
+    "subject_name": "garden",
+    "subject_nodes": [
+      "Hedge",
+      "PetalStall",
+      "BedBody_0_0",
+      "BedBody_1_0"
+    ],
+    "subject_rect": [
+      0.0,
+      0.0,
+      1440.0,
+      900.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_02_BEDS_SOIL": {
+    "blocked_on_art": false,
+    "camera": {
+      "fov": 45.0,
+      "pos": "Vector3(-2.35, 3.2, 2.1999998)",
+      "rot_deg": "Vector3(-43.264294, 0, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 97.43,
+    "subject_name": "beds",
+    "subject_nodes": [
+      "BedBody_0_0",
+      "BedBody_0_1",
+      "BedBody_1_0",
+      "BedBody_1_1"
+    ],
+    "subject_rect": [
+      0.0,
+      23.0,
+      1440.0,
+      877.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_03_LAWN_PATH": {
+    "blocked_on_art": false,
+    "camera": {
+      "fov": 52.0,
+      "pos": "Vector3(-2.1, 1.5, 5.5499997)",
+      "rot_deg": "Vector3(-11.64831, 1.7899109, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 11.1,
+    "subject_name": "lawn path",
+    "subject_nodes": [
+      "Terrain"
+    ],
+    "subject_rect": [
+      61.0,
+      220.0,
+      1379.0,
+      104.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_04_FOLIAGE_EDGE": {
+    "blocked_on_art": true,
+    "blocked_reason": "ART-DIRECTOR-007/008: hedges and trees await art",
+    "camera": {
+      "fov": 45.0,
+      "pos": "Vector3(-9.1, 1.8, 1.5)",
+      "rot_deg": "Vector3(-8.833434, 60.945393, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 68.18,
+    "subject_name": "hedge",
+    "subject_nodes": [
+      "Hedge"
+    ],
+    "subject_rect": [
+      0.0,
+      286.0,
+      1440.0,
+      614.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_05_MARKET_STALL": {
+    "blocked_on_art": true,
+    "blocked_reason": "ART-DIRECTOR-003: stall awaits art",
+    "camera": {
+      "fov": 46.0,
+      "pos": "Vector3(-2.1000001, 1.48, 7.57)",
+      "rot_deg": "Vector3(-1.7089547, 45.000004, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 100.0,
+    "subject_name": "stall",
+    "subject_nodes": [
+      "PetalStall"
+    ],
+    "subject_rect": [
+      0.0,
+      0.0,
+      1440.0,
+      900.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_06_JELLY_HERO": {
+    "blocked_on_art": false,
+    "camera": {
+      "fov": 42.0,
+      "pos": "Vector3(-1.6499999, 1.17, 2.55)",
+      "rot_deg": "Vector3(-18.442331, 18.434948, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 19.99,
+    "subject_name": "jelly",
+    "subject_nodes": [
+      "SignoffJelly"
+    ],
+    "subject_rect": [
+      356.0,
+      431.0,
+      553.0,
+      469.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_07_VEG_FOLK": {
+    "blocked_on_art": true,
+    "blocked_reason": "ART-DIRECTOR-002: veg folk await art",
+    "camera": {
+      "fov": 42.0,
+      "pos": "Vector3(-1.7500002, 1.55, 0.9500003)",
+      "rot_deg": "Vector3(-10.928016, 149.22595, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 5.36,
+    "subject_name": "veg folk",
+    "subject_nodes": [
+      "@Node3D@1778",
+      "@Node3D@1783",
+      "@Node3D@1788"
+    ],
+    "subject_rect": [
+      0.0,
+      410.0,
+      336.0,
+      207.0
+    ],
+    "subject_visible": true
+  },
+  "CAM_08_PHONE_PLAY": {
+    "blocked_on_art": false,
+    "camera": {
+      "fov": 40.0,
+      "pos": "Vector3(-2.1932094, 10.210883, -8.877508)",
+      "rot_deg": "Vector3(-48.000004, 175.99998, 0)"
+    },
+    "label_overlaps": [],
+    "size": [
+      1440,
+      900
+    ],
+    "subject_area_pct": 100.0,
+    "subject_name": "garden",
+    "subject_nodes": [
+      "Hedge",
+      "PetalStall",
+      "BedBody_0_0"
+    ],
+    "subject_rect": [
+      0.0,
+      0.0,
+      1440.0,
+      900.0
+    ],
+    "subject_visible": true
+  },
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "renderer": "gl_compatibility",
+  "scene": {
+    "checker_textures": [],
+    "placeholders": [],
+    "spike_meshes": []
+  },
+  "test_state": {
+    "hour": 16.5,
+    "live_sync": false,
+    "time_scale": 1.0,
+    "weather": "clear"
+  }
+}

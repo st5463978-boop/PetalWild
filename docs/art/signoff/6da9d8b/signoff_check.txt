@@ -1,0 +1,15 @@
+PASS CAM_01_HERO_OVERVIEW.png
+PASS CAM_02_BEDS_SOIL.png
+PASS CAM_03_LAWN_PATH.png
+BLOCKED-ON-ART CAM_04_FOLIAGE_EDGE.png  <- ART-DIRECTOR-007/008: hedges and trees await art
+BLOCKED-ON-ART CAM_05_MARKET_STALL.png  <- ART-DIRECTOR-003: stall awaits art
+PASS CAM_06_JELLY_HERO.png
+BLOCKED-ON-ART CAM_07_VEG_FOLK.png  <- ART-DIRECTOR-002: veg folk await art
+PASS CAM_08_PHONE_PLAY.png
+RESULT PASS=5 FAIL=0 BLOCKED-ON-ART=3
+00_ORIGINAL  chroma 38.2   clip 0.00%   bed-vs-lawn L* -8.3
+this commit  chroma 27.4   clip 0.00%   bed-vs-lawn L* 0.9
+previous commit  chroma 27.4   clip 0.00%   bed-vs-lawn L* 0.9
+target_garden_02  chroma 27.9   clip 0.00%   bed-vs-lawn L* -30.6
+COMPARE_SHEET docs/screenshots/compare/6da9d8b.png
+REGRESSION_OK

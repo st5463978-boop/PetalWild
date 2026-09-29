@@ -38,6 +38,7 @@ func setup(definition: Dictionary) -> void:
 	role = str(definition.get("role", ""))
 	present = bool(definition.get("starts_present", false))
 	visible = present
+	add_to_group("resident")
 	_build_body()
 	speech = Label3D.new()
 	speech.font_size = 42
@@ -45,24 +46,28 @@ func setup(definition: Dictionary) -> void:
 	speech.modulate = Color("f7f1e6")
 	speech.outline_modulate = Color("1c2418")
 	speech.outline_size = 10
-	speech.position = Vector3(0, 1.72, 0)
+	speech.position = Vector3(0, 2.48, 0)
 	speech.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	speech.render_priority = 12
 	speech.visible = false
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		speech.font = load("res://assets/fonts/Inter-SemiBold.ttf")
 	add_child(speech)
+	_backing_plate(speech, Vector2(1.9, 0.3))
 	act_label = Label3D.new()
 	act_label.font_size = 28
 	act_label.pixel_size = 0.004
 	act_label.modulate = Color("d9e6c8")
 	act_label.outline_modulate = Color("1c2418")
 	act_label.outline_size = 8
-	act_label.position = Vector3(0, 1.52, 0)
+	act_label.position = Vector3(0, 2.18, 0)
 	act_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	act_label.render_priority = 12
 	act_label.text = ""
 	if ResourceLoader.exists("res://assets/fonts/Inter-SemiBold.ttf"):
 		act_label.font = speech.font
 	add_child(act_label)
+	_backing_plate(act_label, Vector2(1.6, 0.24))
 
 func set_route(points: Array[Vector3], snap := true) -> void:
 	waypoints = points
@@ -76,6 +81,7 @@ func say(line: String) -> void:
 		return
 	speech.text = line
 	speech.visible = true
+	_fit_plate(speech, line, 0.3)
 	speech_time = 4.2
 	spoke.emit(person_id, line)
 
@@ -124,11 +130,37 @@ func set_activity(text: String) -> void:
 	activity = text
 	if act_label:
 		act_label.text = text
+		_fit_plate(act_label, text, 0.24)
 		act_label.visible = false
 
 func _speed() -> float:
 	# ponytail: L3 skips bob instead of running faster; a 6s smoke tick overshoots the porch if we scale speed.
 	return 0.32 if energy < 0.35 else 0.55
+
+func _backing_plate(host: Label3D, size: Vector2) -> void:
+	var plate := MeshInstance3D.new()
+	plate.name = "BackingPlate"
+	var quad := QuadMesh.new()
+	quad.size = size
+	plate.mesh = quad
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(0.08, 0.07, 0.05, 0.8)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.render_priority = 8
+	plate.material_override = mat
+	plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	plate.position = Vector3(0, 0, 0.02)
+	host.add_child(plate)
+
+func _fit_plate(host: Label3D, line: String, height: float) -> void:
+	var plate := host.get_node_or_null("BackingPlate") as MeshInstance3D
+	if plate == null or not (plate.mesh is QuadMesh):
+		return
+	var wide := clampf(0.7 + float(line.length()) * 0.052, 1.0, 2.8)
+	(plate.mesh as QuadMesh).size = Vector2(wide, height)
 
 func _build_body() -> void:
 	body = Node3D.new()

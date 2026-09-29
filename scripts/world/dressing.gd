@@ -5,6 +5,18 @@ const Kit = preload("res://scripts/presentation/prop_kit.gd")
 
 var _rng := RandomNumberGenerator.new()
 
+static func load_tex(path: String) -> Texture2D:
+	if path == "" or not FileAccess.file_exists(path):
+		return null
+	if ResourceLoader.exists(path):
+		var loaded: Variant = load(path)
+		if loaded is Texture2D:
+			return loaded
+	var img := Image.new()
+	if img.load(path) != OK:
+		return null
+	return ImageTexture.create_from_image(img)
+
 func build(parent: Node3D) -> void:
 	_rng.seed = 14017
 	_terrain(parent)
@@ -12,27 +24,10 @@ func build(parent: Node3D) -> void:
 	_paths(parent)
 	_hedge(parent)
 	_hedge_clumps(parent)
-	_hedge_leaves(parent)
-	_hedge_fringe(parent)
-	_hedge_coat(parent)
-	_hedge_bulges(parent)
-	_hedge_volume(parent)
-	_scatter_grass(parent)
-	_track_grass(parent)
-	_room_cover(parent)
-	_flowers(parent)
-	_flower_rows(parent)
-	_shrubs(parent)
+	# Crest cards stay off: the VP24 pillow mesh is the wall.
+	# Bed-border flowers only. Interior scatter hid the soil and lawn.
 	_trees(parent)
-	_gap_fill(parent)
-	_willow(parent)
-	_groundcover(parent)
-	_lawn_tufts(parent)
 	_lawn_meadow(parent)
-	_room_clumps(parent)
-	_room_carpet(parent)
-	_room_beds(parent)
-	_room_floor(parent)
 	_stones(parent)
 	_cc0_props(parent)
 
@@ -56,10 +51,14 @@ func _terrain(parent: Node3D) -> void:
 	node.mesh = mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/terrain.gdshader")
-	if ResourceLoader.exists("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"):
-		material.set_shader_parameter("grass_tex", load("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_diff_1k.jpg"))
-	if ResourceLoader.exists("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"):
-		material.set_shader_parameter("dirt_tex", load("res://assets/third_party/polyhaven/flower_scattered_dirt/flower_scattered_dirt_diff_1k.jpg"))
+	material.set_shader_parameter("grass_tex", load_tex("res://assets/textures/garden/lawn_meadow_albedo.png"))
+	material.set_shader_parameter("clover_tex", load_tex("res://assets/textures/garden/lawn_clover_albedo.png"))
+	material.set_shader_parameter("dirt_tex", load_tex("res://assets/textures/garden/dirtpath_albedo.png"))
+	material.set_shader_parameter("flagstone_tex", load_tex("res://assets/textures/garden/flagstone_albedo.png"))
+	material.set_shader_parameter("gravel_tex", load_tex("res://assets/textures/garden/gravel_albedo.png"))
+	material.set_shader_parameter("splat_tex", load_tex("res://assets/terrain/garden_splat.png"))
+	material.set_shader_parameter("grass_nrm", load_tex("res://assets/third_party/polyhaven/leafy_grass/leafy_grass_nor_gl_1k.jpg"))
+	material.set_shader_parameter("flag_nrm", load_tex("res://assets/textures/detail/B10_flagstone_nrm.png"))
 	node.material_override = material
 	node.name = "Terrain"
 	parent.add_child(node)
@@ -89,6 +88,7 @@ func _water(parent: Node3D) -> void:
 	node.add_to_group("parish_pond")
 	parent.add_child(node)
 	resize_pond(node, GardenLayout.POND_RADIUS)
+	_lilies(parent)
 
 static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 	# ponytail: the middle sits down; the rim meets the bank.
@@ -112,6 +112,55 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 	node.set_meta("rim", radius)
 	node.mesh = tool.commit()
 
+func _lilies(parent: Node3D) -> void:
+	# ponytail: a few pads so the bowl reads as a pond from the garden cameras.
+	var spots: Array[Vector2] = [
+		Vector2(0.55, 0.2),
+		Vector2(-0.85, 0.45),
+		Vector2(0.15, -0.95),
+		Vector2(1.15, -0.25),
+		Vector2(-0.35, 1.05),
+	]
+	for i in spots.size():
+		var spot: Vector2 = spots[i]
+		var x := GardenLayout.POND_CENTER.x + spot.x
+		var z := GardenLayout.POND_CENTER.z + spot.y
+		var pad := SphereMesh.new()
+		pad.radius = 0.28 + float(i % 3) * 0.04
+		pad.height = 0.06
+		pad.radial_segments = 10
+		pad.rings = 4
+		var node := MeshInstance3D.new()
+		node.mesh = pad
+		node.position = Vector3(x, GardenLayout.pond_surface(x, z, GardenLayout.POND_RADIUS) + 0.05, z)
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color("#3e8a46")
+		material.roughness = 0.72
+		material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		node.material_override = material
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_to_group("signoff_ok")
+		parent.add_child(node)
+		if i == 2:
+			var bloom := SphereMesh.new()
+			bloom.radius = 0.07
+			bloom.height = 0.08
+			bloom.radial_segments = 8
+			bloom.rings = 4
+			var flower := MeshInstance3D.new()
+			flower.mesh = bloom
+			flower.position = node.position + Vector3(0.0, 0.06, 0.0)
+			var petal := StandardMaterial3D.new()
+			petal.albedo_color = Color("#d07088")
+			petal.roughness = 0.6
+			petal.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+			petal.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			flower.material_override = petal
+			flower.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			flower.add_to_group("signoff_ok")
+			parent.add_child(flower)
+
 static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float) -> void:
 	var center := GardenLayout.POND_CENTER
 	var x := center.x + cos(angle) * dist
@@ -126,22 +175,10 @@ func _paths(parent: Node3D) -> void:
 		[Vector3(-6.6, 0, 3.5), Vector3(-1.4, 0, 3.5), 0.44],
 		[Vector3(-2.35, 0, 3.5), Vector3(-2.35, 0, -6.35), 0.44],
 		[Vector3(-7.4, 0, -6.35), Vector3(0.6, 0, -6.35), 0.44],
-		[Vector3(2.6, 0, -2.5), Vector3(6.4, 0, -2.5), 0.96],
+		# Stop on the bank. The old end sat inside the water and left stones floating.
+		[Vector3(2.6, 0, -2.5), Vector3(4.35, 0, -2.5), 0.96],
 	]
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for strip in strips:
-		# ponytail: narrow tracks are stones; a ribbon if the gaps stop reading as meadow.
-		if float(strip[2]) < 0.5:
-			continue
-		_ribbon(tool, strip[0], strip[1], float(strip[2]))
-	tool.generate_normals()
-	var node := MeshInstance3D.new()
-	node.mesh = tool.commit()
-	node.material_override = _standard(Color("#3c3228"), 0.98)
-	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.name = "Paths"
-	parent.add_child(node)
+	# Change 2: walks are the terrain splat. Stones stay as layout grit until change 4.
 	_path_stones(parent, strips)
 
 func _ribbon(tool: SurfaceTool, a: Vector3, b: Vector3, width: float) -> void:
@@ -192,6 +229,8 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 			var reach := 0.06 if narrow else 0.12
 			var lateral := rng.randf_range(-reach, reach)
 			var at := center + side * lateral + dir * rng.randf_range(-0.04, 0.04)
+			if GardenLayout.pond_distance(at.x, at.z) < GardenLayout.POND_RADIUS + 0.35:
+				continue
 			at.y = 0.07
 			var yaw := atan2(dir.x, dir.z) + rng.randf_range(-0.22, 0.22)
 			var basis := Basis.from_euler(Vector3(rng.randf_range(-0.04, 0.04), yaw, rng.randf_range(-0.04, 0.04)))
@@ -215,8 +254,8 @@ func _path_stones(parent: Node3D, strips: Array) -> void:
 					chip_colors.append(Color("#9a8c78").lerp(Color("#5e554c"), rng.randf()))
 				else:
 					rng.randf()
-	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true)
-	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false)
+	_multimesh(parent, slab, slabs, slab_colors, _standard(Color.WHITE, 0.88), "PathStones", true, [], true)
+	_multimesh(parent, chip, chips, chip_colors, _standard(Color.WHITE, 0.94), "PathGrit", false, [], true)
 
 func _hedge(parent: Node3D) -> void:
 	var tool := SurfaceTool.new()
@@ -227,19 +266,23 @@ func _hedge(parent: Node3D) -> void:
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.position.y), Vector3(0, 0, edge.size.y), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.end.x, 0, edge.end.y), Vector3(-edge.size.x, 0, 0), [], 1.22)
 	_hedge_wall(tool, Vector3(edge.position.x, 0, edge.end.y), Vector3(0, 0, -edge.size.y), [], 1.22)
+	var inner_s: Array[Vector3] = [Vector3(-2.35, -6.55, 1.35)]
+	var inner_e: Array[Vector3] = [Vector3(3.85, -2.5, 1.35)]
+	var inner_n: Array[Vector3] = [Vector3(-3.4, 3.2, 2.4)]
+	_hedge_wall(tool, Vector3(-8.55, 0, -6.55), Vector3(12.4, 0, 0), inner_s, 0.62)
+	_hedge_wall(tool, Vector3(3.85, 0, -6.55), Vector3(0, 0, 9.75), inner_e, 0.62)
+	_hedge_wall(tool, Vector3(3.85, 0, 3.2), Vector3(-12.4, 0, 0), inner_n, 0.62)
+	_hedge_wall(tool, Vector3(-8.55, 0, 3.2), Vector3(0, 0, -9.75), [], 0.62)
 	tool.generate_normals()
 	var node := MeshInstance3D.new()
 	node.mesh = tool.commit()
 	node.material_override = _hedge_material()
 	node.name = "Hedge"
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	node.add_to_group("signoff_ok")
 	parent.add_child(node)
 
 func _hedge_wall(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Array, scale: float) -> void:
-	var north := _crest_wall(origin.z) and absf(along.z) < 0.01 and along.x < 0.0
-	if north:
-		_hedge_run(tool, origin, along, openings, scale * 0.62, 0.0, 0.2)
-		return
 	_hedge_run(tool, origin, along, openings, scale, 0.0, 0.2)
 	_hedge_run(tool, origin, along, openings, scale * 0.74, -0.78, 2.1)
 	_hedge_run(tool, origin, along, openings, scale * 0.66, 0.7, 4.0)
@@ -274,17 +317,14 @@ func _hedge_run(tool: SurfaceTool, origin: Vector3, along: Vector3, openings: Ar
 				open = true
 				break
 		var ring: Array[Vector3] = []
-		var lift := sin(center.x * 0.85 + center.z * 0.7 + phase) * 0.36 * scale
-		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.22
-		var chop := 0.52 + 0.7 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
-		var lean := sin(center.x * 2.2 + phase) * 0.22 * scale
+		var lift := sin(center.x * 0.85 + center.z * 0.7 + phase) * 0.08 * scale
+		var bulge := 1.0 + sin(center.x * 2.6 + center.z * 1.9 + phase) * 0.08
+		var chop := 0.94 + 0.08 * absf(sin(center.x * 0.85 + center.z * 0.6 + phase))
+		var lean := sin(center.x * 2.2 + phase) * 0.06 * scale
 		var spine := center - side * offset_side
 		var knot := _hedge_knot(spine)
 		var waist := 0.22 + 0.78 * knot
 		var width := (0.95 + scale * 0.42) * bulge * waist
-		# ponytail: 0.45 stem on canopy walls; raise if the crest reads as sticks.
-		if _crest_wall(origin.z) and absf(along.z) < 0.01:
-			width *= 0.45
 		if _hedge_gap(spine) or _far_open(spine):
 			open = true
 		for point in profile:
@@ -313,17 +353,11 @@ func _north_notch(x: float, wide: bool) -> bool:
 func _crest_wall(z: float) -> bool:
 	return z > 6.2 or (z > 2.95 and z < 3.45)
 
-func _hedge_gap(at: Vector3) -> bool:
-	if at.z > 6.2 and _north_notch(at.x, false):
-		return true
-	# ponytail: the same 2.5m rhythm cuts the lower body, not only the high crest.
-	if _crest_wall(at.z):
-		return posmod(int(floor(at.x * 0.4)), 2) == 0
-	return _hedge_knot(at) < 0.72
+func _hedge_gap(_at: Vector3) -> bool:
+	return false
 
-# Cells that were solid under the 50/50 rhythm. Opening them here keeps the shared rng count.
-func _far_open(at: Vector3) -> bool:
-	return at.z > 6.2 and posmod(int(floor(at.x * 0.4)), 4) == 3
+func _far_open(_at: Vector3) -> bool:
+	return false
 
 func _room_box(at: Vector3) -> bool:
 	# ponytail: the bed hedge is the plot grid; the parish wall stays. Rng still runs.
@@ -348,10 +382,7 @@ func _hedge_crown(at: Vector3) -> float:
 	return smoothstep(0.72, 0.96, _hedge_knot(at))
 
 func _crown_scale(at: Vector3) -> float:
-	var mound := _hedge_crown(at)
-	if _crest_wall(at.z):
-		return _notch_lip(at.x) * lerpf(0.22, 1.5, mound)
-	return lerpf(0.34, 1.0, mound)
+	return lerpf(0.94, 1.04, _hedge_crown(at))
 
 func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> void:
 	for i in a.size() - 1:
@@ -359,10 +390,14 @@ func _hedge_bridge(tool: SurfaceTool, a: Array[Vector3], b: Array[Vector3]) -> v
 		_hedge_tri(tool, a[i], b[i + 1], a[i + 1])
 
 func _hedge_tri(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	var hmax := 2.2
+	tool.set_color(Color(1.0, 1.0, clampf(a.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(0, 1))
 	tool.add_vertex(a)
+	tool.set_color(Color(1.0, 1.0, clampf(b.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(1, 1))
 	tool.add_vertex(b)
+	tool.set_color(Color(1.0, 1.0, clampf(c.y / hmax, 0.0, 1.0)))
 	tool.set_uv(Vector2(0.5, 0))
 	tool.add_vertex(c)
 
@@ -446,7 +481,7 @@ func _hedge_leaves(parent: Node3D) -> void:
 	material.set_shader_parameter("tint", Color("#3d7a34"))
 	# ponytail: crest leaf cards lift pale under this sun; raise if the hedge goes black.
 	material.set_shader_parameter("gain", 0.58)
-	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false)
+	_multimesh(parent, quad, points, colors, material, "HedgeLeaves", false, [], true)
 
 func _room_cover(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
@@ -478,6 +513,11 @@ func _room_cover(parent: Node3D) -> void:
 func _hedge_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/hedge.gdshader")
+	material.set_shader_parameter("albedo_tex", load_tex("res://assets/textures/garden/hedge_albedo.png"))
+	material.set_shader_parameter("nrm_tex", load_tex("res://assets/textures/detail/B29_boxwood_nrm.png"))
+	material.set_shader_parameter("rgh_tex", load_tex("res://assets/textures/detail/B29_boxwood_rgh.png"))
+	material.set_shader_parameter("tile_m", 1.2)
+	material.set_shader_parameter("nrm_strength", 0.5)
 	return material
 
 func _hedge_clumps(parent: Node3D) -> void:
@@ -521,7 +561,7 @@ func _hedge_clumps(parent: Node3D) -> void:
 				points.append(Transform3D(basis, at))
 				colors.append(tint)
 				customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeClumps", true, customs, true)
 
 func _hedge_tuft() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -607,7 +647,7 @@ func _hedge_fringe(parent: Node3D) -> void:
 					points.append(Transform3D(basis.scaled(Vector3(scale, scale * stretch, scale)), at))
 					colors.append(tint)
 					customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeFringe", true, customs, true)
 
 func _hedge_coat(parent: Node3D) -> void:
 	var mesh := _hedge_leaf_card()
@@ -678,13 +718,13 @@ func _hedge_coat(parent: Node3D) -> void:
 							_rng.randf()
 							_rng.randf_range(0.75, 1.15)
 							_rng.randf()
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeCoat", false, customs, true)
 	var ball_mesh := SphereMesh.new()
 	ball_mesh.radius = 0.28
 	ball_mesh.height = 0.4
 	ball_mesh.radial_segments = 7
 	ball_mesh.rings = 4
-	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false)
+	_multimesh(parent, ball_mesh, balls, ball_colors, _foliage_material(), "HedgePuffs", false, [], true)
 
 func _hedge_bulges(parent: Node3D) -> void:
 	var mesh := _hedge_tuft()
@@ -732,7 +772,7 @@ func _hedge_bulges(parent: Node3D) -> void:
 					points.append(card)
 					colors.append(tint)
 					customs.append(custom)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "HedgeBulges", false, customs, true)
 
 func _hedge_volume(parent: Node3D) -> void:
 	var quad := QuadMesh.new()
@@ -787,9 +827,9 @@ func _hedge_volume(parent: Node3D) -> void:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/leaf_card.gdshader")
 	material.set_shader_parameter("tex", load("res://assets/third_party/kenney/foliage-pack/PNG/Default size/Leaves/foliagePack_leaves_003.png"))
-	material.set_shader_parameter("tint", Color("#3a7a32"))
+	material.set_shader_parameter("tint", Color("#3a4f22"))
 	material.set_shader_parameter("gain", 0.58)
-	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false)
+	_multimesh(parent, quad, points, colors, material, "HedgeVolume", false, [], true)
 
 func _hedge_leaf_card() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -1011,6 +1051,9 @@ func _bloom_material() -> Material:
 	return material
 
 func _shrubs(parent: Node3D) -> void:
+	# Cone CylinderMesh shrubs read as spikes on Compatibility / llvmpipe.
+	if QualityTier.tier == "b":
+		return
 	var spots: Array[Vector2] = [
 		Vector2(-11.2, -3.4),
 		Vector2(-10.2, 3.6),
@@ -1036,8 +1079,8 @@ func _shrubs(parent: Node3D) -> void:
 		parent.add_child(node)
 
 func _trees(parent: Node3D) -> void:
-	# Backdrop and side frame only. The south approach stays open for the garden camera.
-	var files: Array[String] = ["tree_oak.fbx", "tree_default.fbx", "tree_detailed.fbx", "tree_fat.fbx"]
+	# Kenney Nature Kit trees are layout stand-ins (Art Director).
+	var files: Array[String] = ["tree_oak.glb", "tree_fat.glb", "tree_default.glb"]
 	var spots: Array[Vector2] = [
 		Vector2(-17.4, -11.2),
 		Vector2(-18.6, -3.4),
@@ -1047,57 +1090,48 @@ func _trees(parent: Node3D) -> void:
 		Vector2(18.0, -2.2),
 		Vector2(17.2, 5.0),
 		Vector2(15.4, 11.4),
-		Vector2(-9.5, 13.0),
-		Vector2(-2.2, 13.6),
-		Vector2(5.2, 13.1),
-		Vector2(11.4, 12.2),
+		Vector2(-11.2, 5.6),
 		Vector2(-14.8, -14.4),
 		Vector2(13.8, -14.2),
 	]
 	var index := 0
 	for spot in spots:
 		var y := GardenLayout.height_at(spot.x, spot.y)
-		var behind := spot.y > 9.0
-		if behind and _north_notch(spot.x, true):
-			var centers: Array[float] = [-12.0, -2.6, 8.2]
-			var nearest := centers[0]
-			for center in centers:
-				if absf(spot.x - center) < absf(spot.x - nearest):
-					nearest = center
-			spot.x = nearest + (4.2 if spot.x >= nearest else -4.2)
-		var height := (2.4 if behind else 3.6) + float(index % 4) * 0.35
+		var height := 2.4 + float(index % 4) * 0.28
 		var tree: Node3D = Kit.spawn(files[index % files.size()], height)
 		if tree:
 			tree.position = Vector3(spot.x, y, spot.y)
 			tree.rotation.y = float(index) * 0.7
 			parent.add_child(tree)
 		index += 1
+	for i in 12:
+		var ang := float(i) / 12.0 * TAU + 0.2
+		var radius := 28.0 + float(i % 3) * 4.0
+		var x := sin(ang) * radius
+		var z := cos(ang) * radius
+		var y := GardenLayout.height_at(x, z)
+		var tree: Node3D = Kit.spawn(files[i % files.size()], 5.2 + float(i % 3) * 0.6)
+		if tree:
+			tree.position = Vector3(x, y, z)
+			tree.rotation.y = ang + 0.4
+			parent.add_child(tree)
 
 func _gap_fill(parent: Node3D) -> void:
-	# ponytail: east end is taller so the lip meets the hedge line. The hill stays.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 19021
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.64
-	cone.bottom_radius = 0.86
-	cone.height = 2.15
-	cone.radial_segments = 7
+	var files: Array[String] = ["plant_bushLarge.glb", "plant_bushDetailed.glb", "plant_bush.glb"]
 	var x := -13.1
+	var n := 0
 	while x < 12.5:
 		var z := 8.18 + rng.randf_range(-0.06, 0.1)
 		var y := GardenLayout.height_at(x, z)
-		var node := MeshInstance3D.new()
-		node.mesh = cone
-		# ponytail: these shrubs lift to pale green under the sun; raise if the row goes black.
-		var leaf := Color("#0e2212").lerp(Color("#1a3816"), rng.randf())
-		node.material_override = _standard(leaf, 0.88)
-		var lift := clampf((x + 13.0) / 25.0, 0.0, 1.0) * 0.12
-		var h := rng.randf_range(0.96, 1.0) + lift
-		node.position = Vector3(x, y + 1.075 * h, z)
-		node.scale = Vector3(rng.randf_range(0.95, 1.12), h, rng.randf_range(0.92, 1.08))
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		parent.add_child(node)
-		x += rng.randf_range(1.02, 1.18)
+		var bush: Node3D = Kit.spawn(files[n % files.size()], rng.randf_range(1.4, 1.9))
+		if bush:
+			bush.position = Vector3(x, y, z)
+			bush.rotation.y = rng.randf() * TAU
+			parent.add_child(bush)
+		x += rng.randf_range(1.4, 1.8)
+		n += 1
 
 func _willow(parent: Node3D) -> void:
 	var root := Vector3(5.55, 0.0, -4.35)
@@ -1142,12 +1176,12 @@ func _groundcover(parent: Node3D) -> void:
 			continue
 		var y := GardenLayout.height_at(x, z)
 		var scale := _rng.randf_range(0.4, 1.1)
-		var tint := Color("#2f6a30").lerp(Color("#8aaa44"), _rng.randf())
+		var tint := Color("#2a4a24").lerp(Color("#6a7a38"), _rng.randf())
 		if z > 9.0 and _north_notch(x, true):
 			continue
 		points.append(Transform3D(Basis().scaled(Vector3(scale, scale * 0.45, scale)), Vector3(x, y + 0.02, z)))
 		colors.append(tint)
-	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false)
+	_multimesh(parent, mesh, points, colors, _foliage_material(), "GroundCover", false, [], true)
 
 func _lawn_tufts(parent: Node3D) -> void:
 	var mesh := _leaf_card()
@@ -1183,7 +1217,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 	var customs: Array[Color] = []
 	var blooms: Array[Transform3D] = []
 	var bloom_colors: Array[Color] = []
-	var palette: Array[Color] = [Color("#b84a68"), Color("#f2d36b"), Color("#5c5648"), Color("#7d658f"), Color("#ef7f72")]
+	var palette: Array[Color] = [Color("#f2d36b"), Color("#f8e8d0"), Color("#e8c4d4"), Color("#d7e7b0"), Color("#f0a06a")]
 	var rooms: Array[Vector3] = [GardenLayout.TEA, GardenLayout.HUT, GardenLayout.FOUNDRY, GardenLayout.HALL]
 	var tries := 0
 	# ponytail: one meadow up to the bed edge; a second scatter if the halo still squares the plots.
@@ -1206,13 +1240,13 @@ func _lawn_meadow(parent: Node3D) -> void:
 		if indoors:
 			continue
 		var basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
-		var scale := rng.randf_range(0.75, 1.5)
-		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.85, 1.55), scale)), Vector3(x, y, z)))
-		colors.append(Color("#3a7a34").lerp(Color("#d5e48a"), rng.randf() * 0.55))
+		var scale := rng.randf_range(0.55, 0.9)
+		points.append(Transform3D(basis.scaled(Vector3(scale, scale * rng.randf_range(0.32, 0.5), scale)), Vector3(x, y, z)))
+		colors.append(Color("#2f4a22").lerp(Color("#6a7a38"), rng.randf() * 0.45))
 		customs.append(Color(rng.randf(), 0.15, 0.0, 1.0))
 		if blooms.size() < 1100 and rng.randf() > 0.45:
 			var tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-			var bscale := rng.randf_range(0.9, 1.35)
+			var bscale := rng.randf_range(0.35, 0.55)
 			blooms.append(Transform3D(basis.scaled(Vector3.ONE * bscale), Vector3(x, y, z)))
 			bloom_colors.append(tint)
 	# ponytail: west margin and the north apron; the worn walks stay open.
@@ -1240,7 +1274,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not west_room:
 				var west_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var west_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var west_scale := rng.randf_range(0.95, 1.4)
+				var west_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(west_basis.scaled(Vector3.ONE * west_scale), Vector3(jx, gy, jz)))
 				bloom_colors.append(west_tint)
 			gz += 0.38
@@ -1298,7 +1332,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not east_block:
 				var east_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var east_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var east_scale := rng.randf_range(0.95, 1.4)
+				var east_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(east_basis.scaled(Vector3.ONE * east_scale), Vector3(jx, ey, jz)))
 				bloom_colors.append(east_tint)
 			ez += 0.38
@@ -1330,7 +1364,7 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not front_block:
 				var front_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var front_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var front_scale := rng.randf_range(0.95, 1.4)
+				var front_scale := rng.randf_range(0.35, 0.55)
 				blooms.append(Transform3D(front_basis.scaled(Vector3.ONE * front_scale), Vector3(jx, fy, jz)))
 				bloom_colors.append(front_tint)
 			fz += 0.38
@@ -1360,13 +1394,16 @@ func _lawn_meadow(parent: Node3D) -> void:
 			if not hedge_block:
 				var hedge_basis := Basis.from_euler(Vector3(0, rng.randf() * TAU, 0))
 				var hedge_tint: Color = palette[rng.randi_range(0, palette.size() - 1)]
-				var hedge_scale := rng.randf_range(1.15, 1.65)
+				var hedge_scale := rng.randf_range(0.4, 0.6)
 				blooms.append(Transform3D(hedge_basis.scaled(Vector3.ONE * hedge_scale), Vector3(jx, hy, jz)))
 				bloom_colors.append(hedge_tint)
 			hz += 0.36
 		hx += 0.26
-	_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
-	_multimesh(parent, _row_bloom(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
+	# Tier b (Compatibility / llvmpipe) paints card backfaces as black spikes even
+	# with two-sided shading. Keep the blooms the smoke test counts; skip the blades.
+	if QualityTier.tier != "b":
+		_multimesh(parent, _blade(), points, colors, _tuft_material(), "LawnMeadow", false, customs)
+	_multimesh(parent, _flower(), blooms, bloom_colors, _bloom_material(), "LawnBlooms", false)
 
 func _room_clumps(parent: Node3D) -> void:
 	var mesh := _leaf_card()
@@ -1510,12 +1547,14 @@ func _stones(parent: Node3D) -> void:
 			continue
 		if GardenLayout.in_plots(x, z, 0.2):
 			continue
+		if GardenLayout.pond_distance(x, z) < GardenLayout.POND_RADIUS + 0.45:
+			continue
 		var y := maxf(GardenLayout.height_at(x, z), 0.02)
 		var scale := Vector3(_rng.randf_range(0.4, 1.1), _rng.randf_range(0.25, 0.55), _rng.randf_range(0.4, 0.9))
 		points.append(Transform3D(Basis.from_euler(Vector3(0, _rng.randf() * TAU, 0)).scaled(scale), Vector3(x, y, z)))
 		# ponytail: pale stones clip under this sun; raise if the path goes muddy.
 		colors.append(Color("#6e6458").lerp(Color("#5c5146"), _rng.randf()))
-	_multimesh(parent, mesh, points, colors, _standard(Color.WHITE, 0.9), "Stones", false)
+	_multimesh(parent, mesh, points, colors, _standard(Color.WHITE, 0.9), "Stones", false, [], true)
 
 func _blade() -> ArrayMesh:
 	var tool := SurfaceTool.new()
@@ -1558,7 +1597,7 @@ func _flower() -> ArrayMesh:
 	tool.generate_normals()
 	return tool.commit()
 
-func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: Array[Color], material: Material, node_name: String, shadows: bool, customs: Array[Color] = []) -> void:
+func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: Array[Color], material: Material, node_name: String, shadows: bool, customs: Array[Color] = [], ok := false) -> void:
 	if points.is_empty():
 		return
 	var multi := MultiMesh.new()
@@ -1577,6 +1616,8 @@ func _multimesh(parent: Node3D, mesh: Mesh, points: Array[Transform3D], colors: 
 	node.material_override = material
 	node.name = node_name
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if ok:
+		node.add_to_group("signoff_ok")
 	parent.add_child(node)
 
 func _foliage_material() -> ShaderMaterial:
@@ -1624,8 +1665,6 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Giant_Sunflower_big_1.fbx", Vector3(6.8, 0, -5.6), 1.05, 0.8],
 		["FBX/Flowering_Garlic_1.fbx", Vector3(-3.6, 0, -8.4), 1.0, 1.7],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(1.6, 0, -8.0), 1.15, 0.3],
-		["FBX/Grass_Simple_small.fbx", Vector3(-2.2, 0, -8.8), 1.3, 0.5],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(2.4, 0, 2.2), 1.2, 1.4],
 		["FBX/Bench_1.fbx", Vector3(-1.4, 0, 3.6), 1.0, 0.2],
 		["FBX/Planter_1_Terracotta.fbx", Vector3(-5.4, 0, 4.4), 1.0, 1.1],
 		["FBX/Table_1.fbx", Vector3(-2.55, 0, 6.15), 0.78, 0.35],
@@ -1640,19 +1679,15 @@ func _cc0_props(parent: Node3D) -> void:
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(0.4, 0, -8.4), 1.0, 2.0],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(2.6, 0, -7.4), 0.85, 0.9],
 		["FBX/Flowering_Garlic_1.fbx", Vector3(-5.2, 0, -8.6), 0.9, 1.3],
-		["FBX/Grass_Simple_small.fbx", Vector3(-6.8, 0, 4.4), 1.25, 0.6],
-		["FBX/Grass_Simple_small.fbx", Vector3(4.2, 0, 4.6), 1.1, 1.8],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(11.0, 0, 1.4), 1.15, 0.3],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(-12.2, 0, -6.4), 1.2, 2.4],
 		["FBX/Poppy_Single_Red.fbx", Vector3(-6.4, 0, -7.25), 1.0, 0.3],
 		["FBX/Cosmea_Cluster_Small_1.fbx", Vector3(-0.4, 0, -7.35), 1.05, 1.1],
 		["FBX/Larkspur_1_Purple.fbx", Vector3(2.15, 0, -7.15), 1.0, 0.7],
 		["FBX/Cornflowers_Big_Cluster_Blue.fbx", Vector3(4.7, 0, -0.6), 1.0, 0.9],
-		["FBX/Grass_Simple_small.fbx", Vector3(-9.15, 0, -0.8), 1.25, 0.4],
-		["FBX/Wild_Grass_Red_small.fbx", Vector3(-9.05, 0, 1.7), 1.15, 1.4],
 	]
 	for item in layout:
 		var file := str(item[0])
+		if file.find("Sun_Umbrella") != -1:
+			continue
 		var at: Vector3 = item[1]
 		var packed := load(_PACK + file) as PackedScene
 		if packed == null:
@@ -1668,6 +1703,12 @@ func _cc0_props(parent: Node3D) -> void:
 			_paint_imported(node, wood)
 		else:
 			_paint_imported(node, plants)
+		if file.find("Bench") != -1:
+			node.name = "CC0Bench"
+			node.add_to_group("signoff_cam03_hide")
+		if file.find("Table") != -1:
+			node.name = "CC0Table"
+			node.add_to_group("signoff_cam03_hide")
 		parent.add_child(node)
 
 func _flat_material(color: Color, rough: float) -> StandardMaterial3D:

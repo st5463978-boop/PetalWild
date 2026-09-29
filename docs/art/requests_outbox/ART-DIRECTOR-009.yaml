@@ -1,0 +1,18 @@
+id: ART-DIRECTOR-009
+pass: ART-DIRECTOR
+kind: image
+subject: "HUD time controls: pause, 1x, 2x, 4x speed buttons (normal, hover, pressed, active states) plus a 'Back to now' live-sync button and weather-state icons (clear, overcast, rain, dawn/dusk, night, frost)"
+style: >
+  Sims-style speed controls required by VISUAL_TARGET v2 section 3.1 (decision D4). Must follow the UI
+  kit direction being prepared in /workspace/art_library/ui/UI_STYLE.md (awaiting Scott's pick) - coordinate,
+  do not start a second UI style. 9-slice-friendly, transparent background, readable at 1266x585 phone capture.
+size: 1024x1024
+count: 2
+priority: normal
+target: assets/art/images/ART-DIRECTOR-009/hud_time_controls.png
+status: requested
+due: 2026-10-04
+lane_hint: A
+refs:
+  - "/workspace/art_library/ui/UI_STYLE.md"
+  - "/workspace/art_library/ui/ui_palette.png"

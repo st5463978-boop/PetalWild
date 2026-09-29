@@ -1,0 +1,3 @@
+# Art-desk markdown, YAML, and the Python/GDScript sign-off sources.
+# Godot must not import this folder (signoff_capture.gd lives at res://tools/).
+*

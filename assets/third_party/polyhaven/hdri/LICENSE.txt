@@ -1,0 +1,6 @@
+Poly Haven HDRIs (2K, Radiance .hdr):
+- rustig_koppie_puresky_2k.hdr  (Rustig Koppie (Pure Sky); Greg Zaal original, Jarod Guest sky edits) - clear sky pick
+- kloofendal_48d_partly_cloudy_puresky_2k.hdr (Kloofendal 48d Partly Cloudy (Pure Sky)) - partly cloudy pick
+Source: https://polyhaven.com/a/rustig_koppie_puresky and https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+Licence: CC0 1.0 Universal (public domain). Poly Haven states all its assets are CC0: https://polyhaven.com/license
+Attribution not required (appreciated): Poly Haven.

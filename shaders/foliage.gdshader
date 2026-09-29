@@ -14,9 +14,17 @@ void vertex() {
 }
 
 void fragment() {
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
 	vec3 col = COLOR.rgb;
-	float shade = clamp(dot(NORMAL, vec3(0.25, 0.9, 0.2)), 0.0, 1.0);
-	ALBEDO = col * (0.48 + 0.36 * shade);
+	float shade = clamp(abs(dot(NORMAL, vec3(0.25, 0.9, 0.2))), 0.0, 1.0);
+	ALBEDO = col * (0.55 + 0.45 * shade);
 	ROUGHNESS = 0.9;
 	EMISSION = vec3(0.0);
+}
+
+void light() {
+	float ndot = max(abs(dot(NORMAL, LIGHT)), 0.28);
+	DIFFUSE_LIGHT += ALBEDO * LIGHT_COLOR * ATTENUATION * ndot;
 }

@@ -1,0 +1,2 @@
+garden_splat.png is a self-authored splat mask (R flagstone, G dirt, B gravel)
+painted by tools/tex/make_garden_splat.py. No third-party pixels.

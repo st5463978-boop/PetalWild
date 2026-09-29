@@ -1,0 +1,24 @@
+id: ART-DIRECTOR-005
+pass: ART-DIRECTOR
+kind: texture
+subject: "Missing bed and edging pieces: rolled-lip raised bed trim, bed corner, low timber board edging, woven willow edging, scalloped brick edging, stone kerb, tilled-row soil (replacement for flagged VP02), with height maps"
+style: >
+  VISUAL_TARGET v2 section 3.2, refs A02 and A12. Halfway toy/real: soil #3d2c20 / clod #5c4435 /
+  ridge #7b5a42, mulch #9b5b32, timber #9f7f63. Each as a seamless power-of-two albedo + greyscale height
+  (for normal derivation), seam ratio <= 1.2. Tilled rows: soft ridges, period 0.3 m, no visible repeat band
+  (this is the VP02 redo). Edging strips as trim sheets (2048x512 equivalent packed into 2048x2048) so PETAL-05
+  can sweep them along bed borders; corners rounded (radius >= 15 cm). Replaces Kenney crops_dirt* faceted look.
+size: 2048x2048
+count: 7
+priority: high
+target: assets/art/textures/ART-DIRECTOR-005/bed_albedo.png
+status: requested
+due: 2026-10-03
+lane_hint: A
+refs:
+  - "/workspace/petalwild-davinci/concept/A02_aerial_three_quarter.png"
+  - "/workspace/petalwild-davinci/concept/A12_vegetable_allotment.png"
+  - "/workspace/art_library/staging/soil/davinci_B02_tilled_tile.png"
+  - "/workspace/art_library/staging/bed/davinci_B31_mulch_tile.png"
+  - "/workspace/art_library/staging/bed/davinci_B34_drystone_tile.png"
+  - "/workspace/art_library/staging/soil/VP02_tilled_tile.png"
