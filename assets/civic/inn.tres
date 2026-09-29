@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Structure" load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/civic/inn.tscn" id="1_model"]
+[ext_resource type="Script" path="res://third_party/kenney_city_builder/scripts/structure.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+model = ExtResource("1_model")
+price = 90
