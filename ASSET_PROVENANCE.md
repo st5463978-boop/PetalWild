@@ -25,3 +25,5 @@ Licence files inside the Kenney zips were kept next to the packs.
 Not downloaded: CC-BY OpenGameArt packs, large CC0 park ambiences, Quaternius Drive folders, ambientCG sets over the size budget, Kenney Fantasy Town.
 
 Nothing from Viva Piñata, Cities: Skylines, Nintendo, or Jelly-Baby was copied.
+
+27 September 2026: the open-source pass added no asset bytes. `scripts/creatures/jelly_deform.gd` is original code.
