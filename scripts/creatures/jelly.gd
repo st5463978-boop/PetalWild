@@ -206,8 +206,10 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	sphere.rings = 16
 	body.mesh = sphere
 	var icon_mat := StandardMaterial3D.new()
-	icon_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	icon_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	icon_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	icon_mat.roughness = 0.38
+	icon_mat.metallic = 0.0
+	icon_mat.metallic_specular = 0.22
 	var deep: Color = mat.get_shader_parameter("deep_color")
 	icon_mat.albedo_color = deep
 	body.material_override = icon_mat
@@ -239,10 +241,10 @@ func _icon_body(root: Node3D, shape: String) -> void:
 		var eye := MeshInstance3D.new()
 		eye.name = "IconEye"
 		var slab := BoxMesh.new()
-		slab.size = Vector3(radius * 0.16, radius * 0.72, radius * 0.1)
+		slab.size = Vector3(radius * 0.18, radius * 0.78, radius * 0.08)
 		eye.mesh = slab
 		eye.material_override = eye_mat
-		eye.position = Vector3(side * radius * 0.36, eye_y, -radius * 0.95)
+		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 0.98)
 		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		icon_root.add_child(eye)
 
@@ -800,7 +802,9 @@ func _face_icon() -> void:
 	if cam == null:
 		return
 	var at := cam.global_position
-	at.y = icon_root.global_position.y
+	var level := at
+	level.y = icon_root.global_position.y
+	at = level.lerp(at, 0.42)
 	if at.distance_squared_to(icon_root.global_position) < 0.04:
 		return
 	icon_root.look_at(at, Vector3.UP)
