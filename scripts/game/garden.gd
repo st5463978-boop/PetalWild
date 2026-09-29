@@ -279,6 +279,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_toggle_photo()
 			KEY_ENTER, KEY_KP_ENTER:
 				_enter_lane_house(false)
+			KEY_T:
+				_sip_kitchen_tea()
 			KEY_ESCAPE:
 				_esc()
 			KEY_F3:
@@ -1618,7 +1620,7 @@ func _enter_lane_house(force: bool) -> bool:
 	if pane != null and cup != null:
 		look = (pane.global_position + cup.global_position + hearth.global_position) / 3.0
 	var offset := view.global_position - look
-	var span := maxf(offset.length(), 0.4)
+	var span := maxf(offset.length(), 0.4) * 1.22
 	camera.target = look
 	camera.distance = span
 	camera.pitch = rad_to_deg(asin(clampf(offset.y / span, -1.0, 1.0)))
@@ -1627,7 +1629,24 @@ func _enter_lane_house(force: bool) -> bool:
 	camera.user_moved = true
 	camera.intro = 1.0
 	camera._apply()
-	toast("%s's kitchen. Esc steps back out." % _lane_household_name())
+	toast("%s's kitchen. T drinks. Esc steps back out." % _lane_household_name())
+	return true
+
+func _sip_kitchen_tea() -> bool:
+	if not inside_lane:
+		toast("Step into the cottage first.")
+		return false
+	var drank := false
+	if Economy.mill.crate_count() > 0:
+		drank = Economy.mill.take_crate()
+	elif Economy.mill.pot_count() > 0:
+		drank = Economy.mill.take_pot()
+	if not drank:
+		toast("The cup is empty.")
+		_sync_cottage_tea()
+		return false
+	_sync_cottage_tea()
+	toast("%s drinks the hedge tea." % _lane_household_name())
 	return true
 
 func _leave_lane_house() -> void:
@@ -8857,6 +8876,22 @@ func _run_town_shot() -> void:
 		return
 	await get_tree().create_timer(0.35).timeout
 	await _shot("/workspace/docs/screenshots/cottage_inside.png")
+	var before_crate := Economy.mill.crate_count()
+	var before_pot := Economy.mill.pot_count()
+	if not _sip_kitchen_tea():
+		push_error("town shot: the kitchen could not drink")
+		get_tree().quit(1)
+		return
+	if Economy.mill.crate_count() + Economy.mill.pot_count() != before_crate + before_pot - 1:
+		push_error("town shot: the sip did not spend a tea")
+		get_tree().quit(1)
+		return
+	if _cottage_has_tea() or fill.visible:
+		push_error("town shot: the cup stayed full after the last tea")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.2).timeout
+	await _shot("/workspace/docs/screenshots/cottage_sipped.png")
 	_leave_lane_house()
 	if room.visible:
 		push_error("town shot: the kitchen stayed open")
