@@ -24,6 +24,7 @@ var chore := Vector3.ZERO
 var has_chore := false
 var index := 0
 var pause := 0.0
+var stay := false
 var phase := 0.0
 var speech: Label3D
 var speech_time := 0.0
@@ -95,6 +96,8 @@ func _process(delta: float) -> void:
 			speech.visible = false
 	if body:
 		body.visible = present and tier < 4
+	if stay:
+		return
 	# ponytail: one point is a home; two or more is a loop. A chore is one bed, then the route resumes.
 	if not has_chore and waypoints.is_empty():
 		return

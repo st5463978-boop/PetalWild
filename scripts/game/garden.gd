@@ -21,6 +21,8 @@ var inside_lane := false
 var inside_tea := false
 var inside_shed := false
 var inside_stall := false
+var lumen_stall_back := Vector3.ZERO
+var lumen_at_counter := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
@@ -2097,8 +2099,10 @@ func _enter_stall(force: bool) -> bool:
 	inside_stall = true
 	_set_lane_shell(stall, false)
 	_seat_stall_goods(true)
+	_seat_keeper(true)
 	_sync_mill()
 	_frame_interior(view, crate.global_position + Vector3(0.0, 0.2, 0.0))
+	_set_hint("Esc out   sell tea and jam   B stall")
 	toast("Petal Stall. Esc steps back out.")
 	return true
 
@@ -2116,11 +2120,37 @@ func _seat_stall_goods(inside: bool) -> void:
 	if jar != null:
 		jar.position = Vector3(0.32, 1.70, 6.82) if inside else Vector3(1.25, 0.42, 0.62)
 
+func _seat_keeper(inside: bool) -> void:
+	var lumen := _person("lumen")
+	if lumen == null:
+		return
+	if inside:
+		var stall := _petal_stall()
+		if stall == null:
+			return
+		lumen_stall_back = lumen.global_position
+		lumen_at_counter = true
+		lumen.stay = true
+		lumen.global_position = stall.to_global(Vector3(-0.62, 1.4, 7.25))
+		lumen.look_at(stall.to_global(Vector3(0.15, 1.55, 6.7)), Vector3.UP)
+		lumen.say("The counter is open.")
+		return
+	lumen.stay = false
+	if lumen_at_counter:
+		lumen.global_position = lumen_stall_back
+		lumen_at_counter = false
+
+func _set_hint(text: String) -> void:
+	if hud != null and hud.hint_label != null:
+		hud.hint_label.text = text
+
 func _leave_stall() -> void:
 	if not inside_stall:
 		return
 	inside_stall = false
 	_seat_stall_goods(false)
+	_seat_keeper(false)
+	_set_hint("Enter cottage   T tea   G park   click a face   C town   M vale")
 	var stall := _petal_stall()
 	if stall != null:
 		_set_lane_shell(stall, true)
@@ -10187,6 +10217,13 @@ func _run_stall_shot() -> void:
 		push_error("stall: the goods left the frame at %s" % camera.unproject_position(crate.global_position))
 		get_tree().quit(1)
 		return
+	var lumen := _person("lumen")
+	var lumen_px := camera.unproject_position(lumen.global_position) if lumen != null else Vector2.ZERO
+	if lumen == null or not lumen.stay or lumen_px.x < 180.0 or lumen_px.x > 1100.0 or lumen_px.y < 140.0 or lumen_px.y > 760.0:
+		push_error("stall: Lumen is not at the counter %s" % lumen_px)
+		get_tree().quit(1)
+		return
+	lumen.say("The counter is open.")
 	await _shot("/workspace/docs/screenshots/petal_stall_inside.png")
 	var tea_crates := Economy.mill.crate_count()
 	sell_tea()
@@ -10235,6 +10272,10 @@ func _run_stall_shot() -> void:
 		return
 	if camera.target.distance_to(outside) > 0.05:
 		push_error("stall: Esc left the camera inside")
+		get_tree().quit(1)
+		return
+	if lumen.stay or lumen.global_position.distance_to(lumen_stall_back) > 0.2:
+		push_error("stall: Lumen stayed at the counter")
 		get_tree().quit(1)
 		return
 	print("PETAL_STALL_SHOT_OK")
