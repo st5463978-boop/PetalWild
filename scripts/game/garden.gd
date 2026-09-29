@@ -1441,7 +1441,7 @@ func _sync_park() -> void:
 	var show := Trust.has_action("parish_park")
 	if show:
 		parish.open_park()
-	var n := town.occupancy("grove_park")
+	var n := _lawn_count()
 	for node in get_tree().get_nodes_in_group("grove_park"):
 		var body := node as Node3D
 		if body == null:
@@ -1656,6 +1656,12 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _lawn_count() -> int:
+	var n := town.occupancy("grove_park")
+	if lane_on_lawn and lane_body != null and lane_body.visible and Trust.has_action("parish_park"):
+		n += 1
+	return n
+
 func _lane_place() -> String:
 	if inside_lane:
 		return "in the kitchen"
@@ -1678,6 +1684,8 @@ func _town_page_lines() -> PackedStringArray:
 		var text := str(line)
 		if text.begins_with(needle):
 			rewritten.append("Near  %s · %s" % [who, _lane_place()])
+		elif lane_on_lawn and text.begins_with("Grove Park  open"):
+			rewritten.append("Grove Park  open · %s on the lawn" % str(_lawn_count()))
 		else:
 			rewritten.append(text)
 	return rewritten
@@ -9101,6 +9109,17 @@ func _run_town_shot() -> void:
 		return
 	if _lane_where().find("Grove Park lawn") == -1:
 		push_error("town shot: the page lost the lawn")
+		get_tree().quit(1)
+		return
+	_sync_park()
+	var board := ""
+	for node in get_tree().get_nodes_in_group("grove_park"):
+		var count := node.get_node_or_null("ParkCount") as Label3D
+		if count != null:
+			board = count.text
+	var expected := "%s on the lawn" % str(_lawn_count())
+	if board != expected or _lawn_count() != town.occupancy("grove_park") + 1:
+		push_error("town shot: the lawn sign ignored the household (%s)" % board)
 		get_tree().quit(1)
 		return
 	if camera:
