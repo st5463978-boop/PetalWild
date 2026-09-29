@@ -1656,6 +1656,45 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _stage_lawn_jelly(near: Vector3) -> Jelly:
+	if ecology == null:
+		return null
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+	jelly.hunger = 0.16
+	jelly.mood = "hungry"
+	jelly.life = "settler"
+	jelly.leaving = false
+	jelly.bound = false
+	jelly.held = false
+	jelly.feel = "idle"
+	jelly.vel = Vector3.ZERO
+	jelly.hop_wait = 99.0
+	jelly.global_position = near + Vector3(1.15, 0.2, 0.35)
+	jelly._apply_deform()
+	for node in jelly.find_children("IconEye", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).visible = true
+	var icon := jelly.find_child("Icon", true, false) as Node3D
+	if icon != null:
+		icon.visible = true
+	return jelly
+
+func _icon_eye_count(jelly: Jelly) -> int:
+	if jelly == null:
+		return 0
+	var icon := jelly.find_child("Icon", true, false) as Node3D
+	if icon == null:
+		return 0
+	icon.visible = true
+	var eyes := 0
+	for child in icon.get_children():
+		if not (child is MeshInstance3D) or str(child.name) == "IconBody":
+			continue
+		(child as MeshInstance3D).visible = true
+		eyes += 1
+	return eyes
+
 func _lawn_count() -> int:
 	var n := town.occupancy("grove_park")
 	if lane_on_lawn and lane_body != null and lane_body.visible and Trust.has_action("parish_park"):
@@ -9122,6 +9161,25 @@ func _run_town_shot() -> void:
 		push_error("town shot: the lawn sign ignored the household (%s)" % board)
 		get_tree().quit(1)
 		return
+	var lawn_jelly := _stage_lawn_jelly(spot)
+	var eye_count := _icon_eye_count(lawn_jelly)
+	if lawn_jelly == null or eye_count < 2 or lawn_jelly.global_position.distance_to(spot) > 2.2:
+		push_error("town shot: the lawn jelly lost its eyes count=%s" % eye_count)
+		get_tree().quit(1)
+		return
+	if camera:
+		var pair := (spot + lawn_jelly.global_position) * 0.5
+		camera.pitch = 24.0
+		camera.yaw = 140.0
+		camera.focus_on(pair + Vector3(0.0, 0.3, 0.0), 5.6)
+		camera.fov = 48.0
+		camera._apply()
+		if not _kitchen_in_frame(lane_body) or not _kitchen_in_frame(lawn_jelly):
+			push_error("town shot: the lawn pair left the frame")
+			get_tree().quit(1)
+			return
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/grove_together.png")
 	if camera:
 		camera.pitch = 20.0
 		camera.yaw = 150.0

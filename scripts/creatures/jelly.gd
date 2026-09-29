@@ -239,7 +239,7 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	var eye_y := body.position.y + radius * 0.48 * body.scale.y
 	for side in [-1.0, 1.0]:
 		var eye := MeshInstance3D.new()
-		eye.name = "IconEye"
+		eye.name = "IconEyeL" if side < 0.0 else "IconEyeR"
 		var slab := BoxMesh.new()
 		slab.size = Vector3(radius * 0.18, radius * 0.78, radius * 0.08)
 		eye.mesh = slab

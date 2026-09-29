@@ -24,7 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a shaded gel icon: one body, two black vertical eyes, a small highlight. The eyes stay unshaded so the sun does not grey them out. The icon tips toward the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
-When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it. T drinks one serving and the cup empties when that was the last. G, once Grove Park is filed, walks that household from the cottage door, through the gate, onto the lawn. G again walks them home through the gate. The lawn spot survives save and load. While they stand on the grass, the Grove Park count includes them. The same name is used in the kitchen, on the path, and on the place page. Esc steps back out. The place page says where they are: kitchen, walking, lawn, or cottage door. Farther houses stay counts. `grove_park.active` stays false.
+When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it. T drinks one serving and the cup empties when that was the last. G, once Grove Park is filed, walks that household from the cottage door, through the gate, onto the lawn. G again walks them home through the gate. The lawn spot survives save and load. While they stand on the grass, the Grove Park count includes them. A hungry Bellhelp can stand on that same lawn with both black eyes still showing. The same name is used in the kitchen, on the path, and on the place page. Esc steps back out. The place page says where they are: kitchen, walking, lawn, or cottage door. Farther houses stay counts. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -77,6 +77,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/cottage_to_park.png` (1440×900). After the walk through the gate, the household is on the Grove Park lawn. The sign reads “4 on the lawn,” one more than the sim count. Reload kept the spot.
 
+`docs/screenshots/grove_together.png` (1440×900). Reed and a hungry Bellhelp share the lawn. The jelly shows two black eyes. The sign still reads “4 on the lawn.”
+
 `docs/screenshots/cottage_home.png` (1440×900). G again brought them back to the cottage door. The line reads “Reed walks home.”
 
 `docs/screenshots/town_parish.png` (1440×900). The place page opens with “Reed is at the cottage door.” The near-row for Reed says “at the cottage door.” Moss and the lawn visitors still read “still no body,” because those records are not this household.
@@ -96,7 +98,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. The lawn sign counts the cottage household while they stand on the grass. The other five cottages stay closed. Moss and the other lawn records still have no body.
+4. The lawn holds the cottage household and a hungry Bellhelp in one frame, eyes intact. The other five cottages stay closed. Moss and the other lawn records still have no body.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD
