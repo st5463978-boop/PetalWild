@@ -114,6 +114,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_KITCHEN_SALE") == "1":
 		await _run_kitchen_sale()
 		return
+	if OS.get_environment("PETAL_KITCHEN_LIVE") == "1":
+		await _run_kitchen_live()
+		return
 	if OS.get_environment("PETAL_TOWN_SHOT") == "1":
 		await _run_town_shot()
 		return
@@ -1335,6 +1338,7 @@ func _sync_mill() -> void:
 	var jars := Economy.mill.crate_count(ParishChain.JAM) > 0
 	for node in get_tree().get_nodes_in_group("parish_jar"):
 		node.visible = jars
+	_sync_cottage_tea()
 
 func _mill_row() -> Dictionary:
 	var extra := 1 if _lane_passers() > 0 else 0
@@ -9154,6 +9158,70 @@ func _run_kitchen_sale() -> void:
 	await get_tree().create_timer(0.25).timeout
 	await _shot("/workspace/docs/screenshots/cottage_sold.png")
 	print("KITCHEN_CUP_SOLD_OK")
+	get_tree().quit(0)
+
+func _run_kitchen_live() -> void:
+	Settings.reduce_motion = true
+	Clock.set_hour(10.0)
+	Trust.file_road_rumour("nessa")
+	_sync_lane()
+	Economy.mill.reset()
+	if not _enter_lane_house(true):
+		push_error("kitchen live: the kitchen did not open")
+		get_tree().quit(1)
+		return
+	var room := _lane_room()
+	var fill := room.get_node_or_null("TeaFill") as Node3D if room != null else null
+	var coins := Economy.coins
+	if fill == null or fill.visible or _cottage_has_tea() or not inside_lane:
+		push_error("kitchen live: the open cup did not start empty")
+		get_tree().quit(1)
+		return
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle() or not Economy.mill.tick(18.0) or Economy.mill.pot_count() != 1 or Economy.mill.crate_count() != 0:
+		push_error("kitchen live: the pot did not finish")
+		get_tree().quit(1)
+		return
+	if fill.visible:
+		push_error("kitchen live: the pot refreshed the cup before the carry")
+		get_tree().quit(1)
+		return
+	carry_tea()
+	if Economy.coins != coins or Economy.mill.crate_count() != 1 or Economy.mill.pot_count() != 0 or not fill.visible or not _cottage_has_tea():
+		push_error("kitchen live: carrying tea left the open cup empty")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.25).timeout
+	await _shot("/workspace/docs/screenshots/cottage_brewed.png")
+	last_sip_hour = -1
+	parish.lives["lumen"]["activity"] = "eat"
+	_tick_mill(0.0)
+	if Economy.coins != coins or Economy.mill.crate_count() != 0 or Economy.mill.pot_count() != 0 or _cottage_has_tea() or fill.visible:
+		push_error("kitchen live: the resident left the open cup full")
+		get_tree().quit(1)
+		return
+	await get_tree().create_timer(0.2).timeout
+	await _shot("/workspace/docs/screenshots/cottage_resident.png")
+	Economy.add("peach", 1)
+	Economy.add("meadowbell", 1)
+	if not Economy.stock_kettle():
+		push_error("kitchen live: the kettle refused the next pot")
+		get_tree().quit(1)
+		return
+	_tick_mill(18.0)
+	if Economy.coins != coins or Economy.mill.pot_count() != 1 or Economy.mill.crate_count() != 0 or not fill.visible or not _cottage_has_tea():
+		push_error("kitchen live: a new pot left the open cup empty")
+		get_tree().quit(1)
+		return
+	fill.visible = false
+	_person("nessa").present = true
+	_tick_mill(0.0)
+	if Economy.coins != coins or Economy.mill.crate_count() != 1 or Economy.mill.pot_count() != 0 or not fill.visible or not _cottage_has_tea() or not inside_lane:
+		push_error("kitchen live: the mill carry left the open cup empty")
+		get_tree().quit(1)
+		return
+	print("KITCHEN_CUP_LIVE_OK")
 	get_tree().quit(0)
 
 func _run_town_shot() -> void:
