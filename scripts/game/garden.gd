@@ -1660,6 +1660,29 @@ func _lane_where() -> String:
 		return "%s is on the Grove Park lawn." % who
 	return "%s is at the cottage door." % who
 
+func _lane_speech() -> String:
+	if lane_drank:
+		return _lane_memory()
+	var where := _lane_where()
+	if where != "":
+		return where
+	return "Hello."
+
+func _speak_lane() -> void:
+	if lane_body == null:
+		return
+	lane_body.say(_lane_speech())
+	if lane_body.speech == null:
+		return
+	lane_body.speech.pixel_size = 0.0016
+	var ahead := Vector3.ZERO
+	if camera != null:
+		ahead = camera.global_position - lane_body.global_position
+		ahead.y = 0.0
+		if ahead.length() > 0.1:
+			ahead = ahead.normalized() * 0.55
+	lane_body.speech.global_position = lane_body.global_position + Vector3(0.0, 1.05, 0.0) + ahead
+
 func _lane_memory() -> String:
 	if not lane_drank:
 		return ""
@@ -9247,6 +9270,11 @@ func _run_town_shot() -> void:
 		push_error("town shot: the cottage window stayed dark at the door")
 		get_tree().quit(1)
 		return
+	_speak_lane()
+	if lane_body.speech == null or str(lane_body.speech.text).find("drank the hedge tea") == -1:
+		push_error("town shot: the household did not say the tea")
+		get_tree().quit(1)
+		return
 	var lied := false
 	for line in _town_page_lines():
 		var text := str(line)
@@ -10676,6 +10704,9 @@ func _primary_down() -> void:
 			return
 		var person := _pick_person()
 		if person:
+			if person.person_id == "lane_house":
+				_speak_lane()
+				return
 			if person.person_id == "bram":
 				_ask_bram()
 				return
@@ -11057,11 +11088,17 @@ func _pick_person() -> VegPerson:
 	var direction := camera.project_ray_normal(mouse)
 	var best: VegPerson
 	var best_distance := 0.7
+	var candidates: Array[VegPerson] = []
 	for id in people.keys():
-		var person: VegPerson = people[id]
+		var listed: VegPerson = people[id]
+		if listed != null and listed.present:
+			candidates.append(listed)
+	if lane_body != null and lane_body.visible:
+		candidates.append(lane_body)
+	for person in candidates:
 		if not person.present:
 			continue
-		var center := person.global_position + Vector3(0, 0.6, 0)
+		var center := person.global_position + Vector3(0, 0.5, 0)
 		var along := (center - origin).dot(direction)
 		if along < 0.0:
 			continue
