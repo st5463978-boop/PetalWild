@@ -10582,7 +10582,8 @@ func _sync_plants() -> void:
 			view = PlantView.new()
 			add_child(view)
 			var center := GardenLayout.cell_center(plot.ix, plot.iz)
-			view.position = Vector3(center.x, 0.06, center.z) + _row_shift(plot.ix, plot.iz)
+			# ponytail: 0.06 buried the stalk in the soil cap, so the fruit read as floating.
+			view.position = Vector3(center.x, 0.105, center.z) + _row_shift(plot.ix, plot.iz)
 			plant_views[key] = view
 		view.show_plant(plot.plant_id, plot.growth, plot.moisture, plot.fertility, PlantGenetics.from_cell(plot))
 	for key in plant_views.keys():

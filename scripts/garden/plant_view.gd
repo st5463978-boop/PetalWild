@@ -50,6 +50,8 @@ func _build(id: String) -> void:
 		"bramble":
 			_ball(Vector3(0, 0.16, 0), 0.2, Color("#2f6a32"))
 			_ball(Vector3(0.12, 0.14, 0.06), 0.14, Color("#3d7a38"))
+			_stem(0.48, 0.045, Color("#2a4a28"), Vector3(-0.06, 0, -0.06))
+			_stem(0.46, 0.04, Color("#243f24"), Vector3(0.06, 0, -0.04))
 			# ponytail: berries under 0.05 did not read; darken if a larger fruit clips.
 			_ball(Vector3(-0.16, 0.55, -0.16), 0.22, Color("#5a1834"))
 			_ball(Vector3(0.16, 0.52, -0.16), 0.2, Color("#6a2040"))
@@ -59,7 +61,7 @@ func _build(id: String) -> void:
 		"mosspear":
 			_mosspear()
 		"nightlantern":
-			_stem(0.48, 0.02, Color("#2c2430"))
+			_stem(0.48, 0.04, Color("#2c2430"))
 			var bulb := _ball(Vector3(0, 0.55, 0), 0.09, Color("#ffd27a"))
 			var material := bulb.material_override as StandardMaterial3D
 			material.emission_enabled = true
@@ -114,9 +116,9 @@ func _ball(at: Vector3, radius: float, color: Color, squash := Vector3.ONE) -> M
 
 func _peach() -> void:
 	# ponytail: one warm fruit on a short stem; a leaf if the fruit still reads as a ball in the air.
-	_stem(0.28, 0.04, Color("#6b4a32"))
+	_stem(0.32, 0.07, Color("#6b4a32"))
 	# ponytail: a brighter fruit clips to 255 under this sun.
-	_ball(Vector3(0.02, 0.46, 0.02), 0.16, Color("#8a4e22"))
+	_ball(Vector3(0.02, 0.42, 0.02), 0.16, Color("#8a4e22"))
 
 func _berry_leaf(at: Vector3) -> void:
 	var leaf := BoxMesh.new()
@@ -128,8 +130,8 @@ func _berry_leaf(at: Vector3) -> void:
 
 func _mosspear() -> void:
 	# ponytail: one fruit on a short stem; a brighter pear clips under this sun.
-	_stem(0.22, 0.035, Color("#3d4a28"))
-	_ball(Vector3(0.0, 0.42, 0.0), 0.15, Color("#4e5c2e"), Vector3(0.82, 1.55, 0.82))
+	_stem(0.28, 0.06, Color("#3d4a28"))
+	_ball(Vector3(0.0, 0.4, 0.0), 0.15, Color("#4e5c2e"), Vector3(0.82, 1.55, 0.82))
 	# ponytail: a leaf on each side of the fruit; the pear stays one fruit.
 	var pear_leaf := BoxMesh.new()
 	pear_leaf.size = Vector3(0.18, 0.02, 0.09)
@@ -147,9 +149,9 @@ func _mosspear() -> void:
 func _reed() -> void:
 	# ponytail: a seed head on each stick; a blade fan if the heads still read as dots.
 	var stems: Array = [
-		[0.7, 0.02, Color("#6d7a3a"), Vector3(-0.06, 0, 0)],
-		[0.55, 0.018, Color("#8a9144"), Vector3(0.05, 0, 0.04)],
-		[0.62, 0.016, Color("#5c6a32"), Vector3(0.0, 0, -0.05)],
+		[0.7, 0.04, Color("#6d7a3a"), Vector3(-0.06, 0, 0)],
+		[0.55, 0.036, Color("#8a9144"), Vector3(0.05, 0, 0.04)],
+		[0.62, 0.034, Color("#5c6a32"), Vector3(0.0, 0, -0.05)],
 	]
 	for stem in stems:
 		var height: float = stem[0]
@@ -164,11 +166,11 @@ func _meadowbell() -> void:
 	# ponytail: cream petals clip to white under this sun; raise if the bells go dull.
 	var petal := Color("#7a6a52")
 	var heart := Color("#c4923a")
-	_stem(0.46, 0.034, Color("#3f8f45"))
+	_stem(0.46, 0.055, Color("#3f8f45"))
 	_blossom(Vector3(0, 0.52, 0), petal, heart)
-	_stem(0.38, 0.028, Color("#3a7a3c"), Vector3(0.36, 0, 0.1))
+	_stem(0.38, 0.048, Color("#3a7a3c"), Vector3(0.36, 0, 0.1))
 	_blossom(Vector3(0.36, 0.44, 0.1), Color("#6e5e48"), Color("#b08030"))
-	_stem(0.34, 0.026, Color("#2f6a34"), Vector3(-0.34, 0, 0.14))
+	_stem(0.34, 0.044, Color("#2f6a34"), Vector3(-0.34, 0, 0.14))
 	_blossom(Vector3(-0.34, 0.4, 0.14), Color("#746656"), heart)
 	_ball(Vector3(0, 0.05, 0), 0.16, Color("#2f6a32"), Vector3(1.8, 0.35, 1.8))
 

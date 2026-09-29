@@ -368,6 +368,8 @@ func _hide_cam06_clutter(scene: Node, on: bool) -> void:
 	for n: Node in get_nodes_in_group("jelly"):
 		if str(n.name) != "SignoffJelly":
 			n.visible = not on
+	for n: Node in get_nodes_in_group("resident"):
+		n.visible = not on
 	for gi: Node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mesh_i := gi as MeshInstance3D
 		if mesh_i == null or mesh_i.name == "SignoffJelly" or mesh_i.is_in_group("signoff_ok"):
