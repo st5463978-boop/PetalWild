@@ -80,7 +80,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/cottage_sipped.png` (1440×900). After T, the cup is empty and the line reads “Moss drinks the hedge tea.”
 
-`docs/screenshots/cottage_sold.png` (1440×900). The kitchen was already open. After the last crate sold, the cup on the table is empty.
+`docs/screenshots/cottage_sold.png` (1440×900). The kitchen is already open. The toast reads “Sold hedge tea for 22 petal.” The tin reads 80. The cup on the table is empty.
 
 `docs/screenshots/cottage_to_park.png` (1440×900). After the walk through the gate, the household is on the Grove Park lawn. The sign reads “4 on the lawn,” one more than the sim count. Reload kept the spot.
 
