@@ -13,6 +13,7 @@ var bees: GardenBees
 var birds: GardenBirds
 var people := {}
 var lane_body: VegPerson
+var lane_on_lawn := false
 var inside_lane := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
@@ -281,6 +282,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_enter_lane_house(false)
 			KEY_T:
 				_sip_kitchen_tea()
+			KEY_G:
+				_send_lane_to_park()
 			KEY_ESCAPE:
 				_esc()
 			KEY_F3:
@@ -1498,6 +1501,19 @@ func _sync_lane_body(wanted: bool) -> void:
 		_sync_cottage_tea()
 		_pin_lane_body(_lane_hearth())
 		return
+	if lane_on_lawn and Trust.has_action("parish_park"):
+		if not _lane_lawn_near():
+			if lane_body != null:
+				lane_body.present = false
+				lane_body.visible = false
+			return
+		_ensure_lane_body()
+		var spot := _lane_lawn_spot()
+		_pin_lane_body(spot)
+		if lane_body != null:
+			var face := GardenLayout.PARK - spot
+			lane_body.rotation.y = atan2(face.x, face.z)
+		return
 	if not wanted or not _lane_near():
 		if lane_body != null:
 			lane_body.present = false
@@ -1506,17 +1522,7 @@ func _sync_lane_body(wanted: bool) -> void:
 	var house := _first_lane_house()
 	if house == null:
 		return
-	if lane_body == null:
-		lane_body = VegPerson.new()
-		lane_body.name = "LaneHousehold"
-		add_child(lane_body)
-		lane_body.setup({
-			"id": "lane_house",
-			"name": "Reed",
-			"family": "pea",
-			"starts_present": true,
-		})
-		lane_body.remove_from_group("resident")
+	_ensure_lane_body()
 	var who := _lane_household_name()
 	lane_body.display_name = who
 	lane_body.present = true
@@ -1529,6 +1535,46 @@ func _sync_lane_body(wanted: bool) -> void:
 	lane_body.rotation.y = atan2(face_x, 0.0)
 	if lane_body.body:
 		lane_body.body.visible = true
+
+func _lane_lawn_spot() -> Vector3:
+	return GardenLayout.PARK + Vector3(-1.35, 0.0, 0.65)
+
+func _lane_lawn_near() -> bool:
+	if camera == null:
+		return false
+	var park := GardenLayout.PARK
+	if camera.global_position.distance_to(park) < 18.0 or camera.target.distance_to(park) < 14.0:
+		return true
+	return _lane_near()
+
+func _ensure_lane_body() -> void:
+	if lane_body != null:
+		return
+	lane_body = VegPerson.new()
+	lane_body.name = "LaneHousehold"
+	add_child(lane_body)
+	lane_body.setup({
+		"id": "lane_house",
+		"name": "Reed",
+		"family": "pea",
+		"starts_present": true,
+	})
+	lane_body.remove_from_group("resident")
+
+func _send_lane_to_park() -> bool:
+	if not Trust.has_action("parish_park"):
+		toast("Grove Park is not filed yet.")
+		return false
+	if lane_body == null or (not lane_body.visible and not inside_lane):
+		toast("Nobody is at the cottage.")
+		return false
+	lane_on_lawn = true
+	if inside_lane:
+		_leave_lane_house()
+	else:
+		_sync_lane_body(true)
+	toast("%s walks to the Grove Park lawn." % _lane_household_name())
+	return lane_body != null and lane_body.visible
 
 func _lane_room() -> Node3D:
 	var house := _first_lane_house()
@@ -2369,6 +2415,7 @@ func to_state() -> Dictionary:
 		"region": region.to_dict(),
 		"region_stamp": region_stamp,
 		"vale_crate_crop": vale_crate_crop,
+		"lane_on_lawn": lane_on_lawn,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -2451,6 +2498,7 @@ func apply_state(data: Dictionary) -> void:
 		region.boot(saved_region)
 	region_stamp = int(data.get("region_stamp", -1))
 	vale_crate_crop = str(data.get("vale_crate_crop", ""))
+	lane_on_lawn = bool(data.get("lane_on_lawn", false))
 	_sync_vale_crate()
 	_clear_plants()
 	_sync_plants()
@@ -8892,6 +8940,32 @@ func _run_town_shot() -> void:
 		return
 	await get_tree().create_timer(0.2).timeout
 	await _shot("/workspace/docs/screenshots/cottage_sipped.png")
+	if not _send_lane_to_park():
+		push_error("town shot: the household did not leave for the lawn")
+		get_tree().quit(1)
+		return
+	var spot := _lane_lawn_spot()
+	if lane_body.global_position.distance_to(spot) > 0.45:
+		push_error("town shot: the household missed the lawn")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("town shot: lawn save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not lane_on_lawn or lane_body == null or lane_body.global_position.distance_to(spot) > 0.8:
+		push_error("town shot: reload sent the household home")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.pitch = 20.0
+		camera.yaw = 150.0
+		camera.focus_on(spot + Vector3(0.0, 0.35, 0.0), 4.4)
+		camera.fov = lane_return_fov if lane_return_fov > 1.0 else 40.0
+		camera._apply()
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/cottage_to_park.png")
 	_leave_lane_house()
 	if room.visible:
 		push_error("town shot: the kitchen stayed open")
