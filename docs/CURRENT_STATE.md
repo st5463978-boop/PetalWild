@@ -24,6 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a simple gel icon (one body, two black eyes) instead of the petal bell. The icon turns to face the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
+When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. The lane count stays a sim count.
 
 ## ACTIVE AGENTS
 
@@ -63,6 +64,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/residents_park.png` (1440×900). Bram the carrot and Lumen the leek both read as people in the open grass. Bellhelp is between them with two black eyes. The count reads “2 on the lawn.” The hedge gate and the garden are behind the lawn.
 
+`docs/screenshots/south_lane.png` (1440×900). Six cottages were built; the near pair flanks the path, windows lit, sign reads South Lane, and Grove Park sits beyond them.
+
 ## KNOWN REGRESSIONS
 
 - `main` does not boot the campaign garden.
@@ -75,7 +78,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 ## NEXT 5 TASKS
 
-1. Cherry-pick neon status icons only if they attach to the icon and leave the eyes visible.
+1. Let one lane household be a body at their cottage when the camera is near, instead of only a lit window.
 2. Keep the kettle brew plate on the kettle, the way the pan plate stays on the pan.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
 4. When this suite stays green, make this garden the boot line. `main` is still the stone tail.

@@ -1436,6 +1436,26 @@ func _sync_park() -> void:
 				count.text = "%s on the lawn" % str(n)
 			else:
 				count.text = "the lawn is quiet"
+	_sync_lane()
+
+func _sync_lane() -> void:
+	var show := Trust.has_action("parish_road_rumour")
+	var lit := town.occupancy("lane")
+	var index := 0
+	for node in get_tree().get_nodes_in_group("south_lane_house"):
+		var house := node as Node3D
+		if house == null:
+			continue
+		house.visible = show
+		var window := house.get_node_or_null("Window") as MeshInstance3D
+		if window != null and window.material_override is StandardMaterial3D:
+			var glass := window.material_override as StandardMaterial3D
+			glass.emission_energy_multiplier = 1.15 if show and index < lit else 0.0
+		index += 1
+	for node in get_tree().get_nodes_in_group("south_lane_sign"):
+		var sign := node as Node3D
+		if sign:
+			sign.visible = show
 
 func _lane_tea_line() -> String:
 	if not Trust.has_action("parish_road_rumour"):
@@ -8602,6 +8622,13 @@ func _run_town_shot() -> void:
 	_tick_town(world_snapshot())
 	_sync_park()
 	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	if camera:
+		camera.pitch = 16.0
+		camera.yaw = 8.0
+		camera.focus_on(Vector3(0.0, 0.7, -13.4), 9.0)
+		camera._apply()
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/south_lane.png")
 	camera.focus_on(GardenLayout.PARK + Vector3(0, 0.55, 0.4), 7.6)
 	await get_tree().create_timer(0.4).timeout
 	await _shot("/workspace/docs/screenshots/town_park.png")

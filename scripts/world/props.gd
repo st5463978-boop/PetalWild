@@ -9,6 +9,7 @@ func build(parent: Node3D) -> void:
 	_foundry(parent)
 	_hall(parent)
 	_park(parent)
+	_lane(parent)
 	_bench(parent, Vector3(6.3, 0.0, -0.4))
 	_bench(parent, Vector3(-9.4, 0.0, 1.2))
 	_lantern(parent, Vector3(-2.35, 0, -6.0))
@@ -241,6 +242,46 @@ func _park(parent: Node3D) -> void:
 	count.modulate = Color("#f3ead8")
 	count.outline_modulate = Color("2a2118")
 	root.add_child(count)
+
+func _lane(parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "SouthLane"
+	parent.add_child(root)
+	var row := PackedFloat32Array([-12.3, -13.6, -14.8])
+	for z in row:
+		_cottage(root, Vector3(-3.6, 0.0, z), 1.0)
+		_cottage(root, Vector3(3.6, 0.0, z), -1.0)
+	var sign := Label3D.new()
+	sign.name = "LaneSign"
+	sign.text = "South Lane"
+	sign.font_size = 48
+	sign.pixel_size = 0.0045
+	sign.position = Vector3(0.0, 1.6, -12.0)
+	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sign.shaded = false
+	sign.modulate = Color("#f3ead8")
+	sign.outline_modulate = Color("2a2118")
+	sign.visible = false
+	sign.add_to_group("south_lane_sign")
+	root.add_child(sign)
+
+func _cottage(parent: Node3D, at: Vector3, face: float) -> void:
+	var house := Node3D.new()
+	house.position = at
+	house.visible = false
+	house.add_to_group("south_lane_house")
+	parent.add_child(house)
+	_box(house, Vector3(0, 0.7, 0), Vector3(1.35, 1.4, 1.15), Color("#8a5a48"))
+	var roof := _box(house, Vector3(0, 1.5, 0), Vector3(1.55, 0.12, 1.35), Color("#5c4038"))
+	roof.rotation_degrees = Vector3(0, 0, 8.0 * face)
+	_box(house, Vector3(face * 0.68, 0.42, 0.0), Vector3(0.06, 0.7, 0.38), Color("#3a2a22"))
+	var window := _box(house, Vector3(face * 0.68, 0.95, 0.28), Vector3(0.06, 0.32, 0.28), Color("#2a241c"))
+	window.name = "Window"
+	var glass := window.material_override as StandardMaterial3D
+	if glass:
+		glass.emission_enabled = true
+		glass.emission = Color("#ffd2a4")
+		glass.emission_energy_multiplier = 0.0
 
 func _bench(parent: Node3D, at: Vector3) -> void:
 	var root := Node3D.new()
