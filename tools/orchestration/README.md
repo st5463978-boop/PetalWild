@@ -2,7 +2,7 @@
 
 This directory is the PetalWild development foreman. It is not part of the Godot game. `scripts/`, `scenes/`, `data/`, and `shaders/` do not reference it. `.gdignore` keeps Godot from importing it.
 
-System-1 routing calls the Pi Hailo decide service. `HAILO_DECIDE_URL` defaults to `http://100.126.22.71:8766/v1/decide`. MagicDNS `http://piai-1:8766/v1/decide` is the same service. `GET /health` should report model `Qwen3-1.7B.hef` on device Hailo-10H. `POST /decide` (or `/v1/decide` if that path is the one that answers) takes `{"question","options"}` with at least two options. The client waits 75s. The wrapper maps `choice` / `index` onto a lane. It does not call MinoJEV, an RLCD policy, or a local CPU Qwen. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. Set `HAILO_DECIDE_URL` to override the default.
+System-1 routing calls JEV-H on the Pi (port 8771), not the Qwen3 chat decide service on port 8766. With no `HAILO_DECIDE_URL`, the client resolves the live tunnel from `https://ntfy.sh/jevh-decide-05923aed092556ed/raw?poll=1&since=latest` (last `https://` line). After discovery fails: existing `HAILO_DECIDE_URL` if set, then Tailscale `http://100.126.22.71:8771/v1/decide`. MagicDNS `http://piai-1:8771/v1/decide` is the same service. `GET /health` (also `/v1/health`) should report JEV-H on Hailo-10H. `POST /v1/decide` (also `/decide`) takes `{"question","options"}` with at least two options. The client waits 75s. After a failed decide it refreshes the address once and retries once if the origin changed. The wrapper maps `choice` / `index` onto a lane. No auth. HIGH / MEDIUM / LOW labels are not calibrated probabilities. Set `HAILO_DECIDE_URL` to override. Do not hardcode a trycloudflare host.
 
 ## What this machine showed
 

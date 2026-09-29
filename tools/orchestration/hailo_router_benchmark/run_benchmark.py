@@ -36,7 +36,7 @@ def run() -> dict:
         "reason": "pi_hef_decide",
         "selected_model": DECIDE_MODEL,
         "decide_url": decide_url(),
-        "note": "System-1 calls POST /decide on the Pi Hailo-10H. This bake-off does not score MinoJEV, RLCD, or a local CPU Qwen. Confidence labels are not calibrated.",
+        "note": "System-1 calls POST /v1/decide on JEV-H (Pi Hailo-10H, port 8771). This bake-off does not score the Qwen3 chat decide service on 8766, RLCD, or a local CPU Qwen. Confidence labels are not calibrated.",
         "task_count": len(rows),
         "models": [],
     }

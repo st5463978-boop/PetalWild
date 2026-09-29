@@ -10,7 +10,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from petal_dispatch.hailo_backend import choice_from_payload, question_for  # noqa: E402
+from petal_dispatch.hailo_backend import (  # noqa: E402
+    DEFAULT_DECIDE_URL,
+    DECIDE_MODEL,
+    MAGICDNS_DECIDE_URL,
+    choice_from_payload,
+    post_decide,
+    question_for,
+)
+from hailo_decide_url import DISCOVERY_URL, TAILSCALE_DEFAULT  # noqa: E402
 from petal_dispatch.router import Backend, decide, extract_json  # noqa: E402
 from petal_dispatch.schema import parse_decision, prompt_for  # noqa: E402
 
@@ -125,6 +133,56 @@ class RouterTests(unittest.TestCase):
         self.assertIn("Jelly does not squash.", text)
         self.assertIn("build_failed", text)
         self.assertNotIn("PETAL_03_JELLY", text)
+
+    def test_decide_defaults_are_jevh(self) -> None:
+        self.assertIn("jevh-decide-05923aed092556ed", DISCOVERY_URL)
+        self.assertIn(":8771/", TAILSCALE_DEFAULT)
+        self.assertNotIn(":8766", TAILSCALE_DEFAULT)
+        self.assertIn(":8771/", DEFAULT_DECIDE_URL)
+        self.assertNotIn(":8766", DEFAULT_DECIDE_URL)
+        self.assertIn(":8771/", MAGICDNS_DECIDE_URL)
+        self.assertEqual(DECIDE_MODEL, "JEV-H")
+
+    def test_post_decide_refreshes_once_when_origin_changes(self) -> None:
+        from unittest.mock import patch
+
+        from petal_dispatch import hailo_backend as hb
+
+        calls: list[str] = []
+
+        def fake_once(base_url, question, options, timeout):
+            calls.append(base_url)
+            if "stale.example" in base_url:
+                raise RuntimeError("stale tunnel")
+            return {"choice": options[1], "index": 1}
+
+        with (
+            patch.object(hb, "_post_decide_once", side_effect=fake_once),
+            patch.object(hb, "refresh_decide_url", return_value="http://fresh.example:8771/v1/decide") as refresh,
+        ):
+            payload = post_decide("http://stale.example:8771/v1/decide", "pick", ["left", "right"], 5.0)
+        self.assertEqual(payload["index"], 1)
+        self.assertEqual(
+            calls,
+            ["http://stale.example:8771/v1/decide", "http://fresh.example:8771/v1/decide"],
+        )
+        refresh.assert_called_once()
+
+    def test_post_decide_does_not_retry_same_origin(self) -> None:
+        from unittest.mock import patch
+
+        from petal_dispatch import hailo_backend as hb
+
+        def fake_once(base_url, question, options, timeout):
+            raise RuntimeError("still down")
+
+        with (
+            patch.object(hb, "_post_decide_once", side_effect=fake_once),
+            patch.object(hb, "refresh_decide_url", return_value="http://same.example:8771/v1/decide") as refresh,
+        ):
+            with self.assertRaises(RuntimeError):
+                post_decide("http://same.example:8771/decide", "pick", ["left", "right"], 5.0)
+        refresh.assert_called_once()
 
     def test_game_tree_does_not_reference_the_dispatcher(self) -> None:
         root = Path(__file__).resolve().parents[3]
