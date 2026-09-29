@@ -24,7 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a shaded gel icon: one body, two black vertical eyes, a small highlight. The eyes stay unshaded so the sun does not grey them out. The icon tips toward the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
-When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. Esc steps back out. Farther houses stay counts. `grove_park.active` stays false.
+When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it, and stays empty otherwise. Esc steps back out. Farther houses stay counts. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -47,7 +47,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` on this tip.
-- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, or if Esc leaves the room open.
+- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, or if Esc leaves the room open.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
 - `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes.
 - `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
@@ -71,7 +71,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/south_lane.png` (1440×900). The near cottage has a lit window and a tomato household at the door. The sign reads South Lane. Grove Park is beyond the path.
 
-`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. Moss stands in the kitchen by the table. The line reads “Moss's kitchen. Esc steps back out.”
+`docs/screenshots/cottage_inside.png` (1440×900). Enter opened the near cottage. Moss stands by the table. The cup on the table has a red tea top because the kettle was carried. The line reads “Moss's kitchen. Esc steps back out.”
 
 ## KNOWN REGRESSIONS
 
@@ -88,7 +88,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. The kitchen is one room. Next is a second piece of furniture that reads in that same frame, then the other cottages stay closed.
+4. The kitchen cup follows the kettle. The other five cottages stay closed. Next is the lit window in that same frame.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD

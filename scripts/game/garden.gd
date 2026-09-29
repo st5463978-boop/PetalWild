@@ -1492,6 +1492,7 @@ func _lane_household_name() -> String:
 
 func _sync_lane_body(wanted: bool) -> void:
 	if inside_lane:
+		_sync_cottage_tea()
 		_pin_lane_body(_lane_hearth())
 		return
 	if not wanted or not _lane_near():
@@ -1540,6 +1541,17 @@ func _lane_hearth() -> Vector3:
 	if hearth == null:
 		return room.global_position
 	return hearth.global_position
+
+func _cottage_has_tea() -> bool:
+	return Economy.mill.pot_count() + Economy.mill.crate_count() > 0
+
+func _sync_cottage_tea() -> void:
+	var room := _lane_room()
+	if room == null:
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	if fill != null:
+		fill.visible = _cottage_has_tea()
 
 func _pin_lane_body(at: Vector3) -> void:
 	if lane_body == null:
@@ -1590,6 +1602,7 @@ func _enter_lane_house(force: bool) -> bool:
 	lane_return_distance = camera.distance
 	inside_lane = true
 	_set_lane_shell(house, false)
+	_sync_cottage_tea()
 	_pin_lane_body(hearth.global_position)
 	var look := hearth.global_position + Vector3(0.2, 0.45, 0.55)
 	var offset := view.global_position - look
@@ -8813,6 +8826,11 @@ func _run_town_shot() -> void:
 		hearth = room.get_node_or_null("Hearth") as Node3D
 	if room == null or not room.visible or hearth == null or lane_body == null or lane_body.global_position.distance_to(hearth.global_position) > 0.6:
 		push_error("town shot: the household is not in the kitchen")
+		get_tree().quit(1)
+		return
+	var fill := room.get_node_or_null("TeaFill") as Node3D
+	if fill == null or fill.visible != _cottage_has_tea() or not _cottage_has_tea():
+		push_error("town shot: the kitchen cup does not match the kettle")
 		get_tree().quit(1)
 		return
 	await get_tree().create_timer(0.35).timeout

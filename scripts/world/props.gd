@@ -302,7 +302,7 @@ func _cottage_room(house: Node3D) -> void:
 	_box(room, Vector3(0.16, 1.05, -0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.05, 0.85), Vector3(0.08, 2.1, 0.7), Color("#a88870"))
 	_box(room, Vector3(0.16, 1.85, 0.0), Vector3(0.08, 0.5, 1.0), Color("#a88870"))
-	var pane := _box(room, Vector3(0.12, 1.35, 0.72), Vector3(0.05, 0.42, 0.36), Color("#ffd2a4"))
+	var pane := _box(room, Vector3(-2.44, 1.38, 0.55), Vector3(0.05, 0.48, 0.62), Color("#ffd2a4"))
 	pane.name = "InsideWindow"
 	var glass := pane.material_override as StandardMaterial3D
 	if glass:
@@ -311,6 +311,11 @@ func _cottage_room(house: Node3D) -> void:
 		glass.emission_energy_multiplier = 0.8
 	var table := _box(room, Vector3(-1.2, 0.42, 0.35), Vector3(0.85, 0.07, 0.5), Color("#8d6244"))
 	table.name = "Table"
+	var cup := _cylinder(room, Vector3(-0.95, 0.5, 0.48), 0.075, 0.06, 0.08, Color("#f3ead8"))
+	cup.name = "TeaCup"
+	var fill := _cylinder(room, Vector3(-0.95, 0.55, 0.48), 0.062, 0.062, 0.02, Color("#c45a3a"))
+	fill.name = "TeaFill"
+	fill.visible = false
 	_box(room, Vector3(-1.45, 0.2, 0.15), Vector3(0.08, 0.4, 0.08), Color("#5c4030"))
 	_box(room, Vector3(-0.95, 0.2, 0.55), Vector3(0.08, 0.4, 0.08), Color("#5c4030"))
 	var hearth := Node3D.new()
@@ -319,7 +324,7 @@ func _cottage_room(house: Node3D) -> void:
 	room.add_child(hearth)
 	var view := Node3D.new()
 	view.name = "InsideView"
-	view.position = Vector3(-0.25, 1.55, 0.9)
+	view.position = Vector3(-0.25, 1.32, 0.9)
 	room.add_child(view)
 	var lamp := OmniLight3D.new()
 	lamp.name = "RoomLamp"
