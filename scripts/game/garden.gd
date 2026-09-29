@@ -1602,11 +1602,14 @@ func _note_lane_arrival() -> void:
 	var goal := _lane_door_spot() if lane_walk_home else _lane_lawn_spot()
 	if lane_body.global_position.distance_to(goal) > 0.45:
 		return
+	var heading_home := lane_walk_home
 	lane_walking = false
-	lane_on_lawn = not lane_walk_home
+	lane_on_lawn = not heading_home
 	lane_walk_home = false
 	lane_body.waypoints.clear()
 	lane_body.loop_route = false
+	if lane_on_lawn:
+		_beckon_lawn_jelly()
 
 func _send_lane_to_park() -> bool:
 	if not Trust.has_action("parish_park"):
@@ -1688,12 +1691,7 @@ func _lane_memory() -> String:
 		return ""
 	return "%s drank the hedge tea." % _lane_who()
 
-func _stage_lawn_jelly(near: Vector3) -> Jelly:
-	if ecology == null:
-		return null
-	var jelly := ecology.first("bellhelp")
-	if jelly == null:
-		jelly = ecology.force_spawn("bellhelp")
+func _place_hungry_jelly(jelly: Jelly, near: Vector3) -> void:
 	jelly.hunger = 0.16
 	jelly.mood = "hungry"
 	jelly.life = "settler"
@@ -1705,11 +1703,30 @@ func _stage_lawn_jelly(near: Vector3) -> Jelly:
 	jelly.hop_wait = 99.0
 	jelly.global_position = near + Vector3(1.15, 0.2, 0.35)
 	jelly._apply_deform()
-	for node in jelly.find_children("IconEye", "MeshInstance3D", true, false):
-		(node as MeshInstance3D).visible = true
 	var icon := jelly.find_child("Icon", true, false) as Node3D
 	if icon != null:
 		icon.visible = true
+	for child in jelly.find_children("*", "MeshInstance3D", true, false):
+		if str(child.name) == "IconBody":
+			continue
+		if str(child.name).begins_with("IconEye"):
+			(child as MeshInstance3D).visible = true
+
+func _beckon_lawn_jelly() -> void:
+	if ecology == null:
+		return
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		return
+	_place_hungry_jelly(jelly, _lane_lawn_spot())
+
+func _stage_lawn_jelly(near: Vector3) -> Jelly:
+	if ecology == null:
+		return null
+	var jelly := ecology.first("bellhelp")
+	if jelly == null:
+		jelly = ecology.force_spawn("bellhelp")
+	_place_hungry_jelly(jelly, near)
 	return jelly
 
 func _icon_eye_count(jelly: Jelly) -> int:
@@ -9161,6 +9178,10 @@ func _run_town_shot() -> void:
 		return
 	await get_tree().create_timer(0.2).timeout
 	await _shot("/workspace/docs/screenshots/cottage_sipped.png")
+	var herald := ecology.first("bellhelp")
+	if herald == null:
+		herald = ecology.force_spawn("bellhelp")
+	herald.global_position = GardenLayout.STALL
 	if not _send_lane_to_park():
 		push_error("town shot: the household did not leave for the lawn")
 		get_tree().quit(1)
@@ -9179,6 +9200,10 @@ func _run_town_shot() -> void:
 			break
 	if not saw_gate or not arrived or lane_body.global_position.distance_to(spot) > 0.5:
 		push_error("town shot: the walk missed the gate or the lawn")
+		get_tree().quit(1)
+		return
+	if herald.global_position.distance_to(spot) > 2.4:
+		push_error("town shot: arrival did not bring the jelly")
 		get_tree().quit(1)
 		return
 	if not SaveGame.write_slot(1, to_state()):
