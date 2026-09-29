@@ -24,6 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a shaded gel icon: one body, two black vertical eyes, a small highlight. The eyes stay unshaded so the sun does not grey them out. The icon tips toward the camera. A grab's stretch is seated in that camera space, so the eyes stay on the front of the squashed gel instead of shearing off along the pull.
 A neon status mark floats above the body. A hungry jelly walking to food shows the cog. A returning visitor shows the envelope until the face is clicked. A snack or a click plays the heart once, then the mark returns to whatever is still true. Two adults of one species, or a breeding state, show the locked heart. The mark stays above both black eyes. Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
+Enter, while the camera is near the Hedge Tea House, steps into that room with the same camera path as the cottage. The one porch kettle and its steam sit on the counter while the room is open, then return to the porch on Esc. Stocking and carrying still go through the mill. Coins still move only on a sale. A carry while the room is open fills the South Lane kitchen cup. `data/venues.json` keeps `tea_house.active` false.
 When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it. T drinks one serving and the cup empties when that was the last. Selling carried tea at the Petal Stall uses that same cup: a sale that leaves a crate keeps it full, and selling the last crate empties it even when the kitchen was already open. Coins still rise. The same open cup follows the mill. Carrying a finished pot onto the crate fills it. A resident drinking the last crate, through the mill tick, empties it. A new pot, or Nessa carrying that pot, fills it again. There is still one seller. G, once Grove Park is filed, walks that household from the cottage door, through the gate, onto the lawn. G again walks them home through the gate. The lawn spot survives save and load. While they stand on the grass, the Grove Park count includes them and their cottage window goes dark. The window lights again when they are at the door. Arriving on the lawn draws an existing Bellhelp to the grass, hungry, with both black eyes still showing. The same name is used in the kitchen, on the path, and on the place page. Esc steps back out. The place page says where they are: kitchen, walking, lawn, or cottage door. After a sip it also keeps “drank the hedge tea,” including across save and load. The bottom hint reads Enter cottage, T tea, G park. Clicking the household says the tea line. Farther houses stay counts. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
@@ -54,6 +55,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 - `PETAL_TOWN_SHOT=1` still passes with the control hint visible.
 - `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, if the window or the cup leaves the frame, if T does not spend one tea, if the walk misses the gate or the lawn, if the walk home misses the gate or the door, if the place page loses the lawn or the door, if reload sends them home early, if the lawn sign ignores them, if the cottage window stays lit on the lawn or dark at the door, if arrival does not bring the jelly, if reload forgets the tea, or if Esc leaves the room open.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
+- `PETAL_TEA_HOUSE_SHOT=1` → `PETAL_TEA_HOUSE_SHOT_OK`. The shot quits if Enter does not open the tea house, if the kettle leaves the frame, if carrying leaves the South Lane cup empty or moves coins, if Esc leaves the room open, or if the kettle does not sit back on the porch. `tea_house.active` and `grove_park.active` stay false.
 - `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK` and `JELLY_ICON_OK`. Hungry, held, and landed plates still show two separate black eyes. A hungry jelly whose food is not under it shows the cog above the gel. The last plate forces that cog and quits if the mark is not above both eyes in the frame.
 - `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
 - Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected on this VM.
@@ -69,6 +71,8 @@ Executive on this branch. No other agent is writing this tree in this run.
 `docs/screenshots/jelly_land.png` (1440×900). After the throw, the same icon rests on the grass beside a bench, still with two black eyes. The cog is still above the gel because the jelly is hungry and not on its food. Photo mode is on.
 
 `docs/screenshots/jelly_icon.png` (1440×900). The same gel, still with both black eyes, and a white neon cog above it. The cog does not sit on the eyes. Grove Park and the cottage are behind.
+
+`docs/screenshots/tea_house_inside.png` (1440×900). The tea-house room, a lit window, and the dark kettle with white steam on the counter. The line reads “Peach and meadowbell went into the kettle.”
 
 `docs/screenshots/kettle_brew.png` (1440×900). The dark kettle and its white steam sit on the tea-house porch. The line reads “The kettle is brewing hedge tea.”
 
@@ -112,7 +116,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 
 1. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent. PR 18 already tracks this branch onto `petal/09-art-rescue`.
 2. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-3. Moss and the other lawn records still have no body. The other five cottages stay closed.
+3. Moss and the other lawn records still have no body. The other five cottages stay closed. The potting-shed jam pan is still the outside prop: the same Enter / Esc room, with the existing pan, is the next interior.
 4. The neon marks are in. Leave the demo reel on `cursor/jelly-status-icons-ffcb`. Do not cover the eyes.
 
 ## DO NOT REBUILD

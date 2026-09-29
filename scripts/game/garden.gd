@@ -1952,15 +1952,28 @@ func _enter_tea_house(force: bool) -> bool:
 	_remember_view()
 	inside_tea = true
 	_set_lane_shell(house, false)
+	_seat_kettle(true)
 	_sync_cottage_tea()
 	_frame_interior(view, kettle.global_position + Vector3(0.0, 0.12, 0.0))
 	toast("Hedge Tea House. Esc steps back out.")
 	return true
 
+func _seat_kettle(inside: bool) -> void:
+	var house := _tea_house()
+	if house == null:
+		return
+	var kettle := house.get_node_or_null("Kettle") as Node3D
+	var steam := house.get_node_or_null("Steam") as Node3D
+	if kettle != null:
+		kettle.position = Vector3(0.05, 1.72, 2.15) if inside else Vector3(0.48, 0.22, -0.95)
+	if steam != null:
+		steam.position = Vector3(0.05, 2.04, 2.15) if inside else Vector3(0.48, 0.54, -0.95)
+
 func _leave_tea_house() -> void:
 	if not inside_tea:
 		return
 	inside_tea = false
+	_seat_kettle(false)
 	var house := _tea_house()
 	if house != null:
 		_set_lane_shell(house, true)
@@ -9880,6 +9893,10 @@ func _run_tea_house_shot() -> void:
 	_esc()
 	if inside_tea or room.visible or not shell.visible:
 		push_error("tea house: Esc left the room open")
+		get_tree().quit(1)
+		return
+	if kettle.position.distance_to(Vector3(0.48, 0.22, -0.95)) > 0.02:
+		push_error("tea house: Esc left the kettle off the porch")
 		get_tree().quit(1)
 		return
 	print("PETAL_TEA_HOUSE_SHOT_OK")

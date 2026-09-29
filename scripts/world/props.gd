@@ -152,15 +152,17 @@ func _tea_room(house: Node3D) -> void:
 	room.name = "Interior"
 	room.visible = false
 	house.add_child(room)
-	_box(room, Vector3(0.48, 0.03, -0.2), Vector3(4.4, 0.06, 4.2), Color("#6b4e3a"))
-	_box(room, Vector3(0.48, 1.2, -1.85), Vector3(4.6, 2.5, 0.16), Color("#c4a882"))
-	_box(room, Vector3(-1.7, 1.2, -0.2), Vector3(0.16, 2.5, 4.0), Color("#b89a78"))
-	_box(room, Vector3(2.65, 1.2, -0.2), Vector3(0.16, 2.5, 4.0), Color("#b89a78"))
-	_box(room, Vector3(0.48, 1.2, 1.7), Vector3(4.6, 2.5, 0.16), Color("#c4a882"))
-	_box(room, Vector3(0.48, 2.4, -0.2), Vector3(4.6, 0.1, 4.2), Color("#8a7060"))
-	var counter := _box(room, Vector3(0.48, 0.08, -0.95), Vector3(0.9, 0.1, 0.58), Color("#5c4030"))
+	# North of the parish hedge, and above the rise. The porch kettle slides onto the counter only while this room is open.
+	_box(room, Vector3(0.15, 1.35, 3.2), Vector3(4.6, 0.1, 6.4), Color("#6b4e3a"))
+	var back := _box(room, Vector3(0.15, 2.7, 0.45), Vector3(4.8, 3.2, 0.16), Color("#c4a882"))
+	back.name = "BackWall"
+	_box(room, Vector3(-1.7, 2.7, 3.2), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(2.0, 2.7, 3.2), Vector3(0.16, 3.2, 6.4), Color("#b89a78"))
+	_box(room, Vector3(0.15, 2.7, 6.3), Vector3(4.8, 3.2, 0.16), Color("#c4a882"))
+	_box(room, Vector3(0.15, 4.25, 3.2), Vector3(4.8, 0.12, 6.4), Color("#8a7060"))
+	var counter := _box(room, Vector3(0.05, 1.55, 2.15), Vector3(1.2, 0.16, 0.72), Color("#5c4030"))
 	counter.name = "Counter"
-	var pane := _box(room, Vector3(-1.6, 1.25, -0.55), Vector3(0.06, 0.55, 0.7), Color("#ffd2a4"))
+	var pane := _box(room, Vector3(-0.95, 2.55, 0.58), Vector3(0.7, 0.62, 0.06), Color("#ffd2a4"))
 	pane.name = "InsideWindow"
 	var glass := pane.material_override as StandardMaterial3D
 	if glass:
@@ -169,14 +171,14 @@ func _tea_room(house: Node3D) -> void:
 		glass.emission_energy_multiplier = 1.6
 	var view := Node3D.new()
 	view.name = "InsideView"
-	view.position = Vector3(0.85, 0.85, -0.15)
+	view.position = Vector3(0.15, 2.7, 3.7)
 	room.add_child(view)
 	var lamp := OmniLight3D.new()
 	lamp.name = "RoomLamp"
-	lamp.position = Vector3(0.48, 1.75, -0.35)
+	lamp.position = Vector3(0.1, 3.4, 2.8)
 	lamp.light_color = Color("ffd2a4")
-	lamp.light_energy = 1.4
-	lamp.omni_range = 4.6
+	lamp.light_energy = 2.2
+	lamp.omni_range = 7.0
 	lamp.shadow_enabled = false
 	room.add_child(lamp)
 
