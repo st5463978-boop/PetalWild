@@ -25,6 +25,8 @@ var lumen_stall_back := Vector3.ZERO
 var lumen_at_counter := false
 var bram_pan_back := Vector3.ZERO
 var bram_at_pan := false
+var nessa_kettle_back := Vector3.ZERO
+var nessa_at_kettle := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
 var lane_return_pitch := 0.0
@@ -1993,6 +1995,7 @@ func _enter_tea_house(force: bool) -> bool:
 	inside_tea = true
 	_set_lane_shell(house, false)
 	_seat_kettle(true)
+	_seat_brewer(true)
 	_sync_cottage_tea()
 	_frame_interior(view, kettle.global_position + Vector3(0.0, 0.12, 0.0))
 	toast("Hedge Tea House. Esc steps back out.")
@@ -2009,11 +2012,39 @@ func _seat_kettle(inside: bool) -> void:
 	if steam != null:
 		steam.position = Vector3(0.05, 2.04, 2.15) if inside else Vector3(0.48, 0.54, -0.95)
 
+func _seat_brewer(inside: bool) -> void:
+	var nessa := _person("nessa")
+	if nessa == null:
+		return
+	if inside:
+		var house := _tea_house()
+		if house == null:
+			return
+		nessa_kettle_back = nessa.global_position
+		nessa_at_kettle = true
+		nessa.stay = true
+		# ponytail: the pea mesh already exists; show it for this room. Arrival still owns present.
+		nessa.visible = true
+		if nessa.body:
+			nessa.body.visible = true
+		nessa.global_position = house.to_global(Vector3(-0.62, 1.4, 2.65))
+		nessa.look_at(house.to_global(Vector3(0.15, 1.55, 2.1)), Vector3.UP)
+		nessa.say("The kettle is on.")
+		return
+	nessa.stay = false
+	if nessa_at_kettle:
+		nessa.global_position = nessa_kettle_back
+		nessa.visible = nessa.present
+		if nessa.body:
+			nessa.body.visible = nessa.present
+		nessa_at_kettle = false
+
 func _leave_tea_house() -> void:
 	if not inside_tea:
 		return
 	inside_tea = false
 	_seat_kettle(false)
+	_seat_brewer(false)
 	var house := _tea_house()
 	if house != null:
 		_set_lane_shell(house, true)
@@ -10056,6 +10087,11 @@ func _run_tea_house_shot() -> void:
 		push_error("tea house: the room was already open")
 		get_tree().quit(1)
 		return
+	var nessa := _person("nessa")
+	if nessa == null or not nessa.is_inside_tree() or nessa.body == null:
+		push_error("tea house: Nessa is not in the scene")
+		get_tree().quit(1)
+		return
 	camera.user_moved = true
 	camera.intro = 1.0
 	camera.target = house.global_position + Vector3(0.2, 0.6, -2.0)
@@ -10089,6 +10125,25 @@ func _run_tea_house_shot() -> void:
 		push_error("tea house: the kettle left the frame at %s" % camera.unproject_position(kettle.global_position))
 		get_tree().quit(1)
 		return
+	var nessa_px := camera.unproject_position(nessa.global_position)
+	if not nessa.stay or not nessa.visible or nessa_px.x < 180.0 or nessa_px.x > 1100.0 or nessa_px.y < 140.0 or nessa_px.y > 760.0:
+		push_error("tea house: Nessa is not at the kettle %s" % nessa_px)
+		get_tree().quit(1)
+		return
+	if _room_where(inside_tea, "nessa", "at the kettle") != "Nessa is at the kettle.":
+		push_error("tea house: the page did not seat Nessa")
+		get_tree().quit(1)
+		return
+	hud.show_place(_place_stats(world_snapshot()))
+	var kettle_lines := 0
+	for node in hud.journal_box.get_children():
+		if node is Label and (node as Label).text == "Nessa is at the kettle.":
+			kettle_lines += 1
+	refresh_panels()
+	if kettle_lines != 1:
+		push_error("tea house: the page said Nessa at the kettle %s times" % kettle_lines)
+		get_tree().quit(1)
+		return
 	await _shot("/workspace/docs/screenshots/tea_house_inside.png")
 	if Economy.mill.brewing() and not Economy.mill.tick(18.0):
 		push_error("tea house: the kettle did not finish")
@@ -10107,6 +10162,10 @@ func _run_tea_house_shot() -> void:
 		return
 	if kettle.position.distance_to(Vector3(0.48, 0.22, -0.95)) > 0.02:
 		push_error("tea house: Esc left the kettle off the porch")
+		get_tree().quit(1)
+		return
+	if nessa.stay or nessa.visible != nessa.present or nessa.global_position.distance_to(nessa_kettle_back) > 0.2 or _room_where(inside_tea, "nessa", "at the kettle") != "":
+		push_error("tea house: Esc left Nessa inside")
 		get_tree().quit(1)
 		return
 	print("PETAL_TEA_HOUSE_SHOT_OK")
@@ -14009,6 +14068,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 	stats["lane_where"] = _lane_where()
 	stats["keeper_where"] = _room_where(inside_stall, "lumen", "at the counter")
 	stats["cook_where"] = _room_where(inside_shed, "bram", "at the pan")
+	stats["kettle_where"] = _room_where(inside_tea, "nessa", "at the kettle")
 	stats["lane_memory"] = _lane_memory()
 	stats["vale_traffic"] = region.traffic("hollow")
 	stats["road_rumour"] = _road_rumoured()

@@ -197,7 +197,7 @@ func show_place(stats: Dictionary) -> void:
 	var lane_where := str(stats.get("lane_where", ""))
 	if lane_where != "":
 		journal_box.add_child(ThemeKit.label(lane_where, 16))
-	for key in ["keeper_where", "cook_where"]:
+	for key in ["keeper_where", "cook_where", "kettle_where"]:
 		var pose := str(stats.get(key, ""))
 		if pose == "":
 			continue
