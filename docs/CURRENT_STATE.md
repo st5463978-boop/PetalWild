@@ -24,7 +24,7 @@ Pass 2 from `petal/08-integration` is in this tree: inspect snack, pouch feed, h
 Approved jelly cut-outs (`assets/art/images/PETAL-08-101/`) are the resting card. Hunger, a grab, a poke, or a throw shows a shaded gel icon: one body, two black vertical eyes, a small highlight. The eyes stay unshaded so the sun does not grey them out. The icon tips toward the camera.
 Sign-off CAM_06 still stages its own `SignoffJelly` card.
 Grove Park, once Nessa files it, is a lawn with benches and one worn walk from the lawn to the hedge gate. Lumen and Bram walk through that gate to the grass and stay there. `grove_park.active` stays false.
-When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it. T drinks one serving and the cup empties when that was the last. G, once Grove Park is filed, sends that household onto the lawn. The spot survives save and load. Esc steps back out. Farther houses stay counts. `grove_park.active` stays false.
+When the road rumour is filed, six cottages stand on South Lane between the gate and the lawn. Occupied houses light a window. If the camera is near the gate, the first household (a tomato folk, surname from the lane record) stands at that door. Enter, while the camera is near that cottage, steps into the kitchen. A cup on the table holds hedge tea when the kettle has a pot or a crate of it. T drinks one serving and the cup empties when that was the last. G, once Grove Park is filed, walks that household from the cottage door, through the gate, onto the lawn. The spot survives save and load. Esc steps back out. Farther houses stay counts. `grove_park.active` stays false.
 
 ## ACTIVE AGENTS
 
@@ -47,7 +47,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 2026-09-29, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
 - `./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` on this tip.
-- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, if the window or the cup leaves the frame, if T does not spend one tea, if G misses the lawn, if reload sends them home, or if Esc leaves the room open.
+- `PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`. The shot quits if the near cottage has no body, if Enter does not open the kitchen, if the cup does not match the kettle, if the window or the cup leaves the frame, if T does not spend one tea, if the walk misses the gate or the lawn, if reload sends them home, or if Esc leaves the room open.
 - `PETAL_KETTLE_SHOT=1` → `PETAL_KETTLE_SHOT_OK`. The brew plate quits if the kettle leaves the frame.
 - `PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Hungry plate shows the gel sphere and both black eyes.
 - `PETAL_RESIDENT_SHOT=1` → `PETAL_RESIDENT_SHOT_OK`. Bram, Lumen, and Bellhelp still read on the lawn.
@@ -75,7 +75,7 @@ Executive on this branch. No other agent is writing this tree in this run.
 
 `docs/screenshots/cottage_sipped.png` (1440×900). After T, the cup is empty and the line reads “Moss drinks the hedge tea.”
 
-`docs/screenshots/cottage_to_park.png` (1440×900). G put that household on the Grove Park lawn. The line reads “Reed walks to the Grove Park lawn.” The count reads “3 on the lawn.” South Lane is behind them. Reload kept the spot.
+`docs/screenshots/cottage_to_park.png` (1440×900). After the walk through the gate, the household is on the Grove Park lawn. The line reads “Reed walks to the Grove Park lawn.” The count reads “3 on the lawn.” Reload kept the spot.
 
 ## KNOWN REGRESSIONS
 
@@ -92,7 +92,7 @@ One playable original-IP garden a person can tend, feed, and throw, reading as a
 1. Keep the resting cut-out for a fed idle jelly. The gel icon is hunger and a grab.
 2. When this suite stays green, open a PR from this garden onto `main`. Do not push `main` from the agent.
 3. Leave `grove_park.active` false until Nessa's existing filing. Do not add another east-chain stone.
-4. G sends the cottage household onto the Grove Park lawn, and reload keeps them there. The other five cottages stay closed.
+4. G walks the cottage household through the gate onto the Grove Park lawn, and reload keeps them there. The other five cottages stay closed.
 5. Cherry-pick neon status icons only if they sit on the icon and leave the eyes visible.
 
 ## DO NOT REBUILD

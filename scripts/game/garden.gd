@@ -14,6 +14,7 @@ var birds: GardenBirds
 var people := {}
 var lane_body: VegPerson
 var lane_on_lawn := false
+var lane_walking := false
 var inside_lane := false
 var lane_return_target := Vector3.ZERO
 var lane_return_yaw := 0.0
@@ -246,6 +247,7 @@ func _process(delta: float) -> void:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 	SimLod.note_vale(region.fidelity())
 	_tick_town(world)
+	_note_lane_arrival()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -1501,6 +1503,14 @@ func _sync_lane_body(wanted: bool) -> void:
 		_sync_cottage_tea()
 		_pin_lane_body(_lane_hearth())
 		return
+	if lane_walking:
+		_ensure_lane_body()
+		if lane_body != null:
+			lane_body.present = true
+			lane_body.visible = true
+			if lane_body.body:
+				lane_body.body.visible = true
+		return
 	if lane_on_lawn and Trust.has_action("parish_park"):
 		if not _lane_lawn_near():
 			if lane_body != null:
@@ -1524,7 +1534,8 @@ func _sync_lane_body(wanted: bool) -> void:
 		return
 	_ensure_lane_body()
 	var who := _lane_household_name()
-	lane_body.display_name = who
+	if lane_body.display_name == "":
+		lane_body.display_name = who
 	lane_body.present = true
 	lane_body.visible = true
 	var door := house.get_node_or_null("Door") as Node3D
@@ -1560,6 +1571,32 @@ func _ensure_lane_body() -> void:
 		"starts_present": true,
 	})
 	lane_body.remove_from_group("resident")
+	lane_body.display_name = _lane_household_name()
+
+func _lane_route() -> Array[Vector3]:
+	var start := Vector3.ZERO
+	var house := _first_lane_house()
+	if house != null:
+		var door := house.get_node_or_null("Door") as Node3D
+		start = door.global_position if door != null else house.global_position
+	elif lane_body != null:
+		start = lane_body.global_position
+	start.y = 0.0
+	var gate := GardenLayout.GATE
+	gate.y = 0.0
+	var spot := _lane_lawn_spot()
+	var points: Array[Vector3] = [start, gate, spot]
+	return points
+
+func _note_lane_arrival() -> void:
+	if not lane_walking or lane_body == null:
+		return
+	if lane_body.global_position.distance_to(_lane_lawn_spot()) > 0.45:
+		return
+	lane_walking = false
+	lane_on_lawn = true
+	lane_body.waypoints.clear()
+	lane_body.loop_route = false
 
 func _send_lane_to_park() -> bool:
 	if not Trust.has_action("parish_park"):
@@ -1568,13 +1605,22 @@ func _send_lane_to_park() -> bool:
 	if lane_body == null or (not lane_body.visible and not inside_lane):
 		toast("Nobody is at the cottage.")
 		return false
-	lane_on_lawn = true
+	if lane_body.display_name == "":
+		lane_body.display_name = _lane_household_name()
+	var who := lane_body.display_name
+	lane_on_lawn = false
+	lane_walking = true
 	if inside_lane:
 		_leave_lane_house()
-	else:
-		_sync_lane_body(true)
-	toast("%s walks to the Grove Park lawn." % _lane_household_name())
-	return lane_body != null and lane_body.visible
+	_ensure_lane_body()
+	var route := _lane_route()
+	lane_body.loop_route = false
+	lane_body.present = true
+	lane_body.visible = true
+	var snap := lane_body.global_position.distance_to(route[0]) > 0.8
+	lane_body.set_route(route, snap)
+	toast("%s walks to the Grove Park lawn." % who)
+	return true
 
 func _lane_room() -> Node3D:
 	var house := _first_lane_house()
@@ -8945,8 +8991,19 @@ func _run_town_shot() -> void:
 		get_tree().quit(1)
 		return
 	var spot := _lane_lawn_spot()
-	if lane_body.global_position.distance_to(spot) > 0.45:
-		push_error("town shot: the household missed the lawn")
+	var saw_gate := false
+	var arrived := false
+	for _step in 700:
+		lane_body.pause = 0.0
+		lane_body._process(0.05)
+		if lane_body.global_position.distance_to(GardenLayout.GATE) < 1.35:
+			saw_gate = true
+		_note_lane_arrival()
+		if lane_on_lawn:
+			arrived = true
+			break
+	if not saw_gate or not arrived or lane_body.global_position.distance_to(spot) > 0.5:
+		push_error("town shot: the walk missed the gate or the lawn")
 		get_tree().quit(1)
 		return
 	if not SaveGame.write_slot(1, to_state()):
