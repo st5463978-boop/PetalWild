@@ -1,0 +1,29 @@
+{
+  "species": "leek",
+  "cast": "veggie folk",
+  "tris": {
+    "LeekBody": 1228,
+    "LeekLeaf": 392,
+    "LeekFace": 812,
+    "LeekRake": 96,
+    "total": 2528
+  },
+  "height_m": 0.45,
+  "prop": "rake",
+  "scale": "1 blender unit = 1 metre",
+  "armature": [
+    "Root",
+    "Body",
+    "Head",
+    "Arm_L",
+    "Arm_R",
+    "Leg_L",
+    "Leg_R",
+    "LeafTop"
+  ],
+  "actions": [
+    "idle",
+    "walk"
+  ],
+  "glb": "assets/characters/leek.glb"
+}
