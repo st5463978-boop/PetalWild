@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 
 from jevh_reversible.cases import DESTRUCTIVE, assert_bank_ok, load_cases
+from jevh_reversible.client import chip_ready
 from jevh_reversible.score import score_attempt
 
 
@@ -36,6 +37,16 @@ def _chip(index: int, confidence: float) -> dict:
         "npu_ms": 46.0,
         "model": "hailojev_student_ettin68m_seq128.hef",
     }
+
+
+class ChipGateTest(unittest.TestCase):
+    def test_failed_probe_is_not_ready(self) -> None:
+        payload = {"ok": True, "detail": {"chip_cond": "ps_error:TimeoutError", "last_probe": {"ok": False, "code": 500}}}
+        self.assertFalse(chip_ready(payload))
+
+    def test_ok_probe_is_ready(self) -> None:
+        payload = {"ok": True, "detail": {"chip_cond": "", "last_probe": {"ok": True}}}
+        self.assertTrue(chip_ready(payload))
 
 
 class BankTest(unittest.TestCase):

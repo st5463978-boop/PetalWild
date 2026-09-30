@@ -20,7 +20,7 @@ if str(ORCH) not in sys.path:
     sys.path.insert(0, str(ORCH))
 
 from jevh_reversible.cases import assert_bank_ok, load_cases  # noqa: E402
-from jevh_reversible.client import ChipDown, health, post_decide, resolve_base  # noqa: E402
+from jevh_reversible.client import ChipDown, chip_ready, health, post_decide, resolve_base  # noqa: E402
 from jevh_reversible.score import fingerprint, score_attempt  # noqa: E402
 
 OUT = HERE / "out"
@@ -82,11 +82,10 @@ def run(stop_at: int = STOP_AT, timeout: float = 75.0, wait_s: float = 360.0) ->
         while True:
             status = health(base)
             detail = status.get("detail") if isinstance(status.get("detail"), dict) else {}
-            cond = str(detail.get("chip_cond") or "")
-            if not cond.startswith("probe_failed"):
+            if chip_ready(status):
                 break
             if time.monotonic() >= deadline:
-                raise ChipDown(cond or "chip probe failed")
+                raise ChipDown(str(detail.get("chip_cond") or "chip probe failed"))
             time.sleep(20)
         counted = 0
         for case in cases:

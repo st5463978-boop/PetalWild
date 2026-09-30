@@ -68,11 +68,13 @@ def health(base: str, timeout: float = 15.0) -> dict:
 
 
 def chip_ready(payload: dict) -> bool:
+    """True only when the last Hailo probe succeeded. Otherwise /decide uses the CPU teacher."""
     detail = payload.get("detail") if isinstance(payload.get("detail"), dict) else {}
-    cond = str(detail.get("chip_cond") or "")
-    if cond.startswith("probe_failed"):
+    probe = detail.get("last_probe") if isinstance(detail.get("last_probe"), dict) else {}
+    if probe and probe.get("ok") is not True:
         return False
-    if detail.get("chip_held") is True and "fail" in cond.lower():
+    cond = str(detail.get("chip_cond") or "").lower()
+    if any(token in cond for token in ("fail", "error", "timeout")):
         return False
     return True
 
