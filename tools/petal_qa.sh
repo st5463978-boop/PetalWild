@@ -44,6 +44,7 @@ run_script res://tests/test_jelly_activity.gd JELLY_ACTIVITY_OK
 run_script res://tests/test_resident_life.gd RESIDENT_LIFE_OK
 run_script res://tests/test_town.gd TOWN_OK
 run_script res://tests/test_lane_life.gd LANE_LIFE_OK
+run_script res://tests/test_pond.gd POND_RIM_OK
 run_script res://tests/test_region.gd REGION_OK
 echo "PETAL_QA_SCRIPTS_OK"
 if [ "${PETAL_QA_GARDEN:-0}" = "1" ]; then

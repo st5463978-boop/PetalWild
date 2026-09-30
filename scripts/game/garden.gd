@@ -152,6 +152,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_LANE_LIFE") == "1":
 		await _run_lane_life_shot()
 		return
+	if OS.get_environment("PETAL_POND_SHOT") == "1":
+		await _run_pond_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -10795,6 +10798,69 @@ func _run_lane_life_shot() -> void:
 	print("PETAL_LANE_LIFE_OK")
 	get_tree().quit(0)
 
+func _run_pond_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(10.5)
+	DisplayServer.window_set_size(Vector2i(1440, 900))
+	if debug_overlay:
+		debug_overlay.visible = false
+	var pond := get_node_or_null("Pond") as MeshInstance3D
+	if pond == null:
+		push_error("pond shot: the live pond is missing")
+		get_tree().quit(1)
+		return
+	var span := pond.get_aabb().size.x
+	for i in 4:
+		var angle := TAU * float(i) / 4.0
+		var at := GardenLayout.POND_CENTER + Vector3(cos(angle), 0.0, sin(angle)) * (GardenLayout.POND_RADIUS + 0.5)
+		_scoop(at)
+	if scooped.size() < 4 or pond.get_aabb().size.x < span + 0.3:
+		push_error("pond shot: the pond did not widen")
+		get_tree().quit(1)
+		return
+	if scoop_root != null and scoop_root.get_child_count() != 0:
+		push_error("pond shot: scoop discs still sat beside the water")
+		get_tree().quit(1)
+		return
+	if absf(float(pond.get_meta("rim", 0.0)) - GardenLayout.pond_rim(scooped.size())) > 0.01:
+		push_error("pond shot: the rim lost the scoop count")
+		get_tree().quit(1)
+		return
+	var rush := ecology.first("bulrush")
+	if rush == null:
+		rush = ecology.force_spawn("bulrush")
+	if rush == null:
+		push_error("pond shot: bulrush did not arrive")
+		get_tree().quit(1)
+		return
+	var rim := GardenLayout.pond_rim(scooped.size())
+	var pad := GardenLayout.POND_CENTER + Vector3(rim * 0.62, 0.12, 0.0)
+	rush.life = "settler"
+	rush.leaving = false
+	rush.bound = false
+	rush.held = false
+	rush.feel = "idle"
+	rush.vel = Vector3.ZERO
+	rush.hop_wait = 99.0
+	rush.hunger = 0.16
+	rush.mood = "hungry"
+	rush.global_position = pad
+	rush.attract = pad
+	rush.goal = pad
+	rush.last_safe = pad
+	rush._apply_deform()
+	if camera:
+		camera.pitch = 22.0
+		camera.yaw = 138.0
+		camera.focus_on(GardenLayout.POND_CENTER + Vector3(0.0, 0.15, 0.0), 7.2)
+		camera._apply()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.4).timeout
+	await _shot("/workspace/docs/screenshots/pond_scoop.png")
+	print("PETAL_POND_SHOT_OK")
+	get_tree().quit(0)
+
 func _frame_park(jelly: Jelly) -> void:
 	if camera == null or jelly == null:
 		return
@@ -12145,26 +12211,15 @@ func _place_kit(point: Vector3) -> void:
 	toast("A home marker is set.")
 	_person("bram").say("A door where a door belongs.")
 
-func _add_scoop_mesh(point: Vector3) -> void:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = 0.55
-	mesh.bottom_radius = 0.55
-	mesh.height = 0.04
-	var node := MeshInstance3D.new()
-	node.mesh = mesh
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("#2f6f68")
-	material.roughness = 0.18
-	node.material_override = material
-	node.position = Vector3(point.x, -0.02, point.z)
-	scoop_root.add_child(node)
+func _add_scoop_mesh(_point: Vector3) -> void:
+	# ponytail: the live Pond is the water; stamp discs used to sit beside it.
+	pass
 
 func _grow_pond() -> void:
 	var pond := get_node_or_null("Pond") as MeshInstance3D
 	if pond == null:
 		return
-	var radius := GardenLayout.POND_RADIUS + float(scooped.size()) * 0.11
-	GardenDressing.resize_pond(pond, radius)
+	GardenDressing.resize_pond(pond, GardenLayout.pond_rim(scooped.size()))
 
 func _place_home(point: Vector3, _saved := false) -> void:
 	var root := Node3D.new()

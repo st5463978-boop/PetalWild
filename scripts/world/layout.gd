@@ -10,6 +10,10 @@ const BED_H := 8
 const BASE_POND_CELLS := 22
 const POND_CENTER := Vector3(8.0, 0.0, -2.5)
 const POND_RADIUS := 3.25
+const SCOOP_GROW := 0.11
+
+static func pond_rim(scoops: int) -> float:
+	return POND_RADIUS + float(maxi(scoops, 0)) * SCOOP_GROW
 const STALL := Vector3(-4.55, 0.0, 5.15)
 const SHED := Vector3(-11.15, 0.0, 3.55)
 const TEA := Vector3(10.6, 0.0, 10.4)
