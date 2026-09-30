@@ -155,6 +155,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_POND_SHOT") == "1":
 		await _run_pond_shot()
 		return
+	if OS.get_environment("PETAL_DUSK_LANTERN") == "1":
+		await _run_dusk_lantern_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -10861,6 +10864,65 @@ func _run_pond_shot() -> void:
 	print("PETAL_POND_SHOT_OK")
 	get_tree().quit(0)
 
+func _run_dusk_lantern_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(17.6)
+	DisplayServer.window_set_size(Vector2i(1440, 900))
+	if debug_overlay:
+		debug_overlay.visible = false
+	_sync_plants()
+	var lamp := _showing_lantern_spot()
+	if lamp.x > 8000.0:
+		push_error("dusk lantern: the opening nightlantern is missing")
+		get_tree().quit(1)
+		return
+	if Clock.weather == "rain":
+		Clock.set_weather("mist")
+	var pear := ecology.first("pegapear")
+	if pear == null:
+		pear = ecology.force_spawn("pegapear")
+	if pear == null:
+		push_error("dusk lantern: pegapear did not arrive")
+		get_tree().quit(1)
+		return
+	pear.life = "settler"
+	pear.leaving = false
+	pear.bound = false
+	pear.held = false
+	pear.use_berth = false
+	pear.wants_sleep = false
+	pear.feel = "idle"
+	pear.vel = Vector3.ZERO
+	pear.hop_wait = 99.0
+	pear.hunger = 0.16
+	pear.mood = "hungry"
+	pear.global_position = lamp + Vector3(1.4, 0.2, 0.35)
+	_seek_dusk()
+	if pear.goal.distance_to(lamp) > 0.2:
+		push_error("dusk lantern: dusk sent them off the opening lantern")
+		get_tree().quit(1)
+		return
+	pear.global_position = GardenLayout.lantern_sit(lamp)
+	pear.attract = lamp
+	pear.goal = lamp
+	pear.last_safe = pear.global_position
+	pear._apply_deform()
+	if camera:
+		camera.pitch = 28.0
+		camera.yaw = 150.0
+		camera.focus_on(lamp + Vector3(0.15, 0.2, 0.1), 3.6)
+		camera._apply()
+	atmosphere.apply(Clock.hour(), Clock.weather, camera)
+	await get_tree().create_timer(0.4).timeout
+	if pear.global_position.distance_to(GardenLayout.lantern_sit(lamp)) > 0.35:
+		push_error("dusk lantern: they left the bulb")
+		get_tree().quit(1)
+		return
+	await _shot("/workspace/docs/screenshots/dusk_lantern.png")
+	print("PETAL_DUSK_LANTERN_OK")
+	get_tree().quit(0)
+
 func _frame_park(jelly: Jelly) -> void:
 	if camera == null or jelly == null:
 		return
@@ -13224,6 +13286,16 @@ func _browse(hours: float) -> void:
 			jelly.mood = "content"
 		toast("%s takes a bite." % jelly.display_name)
 
+func _showing_lantern_spot() -> Vector3:
+	var opening := soil.get_cell(6, 4)
+	if opening.plant_id == "nightlantern" and opening.growth >= 0.7 and opening.chem == "nightloam":
+		return GardenLayout.cell_center(6, 4)
+	for cell in soil.all():
+		var plot: SoilCell = cell
+		if plot.plant_id == "nightlantern" and plot.growth >= 0.7 and plot.chem == "nightloam":
+			return GardenLayout.cell_center(plot.ix, plot.iz)
+	return Vector3(9000.0, 0.0, 9000.0)
+
 func _seek_dusk() -> void:
 	# ponytail: peach by day, the nightlantern from 16 to 22; a third stop if a species keeps more crops.
 	var hour := Clock.hour()
@@ -13239,9 +13311,25 @@ func _seek_dusk() -> void:
 		var plant_id := "nightlantern" if dusk else "peach"
 		# ponytail: a ripe stand wins; a bitten one still holds them until it grows back.
 		var at := _meal_spot(plant_id, jelly.global_position)
+		if dusk:
+			var ripe := _average_plant("nightlantern")
+			var showing := _showing_lantern_spot()
+			if ripe.distance_to(Vector3(-3.6, 0.0, -1.6)) < 0.05 and showing.x < 8000.0:
+				at = showing
 		jelly.attract = at
 		if jelly.global_position.distance_to(at) > 1.1:
 			jelly.goal = at
+			continue
+		if not dusk:
+			continue
+		# ponytail: sit the bulb when they arrive; the goal stays the plant so dusk smoke still sees the lantern.
+		jelly.goal = at
+		jelly.hop_wait = maxf(jelly.hop_wait, 4.0)
+		jelly.vel.x = 0.0
+		jelly.vel.z = 0.0
+		var sit := GardenLayout.lantern_sit(at)
+		if jelly.global_position.distance_to(sit) > 0.15:
+			jelly.global_position = sit
 
 func _seek_loam() -> void:
 	# ponytail: the nearest night-loam bed; a circuit if the crown keeps more than one.

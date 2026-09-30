@@ -73,6 +73,10 @@ static func plot_rect(px: int, pz: int) -> Rect2:
 	var origin := plot_origin(px * COLS, pz * ROWS)
 	return Rect2(origin.x, origin.y, COLS * CELL_W, ROWS * CELL_D)
 
+static func lantern_sit(center: Vector3) -> Vector3:
+	# ponytail: sit beside the bulb so the lantern still reads.
+	return center + Vector3(0.42, 0.16, 0.22)
+
 static func cell_center(ix: int, iz: int) -> Vector3:
 	var origin := plot_origin(ix, iz)
 	var local_x := ix % COLS
