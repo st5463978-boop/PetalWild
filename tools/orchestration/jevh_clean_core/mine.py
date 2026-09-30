@@ -61,18 +61,44 @@ def summarise(rows: list[dict], error: str | None = None) -> dict:
     }
 
 
-def run(limit: int | None = None, url: str | None = None, timeout: float = 75.0) -> dict:
+def _load_existing() -> list[dict]:
+    path = OUT / "ledger.jsonl"
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rows.append(json.loads(line))
+    return rows
+
+
+def run(
+    limit: int | None = None,
+    url: str | None = None,
+    timeout: float = 75.0,
+    ids: list[str] | None = None,
+    append: bool = False,
+) -> dict:
     assert_bank_ok()
     cases = load_cases()
+    if ids:
+        wanted = set(ids)
+        cases = [case for case in cases if case["id"] in wanted]
+        missing = wanted - {case["id"] for case in cases}
+        if missing:
+            raise ValueError("unknown case ids: " + ", ".join(sorted(missing)))
     if limit is not None:
         cases = cases[: max(0, limit)]
     target = resolve_decide_url(url)
     OUT.mkdir(parents=True, exist_ok=True)
-    rows: list[dict] = []
-    seen: set[str] = set()
+    rows: list[dict] = _load_existing() if append else []
+    seen: set[str] = {row.get("fingerprint", "") for row in rows if row.get("fingerprint")}
     error = None
     try:
         for case in cases:
+            fp = fingerprint(case)
+            if fp in seen:
+                continue
             started = time.perf_counter()
             try:
                 payload = post_decide(
@@ -116,13 +142,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=None, help="Max cases to send")
     parser.add_argument("--url", default=None, help="Override decide URL")
     parser.add_argument("--timeout", type=float, default=75.0)
+    parser.add_argument("--ids", default="", help="Comma-separated case ids")
+    parser.add_argument("--append", action="store_true", help="Keep existing ledger rows")
     parser.add_argument("--check", action="store_true", help="Validate the case bank and exit")
     args = parser.parse_args(argv)
     if args.check:
         assert_bank_ok()
         print(json.dumps({"ok": True, "cases": len(load_cases()), "training_eligible": False}))
         return 0
-    summary = run(limit=args.limit, url=args.url, timeout=args.timeout)
+    ids = [part.strip() for part in args.ids.split(",") if part.strip()]
+    summary = run(
+        limit=args.limit,
+        url=args.url,
+        timeout=args.timeout,
+        ids=ids or None,
+        append=args.append,
+    )
     print(json.dumps(summary, indent=2))
     return 0 if summary.get("error") is None else 2
 

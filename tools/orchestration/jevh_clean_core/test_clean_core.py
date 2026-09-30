@@ -49,7 +49,7 @@ class BankTests(unittest.TestCase):
     def test_bank_is_diagnostic_and_complete(self) -> None:
         cases = load_cases()
         assert_bank_ok(cases)
-        self.assertGreaterEqual(len(cases), 8 * 5)
+        self.assertGreaterEqual(len(cases), 8 * 6)
         self.assertEqual({c["kind"] for c in cases}, set(KINDS))
         for case in cases:
             self.assertFalse(case["training_eligible"])
