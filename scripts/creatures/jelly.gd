@@ -29,6 +29,7 @@ var wants_sleep := false
 var young := false
 var reduce_motion := false
 var mat: ShaderMaterial
+var gel_mat: ShaderMaterial
 var eye_l: Node3D
 var eye_r: Node3D
 var mouth: Node3D
@@ -302,6 +303,63 @@ func _build(definition: Dictionary) -> void:
 	_icon_body(root, shape)
 	_sync_presentation()
 
+func _gel_material() -> ShaderMaterial:
+	var gel := ShaderMaterial.new()
+	gel.shader = load("res://shaders/veg_jelly.gdshader")
+	var deep := Color("#3aaa66")
+	var lit := Color("#e7ffd2")
+	var glow := Color("#d6ff6a")
+	if mat != null:
+		var d: Variant = mat.get_shader_parameter("deep_color")
+		var l: Variant = mat.get_shader_parameter("lit_color")
+		var g: Variant = mat.get_shader_parameter("glow_color")
+		if d is Color:
+			deep = d
+		if l is Color:
+			lit = l
+		if g is Color:
+			glow = g
+	gel.set_shader_parameter("deep_color", deep)
+	gel.set_shader_parameter("shallow_color", lit)
+	gel.set_shader_parameter("rim_color", glow.lerp(Color(1.0, 1.0, 0.92), 0.45))
+	gel.set_shader_parameter("rim_power", 2.1)
+	gel.set_shader_parameter("transmission", 0.32)
+	gel.set_shader_parameter("glow", 0.22)
+	gel.set_shader_parameter("wobble_amount", 0.012)
+	gel_mat = gel
+	return gel
+
+func _icon_highlight(body: MeshInstance3D) -> void:
+	var shine := MeshInstance3D.new()
+	shine.name = "IconHighlight"
+	var blob := SphereMesh.new()
+	blob.radius = radius * 0.12
+	blob.height = radius * 0.18
+	blob.radial_segments = 12
+	blob.rings = 8
+	shine.mesh = blob
+	var shine_mat := StandardMaterial3D.new()
+	shine_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shine_mat.albedo_color = Color(1.0, 1.0, 0.96, 0.78)
+	shine_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shine_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	shine_mat.render_priority = 1
+	shine.material_override = shine_mat
+	shine.position = Vector3(-radius * 0.26, body.position.y + radius * 0.46 * body.scale.y, -radius * 0.70)
+	shine.scale = Vector3(1.28, 0.68, 0.48)
+	shine.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	icon_root.add_child(shine)
+
+func _tune_gel() -> void:
+	if gel_mat == null:
+		return
+	if reduce_motion:
+		gel_mat.set_shader_parameter("wobble_amount", 0.0)
+		gel_mat.set_shader_parameter("move_velocity", Vector3.ZERO)
+		return
+	gel_mat.set_shader_parameter("wobble_amount", 0.012 + ripple * 0.018)
+	gel_mat.set_shader_parameter("move_velocity", vel * 0.35)
+
 func _icon_body(root: Node3D, shape: String) -> void:
 	icon_root = Node3D.new()
 	icon_root.name = "Icon"
@@ -314,14 +372,7 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	sphere.radial_segments = 24
 	sphere.rings = 16
 	body.mesh = sphere
-	var icon_mat := StandardMaterial3D.new()
-	icon_mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
-	icon_mat.roughness = 0.38
-	icon_mat.metallic = 0.0
-	icon_mat.metallic_specular = 0.22
-	var deep: Color = mat.get_shader_parameter("deep_color")
-	icon_mat.albedo_color = deep
-	body.material_override = icon_mat
+	body.material_override = _gel_material()
 	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	match shape:
 		"long":
@@ -341,10 +392,13 @@ func _icon_body(root: Node3D, shape: String) -> void:
 			body.scale = Vector3.ONE
 	body.position = Vector3(0.0, radius * body.scale.y, 0.0)
 	icon_root.add_child(body)
+	_icon_highlight(body)
 	var eye_mat := StandardMaterial3D.new()
 	eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	eye_mat.albedo_color = Color(0.02, 0.02, 0.025)
 	eye_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	eye_mat.no_depth_test = true
+	eye_mat.render_priority = 2
 	var eye_y := body.position.y + radius * 0.48 * body.scale.y
 	for side in [-1.0, 1.0]:
 		var eye := MeshInstance3D.new()
@@ -353,7 +407,7 @@ func _icon_body(root: Node3D, shape: String) -> void:
 		slab.size = Vector3(radius * 0.18, radius * 0.78, radius * 0.08)
 		eye.mesh = slab
 		eye.material_override = eye_mat
-		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 0.98)
+		eye.position = Vector3(side * radius * 0.32, eye_y, -radius * 1.02)
 		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		icon_root.add_child(eye)
 
@@ -904,6 +958,7 @@ func _apply_deform() -> void:
 	if halo:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
+	_tune_gel()
 	_sync_presentation()
 	_face_icon(feel_scale)
 

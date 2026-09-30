@@ -17,6 +17,7 @@ func _init() -> void:
 	_park_land()
 	_deform()
 	_art_keeps_body()
+	_icon_gel()
 	_icon_faces_camera()
 	if failed:
 		quit(1)
@@ -212,6 +213,49 @@ func _art_keeps_body() -> void:
 	jelly.held = true
 	jelly._apply_deform()
 	_expect(not art.visible and jelly.icon_root.visible, "a grab shows the icon")
+	jelly.free()
+
+func _icon_gel() -> void:
+	var jelly := Jelly.new()
+	root.add_child(jelly)
+	jelly.setup({
+		"id": "bellhelp",
+		"name": "Bellhelp",
+		"shape": "bell",
+		"radius": 0.34,
+		"deep": "#3aaa66",
+		"lit": "#e7ffd2",
+		"glow": "#d6ff6a",
+		"eye": "#fff4c8",
+	})
+	var icon := jelly.get_node_or_null("Body/Icon/IconBody") as MeshInstance3D
+	_expect(icon != null, "icon body exists")
+	_expect(icon.material_override is ShaderMaterial, "icon uses the gel shader")
+	var sm := icon.material_override as ShaderMaterial
+	_expect(sm != null and sm.shader != null and str(sm.shader.resource_path).find("veg_jelly") != -1, "icon reuses veg_jelly")
+	var shine := jelly.get_node_or_null("Body/Icon/IconHighlight") as MeshInstance3D
+	_expect(shine != null, "icon keeps the cut-out highlight")
+	var left := jelly.get_node_or_null("Body/Icon/IconEyeL") as MeshInstance3D
+	var right := jelly.get_node_or_null("Body/Icon/IconEyeR") as MeshInstance3D
+	_expect(left != null and right != null, "icon keeps two eyes")
+	var eye_mat := left.material_override as StandardMaterial3D
+	_expect(eye_mat != null and eye_mat.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED, "eyes stay unshaded")
+	_expect(eye_mat.albedo_color.r < 0.08 and eye_mat.albedo_color.g < 0.08, "eyes stay black")
+	jelly.hunger = 0.16
+	jelly.mood = "hungry"
+	jelly._apply_deform()
+	_expect(jelly.icon_root.visible, "hunger shows the gel")
+	_expect(left.visible and right.visible, "gel does not hide the eyes")
+	var art := jelly.get_node_or_null("Body/Art") as Sprite3D
+	jelly.hunger = 1.0
+	jelly.mood = "content"
+	jelly.feel = "idle"
+	jelly.held = false
+	jelly.poke_time = 0.0
+	jelly._apply_deform()
+	_expect(art != null and art.visible, "resting still uses the approved card")
+	_expect(not jelly.icon_root.visible, "the gel waits behind the card")
+	print("ICON_GEL_OK")
 	jelly.free()
 
 func _icon_faces_camera() -> void:

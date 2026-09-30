@@ -1901,7 +1901,7 @@ func _icon_eye_count(jelly: Jelly) -> int:
 	icon.visible = true
 	var eyes := 0
 	for child in icon.get_children():
-		if not (child is MeshInstance3D) or str(child.name) == "IconBody":
+		if not (child is MeshInstance3D) or not str(child.name).begins_with("IconEye"):
 			continue
 		(child as MeshInstance3D).visible = true
 		eyes += 1
@@ -2186,6 +2186,7 @@ func _leave_tea_house() -> void:
 		_set_lane_shell(house, true)
 	_restore_view()
 	_sync_cottage_tea()
+	_clear_room_toast()
 
 func _potting_shed() -> Node3D:
 	return find_child("PottingShed", true, false) as Node3D
@@ -2271,6 +2272,7 @@ func _leave_potting_shed() -> void:
 	if shed != null:
 		_set_lane_shell(shed, true)
 	_restore_view()
+	_clear_room_toast()
 
 func _petal_stall() -> Node3D:
 	return find_child("PetalStall", true, false) as Node3D
@@ -2354,6 +2356,7 @@ func _leave_stall() -> void:
 	if stall != null:
 		_set_lane_shell(stall, true)
 	_restore_view()
+	_clear_room_toast()
 
 func _enter_lane_house(force: bool) -> bool:
 	if inside_lane:
@@ -2419,6 +2422,7 @@ func _leave_lane_house() -> void:
 		_set_lane_shell(house, true)
 	_restore_view()
 	_sync_lane()
+	_clear_room_toast()
 
 func _lane_tea_line() -> String:
 	if not Trust.has_action("parish_road_rumour"):
@@ -3225,6 +3229,12 @@ func _reset_open_rooms() -> void:
 			_set_lane_shell(house, true)
 		if room != null:
 			room.visible = false
+	_clear_room_toast()
+
+func _clear_room_toast() -> void:
+	# ponytail: leave/load must drop the room line; the night door still showed the kettle toast.
+	if hud != null:
+		hud.toast("")
 
 func apply_state(data: Dictionary) -> void:
 	_reset_open_rooms()
@@ -10775,6 +10785,10 @@ func _run_lane_life_shot() -> void:
 		camera.yaw = 30.0
 		camera.focus_on(_lane_door_spot() + Vector3(0.0, 0.4, 0.0), 4.8)
 		camera._apply()
+	if hud != null and hud.toast_panel != null and hud.toast_panel.visible:
+		push_error("lane life: tea-house toast lingered on the night door")
+		get_tree().quit(1)
+		return
 	await get_tree().create_timer(0.3).timeout
 	await _shot("/workspace/docs/screenshots/lane_night_door.png")
 	print("LANE_LIFE_OK")
