@@ -1,22 +1,32 @@
 {
-  "ts": "2026-09-30T21:55:47Z",
+  "ts": "2026-09-30T21:57:36Z",
   "lane": "jevh-clean-core",
   "training_eligible": false,
   "decide_url_origin_hidden": true,
-  "cases": 48,
-  "counted_failures": 4,
+  "cases": 56,
+  "counted_failures": 8,
   "confident_correct": 1,
-  "jev_wrong": 25,
+  "jev_wrong": 33,
   "production_escalated": 26,
   "index_bugs": 0,
   "no_forced_jev": 0,
   "failures_by_kind": {
-    "source_stale": 1,
+    "source_stale": 2,
     "human_approval": 1,
-    "canonical_contradicted": 2
+    "canonical_contradicted": 5
   },
+  "counted_ids": [
+    "src-ttl-under",
+    "apr-over-spend",
+    "can-cache-same-version",
+    "can-noncanonical-noise",
+    "src-ttl-under-mut-20-90",
+    "can-stale-client-mut-v8",
+    "can-stale-client-mut-optflip",
+    "can-noise-mut-optflip"
+  ],
   "skips": {
-    "scored": 48
+    "scored": 56
   },
   "error": null,
   "note": "Diagnostic gold only. Do not train on this ledger. JEV is the chip forced answer."

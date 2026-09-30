@@ -55,6 +55,7 @@ def summarise(rows: list[dict], error: str | None = None) -> dict:
         "index_bugs": sum(1 for row in rows if row.get("skip") in {"index_choice_mismatch", "letter_without_index", "unmapped_choice"}),
         "no_forced_jev": sum(1 for row in rows if row.get("skip") == "no_forced_jev"),
         "failures_by_kind": dict(kinds),
+        "counted_ids": [row["id"] for row in rows if row.get("counted_failure")],
         "skips": dict(skips),
         "error": error,
         "note": "Diagnostic gold only. Do not train on this ledger. JEV is the chip forced answer.",
