@@ -2,13 +2,11 @@
 
 ## NOW
 
-South Lane clock life on `cursor/playable-jelly-body-9956`.
-
-Dusk walks the one tomato household to the filed Grove Park lawn. Other hours keep them at the cottage door. Offscreen travel uses clock minutes along door–gate–lawn. Camera entry reconstructs that point. Save/load keeps the walk. A seated Nessa/Bram/Lumen save writes the outside spot. Other cottages stay closed. `grove_park.active` stays false.
+Grove Park as a place the household already walks to: sit the dusk lawn on a bench, keep occupancy and day/night, do not flip the catalog or add a lamp.
 
 ## NEXT
 
-Grove Park as a place the household already walks to: lawn use, occupancy, day/night, without flipping the catalog or adding a lamp.
+Jelly tactile/gel pass using the approved cut-outs already in tree. No new style.
 
 ## NEXT+
 
@@ -31,6 +29,7 @@ Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, openin
 - `PETAL_SHED_SHOT_OK` — Bram at the pan.
 - `PETAL_STALL_SHOT_OK` — Lumen at the counter.
 - `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
+- `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk walk to the lawn, night walk home, seated save stays outside.
 - Tea/jam mill and stall sales. One South Lane kitchen. G park walk.
 
 ## Do not rebuild

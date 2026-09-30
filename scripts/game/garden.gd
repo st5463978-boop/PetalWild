@@ -3177,7 +3177,49 @@ func to_state() -> Dictionary:
 		"lane_pos": [lane_body.global_position.x, lane_body.global_position.y, lane_body.global_position.z] if lane_body != null else [],
 	}
 
+func _reset_open_rooms() -> void:
+	# ponytail: load never keeps a seated pose; rooms close and bodies use the saved outside spot.
+	if inside_tea:
+		inside_tea = false
+		nessa_at_kettle = false
+		var nessa := _person("nessa")
+		if nessa != null:
+			nessa.stay = false
+		_seat_kettle(false)
+		var house := _tea_house()
+		if house != null:
+			_set_lane_shell(house, true)
+	if inside_shed:
+		inside_shed = false
+		bram_at_pan = false
+		var bram := _person("bram")
+		if bram != null:
+			bram.stay = false
+		_seat_pan(false)
+		var shed := _potting_shed()
+		if shed != null:
+			_set_lane_shell(shed, true)
+	if inside_stall:
+		inside_stall = false
+		lumen_at_counter = false
+		var lumen := _person("lumen")
+		if lumen != null:
+			lumen.stay = false
+		_seat_stall_goods(false)
+		var stall := _petal_stall()
+		if stall != null:
+			_set_lane_shell(stall, true)
+	if inside_lane:
+		inside_lane = false
+		var room := _lane_room()
+		var house := _first_lane_house()
+		if house != null:
+			_set_lane_shell(house, true)
+		if room != null:
+			room.visible = false
+
 func apply_state(data: Dictionary) -> void:
+	_reset_open_rooms()
 	Clock.apply_state(data.get("clock", {}))
 	Economy.apply_state(data.get("economy", {}))
 	Trust.apply_state(data.get("trust", {}))
@@ -10693,6 +10735,7 @@ func _run_lane_life_shot() -> void:
 		push_error("lane life: the kettle save lost the lawn")
 		get_tree().quit(1)
 		return
+	_leave_tea_house()
 	Clock.set_hour(21.0)
 	Clock.running = true
 	if not _send_lane_home(true):

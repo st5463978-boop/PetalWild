@@ -48,7 +48,11 @@ This Cursor agent is the only writer on this branch. Astra judges look. Hailo fi
 
 Prior exhibit still green: `JELLY_PLAY_OK`, `JELLY_ICON_OK`, `PETAL_TEA_HOUSE_SHOT_OK`, `PETAL_SHED_SHOT_OK`, `PETAL_STALL_SHOT_OK`, `PETAL_GARDEN_LOOK_OK`.
 
-Lane life in progress this pass: `LANE_LIFE_OK`, `PETAL_LANE_LIFE_OK`.
+`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `LANE_LIFE_OK`.
+`PETAL_LANE_LIFE=1` → `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK`.
+`PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`.
+`PETAL_TEA_HOUSE_SHOT=1` → `PETAL_TEA_HOUSE_SHOT_OK`.
+`PETAL_GARDEN_LOOK=1` → `PETAL_GARDEN_LOOK_OK`.
 
 Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
@@ -61,7 +65,7 @@ Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
 ## CURRENT MAJOR OBJECTIVE
 
-South Lane household lives on the clock: schedule, causal walk, reconstruct, persist, interiors stay unsaved.
+Grove Park as a used place: sit the dusk household on a bench already in the lawn. Do not flip `grove_park.active`.
 
 ## NEXT TASKS
 
