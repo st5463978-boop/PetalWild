@@ -1,38 +1,37 @@
 # Campaign board
 
-NOW / NEXT / LATER. The long-term town-and-civilisation target is not this week's work.
-
 ## NOW
 
-Playable Hedge Hollow on `petal/09-art-rescue`, continued on `cursor/playable-jelly-body-9956`.
+South Lane clock life on `cursor/playable-jelly-body-9956`.
 
-- Tend the four beds. Feed a jelly from a ripe plant or the pouch.
-- Grab, nuzzle, throw. A fed idle jelly shows the approved cut-out. Hunger or a grab shows a shaded gel icon with two black eyes. The grab squash stays in camera space, so those eyes stay on the front. A neon mark floats above that icon: cog while a hungry jelly is walking to food, envelope when a visitor comes back, heart for a snack or a click, locked heart when two adults of one species are here. The eyes stay clear.
-- Stall, jam, tea, journal. A carried jam crate sells at the Petal Stall for petal coins, the jam crate drops, dusk shuts that sale with the stall, and the save keeps the coins and the crate. Vale map on M. Town page on C. Selling the last carried tea empties the open South Lane kitchen cup. A crate left on the stall keeps that cup full. Carrying a pot, a resident finishing the crate, or a new pot refreshes that same open cup. Coins stay put unless it was a sale.
-- Enter near the Hedge Tea House opens that room on the cottage camera path. The porch kettle and its steam are on the counter. Nessa stands at that kettle and goes back where she was on Esc. The place page says she is at the kettle while the room is open. A click on that kettle calls `stock_kettle`. Carrying while the room is open fills the South Lane cup and does not move coins. Esc closes the room and puts the kettle back on the porch. The pose is not saved. `tea_house.active` stays false.
-- Enter near the potting shed opens that room on the same path. The jam pan and its steam sit on the bench. Bram stands at that pan and goes back where he was on Esc. The place page says he is at the pan while the room is open. A click on that pan calls `stock_jam`. Cooking and carrying stay the mill calls and do not move coins. Esc closes the room and puts the pan back in front of the shed. `grove_park.active` stays false.
-- Enter nearer the Petal Stall than the shed or the tea house opens that room on the same path. The existing crate, cup, and jar sit on the counter. Lumen stands at that counter and goes back outside on Esc. While the room is open the place page says Lumen is at the counter. A click on those goods uses the crate path. `sell_tea` and `sell_jam` are still the paying calls: coins rise, the crate drops, dusk refuses. `tea_house.active` stays false.
-- Grove Park opens after the road rumour and Nessa's filing. Lumen and Bram walk through the hedge gate and stay on the grass. South Lane puts six cottages on that path when the rumour is filed. A near camera stands one tomato household at the first door. Enter steps into that kitchen. T drinks one kettle tea. G walks that household through the gate to the lawn, the lawn count includes them, their cottage window goes dark while they are out, and arriving there draws a hungry Bellhelp onto that grass with both eyes showing. G again walks them home. The place page names where they are, keeps the tea sip after reload, and Reed’s near-row matches. Esc steps back out. The hint shows Enter, T, and G. Clicking the household says the tea line. Catalog stays `active: false`.
+Dusk walks the one tomato household to the filed Grove Park lawn. Other hours keep them at the cottage door. Offscreen travel uses clock minutes along door–gate–lawn. Camera entry reconstructs that point. Save/load keeps the walk. A seated Nessa/Bram/Lumen save writes the outside spot. Other cottages stay closed. `grove_park.active` stays false.
 
 ## NEXT
 
-- `PETAL_QA_SCRIPTS_OK`, `ICON_FACE_OK`, `JELLY_PLAY_OK`, and `PETAL_RESIDENT_SHOT_OK` are green on this tip (2026-09-29). The held plate and the landed plate show the gel with both eyes on the front. Carried tea already sells at the stall. Carried cane jam already sells too: `JAM_CRATE_SOLD_OK`.
-- `KITCHEN_CUP_SOLD_OK` covers the open kitchen after the last stall sale. `KITCHEN_CUP_LIVE_OK` covers that same open cup after a carry, after Lumen finishes the crate, and after a new pot.
-- Neon status marks are on this branch. `JELLY_ICON_OK` is the plate where the cog sits above both eyes. The demo scene and gif reel stay on `cursor/jelly-status-icons-ffcb`.
-- `PETAL_TOWN_SHOT_OK` shows the door household, then the sealed kitchen with the window, Moss, and the tea cup, then the lawn again.
-- `PETAL_TEA_HOUSE_SHOT_OK` opens the tea house, keeps the kettle and Nessa in frame, says she is at the kettle once, starts the brew from a click the porch radius misses, carries without paying, and Esc closes the room and puts her back (`tea_house_inside.png`).
-- `PETAL_SHED_SHOT_OK` opens the potting shed, keeps the pan, its steam, and Bram in frame, starts the jam from a click the step misses, carries without paying, and Esc closes the room and puts Bram back (`potting_shed_inside.png`).
-- `PETAL_STALL_SHOT_OK` opens the stall, keeps the crate, cup, jar, and Lumen in frame, sells tea and jam from clicks the stall front misses, refuses both after dusk, and Esc closes the room and returns Lumen (`petal_stall_inside.png`). The place page names Lumen at the counter while that room is open.
-- `kettle_brew.png` keeps the brewing kettle and its steam in frame. `jam_pan.png` still shows the copper pan in front of the shed wall. The research hut stays a shell. Tea-porch individuals still read “still no body” in the room that already opens. The other cottages stay closed.
-- A save during a visit writes Nessa, Bram, or Lumen at the interior spot. Load should put them back outside. The pose stays unsaved.
-- Point `main` at this garden when the suite stays green. Do not replay the east-chain.
+Grove Park as a place the household already walks to: lawn use, occupancy, day/night, without flipping the catalog or adding a lamp.
 
-## LATER
+## NEXT+
 
-- City Park pond scene (`cursor/city-park-pond-c8ec`) as a destination, after the live garden still boots.
-- Water plan (`docs` on `cursor/water-plan-937d`). No shader until the pond the player scoops needs it.
-- Trust ranks above the filing that already exists. External actions stay inside the sim.
-- Agent civilisation, distant bodies, and a second town grid.
+Jelly tactile/gel pass using the approved cut-outs already in tree. No new style.
+
+## WAITING
+
+City Park pond (`cursor/city-park-pond-c8ec`) after the live garden still boots.
+Water plan docs (`cursor/water-plan-937d`). No shader until the scooped pond needs it.
+
+## BLOCKED
+
+Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, opening the five closed cottages.
+
+## VERIFIED
+
+- Hedge Hollow boots. Four beds, stall, HUD Day 1 Morning tin 36.
+- `JELLY_PLAY_OK` `JELLY_ICON_OK` — Bellhelp gel, two black eyes, white cog.
+- `PETAL_TEA_HOUSE_SHOT_OK` — Nessa at the kettle.
+- `PETAL_SHED_SHOT_OK` — Bram at the pan.
+- `PETAL_STALL_SHOT_OK` — Lumen at the counter.
+- `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
+- Tea/jam mill and stall sales. One South Lane kitchen. G park walk.
 
 ## Do not rebuild
 

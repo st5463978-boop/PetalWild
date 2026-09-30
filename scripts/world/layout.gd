@@ -18,6 +18,41 @@ const FOUNDRY := Vector3(9.2, 0.0, 12.6)
 const HALL := Vector3(12.8, 0.0, 13.0)
 const GATE := Vector3(0.0, 0.0, -11.2)
 const PARK := Vector3(0.0, 0.0, -16.6)
+const WALK_SPEED := 0.55
+
+static func household_place(hour: float, park_filed: bool) -> String:
+	# ponytail: dusk is the park window; a second outing if weekends should differ.
+	if park_filed and hour >= 16.5 and hour < 19.5:
+		return "lawn"
+	return "door"
+
+static func path_length(points: Array[Vector3]) -> float:
+	var span := 0.0
+	for i in range(1, points.size()):
+		span += points[i - 1].distance_to(points[i])
+	return span
+
+static func point_along(points: Array[Vector3], dist: float) -> Vector3:
+	if points.is_empty():
+		return Vector3.ZERO
+	if dist <= 0.0:
+		return points[0]
+	var left := dist
+	for i in range(1, points.size()):
+		var a: Vector3 = points[i - 1]
+		var b: Vector3 = points[i]
+		var step := a.distance_to(b)
+		if left <= step:
+			if step <= 0.0001:
+				return b
+			return a.lerp(b, left / step)
+		left -= step
+	return points[points.size() - 1]
+
+static func walk_minutes(points: Array[Vector3], clock_scale: float, speed: float = WALK_SPEED) -> float:
+	var pace := maxf(speed, 0.01)
+	var scale := maxf(clock_scale, 0.01)
+	return path_length(points) / pace * scale
 
 static func plot_origin(ix: int, iz: int) -> Vector2:
 	var px := 0 if ix < COLS else 1

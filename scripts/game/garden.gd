@@ -17,6 +17,7 @@ var lane_on_lawn := false
 var lane_walking := false
 var lane_walk_home := false
 var lane_drank := false
+var lane_depart_minute := -1.0
 var inside_lane := false
 var inside_tea := false
 var inside_shed := false
@@ -148,6 +149,9 @@ func _ready() -> void:
 	if OS.get_environment("PETAL_GARDEN_LOOK") == "1":
 		await _run_garden_look_shot()
 		return
+	if OS.get_environment("PETAL_LANE_LIFE") == "1":
+		await _run_lane_life_shot()
+		return
 	Clock.running = true
 	if Settings.reduce_motion:
 		camera.intro = 1.0
@@ -274,6 +278,7 @@ func _process(delta: float) -> void:
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 	SimLod.note_vale(region.fidelity())
 	_tick_town(world)
+	_tick_lane_life()
 	_note_lane_arrival()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1576,10 +1581,13 @@ func _sync_lane_body(wanted: bool) -> void:
 	if lane_walking:
 		_ensure_lane_body()
 		if lane_body != null:
+			var show := _lane_path_near()
 			lane_body.present = true
-			lane_body.visible = true
+			lane_body.visible = show
 			if lane_body.body:
-				lane_body.body.visible = true
+				lane_body.body.visible = show
+			if not show:
+				_advance_lane_offscreen()
 		return
 	if lane_on_lawn and Trust.has_action("parish_park"):
 		if not _lane_lawn_near():
@@ -1668,34 +1676,112 @@ func _note_lane_arrival() -> void:
 	lane_walking = false
 	lane_on_lawn = not heading_home
 	lane_walk_home = false
+	lane_depart_minute = -1.0
 	lane_body.waypoints.clear()
 	lane_body.loop_route = false
 	if lane_on_lawn:
 		_beckon_lawn_jelly()
 
-func _send_lane_to_park() -> bool:
+func _send_lane_to_park(quiet := false) -> bool:
 	if not Trust.has_action("parish_park"):
-		toast("Grove Park is not filed yet.")
+		if not quiet:
+			toast("Grove Park is not filed yet.")
 		return false
-	if lane_body == null or (not lane_body.visible and not inside_lane):
-		toast("Nobody is at the cottage.")
+	if lane_on_lawn:
+		if not quiet:
+			toast("%s is already on the lawn." % _lane_who())
+		return false
+	if inside_lane:
+		_leave_lane_house()
+	_ensure_lane_body()
+	if lane_body == null:
+		if not quiet:
+			toast("Nobody is at the cottage.")
 		return false
 	if lane_body.display_name == "":
 		lane_body.display_name = _lane_household_name()
 	var who := lane_body.display_name
 	lane_on_lawn = false
 	lane_walking = true
-	if inside_lane:
-		_leave_lane_house()
-	_ensure_lane_body()
+	lane_walk_home = false
+	lane_depart_minute = Clock.minute
 	var route := _lane_route()
 	lane_body.loop_route = false
 	lane_body.present = true
-	lane_body.visible = true
+	lane_body.visible = _lane_path_near()
 	var snap := lane_body.global_position.distance_to(route[0]) > 0.8
 	lane_body.set_route(route, snap)
-	toast("%s walks to the Grove Park lawn." % who)
+	if not quiet:
+		toast("%s walks to the Grove Park lawn." % who)
 	return true
+
+func _lane_schedule() -> String:
+	return GardenLayout.household_place(Clock.hour(), Trust.has_action("parish_park"))
+
+func _lane_path_near() -> bool:
+	if camera == null:
+		return false
+	if _lane_near() or _lane_lawn_near():
+		return true
+	var gate := GardenLayout.GATE
+	return camera.global_position.distance_to(gate) < 14.0 or camera.target.distance_to(gate) < 10.0
+
+func _lane_travel_points(homeward: bool) -> Array[Vector3]:
+	var door := _lane_door_spot()
+	var gate := GardenLayout.GATE
+	gate.y = 0.0
+	var lawn := _lane_lawn_spot()
+	if homeward:
+		return [lawn, gate, door]
+	return [door, gate, lawn]
+
+func _advance_lane_offscreen() -> void:
+	if not lane_walking or lane_body == null:
+		return
+	if _lane_path_near():
+		return
+	var points := _lane_travel_points(lane_walk_home)
+	var elapsed := Clock.minute - lane_depart_minute
+	if lane_depart_minute < 0.0:
+		elapsed = 0.0
+	elif elapsed < 0.0:
+		elapsed += 24.0 * 60.0
+	var travelled := (elapsed / maxf(Clock.scale, 0.01)) * GardenLayout.WALK_SPEED
+	var dest := _lane_door_spot() if lane_walk_home else _lane_lawn_spot()
+	if travelled >= GardenLayout.path_length(points) - 0.05:
+		lane_body.global_position = dest
+		lane_body.waypoints.clear()
+		_note_lane_arrival()
+		return
+	lane_body.global_position = GardenLayout.point_along(points, travelled)
+
+func _tick_lane_life() -> void:
+	if not Clock.running:
+		return
+	if not Trust.has_action("parish_road_rumour"):
+		return
+	if inside_lane:
+		return
+	if lane_walking:
+		_advance_lane_offscreen()
+		return
+	if not Trust.has_action("parish_park"):
+		return
+	var want := _lane_schedule()
+	var quiet := not _lane_path_near()
+	if want == "lawn" and not lane_on_lawn:
+		_send_lane_to_park(quiet)
+	elif want == "door" and lane_on_lawn:
+		_send_lane_home(quiet)
+
+func _seated_outside(id: String) -> Vector3:
+	if id == "nessa" and nessa_at_kettle:
+		return nessa_kettle_back
+	if id == "bram" and bram_at_pan:
+		return bram_pan_back
+	if id == "lumen" and lumen_at_counter:
+		return lumen_stall_back
+	return Vector3(INF, INF, INF)
 
 func _lane_door_spot() -> Vector3:
 	var house := _first_lane_house()
@@ -1857,28 +1943,34 @@ func _town_page_lines() -> PackedStringArray:
 			rewritten.append(text)
 	return rewritten
 
-func _send_lane_home() -> bool:
-	if lane_body == null or not lane_body.visible:
-		toast("Nobody is out.")
-		return false
+func _send_lane_home(quiet := false) -> bool:
 	if lane_walking:
-		toast("%s is already on the path." % _lane_who())
+		if not quiet:
+			toast("%s is already on the path." % _lane_who())
 		return false
 	if not lane_on_lawn:
-		toast("%s is already home." % _lane_who())
+		if not quiet:
+			toast("%s is already home." % _lane_who())
+		return false
+	_ensure_lane_body()
+	if lane_body == null:
+		if not quiet:
+			toast("Nobody is out.")
 		return false
 	var who := _lane_who()
 	lane_on_lawn = false
 	lane_walk_home = true
 	lane_walking = true
+	lane_depart_minute = Clock.minute
 	var gate := GardenLayout.GATE
 	gate.y = 0.0
 	var points: Array[Vector3] = [lane_body.global_position, gate, _lane_door_spot()]
 	lane_body.loop_route = false
 	lane_body.present = true
-	lane_body.visible = true
+	lane_body.visible = _lane_path_near()
 	lane_body.set_route(points, false)
-	toast("%s walks home." % who)
+	if not quiet:
+		toast("%s walks home." % who)
 	return true
 
 func _lane_room() -> Node3D:
@@ -3031,7 +3123,11 @@ func world_snapshot() -> Dictionary:
 func to_state() -> Dictionary:
 	var cast: Array = []
 	for id in ContentDB.people_order:
-		cast.append(_person(id).to_state())
+		var packed: Dictionary = _person(id).to_state()
+		var outside := _seated_outside(id)
+		if outside.x < 9000.0:
+			packed["position"] = [outside.x, outside.y, outside.z]
+		cast.append(packed)
 	var homes: Array = []
 	for point in home_points:
 		homes.append([point.x, point.y, point.z])
@@ -3075,6 +3171,10 @@ func to_state() -> Dictionary:
 		"vale_crate_crop": vale_crate_crop,
 		"lane_on_lawn": lane_on_lawn,
 		"lane_drank": lane_drank,
+		"lane_walking": lane_walking,
+		"lane_walk_home": lane_walk_home,
+		"lane_depart_minute": lane_depart_minute,
+		"lane_pos": [lane_body.global_position.x, lane_body.global_position.y, lane_body.global_position.z] if lane_body != null else [],
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -3159,6 +3259,21 @@ func apply_state(data: Dictionary) -> void:
 	vale_crate_crop = str(data.get("vale_crate_crop", ""))
 	lane_on_lawn = bool(data.get("lane_on_lawn", false))
 	lane_drank = bool(data.get("lane_drank", false))
+	lane_walking = bool(data.get("lane_walking", false))
+	lane_walk_home = bool(data.get("lane_walk_home", false))
+	lane_depart_minute = float(data.get("lane_depart_minute", -1.0))
+	var lane_pos = data.get("lane_pos", null)
+	if lane_walking or lane_on_lawn:
+		_ensure_lane_body()
+	if lane_body != null and typeof(lane_pos) == TYPE_ARRAY and lane_pos.size() == 3:
+		lane_body.global_position = Vector3(float(lane_pos[0]), float(lane_pos[1]), float(lane_pos[2]))
+	if lane_walking and lane_body != null:
+		if not (typeof(lane_pos) == TYPE_ARRAY and lane_pos.size() == 3):
+			_advance_lane_offscreen()
+		var dest := _lane_door_spot() if lane_walk_home else _lane_lawn_spot()
+		var gate := GardenLayout.GATE
+		gate.y = 0.0
+		lane_body.set_route([lane_body.global_position, gate, dest], false)
 	_sync_vale_crate()
 	_clear_plants()
 	_sync_plants()
@@ -10478,6 +10593,137 @@ func _run_garden_look_shot() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _shot("/workspace/docs/screenshots/garden_stall.png")
 	print("PETAL_GARDEN_LOOK_OK")
+	get_tree().quit(0)
+
+func _run_lane_life_shot() -> void:
+	Settings.reduce_motion = true
+	Clock.running = false
+	Clock.set_hour(15.3)
+	Trust.file_road_rumour("nessa")
+	Trust.file_park("nessa")
+	_tick_town(world_snapshot())
+	_sync_park()
+	if camera:
+		camera.pitch = 16.0
+		camera.yaw = 8.0
+		camera.focus_on(Vector3(0.0, 0.7, -13.4), 9.0)
+		camera._apply()
+	_sync_lane()
+	if lane_body == null or _lane_schedule() != "door":
+		push_error("lane life: afternoon did not keep them at the door")
+		get_tree().quit(1)
+		return
+	var door := _lane_door_spot()
+	if lane_body.global_position.distance_to(door) > 2.4:
+		push_error("lane life: the household left the cottage before dusk")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(17.2)
+	if _lane_schedule() != "lawn":
+		push_error("lane life: dusk did not open the lawn")
+		get_tree().quit(1)
+		return
+	Clock.running = true
+	if not _send_lane_to_park(true):
+		push_error("lane life: dusk did not start the walk")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.focus_on(GardenLayout.STALL + Vector3(0.0, 0.4, 0.0), 8.0)
+		camera._apply()
+	var out := _lane_travel_points(false)
+	Clock.minute = lane_depart_minute + GardenLayout.walk_minutes(out, Clock.scale) + 1.0
+	_advance_lane_offscreen()
+	Clock.running = false
+	if not lane_on_lawn or lane_walking or lane_body.global_position.distance_to(_lane_lawn_spot()) > 0.6:
+		push_error("lane life: clock time did not finish the walk")
+		get_tree().quit(1)
+		return
+	if _lane_where().find("Grove Park lawn") == -1:
+		push_error("lane life: the page lost the lawn")
+		get_tree().quit(1)
+		return
+	_sync_lane()
+	if _cottage_window_energy() > 0.2:
+		push_error("lane life: the cottage window stayed lit on the lawn")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.pitch = 20.0
+		camera.yaw = 150.0
+		camera.focus_on(_lane_lawn_spot() + Vector3(0.0, 0.35, 0.0), 4.4)
+		camera._apply()
+	await get_tree().create_timer(0.35).timeout
+	await _shot("/workspace/docs/screenshots/lane_dusk_lawn.png")
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("lane life: lawn save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if not lane_on_lawn or _lane_where().find("Grove Park lawn") == -1:
+		push_error("lane life: reload sent them home early")
+		get_tree().quit(1)
+		return
+	var nessa := _person("nessa")
+	var outside := Vector3.ZERO
+	if nessa != null:
+		outside = nessa.global_position
+	if not _enter_tea_house(true):
+		push_error("lane life: the tea house did not open")
+		get_tree().quit(1)
+		return
+	if nessa == null or not nessa_at_kettle or nessa.global_position.distance_to(outside) < 0.4:
+		push_error("lane life: Nessa did not sit at the kettle")
+		get_tree().quit(1)
+		return
+	if not SaveGame.write_slot(1, to_state()):
+		push_error("lane life: kettle save failed")
+		get_tree().quit(1)
+		return
+	apply_state(SaveGame.read_slot(1))
+	if inside_tea or nessa_at_kettle:
+		push_error("lane life: load left the tea house open")
+		get_tree().quit(1)
+		return
+	if nessa.global_position.distance_to(outside) > 0.8:
+		push_error("lane life: load left Nessa inside the kettle room")
+		get_tree().quit(1)
+		return
+	if not lane_on_lawn:
+		push_error("lane life: the kettle save lost the lawn")
+		get_tree().quit(1)
+		return
+	Clock.set_hour(21.0)
+	Clock.running = true
+	if not _send_lane_home(true):
+		push_error("lane life: night did not start the walk home")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.focus_on(GardenLayout.STALL + Vector3(0.0, 0.4, 0.0), 8.0)
+		camera._apply()
+	var back := _lane_travel_points(true)
+	Clock.minute = lane_depart_minute + GardenLayout.walk_minutes(back, Clock.scale) + 1.0
+	_advance_lane_offscreen()
+	Clock.running = false
+	if lane_on_lawn or lane_walking or lane_body.global_position.distance_to(_lane_door_spot()) > 0.6:
+		push_error("lane life: clock time did not bring them home")
+		get_tree().quit(1)
+		return
+	_sync_lane()
+	if _cottage_window_energy() < 0.8:
+		push_error("lane life: the cottage window stayed dark at the door")
+		get_tree().quit(1)
+		return
+	if camera:
+		camera.pitch = 18.0
+		camera.yaw = 30.0
+		camera.focus_on(_lane_door_spot() + Vector3(0.0, 0.4, 0.0), 4.8)
+		camera._apply()
+	await get_tree().create_timer(0.3).timeout
+	await _shot("/workspace/docs/screenshots/lane_night_door.png")
+	print("LANE_LIFE_OK")
+	print("PETAL_LANE_LIFE_OK")
 	get_tree().quit(0)
 
 func _frame_park(jelly: Jelly) -> void:
