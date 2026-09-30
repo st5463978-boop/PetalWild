@@ -82,6 +82,10 @@ def run(stop_at: int = STOP_AT, timeout: float = 75.0, wait_s: float = 360.0) ->
         while True:
             status = health(base)
             detail = status.get("detail") if isinstance(status.get("detail"), dict) else {}
+            print(
+                json.dumps({"wait": True, "chip_cond": detail.get("chip_cond"), "chip_held": detail.get("chip_held")}),
+                flush=True,
+            )
             if chip_ready(status):
                 break
             if time.monotonic() >= deadline:
@@ -134,6 +138,21 @@ def run(stop_at: int = STOP_AT, timeout: float = 75.0, wait_s: float = 360.0) ->
                 break
             seen.add(fp)
             rows.append(row)
+            print(
+                json.dumps(
+                    {
+                        "id": row["id"],
+                        "choice": row.get("jev_choice"),
+                        "answer": row.get("answer"),
+                        "confidence": row.get("jev_confidence"),
+                        "wrong": row.get("jev_wrong"),
+                        "counted": row.get("counted_failure"),
+                        "skip": row.get("skip"),
+                        "escalated": row.get("production_escalated"),
+                    }
+                ),
+                flush=True,
+            )
             if row.get("counted_failure"):
                 counted += 1
     except Exception as exc:  # noqa: BLE001
