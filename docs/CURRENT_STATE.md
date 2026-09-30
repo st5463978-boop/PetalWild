@@ -1,6 +1,6 @@
 # CURRENT_STATE
 
-Updated 2026-09-30 by PETAL-EXEC. Recovery then South Lane clock life.
+Updated 2026-09-30 by PETAL-EXEC. Gel pass and night-door toast clear.
 
 ## HEAD
 
@@ -10,20 +10,21 @@ Updated 2026-09-30 by PETAL-EXEC. Recovery then South Lane clock life.
 
 ## CURRENT ENGINE
 
-Godot `4.8.dev6.official.8898c2b3d`. `tools/run.sh` forces OpenGL 3. This VM is llvmpipe. Dummy ALSA is expected.
+Godot `4.8.dev6.official.8898c2b3d`. `tools/run.sh` forces OpenGL 3. This VM is llvmpipe. Dummy ALSA is expected. `veg_jelly` SSS/transmittance stay Forward+ only; the icon still carries the cut-out highlight and two black eyes.
 
 ## CURRENT PLAYABLE WORLD
 
 `scenes/main.tscn` → `scenes/garden.tscn` (`scripts/game/garden.gd`).
 Hedge Hollow garden: till, plant, water, fertilise, tend, pond scoop, home kit, stall, journal, clock, weather, save/load.
-Jellies grab, nuzzle, and throw. Veg folk keep the stall. Tea house, potting shed, and petal stall interiors open on Enter.
+Jellies grab, nuzzle, and throw. Hunger and a grab show the approved-cut-out gel: glossy body, small highlight, two unshaded black eyes. Resting still uses PETAL-08-101 cards. No feet.
+Veg folk keep the stall. Tea house, potting shed, and petal stall interiors open on Enter. Leave and load drop the room toast.
 Grove Park lawn stays hidden until Nessa files `parish_park`. `grove_park.active` stays false.
 South Lane: one tomato household. The other five cottages stay closed.
 
 ## WORKING SYSTEMS
 
 Pass-2 garden, gel icon, neon marks, tea/jam mill, stall sales, one South Lane kitchen, G park walk.
-Clock now also walks that household: dusk (16.5–19.5) to the filed lawn, otherwise the cottage door. Offscreen travel consumes clock time along door–gate–lawn and reconstructs them on camera entry. Save keeps the walk and the lawn. A save while Nessa, Bram, or Lumen is seated writes the outside spot.
+Clock walks that household: dusk (16.5–19.5) to the filed lawn and the west bench, otherwise the cottage door. Offscreen travel consumes clock time. Save keeps the walk and the lawn. A seated interior save writes the outside spot. Load closes rooms and clears the room toast.
 
 ## ACTIVE AGENTS
 
@@ -46,13 +47,9 @@ This Cursor agent is the only writer on this branch. Astra judges look. Hailo fi
 
 2026-09-30, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-Prior exhibit still green: `JELLY_PLAY_OK`, `JELLY_ICON_OK`, `PETAL_TEA_HOUSE_SHOT_OK`, `PETAL_SHED_SHOT_OK`, `PETAL_STALL_SHOT_OK`, `PETAL_GARDEN_LOOK_OK`.
-
-`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `LANE_LIFE_OK`.
-`PETAL_LANE_LIFE=1` → `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK`.
-`PETAL_TOWN_SHOT=1` → `PETAL_TOWN_SHOT_OK`.
-`PETAL_TEA_HOUSE_SHOT=1` → `PETAL_TEA_HOUSE_SHOT_OK`.
-`PETAL_GARDEN_LOOK=1` → `PETAL_GARDEN_LOOK_OK`.
+`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `ICON_GEL_OK` `JELLY_FEEL_OK` `LANE_LIFE_OK`.
+`PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK` `JELLY_ICON_OK`. Real gel, two black eyes, highlight. Not a wireframe.
+`PETAL_LANE_LIFE=1` → `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK`. Dusk sit on the west bench. Night door has no tea-house toast.
 
 Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
@@ -62,16 +59,17 @@ Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 - Tea house, hut, foundry, and hall are built and marked inactive.
 - City Park pond is an unmerged sibling of 08.
 - Moss and other lawn records still have no body.
+- Scoop stamps extra discs beside the growing pond mesh.
 
 ## CURRENT MAJOR OBJECTIVE
 
-Jelly tactile/gel pass from the approved cut-outs. Eyes stay clear. No new style.
+Scooped pond as one water body. The live `Pond` already grows. Scoop discs should join that water, and a reed/bulrush should sit the grown rim. Do not port City Park.
 
 ## NEXT TASKS
 
-1. Verify lane life in the running garden, then keep the suite green.
-2. Grove Park as a place (benches/path already there). Do not flip `grove_park.active`.
-3. Do not open the other five cottages. Do not merge to `main`.
+1. Verify a scoop grows the live pond and still leaves the dusk lawn and night door intact.
+2. Do not open the other five cottages. Do not flip `grove_park.active`.
+3. Do not merge to `main`.
 
 ## DO NOT REBUILD
 
