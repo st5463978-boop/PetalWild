@@ -12,7 +12,7 @@ func _init() -> void:
 	var door := Vector3(1.2, 0.0, -8.4)
 	var gate := GardenLayout.GATE
 	gate.y = 0.0
-	var lawn := GardenLayout.PARK + Vector3(-1.35, 0.0, 0.65)
+	var lawn := GardenLayout.PARK + Vector3(-1.35, 0.0, 0.95)
 	var out: Array[Vector3] = [door, gate, lawn]
 	var home: Array[Vector3] = [lawn, gate, door]
 	var span := GardenLayout.path_length(out)

@@ -2,11 +2,11 @@
 
 ## NOW
 
-Grove Park as a place the household already walks to: sit the dusk lawn on a bench, keep occupancy and day/night, do not flip the catalog or add a lamp.
+Jelly tactile/gel pass using the approved cut-outs already in tree. No new style. Do not cover the eyes.
 
 ## NEXT
 
-Jelly tactile/gel pass using the approved cut-outs already in tree. No new style.
+Keep Grove Park a place without a catalog flip: Lumen/Bram already stroll; household now sits the west bench at dusk. Water/foliage wait for the scooped pond.
 
 ## NEXT+
 
@@ -29,7 +29,7 @@ Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, openin
 - `PETAL_SHED_SHOT_OK` — Bram at the pan.
 - `PETAL_STALL_SHOT_OK` — Lumen at the counter.
 - `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
-- `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk walk to the lawn, night walk home, seated save stays outside.
+- `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk walk sits the west bench, night walk home, seated save stays outside.
 - Tea/jam mill and stall sales. One South Lane kitchen. G park walk.
 
 ## Do not rebuild

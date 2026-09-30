@@ -65,7 +65,7 @@ Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
 ## CURRENT MAJOR OBJECTIVE
 
-Grove Park as a used place: sit the dusk household on a bench already in the lawn. Do not flip `grove_park.active`.
+Jelly tactile/gel pass from the approved cut-outs. Eyes stay clear. No new style.
 
 ## NEXT TASKS
 

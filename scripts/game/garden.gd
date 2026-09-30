@@ -1599,7 +1599,8 @@ func _sync_lane_body(wanted: bool) -> void:
 		var spot := _lane_lawn_spot()
 		_pin_lane_body(spot)
 		if lane_body != null:
-			var face := GardenLayout.PARK - spot
+			lane_body.stay = true
+			var face := GardenLayout.PARK - Vector3(spot.x, 0.0, spot.z)
 			lane_body.rotation.y = atan2(face.x, face.z)
 		return
 	if not wanted or not _lane_near():
@@ -1626,7 +1627,8 @@ func _sync_lane_body(wanted: bool) -> void:
 		lane_body.body.visible = true
 
 func _lane_lawn_spot() -> Vector3:
-	return GardenLayout.PARK + Vector3(-1.35, 0.0, 0.65)
+	# ponytail: the west park bench already in the lawn; a second sit if a pair shares it.
+	return GardenLayout.PARK + Vector3(-1.35, 0.28, 0.95)
 
 func _lane_lawn_near() -> bool:
 	if camera == null:
@@ -1680,7 +1682,11 @@ func _note_lane_arrival() -> void:
 	lane_body.waypoints.clear()
 	lane_body.loop_route = false
 	if lane_on_lawn:
+		lane_body.stay = true
+		lane_body.global_position = _lane_lawn_spot()
 		_beckon_lawn_jelly()
+	else:
+		lane_body.stay = false
 
 func _send_lane_to_park(quiet := false) -> bool:
 	if not Trust.has_action("parish_park"):
@@ -1705,6 +1711,7 @@ func _send_lane_to_park(quiet := false) -> bool:
 	lane_walking = true
 	lane_walk_home = false
 	lane_depart_minute = Clock.minute
+	lane_body.stay = false
 	var route := _lane_route()
 	lane_body.loop_route = false
 	lane_body.present = true
@@ -1962,6 +1969,7 @@ func _send_lane_home(quiet := false) -> bool:
 	lane_walk_home = true
 	lane_walking = true
 	lane_depart_minute = Clock.minute
+	lane_body.stay = false
 	var gate := GardenLayout.GATE
 	gate.y = 0.0
 	var points: Array[Vector3] = [lane_body.global_position, gate, _lane_door_spot()]
@@ -2010,7 +2018,7 @@ func _pin_lane_body(at: Vector3) -> void:
 		return
 	lane_body.present = true
 	lane_body.visible = true
-	lane_body.global_position = Vector3(at.x, 0.0, at.z)
+	lane_body.global_position = Vector3(at.x, at.y if lane_on_lawn else 0.0, at.z)
 	if inside_lane and camera != null:
 		var toward := camera.global_position - lane_body.global_position
 		lane_body.rotation.y = atan2(-toward.x, -toward.z)
@@ -10679,6 +10687,10 @@ func _run_lane_life_shot() -> void:
 	Clock.running = false
 	if not lane_on_lawn or lane_walking or lane_body.global_position.distance_to(_lane_lawn_spot()) > 0.6:
 		push_error("lane life: clock time did not finish the walk")
+		get_tree().quit(1)
+		return
+	if not lane_body.stay or lane_body.global_position.y < 0.15:
+		push_error("lane life: dusk did not sit them on the bench")
 		get_tree().quit(1)
 		return
 	if _lane_where().find("Grove Park lawn") == -1:
