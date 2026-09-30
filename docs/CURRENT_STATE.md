@@ -1,6 +1,6 @@
 # CURRENT_STATE
 
-Updated 2026-09-30 by PETAL-EXEC. Gel pass and night-door toast clear.
+Updated 2026-09-30 by PETAL-EXEC. Gel pass, night-door toast, scooped pond as one water body.
 
 ## HEAD
 
@@ -17,6 +17,7 @@ Godot `4.8.dev6.official.8898c2b3d`. `tools/run.sh` forces OpenGL 3. This VM is 
 `scenes/main.tscn` → `scenes/garden.tscn` (`scripts/game/garden.gd`).
 Hedge Hollow garden: till, plant, water, fertilise, tend, pond scoop, home kit, stall, journal, clock, weather, save/load.
 Jellies grab, nuzzle, and throw. Hunger and a grab show the approved-cut-out gel: glossy body, small highlight, two unshaded black eyes. Resting still uses PETAL-08-101 cards. No feet.
+Scoops widen the live `Pond`. No stamp discs. Bulrush can sit that rim.
 Veg folk keep the stall. Tea house, potting shed, and petal stall interiors open on Enter. Leave and load drop the room toast.
 Grove Park lawn stays hidden until Nessa files `parish_park`. `grove_park.active` stays false.
 South Lane: one tomato household. The other five cottages stay closed.
@@ -25,6 +26,7 @@ South Lane: one tomato household. The other five cottages stay closed.
 
 Pass-2 garden, gel icon, neon marks, tea/jam mill, stall sales, one South Lane kitchen, G park walk.
 Clock walks that household: dusk (16.5–19.5) to the filed lawn and the west bench, otherwise the cottage door. Offscreen travel consumes clock time. Save keeps the walk and the lawn. A seated interior save writes the outside spot. Load closes rooms and clears the room toast.
+`GardenLayout.pond_rim(scoops)` is the live water radius.
 
 ## ACTIVE AGENTS
 
@@ -40,16 +42,17 @@ This Cursor agent is the only writer on this branch. Astra judges look. Hailo fi
 | `petal/08-integration` | KEEP parent. Already in this tree. |
 | `cursor/jelly-status-icons-ffcb` | KEEP marks (already here). Demo reel stays there. |
 | `cursor/city-park-pond-c8ec` | IGNORE until the live garden still boots. |
-| `cursor/water-plan-937d` | IGNORE. Docs only. |
+| `cursor/water-plan-937d` | IGNORE. Docs only. Garden already has `water.gdshader`. |
 | `petal/01` … `petal/07` | IGNORE. Already ported. |
 
 ## LATEST TEST RESULT
 
 2026-09-30, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `ICON_GEL_OK` `JELLY_FEEL_OK` `LANE_LIFE_OK`.
-`PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK` `JELLY_ICON_OK`. Real gel, two black eyes, highlight. Not a wireframe.
+`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `ICON_GEL_OK` `JELLY_FEEL_OK` `LANE_LIFE_OK` `POND_RIM_OK`.
+`PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK` `JELLY_ICON_OK`. Real gel, two black eyes, highlight.
 `PETAL_LANE_LIFE=1` → `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK`. Dusk sit on the west bench. Night door has no tea-house toast.
+`PETAL_POND_SHOT=1` → `PETAL_POND_SHOT_OK`. Live pond, 26 reaches, Bulrush on the water. Not a wireframe.
 
 Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
@@ -58,16 +61,15 @@ Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 - `main` does not boot the campaign garden.
 - Tea house, hut, foundry, and hall are built and marked inactive.
 - City Park pond is an unmerged sibling of 08.
-- Moss and other lawn records still have no body.
-- Scoop stamps extra discs beside the growing pond mesh.
+- Pegapear still does not sit the opening nightlantern the way Bulrush now sits the pond.
 
 ## CURRENT MAJOR OBJECTIVE
 
-Scooped pond as one water body. The live `Pond` already grows. Scoop discs should join that water, and a reed/bulrush should sit the grown rim. Do not port City Park.
+Pegapear sits the opening nightlantern at dusk. No new style. Do not port City Park.
 
 ## NEXT TASKS
 
-1. Verify a scoop grows the live pond and still leaves the dusk lawn and night door intact.
+1. Keep Grove Park a place without a catalog flip.
 2. Do not open the other five cottages. Do not flip `grove_park.active`.
 3. Do not merge to `main`.
 

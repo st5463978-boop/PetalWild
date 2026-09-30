@@ -2,15 +2,15 @@
 
 ## NOW
 
-Scooped pond as one water body: grow the live `Pond`, sit a reed/bulrush on the rim. No City Park port. No new water style.
+Pegapear sits the opening nightlantern at dusk, the way Bulrush now sits the scooped pond. No new style.
 
 ## NEXT
 
-Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk. Water/foliage wait on this pond pass.
+Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk.
 
 ## NEXT+
 
-Moss and other lawn records still have no body. Do not open the five closed cottages.
+Do not open the five closed cottages. City Park stays a sibling.
 
 ## WAITING
 
@@ -30,6 +30,7 @@ Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, openin
 - `PETAL_STALL_SHOT_OK` — Lumen at the counter.
 - `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
 - `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk walk sits the west bench, night walk home, seated save stays outside, night door has no tea-house toast.
+- `POND_RIM_OK` `PETAL_POND_SHOT_OK` — scoops widen the live pond; Bulrush sits the water; no stamp discs.
 - Tea/jam mill and stall sales. One South Lane kitchen. G park walk.
 
 ## Do not rebuild
