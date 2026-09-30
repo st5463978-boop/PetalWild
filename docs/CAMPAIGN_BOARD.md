@@ -2,15 +2,15 @@
 
 ## NOW
 
-Pegapear sits the opening nightlantern at dusk, the way Bulrush now sits the scooped pond. No new style.
+Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk.
 
 ## NEXT
 
-Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk.
+Do not open the five closed cottages. City Park stays a sibling.
 
 ## NEXT+
 
-Do not open the five closed cottages. City Park stays a sibling.
+Gushorn on the night-loam mosspears, if the live garden still boots.
 
 ## WAITING
 
@@ -19,19 +19,19 @@ Water plan docs (`cursor/water-plan-937d`). The garden already has `water.gdshad
 
 ## BLOCKED
 
-Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, opening the five closed cottages.
+Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, merge of PR 18, opening the five closed cottages.
 
 ## VERIFIED
 
 - Hedge Hollow boots. Four beds, stall, HUD Day 1 Morning tin 36.
-- `JELLY_PLAY_OK` `JELLY_ICON_OK` `ICON_GEL_OK` — Bellhelp gel, highlight, two black eyes, white cog. Resting card stays PETAL-08-101.
+- `JELLY_PLAY_OK` `JELLY_ICON_OK` `ICON_GEL_OK` — Bellhelp gel, highlight, two black eyes.
 - `PETAL_TEA_HOUSE_SHOT_OK` — Nessa at the kettle.
 - `PETAL_SHED_SHOT_OK` — Bram at the pan.
 - `PETAL_STALL_SHOT_OK` — Lumen at the counter.
 - `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
-- `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk walk sits the west bench, night walk home, seated save stays outside, night door has no tea-house toast.
-- `POND_RIM_OK` `PETAL_POND_SHOT_OK` — scoops widen the live pond; Bulrush sits the water; no stamp discs.
-- Tea/jam mill and stall sales. One South Lane kitchen. G park walk.
+- `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk sit, night walk home, no leftover tea-house toast.
+- `POND_RIM_OK` `PETAL_POND_SHOT_OK` — scoops widen the live pond; Bulrush on the water.
+- `DUSK_LANTERN_OK` `PETAL_DUSK_LANTERN_OK` — Pegapear sits the opening nightlantern at dusk.
 
 ## Do not rebuild
 
