@@ -289,7 +289,7 @@ def summarise(rows: list[dict], stop_reason: str, error: str | None = None) -> d
     }
 
 
-def run(poster=None, health_fn=None, limit: int | None = None) -> dict:
+def run(poster=None, health_fn=None, limit: int | None = None, verbose: bool = False) -> dict:
     assert_bank_ok()
     cases = load_cases()
     if limit is not None:
@@ -331,6 +331,22 @@ def run(poster=None, health_fn=None, limit: int | None = None) -> dict:
                 payload = {}
             row["client_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
             rows.append(row)
+            if verbose:
+                print(
+                    json.dumps(
+                        {
+                            "id": row.get("id"),
+                            "choice": row.get("jev_choice"),
+                            "answer": row.get("answer"),
+                            "confidence": row.get("jev_confidence"),
+                            "counted": row.get("counted_failure"),
+                            "skip": row.get("skip"),
+                            "source": row.get("jev_source"),
+                            "escalated": row.get("production_escalated"),
+                        }
+                    ),
+                    flush=True,
+                )
             if row.get("skip") == "no_forced_jev":
                 stop_reason = "chip_unavailable"
                 break
@@ -373,14 +389,26 @@ def _seconds_until(stamp: object) -> float | None:
     return (when - datetime.now(timezone.utc)).total_seconds()
 
 
-def wait_for_chip(url: str, timeout_s: float = 360.0) -> dict:
+def wait_for_chip(url: str, timeout_s: float = 900.0) -> dict:
     """Poll /health. Do not POST while the student probe is failed."""
     deadline = time.time() + timeout_s
     last: dict = {}
     while True:
         last = get_health(url)
         if chip_ready(last):
+            print(json.dumps({"chip_ready": True}), flush=True)
             return last
+        detail = last.get("detail") if isinstance(last.get("detail"), dict) else {}
+        print(
+            json.dumps(
+                {
+                    "chip_ready": False,
+                    "chip_cond": detail.get("chip_cond"),
+                    "chip_expires_at": detail.get("chip_expires_at"),
+                }
+            ),
+            flush=True,
+        )
         if time.time() >= deadline:
             return last
         detail = last.get("detail") if isinstance(last.get("detail"), dict) else {}
@@ -414,7 +442,7 @@ def main(argv: list[str] | None = None) -> int:
         assert_bank_ok()
         print(json.dumps({"ok": True, "cases": len(load_cases()), "training_eligible": False}))
         return 0
-    summary = run(limit=args.limit)
+    summary = run(limit=args.limit, verbose=True)
     print(json.dumps(summary, indent=2))
     return 0 if summary.get("error") is None else 2
 
