@@ -16,6 +16,7 @@ if str(ORCH) not in sys.path:
 from jevh_canonical import AGENT, POST_KIND
 from jevh_canonical.cases import EXCLUDED_FAMILIES, FAMILY, assert_bank_ok, gold, load_cases
 from jevh_canonical.client import chip_block_reason, post_decide
+from jevh_canonical.mine import drop_position_bias
 from jevh_canonical.score import fingerprint, map_choice, numeric_confidence, score_attempt
 
 
@@ -125,6 +126,57 @@ class ScoreTests(unittest.TestCase):
         row = score_attempt(self.case, payload)
         self.assertFalse(row["counted_failure"])
         self.assertEqual(row["skip"], "index_choice_mismatch")
+
+    def test_same_slot_on_flipped_options_is_position_bias(self) -> None:
+        rows = [
+            {
+                "question": "Same facts.",
+                "options": ["contradicted", "consistent"],
+                "answer": "consistent",
+                "jev_index": 0,
+                "jev_choice": "contradicted",
+                "counted_failure": True,
+                "skip": None,
+                "bucket": "QUARANTINE",
+            },
+            {
+                "question": "Same facts.",
+                "options": ["consistent", "contradicted"],
+                "answer": "consistent",
+                "jev_index": 0,
+                "jev_choice": "consistent",
+                "counted_failure": False,
+                "skip": None,
+                "bucket": "CANARY-EVAL",
+            },
+        ]
+        drop_position_bias(rows)
+        self.assertFalse(rows[0]["counted_failure"])
+        self.assertEqual(rows[0]["skip"], "position_bias")
+
+    def test_same_choice_text_on_both_orders_stays_counted(self) -> None:
+        rows = [
+            {
+                "question": "Same facts.",
+                "options": ["contradicted", "consistent"],
+                "answer": "consistent",
+                "jev_index": 0,
+                "jev_choice": "contradicted",
+                "counted_failure": True,
+                "skip": None,
+            },
+            {
+                "question": "Same facts.",
+                "options": ["consistent", "contradicted"],
+                "answer": "consistent",
+                "jev_index": 1,
+                "jev_choice": "contradicted",
+                "counted_failure": True,
+                "skip": None,
+            },
+        ]
+        drop_position_bias(rows)
+        self.assertTrue(all(row["counted_failure"] for row in rows))
 
     def test_duplicate_is_not_counted_twice(self) -> None:
         wrong = self.case["options"].index("contradicted")

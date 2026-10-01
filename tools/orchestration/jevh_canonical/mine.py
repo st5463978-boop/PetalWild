@@ -45,6 +45,34 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
+def drop_position_bias(rows: list[dict]) -> None:
+    """Same slot on both option orders is a harness bug, not a counted failure.
+
+    A pair that picks the same choice text on both orders is a real answer.
+    """
+    groups: dict[tuple, list[dict]] = {}
+    for row in rows:
+        if row.get("skip") not in (None,):
+            continue
+        key = (
+            row.get("question"),
+            tuple(sorted(row.get("options") or [])),
+            row.get("answer"),
+        )
+        groups.setdefault(key, []).append(row)
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        indexes = {row.get("jev_index") for row in group}
+        choices = {row.get("jev_choice") for row in group}
+        if len(indexes) == 1 and len(choices) > 1:
+            for row in group:
+                if row.get("counted_failure"):
+                    row["counted_failure"] = False
+                    row["skip"] = "position_bias"
+                    row["bucket"] = "QUARANTINE"
+
+
 def summarise(rows: list[dict], *, sent: int, stop_reason: str, error: str | None = None) -> dict:
     kinds = Counter(row["kind"] for row in rows if row.get("counted_failure"))
     return {
@@ -73,7 +101,7 @@ def summarise(rows: list[dict], *, sent: int, stop_reason: str, error: str | Non
         "index_bugs": sum(
             1
             for row in rows
-            if row.get("skip") in {"index_choice_mismatch", "unmapped_choice"}
+            if row.get("skip") in {"index_choice_mismatch", "unmapped_choice", "position_bias"}
         ),
         "failures_by_kind": dict(kinds),
         "counted_ids": [row["id"] for row in rows if row.get("counted_failure")],
@@ -97,6 +125,7 @@ def wait_until_chip(budget_s: float) -> str:
         if reason is None:
             return base
         last = reason
+        print(f"chip_down {reason}", flush=True)
         if time.monotonic() >= deadline:
             raise ChipDown(last)
         retry = chip_retry_at(payload)
@@ -120,10 +149,6 @@ def run(budget_s: float = 900.0, timeout: float = 75.0) -> dict:
     try:
         base = wait_until_chip(budget_s)
         for case in cases:
-            counted = sum(1 for row in rows if row.get("counted_failure"))
-            if counted >= STOP_AT:
-                stop_reason = "counted_20"
-                break
             fp = fingerprint(case)
             if fp in seen:
                 continue
@@ -149,6 +174,16 @@ def run(budget_s: float = 900.0, timeout: float = 75.0) -> dict:
                 break
             seen.add(row["fingerprint"])
             rows.append(row)
+            drop_position_bias(rows)
+            print(
+                f"{case['id']} choice={row.get('jev_choice')} "
+                f"conf={row.get('jev_confidence')} counted={row.get('counted_failure')} "
+                f"skip={row.get('skip')}",
+                flush=True,
+            )
+            if sum(1 for item in rows if item.get("counted_failure")) >= STOP_AT:
+                stop_reason = "counted_20"
+                break
         else:
             if sum(1 for row in rows if row.get("counted_failure")) >= STOP_AT:
                 stop_reason = "counted_20"
@@ -160,6 +195,10 @@ def run(budget_s: float = 900.0, timeout: float = 75.0) -> dict:
             stop_reason = "chip_unavailable"
         elif stop_reason == "family_exhausted":
             stop_reason = "stopped_on_error"
+    drop_position_bias(rows)
+    counted = sum(1 for row in rows if row.get("counted_failure"))
+    if counted >= STOP_AT and stop_reason == "family_exhausted":
+        stop_reason = "counted_20"
     failures = [row for row in rows if row.get("counted_failure")]
     summary = summarise(rows, sent=sent, stop_reason=stop_reason, error=error)
     _write_jsonl(OUT / "ledger.jsonl", rows)
