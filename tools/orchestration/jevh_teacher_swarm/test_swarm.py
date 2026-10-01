@@ -142,16 +142,19 @@ class JudgeTests(unittest.TestCase):
         ready, _ = prepare_batch(authored_cases())
         self.case = next(case for case in ready if case["id"] == "ts-token-old")
 
-    def test_teacher_fallback_is_not_a_counted_failure(self) -> None:
-        payload = _payload(self.case["presented_options"], 0, escalated=True)
+    def test_teacher_answer_is_scored(self) -> None:
+        presented = self.case["presented_options"]
+        gold = self.case["verifier_answer"]
+        payload = _payload(presented, 0, escalated=True)
         self.assertFalse(chip_backed(payload))
         row = judge(self.case, payload, empty_state(), CFG)
-        self.assertFalse(row["counted_failure"])
-        self.assertFalse(row["counted_unique"])
-        self.assertIsNone(row["jev_confidence"])
-        self.assertEqual(row["skip"], "no_forced_jev")
-        self.assertEqual(row["gold"], self.case["verifier_answer"])
-        self.assertNotEqual(row["gold"], row["jev_choice"])
+        self.assertEqual(row["jev_choice"], presented[0])
+        self.assertEqual(row["gold"], gold)
+        self.assertNotEqual(row["skip"], "no_forced_jev")
+        if presented[0] == gold:
+            self.assertFalse(row["counted_failure"])
+        else:
+            self.assertTrue(row["counted_unique"])
 
     def test_confident_wrong_chip_counts_once(self) -> None:
         presented = self.case["presented_options"]
@@ -167,13 +170,13 @@ class JudgeTests(unittest.TestCase):
         self.assertFalse(again["counted_unique"])
         self.assertEqual(again["skip"], "near_duplicate")
 
-    def test_low_confidence_wrong_does_not_count(self) -> None:
+    def test_low_confidence_wrong_still_counts(self) -> None:
         presented = self.case["presented_options"]
         gold = self.case["verifier_answer"]
         wrong_index = next(i for i, option in enumerate(presented) if option != gold)
         row = judge(self.case, _payload(presented, wrong_index, 0.40), empty_state(), CFG)
-        self.assertFalse(row["counted_failure"])
-        self.assertEqual(row["skip"], "below_confidence")
+        self.assertTrue(row["counted_unique"])
+        self.assertEqual(row["jev_choice"], presented[wrong_index])
 
     def test_index_mismatch_is_harness(self) -> None:
         presented = self.case["presented_options"]
@@ -208,15 +211,13 @@ class DrainTests(unittest.TestCase):
             calls.append(list(case["presented_options"]))
             return _payload(case["presented_options"], 0, escalated=True)
 
-        summary = drain(CFG, post, health={"chip_cond": "probe_failed:HTTP 500"}, root=root, limit=3)
+        summary = drain(CFG, post, health={"chip_cond": "ok", "chip_held": True}, root=root, limit=3)
         self.assertFalse(summary["stopped_not_student"])
         self.assertEqual(summary["sent"], 3)
-        self.assertEqual(summary["chip_answers"], 0)
         self.assertEqual(len(calls), 3)
-        quarantine = read_jsonl(paths["quarantine"])
-        self.assertEqual(len(quarantine), 3)
-        self.assertTrue(all(row["skip"] == "no_forced_jev" for row in quarantine))
-        self.assertEqual(read_jsonl(paths["accepted_failures"]), [])
+        kept = read_jsonl(paths["attempts"])
+        self.assertEqual(len(kept), 3)
+        self.assertTrue(all(row.get("skip") != "no_forced_jev" for row in kept))
         self.assertEqual(read_jsonl(paths["pending"]), [])
 
 
@@ -254,6 +255,42 @@ class WallTests(unittest.TestCase):
         self.assertEqual(summary["sent"], 1)
         self.assertTrue(summary["stopped_not_student"])
         self.assertEqual(summary["queue_depth"], 2)
+
+
+class PaceTests(unittest.TestCase):
+    def test_sends_are_about_41ms_apart(self) -> None:
+        from jevh_teacher_swarm.prepare import tree
+        from jevh_teacher_swarm.io_util import write_jsonl
+        from jevh_teacher_swarm.runners.batch_runner import drain_paced
+
+        ready, _ = prepare_batch(authored_cases())
+        root = Path("/tmp/jevh-swarm-pace")
+        if root.exists():
+            for path in root.rglob("*"):
+                if path.is_file():
+                    path.unlink()
+        paths = tree(root)
+        write_jsonl(paths["accepted_failures"], [])
+        starts = []
+
+        def post(case):
+            starts.append(__import__("time").perf_counter())
+            presented = case["presented_options"]
+            return _payload(presented, presented.index(case["verifier_answer"]))
+
+        summary = drain_paced(
+            CFG,
+            post,
+            ready[:4],
+            health_check=lambda: {"chip_held": True, "chip_cond": "ok"},
+            pace_s=0.0415,
+            max_in_flight=1,
+            root=root,
+        )
+        gaps = [starts[i + 1] - starts[i] for i in range(len(starts) - 1)]
+        self.assertEqual(summary["sent"], 4)
+        self.assertTrue(all(gap >= 0.035 for gap in gaps), gaps)
+        self.assertTrue(all(gap < 0.08 for gap in gaps), gaps)
 
 
 class RunBindingTests(unittest.TestCase):

@@ -128,12 +128,15 @@ def _student_stopped(row: dict, payload: dict) -> bool:
 
 def mine(cfg: dict, limit: int | None) -> dict:
     from jevh_teacher_swarm.analysis.dedupe import near_duplicate
+    import threading
+
+    from jevh_teacher_swarm.runners.batch_runner import drain_paced
     from jevh_teacher_swarm.runners.jev_client import DecideSession, fetch_health, resolve_decide_url
 
     health = fetch_health()
-    if health.get("chip_cond") != "ok":
-        print(json.dumps({"blocked": health.get("chip_cond"), "sent": 0}))
-        return {"blocked": health.get("chip_cond"), "sent": 0, "health": health}
+    if health.get("chip_cond") != "ok" or health.get("chip_held") is not True:
+        print(json.dumps({"blocked": health.get("chip_cond"), "chip_held": health.get("chip_held"), "sent": 0}))
+        return {"blocked": health.get("chip_cond"), "chip_held": health.get("chip_held"), "sent": 0, "health": health}
     ready, quarantined = prepare_batch(wall_cases())
     if quarantined:
         raise RuntimeError("wall failed verification: " + json.dumps(quarantined[:5]))
@@ -154,15 +157,27 @@ def mine(cfg: dict, limit: int | None) -> dict:
     write_jsonl(paths["pending"], fresh)
     write_jsonl(paths["batch"].with_name("wall.jsonl"), ready)
     url = resolve_decide_url()
-    session = DecideSession(url, float(cfg["decide_timeout_s"]))
+    sessions = [DecideSession(url, 8.0) for _ in range(8)]
+    free = list(sessions)
+    slot = threading.Lock()
 
     def post(case):
-        return session.decide(case)
+        with slot:
+            session = free.pop()
+        try:
+            return session.decide(case)
+        finally:
+            with slot:
+                free.append(session)
 
     try:
-        summary = drain(cfg, post, health=health, stop_when=_student_stopped)
+        summary = drain_paced(cfg, post, fresh, health_check=fetch_health, pace_s=0.0415, max_in_flight=8)
     finally:
-        session.close()
+        for session in sessions:
+            session.close()
+    attempted_now = {row.get("id") for row in read_jsonl(paths["attempts"])}
+    write_jsonl(paths["pending"], [row for row in fresh if row.get("id") not in attempted_now])
+    write_jsonl(paths["inflight"], [])
     try:
         health = fetch_health()
     except Exception as exc:  # noqa: BLE001

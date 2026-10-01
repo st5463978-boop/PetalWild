@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
+import ssl
 import urllib.parse
 
 from jevh_clean_core.client import _get_json, origin, post_decide, resolve_decide_url
@@ -85,12 +87,20 @@ class DecideSession:
             self._conn = None
 
     def _open(self) -> http.client.HTTPConnection:
-        if self._conn is None:
-            if self._https:
-                self._conn = http.client.HTTPSConnection(self._host, self._port, timeout=self._timeout)
-            else:
-                self._conn = http.client.HTTPConnection(self._host, self._port, timeout=self._timeout)
-        return self._conn
+        if self._conn is not None:
+            return self._conn
+        infos = socket.getaddrinfo(self._host, self._port, socket.AF_INET, socket.SOCK_STREAM)
+        ip = infos[0][4][0]
+        raw = socket.create_connection((ip, self._port), timeout=self._timeout)
+        if self._https:
+            raw = ssl.create_default_context().wrap_socket(raw, server_hostname=self._host)
+            conn: http.client.HTTPConnection = http.client.HTTPSConnection(self._host, self._port, timeout=self._timeout)
+        else:
+            conn = http.client.HTTPConnection(self._host, self._port, timeout=self._timeout)
+        raw.settimeout(self._timeout)
+        conn.sock = raw
+        self._conn = conn
+        return conn
 
     def decide(self, case: dict) -> dict:
         body = json.dumps(
@@ -102,27 +112,24 @@ class DecideSession:
             }
         ).encode()
         headers = {"Content-Type": "application/json", "Connection": "keep-alive"}
-        last_error: Exception | None = None
-        for path in ("/v1/decide", "/decide"):
-            for _attempt in (1, 2):
-                conn = self._open()
-                try:
-                    conn.request("POST", path, body=body, headers=headers)
-                    response = conn.getresponse()
-                    raw = response.read()
-                except Exception as exc:  # noqa: BLE001 — reconnect once
-                    last_error = exc
-                    self.close()
-                    continue
-                if response.status == 404:
-                    break
-                if response.status >= 400:
-                    raise RuntimeError(f"HTTP {response.status}: {raw[:200]!r}")
-                payload = json.loads(raw.decode())
-                if not isinstance(payload, dict):
-                    raise ValueError("decide response was not an object")
-                payload["_path"] = path
-                return payload
-        if last_error is not None:
-            raise last_error
-        raise RuntimeError("decide endpoint missing")
+        conn = self._open()
+        try:
+            conn.request("POST", "/v1/decide", body=body, headers=headers)
+            response = conn.getresponse()
+            raw = response.read()
+        except Exception:
+            self.close()
+            raise
+        if response.status == 404:
+            self.close()
+            conn = self._open()
+            conn.request("POST", "/decide", body=body, headers=headers)
+            response = conn.getresponse()
+            raw = response.read()
+        if response.status >= 400:
+            raise RuntimeError(f"HTTP {response.status}: {raw[:200]!r}")
+        payload = json.loads(raw.decode())
+        if not isinstance(payload, dict):
+            raise ValueError("decide response was not an object")
+        payload["_path"] = "/v1/decide"
+        return payload

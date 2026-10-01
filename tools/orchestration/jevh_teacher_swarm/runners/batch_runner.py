@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from jevh_teacher_swarm.io_util import append_jsonl, read_jsonl, write_jsonl
@@ -96,3 +97,141 @@ def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | N
         "queue_depth": len(remaining),
         "health": health,
     }
+
+
+def _held(health: dict | None) -> bool:
+    return bool(health) and health.get("chip_held") is True and health.get("chip_cond") == "ok"
+
+
+def _wait_held(health_check, samples: list[dict]) -> dict:
+    """GET health only. No decide calls while the chip is not held."""
+    while True:
+        health = health_check()
+        samples.append({"ts": _now(), "chip_held": health.get("chip_held"), "chip_cond": health.get("chip_cond")})
+        if _held(health):
+            return health
+        time.sleep(2.0)
+
+
+def drain_paced(
+    cfg: dict,
+    post,
+    cases: list[dict],
+    *,
+    health_check,
+    pace_s: float = 0.0415,
+    max_in_flight: int = 2,
+    root=None,
+) -> dict:
+    """Send about every 41.5 ms. Pause when the chip is not held or a call falls through to the teacher."""
+    paths = default_tree(root)
+    state = empty_state(read_jsonl(paths["accepted_failures"]))
+    samples: list[dict] = []
+    health = _wait_held(health_check, samples)
+    sent = 0
+    kept = 0
+    first = None
+    paused = False
+    futures: dict = {}
+    index = 0
+    next_at = time.perf_counter()
+    pool = ThreadPoolExecutor(max_workers=max_in_flight)
+
+    def _store(case: dict, payload: dict | None, started: float, error: str | None = None) -> bool:
+        nonlocal sent, kept, first, paused
+        if error is not None:
+            row = {
+                "id": case.get("id"),
+                "bucket": "QUARANTINE",
+                "skip": "transport_error",
+                "failure_class": "harness",
+                "error": error,
+                "counted_unique": False,
+                "counted_failure": False,
+                "training_eligible": False,
+                "chip_backed": False,
+                "origin": "jevh-teacher-swarm",
+                "ts": _now(),
+                "client_ms": round(1000.0 * (time.perf_counter() - started), 1),
+            }
+            teacher = True
+        else:
+            row = judge(case, payload or {}, state, cfg)
+            row["origin"] = "jevh-teacher-swarm"
+            row["ts"] = _now()
+            row["client_ms"] = round(1000.0 * (time.perf_counter() - started), 1)
+            row["health_chip_cond"] = health.get("chip_cond")
+            sent += 1
+            if row.get("counted_unique"):
+                kept += 1
+            if first is None:
+                first = {
+                    "id": row.get("id"),
+                    "decided_by": row.get("decided_by"),
+                    "confidence": row.get("jev_confidence"),
+                    "latency_ms": row.get("latency_ms"),
+                    "client_ms": row.get("client_ms"),
+                    "model": row.get("model"),
+                    "choice": row.get("jev_choice"),
+                    "chip_backed": row.get("chip_backed"),
+                }
+                print("FIRST " + json_dumps(first), flush=True)
+            teacher = (payload or {}).get("decided_by") == "teacher" or (payload or {}).get("chip") is None
+        append_jsonl(paths["attempts"], row)
+        append_jsonl(paths[_BUCKET.get(row.get("bucket"), "quarantine")], row)
+        print(
+            "%s skip=%s decided_by=%s conf=%s latency_ms=%s"
+            % (row.get("id"), row.get("skip"), row.get("decided_by"), row.get("jev_confidence"), row.get("latency_ms")),
+            flush=True,
+        )
+        return teacher
+
+    try:
+        while index < len(cases) or futures:
+            done = [item for item in list(futures) if item.done()]
+            for future in done:
+                case, started = futures.pop(future)
+                try:
+                    payload = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    if _store(case, None, started, f"{type(exc).__name__}: {exc}"):
+                        paused = True
+                else:
+                    if _store(case, payload, started):
+                        paused = True
+            if paused and not futures:
+                health = _wait_held(health_check, samples)
+                paused = False
+                next_at = time.perf_counter()
+            if index < len(cases) and len(futures) < max_in_flight and not paused:
+                now = time.perf_counter()
+                if now < next_at:
+                    time.sleep(min(0.01, next_at - now))
+                    continue
+                if index % 24 == 0:
+                    health = health_check()
+                    samples.append({"ts": _now(), "chip_held": health.get("chip_held"), "chip_cond": health.get("chip_cond")})
+                    if not _held(health):
+                        paused = True
+                        continue
+                case = cases[index]
+                index += 1
+                started = time.perf_counter()
+                next_at = started + pace_s
+                futures[pool.submit(post, case)] = (case, started)
+            elif futures:
+                time.sleep(0.004)
+    finally:
+        pool.shutdown(wait=True, cancel_futures=False)
+    return {
+        "sent": sent,
+        "kept": kept,
+        "first": first,
+        "chip_held_samples": samples,
+        "queue_depth": len(cases) - index,
+    }
+
+
+def json_dumps(payload: dict) -> str:
+    import json
+    return json.dumps(payload, sort_keys=True)
