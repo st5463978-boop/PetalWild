@@ -1,25 +1,25 @@
-TOTAL GENERATED: 1041
-TOTAL SENT TO JEV: 786
+TOTAL GENERATED: 1295
+TOTAL SENT TO JEV: 957
 QUEUE DEPTH: 0
 
-JEV ACCURACY: 0.510
-JEV >= .90 CONFIDENT WRONG: 160
-JEV >= .95 CONFIDENT WRONG: 88
-JEV >= .98 CONFIDENT WRONG: 43
+JEV ACCURACY: 0.511
+JEV >= .90 CONFIDENT WRONG: 200
+JEV >= .95 CONFIDENT WRONG: 114
+JEV >= .98 CONFIDENT WRONG: 53
 
-ACCEPTED UNIQUE FAILURES: 364
+ACCEPTED UNIQUE FAILURES: 447
 TARGET = 1000
-TARGET REMAINING: 636
+TARGET REMAINING: 553
 
 TEACHER AGREEMENT RATE: 1.000
-QUARANTINE COUNT: 302
+QUARANTINE COUNT: 385
 DUPLICATE REJECTION RATE: 0.001
 
 P50 LATENCY: 44.8
-P95 LATENCY: 52.0
-DECISIONS / SECOND: 8.77
+P95 LATENCY: 52.5
+DECISIONS / SECOND: 8.23
 
-CHIP ANSWERS THIS RUN: 739
+CHIP ANSWERS THIS RUN: 910
 NO FORCED JEV THIS RUN: 47
 WIRE DECIDED_BY: chip, teacher
 WIRE MODEL: HailoJEV-Qwen3-1.7B-DPO-merged.gguf, hailojev_student_ettin68m_seq128.hef (352c0f6d)
@@ -38,11 +38,11 @@ TOP FAILURE MECHANISMS:
 - account_quota_hit n=1 max_conf=0.977 ids=w-quota-1
 - action_overdue n=1 max_conf=0.794 ids=w-action-1
 - aisle_blocked n=1 max_conf=0.716 ids=w-osha-1
+- almanac_year n=1 max_conf=0.888 ids=w-almanac-1
 - anchor_hold n=1 max_conf=0.912 ids=w-anchor-1
 - anvil_too_cold n=1 max_conf=0.951 ids=w-anvil-1
 - apple_ripe n=1 max_conf=0.941 ids=w-orchard-1
 - approval_spend_over n=1 max_conf=0.903 ids=apr-over-spend
 - async_lag_over n=1 max_conf=0.912 ids=w-async-1
-- atp_covers_order n=1 max_conf=0.966 ids=w-atp-1
 
-Live decide health model=JEV-H ettin68m student HEF (old, 352c0f6d) + Qwen3 CPU teacher fallback device=hailo-10h (JEV-H student) + cpu teacher hef_sha_prefix=352c0f6d chip_cond=ok. Sent 202 decide calls. A row counts only when the ettin68m chip answer is wrong at confidence >= 0.90 and the mechanism is new. CPU teacher fallbacks are quarantine, not JEV. Wall mined against the live student.
+Live decide health model=JEV-H ettin68m student HEF (old, 352c0f6d) + Qwen3 CPU teacher fallback device=hailo-10h (JEV-H student) + cpu teacher hef_sha_prefix=352c0f6d chip_cond=ok. Sent 171 decide calls. A row counts only when the ettin68m chip answer is wrong at confidence >= 0.90 and the mechanism is new. CPU teacher fallbacks are quarantine, not JEV. Wall mined against the live student.
