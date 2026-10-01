@@ -209,6 +209,7 @@ class DrainTests(unittest.TestCase):
             return _payload(case["presented_options"], 0, escalated=True)
 
         summary = drain(CFG, post, health={"chip_cond": "probe_failed:HTTP 500"}, root=root, limit=3)
+        self.assertFalse(summary["stopped_not_student"])
         self.assertEqual(summary["sent"], 3)
         self.assertEqual(summary["chip_answers"], 0)
         self.assertEqual(len(calls), 3)
@@ -217,6 +218,42 @@ class DrainTests(unittest.TestCase):
         self.assertTrue(all(row["skip"] == "no_forced_jev" for row in quarantine))
         self.assertEqual(read_jsonl(paths["accepted_failures"]), [])
         self.assertEqual(read_jsonl(paths["pending"]), [])
+
+
+class WallTests(unittest.TestCase):
+    def test_wall_verifies(self) -> None:
+        from jevh_teacher_swarm.teachers.wall import wall_cases
+
+        ready, quarantined = prepare_batch(wall_cases())
+        self.assertEqual(quarantined, [])
+        self.assertGreater(len(ready), 200)
+        self.assertEqual(len({case["id"] for case in ready}), len(ready))
+
+    def test_stop_when_student_leaves(self) -> None:
+        from jevh_teacher_swarm.prepare import tree
+        from jevh_teacher_swarm.io_util import write_jsonl
+
+        ready, _ = prepare_batch(authored_cases())
+        root = Path("/tmp/jevh-swarm-stop")
+        if root.exists():
+            for path in root.rglob("*"):
+                if path.is_file():
+                    path.unlink()
+        paths = tree(root)
+        write_jsonl(paths["pending"], ready[:3])
+        write_jsonl(paths["inflight"], [])
+        write_jsonl(paths["accepted_failures"], [])
+
+        def post(case):
+            return _payload(case["presented_options"], 0, escalated=True)
+
+        def stop_when(row, payload):
+            return payload.get("decided_by") != "chip"
+
+        summary = drain(CFG, post, root=root, stop_when=stop_when)
+        self.assertEqual(summary["sent"], 1)
+        self.assertTrue(summary["stopped_not_student"])
+        self.assertEqual(summary["queue_depth"], 2)
 
 
 class RunBindingTests(unittest.TestCase):

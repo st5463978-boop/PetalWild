@@ -33,6 +33,11 @@ def _fmt(value, digits=3) -> str:
 def build_status(cfg: dict, root=None, prior_ledger: list[dict] | None = None) -> dict:
     paths = default_tree(root)
     generated = read_jsonl(paths["batch"])
+    seen_ids = {row.get("id") for row in generated}
+    for row in read_jsonl(paths["batch"].with_name("wall.jsonl")):
+        if row.get("id") not in seen_ids:
+            generated.append(row)
+            seen_ids.add(row.get("id"))
     pending = read_jsonl(paths["pending"])
     attempts = [row for row in read_jsonl(paths["attempts"]) if row.get("origin") != "jevh_clean_core"]
     accepted = [row for row in read_jsonl(paths["accepted_failures"]) if row.get("counted_unique")]

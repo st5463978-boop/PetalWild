@@ -18,6 +18,7 @@ from jevh_teacher_swarm.prepare import prepare_batch, tree  # noqa: E402
 from jevh_teacher_swarm.report import write_reports  # noqa: E402
 from jevh_teacher_swarm.runners.batch_runner import drain  # noqa: E402
 from jevh_teacher_swarm.teachers.batch import authored_cases  # noqa: E402
+from jevh_teacher_swarm.teachers.wall import wall_cases  # noqa: E402
 
 CLEAN_LEDGER = ORCH / "jevh_clean_core" / "out" / "ledger.jsonl"
 CLEAN_FAILURES = ORCH / "jevh_clean_core" / "out" / "failures.jsonl"
@@ -119,9 +120,67 @@ def run(cfg: dict, limit: int | None) -> dict:
     return summary
 
 
+def _student_stopped(row: dict, payload: dict) -> bool:
+    """The live student is decided_by chip with a chip object. Anything else ends the wall."""
+    chip = payload.get("chip")
+    return payload.get("decided_by") != "chip" or not isinstance(chip, dict)
+
+
+def mine(cfg: dict, limit: int | None) -> dict:
+    from jevh_teacher_swarm.analysis.dedupe import near_duplicate
+    from jevh_teacher_swarm.runners.jev_client import DecideSession, fetch_health, resolve_decide_url
+
+    health = fetch_health()
+    if health.get("chip_cond") != "ok":
+        print(json.dumps({"blocked": health.get("chip_cond"), "sent": 0}))
+        return {"blocked": health.get("chip_cond"), "sent": 0, "health": health}
+    ready, quarantined = prepare_batch(wall_cases())
+    if quarantined:
+        raise RuntimeError("wall failed verification: " + json.dumps(quarantined[:5]))
+    paths = tree()
+    attempted = {row.get("id") for row in read_jsonl(paths["attempts"])}
+    known = read_jsonl(paths["accepted_failures"])
+    mechanisms = {row.get("mechanism_id") for row in known if row.get("counted_unique")}
+    known_q = [(row.get("question") or "", row.get("gold") or row.get("answer") or "") for row in known if row.get("counted_unique")]
+    fresh = []
+    for case in ready:
+        if case["id"] in attempted or case["mechanism_id"] in mechanisms:
+            continue
+        if any(near_duplicate(case["question"], question, cfg["near_duplicate_ratio"], case["verifier_answer"], answer) for question, answer in known_q):
+            continue
+        fresh.append(case)
+    if limit is not None:
+        fresh = fresh[: max(0, limit)]
+    write_jsonl(paths["pending"], fresh)
+    write_jsonl(paths["batch"].with_name("wall.jsonl"), ready)
+    url = resolve_decide_url()
+    session = DecideSession(url, float(cfg["decide_timeout_s"]))
+
+    def post(case):
+        return session.decide(case)
+
+    try:
+        summary = drain(cfg, post, health=health, stop_when=_student_stopped)
+    finally:
+        session.close()
+    try:
+        health = fetch_health()
+    except Exception as exc:  # noqa: BLE001
+        health["after_error"] = f"{type(exc).__name__}: {exc}"
+    summary["health"] = health
+    summary["wall"] = len(fresh)
+    write_reports(
+        cfg,
+        prior_ledger=read_jsonl(CLEAN_LEDGER),
+        note=_note(health, summary.get("sent") or 0) + " Wall mined against the live student.",
+        prep_quarantine=0,
+    )
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="JEV-H frontier teacher swarm")
-    parser.add_argument("command", choices=("generate", "run", "status", "check"))
+    parser.add_argument("command", choices=("generate", "run", "status", "check", "mine"))
     parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args(argv)
     cfg = load_config()
@@ -136,6 +195,11 @@ def main(argv: list[str] | None = None) -> int:
         stats = write_reports(cfg, prior_ledger=read_jsonl(CLEAN_LEDGER), note=_note(None, len(read_jsonl(tree()["attempts"]))))
         print(tree()["status"].read_text(encoding="utf-8"))
         return 0 if stats else 0
+    if args.command == "mine":
+        summary = mine(cfg, args.limit)
+        print(json.dumps({key: value for key, value in summary.items() if key != "health"}, indent=2))
+        print(json.dumps(summary.get("health"), indent=2))
+        return 0
     summary = run(cfg, args.limit)
     print(json.dumps({key: value for key, value in summary.items() if key != "health"}, indent=2))
     print(json.dumps(summary.get("health"), indent=2))

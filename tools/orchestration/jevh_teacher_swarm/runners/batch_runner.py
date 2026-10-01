@@ -21,7 +21,7 @@ def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | None = None) -> dict:
+def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | None = None, stop_when=None) -> dict:
     paths = default_tree(root)
     pending = read_jsonl(paths["pending"])
     inflight = read_jsonl(paths["inflight"])
@@ -39,6 +39,7 @@ def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | N
     sent = 0
     chip_answers = 0
     transport_errors = 0
+    stopped_not_student = False
     for case in queued:
         write_jsonl(paths["inflight"], [case])
         started = time.perf_counter()
@@ -81,6 +82,9 @@ def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | N
         attempted.add(case.get("id"))
         if transport_errors >= 3:
             break
+        if stop_when is not None and payload is not None and stop_when(row, payload):
+            stopped_not_student = True
+            break
     remaining = [row for row in read_jsonl(paths["pending"]) if row.get("id") not in attempted]
     write_jsonl(paths["pending"], remaining)
     write_jsonl(paths["inflight"], [])
@@ -88,6 +92,7 @@ def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | N
         "sent": sent,
         "chip_answers": chip_answers,
         "stopped_on_transport": transport_errors >= 3,
+        "stopped_not_student": stopped_not_student,
         "queue_depth": len(remaining),
         "health": health,
     }
