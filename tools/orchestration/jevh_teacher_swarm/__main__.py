@@ -18,6 +18,7 @@ from jevh_teacher_swarm.prepare import prepare_batch, tree  # noqa: E402
 from jevh_teacher_swarm.report import write_reports  # noqa: E402
 from jevh_teacher_swarm.runners.batch_runner import drain  # noqa: E402
 from jevh_teacher_swarm.teachers.batch import authored_cases  # noqa: E402
+from jevh_teacher_swarm.teachers.refill300 import serve_continuous  # noqa: E402
 from jevh_teacher_swarm.teachers.root300 import root300_cases  # noqa: E402
 from jevh_teacher_swarm.teachers.wall import wall_cases  # noqa: E402
 
@@ -286,7 +287,7 @@ def serve_root300(cfg: dict) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="JEV-H frontier teacher swarm")
-    parser.add_argument("command", choices=("generate", "run", "status", "check", "mine", "root300"))
+    parser.add_argument("command", choices=("generate", "run", "status", "check", "mine", "root300", "root300cont"))
     parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args(argv)
     cfg = load_config()
@@ -306,6 +307,10 @@ def main(argv: list[str] | None = None) -> int:
         printable = {key: value for key, value in summary.items() if key != "health"}
         print(json.dumps(printable, indent=2, default=str))
         print(json.dumps(summary.get("health"), indent=2))
+        return 0
+    if args.command == "root300cont":
+        summary = serve_continuous(cfg, fresh_counted)
+        print(json.dumps(summary, indent=2, default=str))
         return 0
     if args.command == "mine":
         summary = mine(cfg, args.limit)
