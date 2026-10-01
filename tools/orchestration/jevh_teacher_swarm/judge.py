@@ -73,6 +73,7 @@ def judge(case: dict, payload: dict, state: dict, cfg: dict) -> dict:
         "training_eligible": False,
         "training_selected": False,
         "gold": gold,
+        "root_family": case.get("root_family") or case.get("attack_family"),
         "jev_source": source,
         "chip_backed": backed,
         "model": payload.get("model"),

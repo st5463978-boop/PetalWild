@@ -20,6 +20,23 @@ def interpret(rule: dict, facts: dict) -> str:
     if op == "cmp":
         ok = _CMP[rule["rel"]](facts[rule["left"]], facts[rule["right"]])
         return rule["if_true"] if ok else rule["if_false"]
+    if op == "scale_cmp":
+        left = facts[rule["left"]] * facts[rule["scale"]]
+        ok = _CMP[rule["rel"]](left, facts[rule["right"]])
+        return rule["if_true"] if ok else rule["if_false"]
+    if op == "div_cmp":
+        left = facts[rule["left"]] // facts[rule["denom"]]
+        ok = _CMP[rule["rel"]](left, facts[rule["right"]])
+        return rule["if_true"] if ok else rule["if_false"]
+    if op == "percent_cmp":
+        left = (facts[rule["part"]] * 100) // facts[rule["whole"]]
+        ok = _CMP[rule["rel"]](left, facts[rule["line"]])
+        return rule["if_true"] if ok else rule["if_false"]
+    if op == "ratio_cmp":
+        left = facts[rule["a_num"]] * facts[rule["b_den"]]
+        right = facts[rule["b_num"]] * facts[rule["a_den"]]
+        ok = _CMP[rule["rel"]](left, right)
+        return rule["if_true"] if ok else rule["if_false"]
     if op == "eq":
         ok = facts[rule["key"]] == rule["value"]
         return rule["if_true"] if ok else rule["if_false"]

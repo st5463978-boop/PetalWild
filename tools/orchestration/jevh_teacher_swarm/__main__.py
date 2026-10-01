@@ -18,6 +18,7 @@ from jevh_teacher_swarm.prepare import prepare_batch, tree  # noqa: E402
 from jevh_teacher_swarm.report import write_reports  # noqa: E402
 from jevh_teacher_swarm.runners.batch_runner import drain  # noqa: E402
 from jevh_teacher_swarm.teachers.batch import authored_cases  # noqa: E402
+from jevh_teacher_swarm.teachers.root300 import root300_cases  # noqa: E402
 from jevh_teacher_swarm.teachers.wall import wall_cases  # noqa: E402
 
 CLEAN_LEDGER = ORCH / "jevh_clean_core" / "out" / "ledger.jsonl"
@@ -193,9 +194,99 @@ def mine(cfg: dict, limit: int | None) -> dict:
     return summary
 
 
+def fresh_counted(rows: list[dict], cap: int = 15) -> dict:
+    from jevh_teacher_swarm.analysis.dedupe import near_duplicate
+
+    counted = []
+    per_root: dict[str, int] = {}
+    seen_mech: set[str] = set()
+    questions: list[tuple[str, str]] = []
+    for row in rows:
+        if row.get("jev_source") != "chip" or row.get("jev_wrong") is not True:
+            continue
+        confidence = row.get("jev_confidence")
+        if not isinstance(confidence, (int, float)) or confidence < 0.90:
+            continue
+        if row.get("skip") not in (None, "near_duplicate"):
+            continue
+        root = str(row.get("root_family") or row.get("attack_family") or "unclassified")
+        if root == "numeric_not_computable_overprediction":
+            continue
+        if per_root.get(root, 0) >= cap:
+            continue
+        mech = str(row.get("mechanism_id") or "")
+        if mech in seen_mech:
+            continue
+        gold = str(row.get("gold") or "")
+        question = str(row.get("question") or "")
+        if any(near_duplicate(question, prev_q, 0.90, gold, prev_a) for prev_q, prev_a in questions):
+            continue
+        per_root[root] = per_root.get(root, 0) + 1
+        seen_mech.add(mech)
+        questions.append((question, gold))
+        counted.append(row)
+    return {"counted": counted, "per_root": per_root, "families": len(per_root)}
+
+
+def serve_root300(cfg: dict) -> dict:
+    import threading
+    from pathlib import Path
+
+    from jevh_teacher_swarm.runners.batch_runner import drain_paced
+    from jevh_teacher_swarm.runners.jev_client import DecideSession, fetch_health, resolve_decide_url
+
+    health = fetch_health()
+    if health.get("chip_cond") != "ok" or health.get("chip_held") is not True:
+        print(json.dumps({"blocked": health.get("chip_cond"), "chip_held": health.get("chip_held"), "sent": 0}))
+        return {"blocked": health.get("chip_cond"), "sent": 0, "health": health}
+    ready, quarantined = prepare_batch(root300_cases())
+    run_root = Path(__file__).resolve().parent / "root300_run"
+    paths = tree(run_root)
+    attempted = {row.get("id") for row in read_jsonl(paths["attempts"])}
+    fresh = [case for case in ready if case["id"] not in attempted]
+    write_jsonl(paths["pending"], fresh)
+    url = resolve_decide_url()
+    sessions = [DecideSession(url, 8.0) for _ in range(8)]
+    free = list(sessions)
+    slot = threading.Lock()
+
+    def post(case):
+        with slot:
+            session = free.pop()
+        try:
+            return session.decide(case)
+        finally:
+            with slot:
+                free.append(session)
+
+    try:
+        summary = drain_paced(cfg, post, fresh, health_check=fetch_health, pace_s=0.0415, max_in_flight=8, root=run_root)
+    finally:
+        for session in sessions:
+            session.close()
+    rows = read_jsonl(paths["attempts"])
+    tally = fresh_counted(rows)
+    summary["fresh_counted_300"] = len(tally["counted"])
+    summary["root_families"] = tally["families"]
+    summary["per_root"] = tally["per_root"]
+    summary["health"] = fetch_health()
+    (run_root / "reports").mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"FRESH COUNTED >=0.90: {len(tally['counted'])} / 300",
+        f"ROOT FAMILIES REPRESENTED: {tally['families']}",
+        "SATURATED FAMILIES: " + ", ".join(name for name, n in tally["per_root"].items() if n >= 15) or "none",
+        f"READY QUEUE: {summary.get('queue_depth')}",
+        "",
+    ]
+    for name, n in sorted(tally["per_root"].items(), key=lambda item: -item[1]):
+        lines.append(f"- {name}: {n}")
+    (run_root / "reports" / "current_status.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="JEV-H frontier teacher swarm")
-    parser.add_argument("command", choices=("generate", "run", "status", "check", "mine"))
+    parser.add_argument("command", choices=("generate", "run", "status", "check", "mine", "root300"))
     parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args(argv)
     cfg = load_config()
@@ -210,6 +301,12 @@ def main(argv: list[str] | None = None) -> int:
         stats = write_reports(cfg, prior_ledger=read_jsonl(CLEAN_LEDGER), note=_note(None, len(read_jsonl(tree()["attempts"]))))
         print(tree()["status"].read_text(encoding="utf-8"))
         return 0 if stats else 0
+    if args.command == "root300":
+        summary = serve_root300(cfg)
+        printable = {key: value for key, value in summary.items() if key != "health"}
+        print(json.dumps(printable, indent=2, default=str))
+        print(json.dumps(summary.get("health"), indent=2))
+        return 0
     if args.command == "mine":
         summary = mine(cfg, args.limit)
         print(json.dumps({key: value for key, value in summary.items() if key != "health"}, indent=2))
