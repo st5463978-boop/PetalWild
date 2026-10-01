@@ -73,6 +73,11 @@ def drain(cfg: dict, post, health: dict | None = None, root=None, limit: int | N
         append_jsonl(paths["attempts"], row)
         bucket = _BUCKET.get(row.get("bucket"), "quarantine")
         append_jsonl(paths[bucket], row)
+        print(
+            "%s skip=%s chip=%s client_ms=%s model=%s"
+            % (row.get("id"), row.get("skip"), row.get("chip_backed"), row.get("client_ms"), row.get("model")),
+            flush=True,
+        )
         attempted.add(case.get("id"))
         if transport_errors >= 3:
             break

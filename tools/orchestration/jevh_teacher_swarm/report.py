@@ -64,6 +64,9 @@ def build_status(cfg: dict, root=None, prior_ledger: list[dict] | None = None) -
     accuracy = len(chip_correct) / len(chip_rows) if chip_rows else None
     chip_seconds = sum(this_latency) / 1000.0
     rate = len(chip_rows) / chip_seconds if chip_seconds else None
+    forced = [row for row in attempts if row.get("skip") == "no_forced_jev"]
+    chip_answers = len(chip_rows)
+    no_chip = len(forced)
     return {
         "generated": len(generated),
         "sent": sent,
@@ -94,8 +97,13 @@ def build_status(cfg: dict, root=None, prior_ledger: list[dict] | None = None) -
         "families": family_stats(chip_rows + [row for row in accepted if row.get("origin") == "jevh_clean_core"]),
         "calibration": calibrate(chip_rows),
         "correct": len(correct),
-        "chip_answers": len(chip_rows),
-        "no_chip": sum(1 for row in attempts if row.get("skip") == "no_forced_jev"),
+        "chip_answers": chip_answers,
+        "no_chip": no_chip,
+        "wire_models": sorted({str(row.get("model")) for row in attempts if row.get("model")}),
+        "wire_devices": sorted({str(row.get("device")) for row in attempts if row.get("device")}),
+        "wire_decided_by": sorted({str(row.get("decided_by")) for row in attempts if row.get("decided_by")}),
+        "cpu_teacher_matched_verifier": sum(1 for row in forced if row.get("teacher_choice_on_wire") == row.get("gold")),
+        "cpu_teacher_differed": sum(1 for row in forced if row.get("teacher_choice_on_wire") != row.get("gold")),
     }
 
 
@@ -124,6 +132,11 @@ def render_status(stats: dict, note: str) -> str:
         "",
         "CHIP ANSWERS THIS RUN: %s" % stats["chip_answers"],
         "NO FORCED JEV THIS RUN: %s" % stats["no_chip"],
+        "WIRE DECIDED_BY: %s" % (", ".join(stats["wire_decided_by"]) or "n/a"),
+        "WIRE MODEL: %s" % (", ".join(stats["wire_models"]) or "n/a"),
+        "WIRE DEVICE: %s" % (", ".join(stats["wire_devices"]) or "n/a"),
+        "CPU TEACHER MATCHED VERIFIER (not counted): %s" % stats["cpu_teacher_matched_verifier"],
+        "CPU TEACHER DIFFERED (not counted): %s" % stats["cpu_teacher_differed"],
         "LATENCY SOURCE: %s" % stats["latency_source"],
         "PRIOR CHIP ROWS: %s" % stats["prior_n"],
         "PRIOR NPU P50 MS: %s" % _fmt(stats["prior_p50"], 1),

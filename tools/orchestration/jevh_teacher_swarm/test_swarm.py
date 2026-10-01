@@ -219,6 +219,23 @@ class DrainTests(unittest.TestCase):
         self.assertEqual(read_jsonl(paths["pending"]), [])
 
 
+class RunBindingTests(unittest.TestCase):
+    def test_run_passes_decide_timeout(self) -> None:
+        from jevh_teacher_swarm.__main__ import run
+
+        def fake_drain(cfg, post, health=None, root=None, limit=None):
+            post({"question": "q?", "presented_options": ["a", "b"], "facts": {}, "kind": "k"})
+            return {"sent": 1, "chip_answers": 0}
+
+        with patch("jevh_teacher_swarm.runners.jev_client.fetch_health", return_value={"hef_sha_prefix": "352c0f6d"}):
+            with patch("jevh_teacher_swarm.runners.jev_client.decide", return_value={"ok": True}) as decide_mock:
+                with patch("jevh_teacher_swarm.__main__.drain", fake_drain):
+                    with patch("jevh_teacher_swarm.__main__.write_reports", return_value={}):
+                        with patch("jevh_teacher_swarm.__main__.read_jsonl", return_value=[]):
+                            run(CFG, None)
+        self.assertEqual(decide_mock.call_args.args[1], float(CFG["decide_timeout_s"]))
+
+
 class ClientTests(unittest.TestCase):
     def test_decide_sends_presented_options(self) -> None:
         from jevh_teacher_swarm.runners.jev_client import decide

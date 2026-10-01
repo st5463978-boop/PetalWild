@@ -93,14 +93,29 @@ def run(cfg: dict, limit: int | None) -> dict:
     health = fetch_health()
     if health.get("hef_sha_prefix") and not str(health["hef_sha_prefix"]).startswith(str(cfg["expected_hef_sha_prefix"])[:8]):
         health["sha_mismatch"] = True
-    summary = drain(cfg, decide, health=health, limit=limit)
+    timeout = float(cfg["decide_timeout_s"])
+
+    def post(case):
+        return decide(case, timeout)
+
+    already = len(read_jsonl(tree()["attempts"]))
+    summary = drain(cfg, post, health=health, limit=limit)
+    try:
+        health = fetch_health()
+    except Exception as exc:  # noqa: BLE001 — the drain result still stands
+        health["after_error"] = f"{type(exc).__name__}: {exc}"
+    sent = sum(1 for row in read_jsonl(tree()["attempts"]) if row.get("skip") != "transport_error")
+    note = _note(health, sent)
+    if already:
+        note += " Resume: earlier calls in this batch either stayed on the CPU teacher or hit a dead tunnel."
     write_reports(
         cfg,
         prior_ledger=read_jsonl(CLEAN_LEDGER),
-        note=_note(health, summary["sent"]),
+        note=note,
         prep_quarantine=0,
     )
     summary["health"] = health
+    summary["sent_total"] = sent
     return summary
 
 
