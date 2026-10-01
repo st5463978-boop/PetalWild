@@ -72,6 +72,56 @@ Chip-scored rows only. CPU-teacher answers are omitted.
 - bothburn attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.929
 - season attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.964
 - sum attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.954
+- lamp attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.996
+- gate attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.927
+- granary attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.942
+- cart attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.990
+- tide attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.901
+- rain attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.978
+- hive attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.902
+- bread attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.961
+- loom attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.927
+- anvil attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.944
+- bellows attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.935
+- salt attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.921
+- wick attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.932
+- slate attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.831
+- pump attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.996
+- cistern attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.950
+- meter attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.994
+- sewer attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.988
+- calendar attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.986
+- bond attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.999
+- oath attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.859
+- jury attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.903
+- vote2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.946
+- curfew2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.975
+- patrol attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.979
+- bucket2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.949
+- ladder attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.926
+- sand attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.916
+- levee attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.982
+- yeast attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.926
+- cork attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.950
+- tab attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.905
+- lottery attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.961
+- wager attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.992
+- map2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.909
+- anchor attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.922
+- sail attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.937
+- ballast attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.940
+- cargo attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.994
+- bond2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.883
+- fog attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.938
+- buoy attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.867
+- rope attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.989
+- spar attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.995
+- rudder attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.994
+- sick attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.912
+- prize attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.933
+- match2 attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.967
+- ramrod attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.947
+- treaty attempts=2 accuracy=0.500 confident_wrong=1 avg_conf=0.998
 - ttl_arithmetic attempts=1 accuracy=0.000 confident_wrong=1 avg_conf=0.950
 - spend_threshold attempts=1 accuracy=0.000 confident_wrong=1 avg_conf=0.903
 - price_list attempts=1 accuracy=0.000 confident_wrong=1 avg_conf=0.933
@@ -179,11 +229,84 @@ Chip-scored rows only. CPU-teacher answers are omitted.
 - owner attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.713
 - cycle attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.749
 - prior attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.810
+- oven attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.766
+- kettle attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.870
+- soil attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.798
+- ration attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.847
+- well attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.824
+- seed attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.718
+- wool attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.811
+- milk attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.737
+- ink attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.881
+- press attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.766
+- dye attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.843
+- quench attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.764
+- charcoal attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.858
+- smoke attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.886
+- cellar attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.813
+- candle attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.719
+- hearth attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.829
+- chimney attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.771
+- thatch attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.873
+- gutter attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.910
+- tap attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.707
+- clock attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.817
+- sundial attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.854
+- stall attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.827
+- coin attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.812
+- ledger2 attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.803
+- wage attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.703
+- tithe attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.851
+- fine attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.829
+- proxy attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.846
+- seal attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.816
+- watch attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.801
+- alarm2 attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.753
+- hose attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.806
+- sluice attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.791
+- millrace attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.823
+- grind attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.882
+- chaff attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.835
+- barrel2 attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.795
+- cask attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.858
+- taproom attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.744
+- pledge attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.798
+- pawn attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.823
+- compass attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.739
+- logline attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.712
+- depth attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.701
+- manifest attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.875
+- customs attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.825
+- quarantine2 attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.719
+- pilot attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.797
+- light2 attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.887
+- beacon attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.717
+- chain attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.902
+- paint attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.861
+- sailcloth attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.833
+- lime attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.748
+- watch2 attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.769
+- muster attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.733
+- letter attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.743
+- signal attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.807
+- codebook attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.833
+- flint attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.821
+- powder2 attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.779
+- drum attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.742
+- colour attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.858
+- sentry attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.875
+- password attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.737
+- countersign attempts=1 accuracy=0.000 confident_wrong=0 avg_conf=0.762
+- parole attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.926
+- flag2 attempts=1 accuracy=1.000 confident_wrong=0 avg_conf=0.872
+- ransom attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.859
+- envoy attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.849
+- safeconduct attempts=2 accuracy=0.500 confident_wrong=0 avg_conf=0.822
 
 Calibration bins (chip confidence):
 - [0.0, 0.5) n=0 accuracy=n/a
 - [0.5, 0.7) n=0 accuracy=n/a
-- [0.7, 0.9) n=179 accuracy=0.520
-- [0.9, 0.95) n=68 accuracy=0.529
-- [0.95, 0.98) n=39 accuracy=0.436
-- [0.98, 1.01) n=32 accuracy=0.500
+- [0.7, 0.9) n=298 accuracy=0.530
+- [0.9, 0.95) n=117 accuracy=0.513
+- [0.95, 0.98) n=59 accuracy=0.441
+- [0.98, 1.01) n=63 accuracy=0.524
