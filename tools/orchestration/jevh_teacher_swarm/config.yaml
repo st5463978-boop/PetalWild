@@ -1,0 +1,14 @@
+# Queue watermarks are advisory. This swarm does not invent filler rows
+# to reach the target depth while the student chip is not answering.
+confident_wrong_min: 0.90
+confident_095: 0.95
+confident_098: 0.98
+target_unique_failures: 1000
+low_watermark: 500
+target_queue: 2500
+high_watermark: 10000
+near_duplicate_ratio: 0.90
+expected_hef_sha_prefix: "352c0f6d"
+production_escalate_below: 0.70
+training_eligible: false
+decide_timeout_s: 75
