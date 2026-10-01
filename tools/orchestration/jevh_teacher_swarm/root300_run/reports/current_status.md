@@ -1,4 +1,5 @@
 FRESH COUNTED >=0.90: 309 / 300
+FROZEN EXPORT: 300 across 25 families
 ROOT FAMILIES REPRESENTED: 25
 SATURATED FAMILIES: unit_conversion_error, threshold_boundary_error, resource_conservation_error, stale_state_preference, false_completion_error, concurrency_race_error, save_state_invariant_error, capacity_constraint_error, inclusive_exclusive_error, quota_exceeded_error, budget_overrun_error, rate_limit_error, heartbeat_miss_error, speed_limit_error, temperature_alarm_error
 READY QUEUE: 4520
