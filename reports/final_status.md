@@ -28,7 +28,7 @@
     - Full layer-3 V projection: `hailo_port/generated/clef_experimental_v_proj.hef` (3,211,264 bytes, compile 1m 19s). Quantized emulator cosine 0.999288, max absolute error 0.147.
     - Full layer-3 Q projection, four contexts: `hailo_port/generated/clef_experimental_q_proj.hef` (28,893,184 bytes, compile 13m 39s). Quantized emulator cosine 0.998160, max absolute error 0.376.
     - Full Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`. Seventeen contexts allocated. Kernel compilation did not run.
-12. Next experiment: let the restarted MLP compile enter multi-context search and reach kernel compilation. Single-context placement failed again in 28m 33s. The head prefix HAR is not yet quantized or compiled. Do not deploy this over JEV-H.
+12. Next experiment: let the restarted MLP compile leave the post-failure allocator state and reach kernel compilation. The head prefix quantizes but `conv2` does not place: 133 memory units required, 128 available. Do not deploy this over JEV-H.
 
 ## Smoke records
 

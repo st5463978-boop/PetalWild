@@ -16,6 +16,8 @@ The decision numbers below are still the separate host-side int8 check on the re
 
 The joint-head ONNX after host type embeddings, the folded weight transpose, and the Tile replacement of two Expands matches the official head on 4 random cases: max absolute error 4.77e-7, decision agreement 1.0. That graph is what the parser is failing on, not a numerically different head.
 
+The parsed head prefix, quantized with 64 rows at optimization level 0, matches the float Hailo graph on five outputs with cosine 0.9996 to 0.9999 and max absolute error 0.055. That prefix did not compile.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).
