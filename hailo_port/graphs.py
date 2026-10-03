@@ -30,6 +30,35 @@ def rotate_half_masked(x: torch.Tensor) -> torch.Tensor:
     return swapped * sign
 
 
+def unrolled_attention(
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    mask: torch.Tensor,
+    scaling: float,
+    group: int,
+) -> torch.Tensor:
+    """One matmul per query head. A single grouped matmul leaves zero points at length 4096."""
+
+    batch, heads, length, dim = query.shape
+    # Put the head axis on the width. A feature split followed by a transpose
+    # loses its successor when Hailo fuses that transpose into the matmul.
+    query_w = query.permute(0, 2, 3, 1)
+    key_w = key.permute(0, 3, 2, 1)
+    value_w = value.permute(0, 2, 3, 1)
+    flat_mask = mask.reshape(mask.shape[0], length, length)
+    outputs = []
+    for index in range(heads):
+        kv = index // group
+        query_head = query_w.narrow(-1, index, 1).squeeze(-1)
+        key_head = key_w.narrow(-1, kv, 1).squeeze(-1)
+        value_head = value_w.narrow(-1, kv, 1).squeeze(-1)
+        scores = torch.matmul(query_head, key_head) * scaling + flat_mask
+        outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
+    packed = torch.cat(outputs, dim=-1)
+    return packed.reshape(batch, length, heads, dim).contiguous()
+
+
 def apply_partial_rope(states: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
     """Partial RoPE. ``cos`` and ``sin`` already broadcast onto ``states``.
 
@@ -118,11 +147,13 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
 
     ``rotate_half`` dies in the DFC 5.4.0 fuser. ``apply_partial_rope`` is the
     same values. cos/sin stay host inputs, so mRoPE scatter stays off device.
+    ``unroll_heads`` writes one matmul per query head so Hailo does not group them.
     """
 
-    def __init__(self, layer: torch.nn.Module):
+    def __init__(self, layer: torch.nn.Module, unroll_heads: bool = False):
         super().__init__()
         self.layer = layer
+        self.unroll_heads = unroll_heads
 
     def forward(self, hidden: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
         from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
@@ -145,18 +176,55 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
         broadcast_sin = sin.unsqueeze(1)
         query_states = apply_partial_rope(query_states, broadcast_cos, broadcast_sin)
         key_states = apply_partial_rope(key_states, broadcast_cos, broadcast_sin)
-        attended, _ = eager_attention_forward(
-            attention,
-            query_states,
-            key_states,
-            value_states,
-            causal_mask(normalized),
-            scaling=attention.scaling,
-            dropout=0.0,
-        )
+        mask = causal_mask(normalized)
+        if self.unroll_heads:
+            attended = unrolled_attention(
+                query_states,
+                key_states,
+                value_states,
+                mask,
+                attention.scaling,
+                attention.num_key_value_groups,
+            )
+        else:
+            attended, _ = eager_attention_forward(
+                attention,
+                query_states,
+                key_states,
+                value_states,
+                mask,
+                scaling=attention.scaling,
+                dropout=0.0,
+            )
         attended = attended.reshape(*input_shape, -1).contiguous()
         attended = attention.o_proj(attended * torch.sigmoid(gate))
         return residual + attended
+
+
+class UnrolledAttentionCore(torch.nn.Module):
+    """Per-head matmuls. Head axis is already the width, so Hailo can slice it.
+
+    query is [B, S, D, H], key is [B, D, S, KV], value is [B, S, D, KV].
+    """
+
+    def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
+        length = query.shape[1]
+        dim = query.shape[2]
+        heads = query.shape[-1]
+        group = heads // key.shape[-1]
+        flat_mask = causal_mask(query[:, :, 0, :]).reshape(1, length, length)
+        # A Python scalar multiply becomes an ew_mult whose constant has no
+        # spatial axis, and is_spatial_broadcast then indexes shape[1].
+        scale = query.new_full((1, length, dim), dim**-0.5)
+        outputs = []
+        for index in range(heads):
+            kv = index // group
+            query_head = query.narrow(-1, index, 1).squeeze(-1) * scale
+            key_head = key.narrow(-1, kv, 1).squeeze(-1)
+            value_head = value.narrow(-1, kv, 1).squeeze(-1)
+            scores = torch.matmul(query_head, key_head) + flat_mask
+            outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
+        return torch.cat(outputs, dim=-1)
 
 
 class StackedFullAttention(torch.nn.Module):

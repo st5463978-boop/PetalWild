@@ -151,6 +151,30 @@ class RopeTests(unittest.TestCase):
         self.assertLess(float((got_query - ref_query).abs().max()), 1e-6)
         self.assertLess(float((got_key - ref_key).abs().max()), 1e-6)
 
+    def test_unrolled_heads_match_eager(self) -> None:
+        from graphs import causal_mask, unrolled_attention
+        from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
+
+        class Probe:
+            num_key_value_groups = 4
+            training = False
+
+        torch.manual_seed(2)
+        query = torch.randn(2, 16, 8, 32)
+        key = torch.randn(2, 4, 8, 32)
+        value = torch.randn(2, 4, 8, 32)
+        mask = causal_mask(query[:, 0])
+        with torch.inference_mode():
+            got = unrolled_attention(query, key, value, mask, 32**-0.5, 4)
+            ref, _ = eager_attention_forward(Probe(), query, key, value, mask, 32**-0.5, 0.0)
+        self.assertLess(float((got - ref).abs().max()), 1e-5)
+        from graphs import UnrolledAttentionCore
+
+        core = UnrolledAttentionCore().eval()
+        with torch.inference_mode():
+            packed = core(query.permute(0, 2, 3, 1), key.permute(0, 3, 2, 1), value.permute(0, 2, 3, 1))
+        self.assertLess(float((packed - ref.reshape(2, 8, -1)).abs().max()), 1e-5)
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:

@@ -176,7 +176,7 @@ def compile_one(name: str, calibration_rows: int) -> None:
     print(f"HEF {hef_path} bytes={len(hef)}", flush=True)
 
 
-def export_attention() -> None:
+def export_attention(unroll: bool = False) -> None:
     """Layer-3 attention, no MLP, masked RoPE. Host still supplies cos and sin."""
     import torch
 
@@ -186,7 +186,7 @@ def export_attention() -> None:
     from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextRotaryEmbedding
 
     layer, config = load_decoder(3)
-    module = AttentionOnlyMaskedRope(layer).eval()
+    module = AttentionOnlyMaskedRope(layer, unroll_heads=unroll).eval()
     rotary = Qwen3_5TextRotaryEmbedding(config).eval()
     torch.manual_seed(0)
     hidden = torch.randn(1, SEQUENCE, config.hidden_size)
@@ -203,7 +203,8 @@ def export_attention() -> None:
     print(f"masked vs official max_abs {delta:.6e} cos {tuple(cos.shape)}", flush=True)
     if delta > 1e-4:
         raise SystemExit(f"rope mismatch {delta}")
-    path = ONNX_DIR / "qwen35_attention_masked_rope.onnx"
+    name = "qwen35_attention_unrolled_rope" if unroll else "qwen35_attention_masked_rope"
+    path = ONNX_DIR / f"{name}.onnx"
     torch.onnx.export(
         module,
         (hidden, cos, sin),
@@ -404,6 +405,93 @@ def score_decisions() -> None:
         )
 
 
+def export_unrolled_core() -> None:
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import UnrolledAttentionCore
+
+    module = UnrolledAttentionCore().eval()
+    query = torch.zeros(1, SEQUENCE, 256, 16)
+    key = torch.zeros(1, 256, SEQUENCE, 4)
+    value = torch.zeros(1, SEQUENCE, 256, 4)
+    path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
+    torch.onnx.export(
+        module,
+        (query, key, value),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+        input_names=["query", "key", "value"],
+        output_names=["attended"],
+    )
+    torch.manual_seed(2)
+    query = torch.randn(4, SEQUENCE, 256, 16)
+    key = torch.randn(4, 256, SEQUENCE, 4)
+    value = torch.randn(4, SEQUENCE, 256, 4)
+    with torch.inference_mode():
+        output = module(query, key, value)
+    ref = ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz"
+    np.savez(ref, query=query.numpy(), key=key.numpy(), value=value.numpy(), output=output.numpy())
+    print(path, path.stat().st_size, output.shape, flush=True)
+
+
+def score_unrolled_core(calibration_rows: int) -> None:
+    from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+        MatmulEqualization,
+    )
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_attn_unrolled", disable_onnx_simplifier=True)
+    groups = []
+    for layer in runner._hn:
+        if "matmul" in layer.name:
+            groups.append((layer.name, getattr(layer, "groups", None)))
+    print("MATMULS", len(groups), groups[:4], flush=True)
+    MatmulEqualization.should_skip_algo = lambda self: True
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    ref = np.load(ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz")
+    arrays = [ref["query"], ref["key"], ref["value"]]
+    feed = {}
+    for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
+        array = np.asarray(array, dtype=np.float32)
+        while array.ndim < len(layer.output_shapes[0]):
+            array = array[:, None]
+        feed[layer.name] = array
+        print("FEED", layer.name, array.shape, layer.output_shapes[0], flush=True)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    expected = ref["output"]
+    while got.ndim > expected.ndim:
+        got = np.squeeze(got, axis=1)
+    left = expected.astype(np.float64).ravel()
+    right = got.astype(np.float64).ravel()
+    cosine = float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right)))
+    print(
+        f"quantized cosine {cosine:.6f} mse {float(np.mean((left - right) ** 2)):.6e} "
+        f"max {float(np.max(np.abs(left - right))):.6e}",
+        flush=True,
+    )
+    hef = runner.compile()
+    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_attn_unrolled.hef"
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "export"
     try:
@@ -411,6 +499,12 @@ def main() -> None:
             export_all()
         elif command == "export-attention":
             export_attention()
+        elif command == "export-unrolled":
+            export_attention(unroll=True)
+        elif command == "export-core":
+            export_unrolled_core()
+        elif command == "score-core":
+            score_unrolled_core(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "dump-attention":
             dump_attention_reference(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
         elif command == "score-attention":
