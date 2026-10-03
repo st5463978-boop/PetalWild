@@ -23,7 +23,7 @@ Parser and compiler results:
 | Full-attention block, RoPE inside | `translate_onnx_model` | Fuser crash after a successful ONNX simplify: `_handle_neg_feature_shuffle` raises `IndexError: list assignment index out of range`. |
 | Full-attention block, RoPE removed | `translate_onnx_model` | HAR written. Layer types: conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add, feature_splitter. |
 | Linear Gated DeltaNet block | `translate_onnx_model` | `StopIteration` in `_is_spatial_flatten_with_features_to_heads_reshape`. |
-| Joint schema head | `translate_onnx_model` | Rank-1 `type_ids` makes `get_input_layer_shapes` raise `TypeError: object of type 'NoneType' has no len()`. Supplying an explicit format for every input gets past that and fails later: `is_null_transpose_near_torch_tile` raises `IndexError: list index out of range` because `get_input_shapes()` is empty. |
+| Joint schema head | `translate_onnx_model` | Rank-1 `type_ids` makes `get_input_layer_shapes` raise `TypeError: object of type 'NoneType' has no len()`. Host type embeddings match the official head at max absolute error 0. Folding the constant transpose of `option_question_projection.weight` and replacing the two feature-concat Expands with Tile gets layer creation started. It then fails on `LayerNormalization` `node_layer_norm_9` (axis -1, input `Concat` `node_stack_2`) because `input_format` is empty: `_convert_axes_to_nhwc` raises `IndexError: list index out of range`. |
 | Two stacked full-attention blocks | `translate_onnx_model` | `IndexError: list index out of range` in `is_null_transpose_near_torch_tile`. |
 
 These are parser crashes with file and function names, not a statement that Qwen3.5 is absent from a support list.

@@ -9,7 +9,7 @@
    - Full-attention block with RoPE: failed in the fuser, `fuser.py _handle_neg_feature_shuffle`, `IndexError: list assignment index out of range`. ONNX simplify succeeded first and did not avoid the crash.
    - Full-attention block with `rotate_half` removed: parsed. HAR `artifacts/clef_experimental_full_attention_no_rope.har`. Hailo layer types include conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add.
    - Scatter-free linear block: failed while classifying a reshape, `onnx_graph.py _is_spatial_flatten_with_features_to_heads_reshape`, `StopIteration`.
-   - Joint schema head: rank-1 `type_ids` fails in `get_input_layer_shapes` with `TypeError: object of type 'NoneType' has no len()`. An explicit input format moves the crash to `is_null_transpose_near_torch_tile`, `IndexError: list index out of range`.
+   - Joint schema head: rank-1 `type_ids` fails in `get_input_layer_shapes`. Host type embeddings match exactly. After folding one constant transpose and replacing two Expands with Tile, parsing fails on `LayerNormalization` `node_layer_norm_9` in `_convert_axes_to_nhwc` because its input format is empty.
    - Two stacked full-attention blocks: failed in transpose shape inference, `IndexError: list index out of range`.
    - One attention head core, sequence 8, head dimension 256, packed QKV: compiled. The rank-3 causal mask had to be widened to `[1, 8, 8]` or the post-fuser crashed in `is_spatial_broadcast`. Dynamic-dynamic matmul needed `zp_comp_none`. HEF `hailo_port/generated/clef_experimental_attn_core.hef`.
    - Full layer-3 `k_proj` and `v_proj` (4096 to 1024, real weights): each compiled as one conv in a single context. HEFs `hailo_port/generated/clef_experimental_k_proj.hef` and `clef_experimental_v_proj.hef`.
@@ -28,7 +28,7 @@
     - Full layer-3 V projection: `hailo_port/generated/clef_experimental_v_proj.hef` (3,211,264 bytes, compile 1m 19s). Quantized emulator cosine 0.999288, max absolute error 0.147.
     - Full layer-3 Q projection, four contexts: `hailo_port/generated/clef_experimental_q_proj.hef` (28,893,184 bytes, compile 13m 39s). Quantized emulator cosine 0.998160, max absolute error 0.376.
     - Full Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`. Seventeen contexts allocated. Kernel compilation did not run.
-12. Next experiment: compile the optimized MLP HAR again with the machine otherwise idle, so kernel compilation can finish without the OOM that killed the driver. The decision head now fails later, in `is_null_transpose_near_torch_tile` (`IndexError: list index out of range`), after the rank-1 `type_ids` input is given an explicit format. Do not deploy this over JEV-H.
+12. Next experiment: let the restarted MLP compile finish. It is building optimization options from the quantized HAR. The decision head now stops at `LayerNormalization` `node_layer_norm_9`, whose input format is empty. Do not deploy this over JEV-H.
 
 ## Smoke records
 
