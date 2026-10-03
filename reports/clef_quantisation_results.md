@@ -2,6 +2,8 @@
 
 Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal rows of shape `(1, 8, 4096)`. It reduced the optimization level to 0 because that is below the recommended 1024 rows and no GPU was available. Adaround, bias correction, and quantization-aware fine-tuning were skipped. The optimized HAR is `artifacts/clef_experimental_mlp.optimized.har`. That quantized model is now `artifacts/clef_experimental_mlp.hef`. Against the PyTorch MLP on 4 sequences of shape `(4, 8, 4096)`, the quantized emulator scores cosine 0.966529, MSE 9.30e-3, and max absolute error 2.03. Eight calibration rows and optimization level 0 are why that gap is larger than the width-64 probe.
 
+Those same quantized activations, 12 sequences, scored by the FP32 joint head: decision agreement 0.75, high-confidence disagreements 0, logit cosine min 0.9336, mean 0.9786, maximum probability change 0.247. Hidden cosine on those 12 sequences is 0.962434 and max absolute error is 1.03. Sequence 8 is repeated to fill the head's length-16 schema. This is layer 3 only.
+
 One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch loop body at state cosine 0.992339 (max absolute error 4.42) and output cosine 0.984008 (max absolute error 31.9).
 
 Eight chained steps, same row count and level, are a different story. Decay is drawn uniformly from `[0, 1]` and the float state reaches a max of 2.5e5. The quantized emulator then scores state cosine 0.281300 and output cosine 0.467115. The output shapes match PyTorch, so the drop is the int8 range of that exploded state.
