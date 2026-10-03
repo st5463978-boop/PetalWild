@@ -1,6 +1,10 @@
 # Clef quantisation results
 
-Hailo `runner.optimize` did run on the parsed SwiGLU MLP. It used 8 random normal calibration rows of shape `(1, 8, 4096)` and then printed that it was reducing the optimization level to 0 because that is below the recommended 1024 rows and no GPU was available. Adaround, bias correction, and quantization-aware fine-tuning were skipped. The optimized HAR is `artifacts/clef_experimental_mlp.optimized.har`. No HEF output has been compared with the reference, so the decision numbers below are still the separate host-side int8 check.
+Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal rows of shape `(1, 8, 4096)`. It reduced the optimization level to 0 because that is below the recommended 1024 rows and no GPU was available. Adaround, bias correction, and quantization-aware fine-tuning were skipped. The optimized HAR is `artifacts/clef_experimental_mlp.optimized.har`. That HEF does not exist yet, so it was not compared with the reference.
+
+A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
+
+The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
 ## Decision head weights rounded to int8
 

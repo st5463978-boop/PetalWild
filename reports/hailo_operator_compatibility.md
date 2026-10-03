@@ -12,7 +12,9 @@ Parser and compiler results:
 |---|---|---|
 | Layer-3 SwiGLU MLP | `translate_onnx_model` | HAR written. Hailo sees 1x1 conv + SiLU + ew multiply + conv. Input `[-1, 1, 8, 4096]`. 151.02M parameters in the Hailo model. |
 | Same MLP | `optimize` | Finished. Hailo lowered the optimization level to 0 because the calibration set had 8 rows and no GPU was visible. Recommended calibration count is 1024. |
-| Same MLP | `compile` | Hailo allocator process started (`hailo_tools/build/compiler hailo10h`) and was still running when this report was written. No HEF yet. |
+| Same MLP | `compile` | Still inside `hailo_tools/build/compiler` after more than 30 minutes. No HEF. |
+| Same SwiGLU formula, random weights, hidden 64, 256, 512, 1024 | `compile` | HEF written. Single context. Files in `hailo_port/generated/`. Hidden 1024 uses 68.4% memory and one cluster reaches 97.9% compute. |
+| Same formula, hidden 2048 | `compile` | Stopped after 7 minutes while still building optimization options. No HEF. |
 | Full-attention block, RoPE inside | `translate_onnx_model` | Fuser crash after a successful ONNX simplify: `_handle_neg_feature_shuffle` raises `IndexError: list assignment index out of range`. |
 | Full-attention block, RoPE removed | `translate_onnx_model` | HAR written. Layer types: conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add, feature_splitter. |
 | Linear Gated DeltaNet block | `translate_onnx_model` | `StopIteration` in `_is_spatial_flatten_with_features_to_heads_reshape`. |
