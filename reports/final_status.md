@@ -1,6 +1,6 @@
 # Final status
 
-1. Highest level reached for a full Clef-Flash block: **LEVEL 2**. The full layer-3 SwiGLU fails single-context placement after 30m 2s (`conv1`, `conv2`, and `conv3` have no assignment). The compiler then entered multi-context search. The same MLP rebuilds, within float32 error, from 48 matmul tiles plus host adds and the SiLU multiply. One real gate tile is a HEF.
+1. Highest level reached for a full Clef-Flash block: **LEVEL 2**. The full layer-3 SwiGLU fails single-context placement after 30m 2s. Multi-context search then fails every tried split with `Automri finished with too many resources` on contexts 0 through 5 (hundreds of iterations, no success yet). The same MLP rebuilds, within float32 error, from 48 matmul tiles plus host adds and the SiLU multiply. One real gate tile is a HEF.
 2. Architecture executed: Qwen3.5-9B decoder layer 3 (full attention) and layer 0 (Gated DeltaNet), plus the Clef joint schema head, all from the published Clef-Flash checkpoint. Sequence length 8 for blocks. Head schema is one 3-way choice and one true/false question, sequence 16.
 3. Parts that run on Hailo hardware: none. `/dev/hailo0` is absent. The quantized emulator ran a width-64 SwiGLU. The real MLP graph is still in the compiler.
 4. Parts that remain on CPU: tokenization, mRoPE, span pooling, the exported blocks, and the decision head. Vision encoder not run.

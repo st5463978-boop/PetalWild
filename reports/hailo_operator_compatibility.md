@@ -12,7 +12,7 @@ Parser and compiler results:
 |---|---|---|
 | Layer-3 SwiGLU MLP | `translate_onnx_model` | HAR written. Hailo sees 1x1 conv + SiLU + ew multiply + conv. Input `[-1, 1, 8, 4096]`. 151.02M parameters in the Hailo model. |
 | Same MLP | `optimize` | Finished. Hailo lowered the optimization level to 0 because the calibration set had 8 rows and no GPU was visible. Recommended calibration count is 1024. |
-| Same MLP | `compile` | Pre-partition 21m 37s. Single context failed in 30m 2s: `Recoverable single context error - some nodes have no successful assignments: conv1, conv2, conv3`. The compiler then logged `Using Multi-context flow` and `Finding the best partition to contexts...`. No HEF yet. |
+| Same MLP | `compile` | Single context failed in 30m 2s. Multi-context search (`Using Multi-context flow`, utilization cap 60%) then recorded only failures: `Automri finished with too many resources` on context_0 (36), context_1 (73), context_2 (85), context_3 (81), context_4 (77), and context_5 (72) by 10:30. No successful partition and no HEF. The process was still searching. |
 | One real gate-matrix tile, 1024 to 3072 | `compile` | HEF `hailo_port/generated/clef_experimental_gate_tile.hef`, 30s. Sixteen such tiles per projection, plus a host SiLU multiply, match the full MLP within 1.2e-6. |
 | Same SwiGLU formula, random weights, hidden 64, 256, 512, 1024 | `compile` | HEF written. Single context. Files in `hailo_port/generated/`. Hidden 1024 uses 68.4% memory and one cluster reaches 97.9% compute. |
 | Same formula, hidden 2048 | `compile` | Stopped after 7 minutes while still building optimization options. No HEF. |
