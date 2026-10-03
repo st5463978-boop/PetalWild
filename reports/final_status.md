@@ -34,7 +34,8 @@
     - QKV channel slices, 8192 to 2048/2048/4096: `hailo_port/generated/clef_experimental_qkv_slice.hef` (36,864 bytes). Quantized emulator cosine 0.999927, max absolute error 0.0210, 256 rows.
     - That depthwise conv, SiLU, and the three slices: `hailo_port/generated/clef_experimental_conv_qkv.hef` (253,952 bytes, 17s). Query cosine 0.986650, key 0.992523, value 0.902513, 256 rows.
     - One Gated DeltaNet step, key sum on the channel axis: `hailo_port/generated/clef_experimental_scan_step.hef` (192,512 bytes, 59s). State cosine 0.992339, max absolute error 4.42. Output cosine 0.984008, max absolute error 31.9. 64 rows, optimization level 0.
-12. Next experiment: put more than one Gated DeltaNet step in a HEF. One step, with the key-dimension sum on the channel axis, is `hailo_port/generated/clef_experimental_scan_step.hef` (192,512 bytes, 59s). The original scan still stops on `ReduceSum` axis `-2`, `Expand`, and `repeat_interleave`. Do not deploy the MLP HEF over JEV-H. `/dev/hailo0` is absent, so device latency is still unmeasured.
+    - Eight of those steps: `hailo_port/generated/clef_experimental_scan_8.hef` (1,363,968 bytes, 23m 50s, 11 contexts). Single context needed 150 LCUs and 80 are available. Context 3 is at the 60% control cap. With these random inputs the float state reaches a max of 2.5e5, and the quantized emulator scores state cosine 0.281300 and output cosine 0.467115.
+12. Next experiment: put the scan's Q/K L2 norm into the eight-step HEF. The current graph takes pre-normalized vectors and an already-exponentiated decay, and random inputs make the state explode before int8 quantization. The original export still stops on `ReduceSum` axis `-2`, `Expand`, and `repeat_interleave`. Do not deploy over JEV-H. `/dev/hailo0` is absent, so device latency is still unmeasured.
 
 ## Smoke records
 

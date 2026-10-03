@@ -4,6 +4,8 @@ Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal r
 
 One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch loop body at state cosine 0.992339 (max absolute error 4.42) and output cosine 0.984008 (max absolute error 31.9).
 
+Eight chained steps, same row count and level, are a different story. Decay is drawn uniformly from `[0, 1]` and the float state reaches a max of 2.5e5. The quantized emulator then scores state cosine 0.281300 and output cosine 0.467115. The output shapes match PyTorch, so the drop is the int8 range of that exploded state.
+
 A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
 
 The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) scored cosine 0.9953, MSE 1.68e-5, and max absolute error 0.0184 under the same emulator and the same optimization level.

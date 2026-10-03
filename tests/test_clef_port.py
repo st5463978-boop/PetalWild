@@ -57,6 +57,41 @@ class GatedDeltaScanTests(unittest.TestCase):
         self.assertLess(float((got_state - reference_state).abs().max()), 1e-5)
         self.assertLess(float((got_out - reference_out).abs().max()), 1e-5)
 
+    def test_eight_steps_match_the_scan_loop(self) -> None:
+        from compile_scan_step import STEPS, ScanUnroll, loop_step, nchw_sequence
+
+        torch.manual_seed(4)
+        state = torch.randn(2, 32, 128, 128)
+        query = torch.randn(2, STEPS, 32, 128)
+        key = torch.randn(2, STEPS, 32, 128)
+        value = torch.randn(2, STEPS, 32, 128)
+        beta = torch.rand(2, STEPS, 32)
+        decay = torch.rand(2, STEPS, 32)
+        with torch.inference_mode():
+            reference = state
+            outputs = []
+            for index in range(STEPS):
+                reference, output = loop_step(
+                    reference,
+                    query[:, index],
+                    key[:, index],
+                    value[:, index],
+                    beta[:, index],
+                    decay[:, index],
+                )
+                outputs.append(output)
+            arguments = nchw_sequence(state, query, key, value, beta, decay)
+            got_state, got_out = ScanUnroll()(
+                arguments["state"],
+                arguments["key"],
+                arguments["value"],
+                arguments["query"],
+                arguments["beta"],
+                arguments["decay"],
+            )
+        self.assertLess(float((got_state.permute(0, 2, 1, 3) - reference).abs().max()), 1e-4)
+        self.assertLess(float((got_out - torch.stack(outputs, dim=1)).abs().max()), 1e-4)
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
