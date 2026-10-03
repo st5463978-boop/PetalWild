@@ -24,7 +24,11 @@ def parse_head() -> None:
     runner.translate_onnx_model(
         str(ONNX),
         "clef_head_test",
-        net_input_format={"type_ids": [Dims.CHANNELS]},
+        net_input_format={
+            "sequence_hidden": [Dims.BATCH, Dims.WIDTH, Dims.CHANNELS],
+            "lexical": [Dims.WIDTH, Dims.CHANNELS],
+            "type_ids": [Dims.CHANNELS],
+        },
         disable_onnx_simplifier=True,
     )
     for layer in runner._hn:

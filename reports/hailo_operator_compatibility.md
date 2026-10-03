@@ -12,7 +12,7 @@ Parser and compiler results:
 |---|---|---|
 | Layer-3 SwiGLU MLP | `translate_onnx_model` | HAR written. Hailo sees 1x1 conv + SiLU + ew multiply + conv. Input `[-1, 1, 8, 4096]`. 151.02M parameters in the Hailo model. |
 | Same MLP | `optimize` | Finished. Hailo lowered the optimization level to 0 because the calibration set had 8 rows and no GPU was visible. Recommended calibration count is 1024. |
-| Same MLP | `compile` | Single context failed in 30m 2s (`conv1`, `conv2`, `conv3` had no assignment). Multi-context search at a 60% utilization cap then found a 17-context partition after 888 iterations (17m 52s of search, 33m 31s for the partition stage). 791 of 823 failed iterations were `Automri finished with too many resources`, mostly on context_2. The compiler is still in allocation after `Partition passed at control_util 0.6`. No HEF yet. |
+| Same MLP | `compile` | Single context failed in 30m 2s (`conv1`, `conv2`, `conv3` had no assignment). Multi-context search at a 60% cap found a 17-context partition after 888 iterations (33m 31s). Allocation succeeded in 39m 24s. The process exited while printing utilization, before kernel compilation. No HEF. The driver Python was OOM-killed at 11:17. |
 | One full-attention head core, sequence 8, head dim 256, packed QKV | `compile` | HEF `hailo_port/generated/clef_experimental_attn_core.hef`, 65,536 bytes, about 1s. Causal QK^T, softmax, and AV. Total control 17.5%, compute 6.3%, memory 4.7%. |
 | Full layer-3 `k_proj` and `v_proj`, 4096 to 1024 | `compile` | Single-context HEFs. K: 3,067,904 bytes, 1m 17s, cosine 0.999016, max abs 0.193. V: 3,211,264 bytes, 1m 19s, cosine 0.999288, max abs 0.147. Total control 42.5%, compute 64.2%, memory 38.8%. Cluster 4 compute is 100%. |
 | Full layer-3 `q_proj`, 4096 to 8192 | `compile` | Single context failed in 4m 19s: `conv1` had no assignment. Four-context partition succeeded in 3m 44s. HEF `hailo_port/generated/clef_experimental_q_proj.hef`, 28,893,184 bytes, total compile 13m 39s. Busiest context uses 62.5% control, 61.7% compute, 73.6% memory. Quantized cosine 0.998160, max abs 0.376. |
@@ -23,7 +23,7 @@ Parser and compiler results:
 | Full-attention block, RoPE inside | `translate_onnx_model` | Fuser crash after a successful ONNX simplify: `_handle_neg_feature_shuffle` raises `IndexError: list assignment index out of range`. |
 | Full-attention block, RoPE removed | `translate_onnx_model` | HAR written. Layer types: conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add, feature_splitter. |
 | Linear Gated DeltaNet block | `translate_onnx_model` | `StopIteration` in `_is_spatial_flatten_with_features_to_heads_reshape`. |
-| Joint schema head | `translate_onnx_model` | `TypeError: object of type 'NoneType' has no len()` in `get_input_layer_shapes`. |
+| Joint schema head | `translate_onnx_model` | Rank-1 `type_ids` makes `get_input_layer_shapes` raise `TypeError: object of type 'NoneType' has no len()`. Supplying an explicit format for every input gets past that and fails later: `is_null_transpose_near_torch_tile` raises `IndexError: list index out of range` because `get_input_shapes()` is empty. |
 | Two stacked full-attention blocks | `translate_onnx_model` | `IndexError: list index out of range` in `is_null_transpose_near_torch_tile`. |
 
 These are parser crashes with file and function names, not a statement that Qwen3.5 is absent from a support list.
