@@ -175,9 +175,40 @@ def fold_constant_transpose() -> None:
         index = list(model.graph.node).index(node)
         model.graph.node.remove(node)
         model.graph.node.insert(index, tile)
-    # An identity reshape of stack_2 to [2, 1024] was tried. node_layer_norm_9
-    # still arrived with an empty input format and failed in
-    # _convert_axes_to_nhwc. The reshape is not kept.
+    # node_layer_norm_9 normalizes a [2, 1024] stack and arrives with an empty
+    # format. Flatten sets [batch, channels] even when its input has no format,
+    # which is the only rank-2 path that does not call _convert_axes_to_nhwc.
+    # Each summary is normalized on its own, then stacked. That matches a
+    # last-axis norm of the stacked pair.
+    layernorm = next(item for item in model.graph.node if item.name == "node_layer_norm_9")
+    scale, bias = layernorm.input[1], layernorm.input[2]
+    produced = layernorm.output[0]
+    normalized = []
+    replacement = []
+    for index, source in enumerate(("sum_1", "sum_2")):
+        flat = f"summary_{index}_flat"
+        normed = f"summary_{index}_norm"
+        replacement.append(
+            onnx.helper.make_node("Flatten", [source], [flat], name=f"node_summary_{index}_flat", axis=0)
+        )
+        replacement.append(
+            onnx.helper.make_node(
+                "LayerNormalization",
+                [flat, scale, bias],
+                [normed],
+                name=f"node_summary_{index}_norm",
+                axis=-1,
+                epsilon=1e-5,
+            )
+        )
+        normalized.append(normed)
+    replacement.append(onnx.helper.make_node("Concat", normalized, [produced], name="node_summary_norm_cat", axis=0))
+    for name in ("node_layer_norm_9", "node_stack_2", "node_Unsqueeze_355", "node_Unsqueeze_357"):
+        node = next(item for item in model.graph.node if item.name == name)
+        model.graph.node.remove(node)
+    insert_at = list(model.graph.node).index(next(item for item in model.graph.node if item.name == "node_add_8"))
+    for offset, extra in enumerate(replacement):
+        model.graph.node.insert(insert_at + offset, extra)
     onnx.save(model, FOLDED_ONNX)
     print(FOLDED_ONNX, flush=True)
 
@@ -187,7 +218,15 @@ def parse_host_type() -> None:
 
     _guard_empty_transpose_shapes()
     runner = ClientRunner(hw_arch="hailo10h")
-    runner.translate_onnx_model(str(FOLDED_ONNX), "clef_head_test", disable_onnx_simplifier=True)
+    # The full graph names these nodes as the supported prefix. They stop
+    # before the batch-axis concat, gather, and softmax errors.
+    runner.translate_onnx_model(
+        str(FOLDED_ONNX),
+        "clef_head_test",
+        start_node_names=["sequence_hidden", "lexical"],
+        end_node_names=["node_stack", "node_unsqueeze_6", "node_select_1", "node_div_3", "node_linear_19"],
+        disable_onnx_simplifier=True,
+    )
     for layer in runner._hn:
         print(
             f"LAYER {layer.op} {layer.name} in={getattr(layer, 'input_shapes', None)} out={layer.output_shapes}",
