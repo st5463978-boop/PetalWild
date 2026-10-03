@@ -11,6 +11,12 @@ import traceback
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
+
+
+def l2norm(x: torch.Tensor, dim: int = -1, eps: float = 1e-6) -> torch.Tensor:
+    inv_norm = torch.rsqrt((x * x).sum(dim=dim, keepdim=True) + eps)
+    return x * inv_norm
 
 ROOT = Path(__file__).resolve().parents[1]
 ONNX = ROOT / "artifacts" / "onnx" / "qwen35_scan_step.onnx"
@@ -63,6 +69,23 @@ class ScanUnroll(torch.nn.Module):
             )
             outputs.append(output)
         return state, torch.cat(outputs, dim=1)
+
+
+class ScanNormed(torch.nn.Module):
+    """Eight steps plus the scan's Q/K L2 norm and ``exp(g)`` decay."""
+
+    def forward(
+        self,
+        state: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        query: torch.Tensor,
+        beta: torch.Tensor,
+        decay: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        key = l2norm(key, dim=1, eps=1e-6)
+        query = l2norm(query, dim=1, eps=1e-6) * (DIM ** -0.5)
+        return ScanUnroll()(state, key, value, query, beta, decay.exp())
 
 
 def nchw_sequence(state, query, key, value, beta, decay):
@@ -242,6 +265,87 @@ def compile_unroll(calibration_rows: int) -> None:
     print(f"HEF {out} bytes={len(hef)}", flush=True)
 
 
+def _normed_arguments(count: int) -> dict[str, torch.Tensor]:
+    return nchw_sequence(
+        torch.zeros(count, HEADS, DIM, DIM),
+        torch.randn(count, STEPS, HEADS, DIM),
+        torch.randn(count, STEPS, HEADS, DIM),
+        torch.randn(count, STEPS, HEADS, DIM),
+        torch.rand(count, STEPS, HEADS),
+        -F.softplus(torch.randn(count, STEPS, HEADS)),
+    )
+
+
+def export_normed() -> None:
+    path = ROOT / "artifacts" / "onnx" / "qwen35_scan_8_l2.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    example = (
+        torch.zeros(1, DIM, HEADS, DIM),
+        torch.zeros(1, DIM, HEADS, STEPS),
+        torch.zeros(1, STEPS, HEADS, DIM),
+        torch.zeros(1, DIM, HEADS, STEPS),
+        torch.zeros(1, 1, HEADS, STEPS),
+        torch.zeros(1, 1, HEADS, STEPS),
+    )
+    torch.onnx.export(ScanNormed().eval(), example, path, dynamo=True, opset_version=18, external_data=False)
+    print(path, path.stat().st_size, flush=True)
+
+
+def compile_normed(calibration_rows: int) -> None:
+    import numpy as np
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    path = ROOT / "artifacts" / "onnx" / "qwen35_scan_8_l2.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_scan_8_l2", disable_onnx_simplifier=True)
+    ops = {}
+    for layer in runner._hn:
+        ops[str(layer.op)] = ops.get(str(layer.op), 0) + 1
+    print("LAYERS", ops, flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    torch.manual_seed(0)
+    arguments = _normed_arguments(max(calibration_rows, 4))
+    with torch.inference_mode():
+        expected = ScanNormed().eval()(
+            *(arguments[name][:4] for name in ("state", "key", "value", "query", "beta", "decay"))
+        )
+        print(
+            f"reference state max {float(expected[0].abs().max()):.4e} "
+            f"output max {float(expected[1].abs().max()):.4e}",
+            flush=True,
+        )
+    calib = {}
+    for layer in runner._hn.get_input_layers():
+        source = next(name for name in arguments if name in " ".join(layer.original_names))
+        flat = arguments[source].numpy().astype(np.float32)
+        calib[layer.name] = np.transpose(flat[:calibration_rows], (0, 2, 3, 1))
+        print(f"CALIB {layer.name} {source} {calib[layer.name].shape}", flush=True)
+    runner.optimize(calib)
+    print("OPTIMIZED", flush=True)
+    sample = {name: value[:4] for name, value in calib.items()}
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        quantized = runner.infer(ctx, sample)
+    outputs = quantized if isinstance(quantized, (list, tuple)) else [quantized]
+    for index, (got, expect) in enumerate(zip(outputs, expected)):
+        got_v = np.transpose(np.asarray(got, dtype=np.float64), (0, 3, 1, 2))
+        expect_v = expect.numpy().astype(np.float64)
+        print(f"output {index} shape {got_v.shape} expect {expect_v.shape}", flush=True)
+        got_v = got_v.reshape(expect_v.shape)
+        cosine = float(got_v.ravel() @ expect_v.ravel() / (np.linalg.norm(got_v) * np.linalg.norm(expect_v)))
+        print(
+            f"output {index} cosine {cosine:.6f} max {float(np.max(np.abs(got_v - expect_v))):.6e}",
+            flush=True,
+        )
+    hef = runner.compile()
+    out = ROOT / "artifacts" / "clef_slice" / "clef_experimental_scan_8_l2.hef"
+    out.write_bytes(hef)
+    print(f"HEF {out} bytes={len(hef)}", flush=True)
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "export"
     try:
@@ -253,6 +357,10 @@ def main() -> None:
             export_unroll()
         elif command == "compile-8":
             compile_unroll(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+        elif command == "export-8-l2":
+            export_normed()
+        elif command == "compile-8-l2":
+            compile_normed(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         else:
             raise SystemExit(f"unknown command {command}")
     except Exception:

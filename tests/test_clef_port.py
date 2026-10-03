@@ -92,6 +92,29 @@ class GatedDeltaScanTests(unittest.TestCase):
         self.assertLess(float((got_state.permute(0, 2, 1, 3) - reference).abs().max()), 1e-4)
         self.assertLess(float((got_out - torch.stack(outputs, dim=1)).abs().max()), 1e-4)
 
+    def test_normed_eight_steps_match_gated_delta_scan(self) -> None:
+        from compile_scan_step import STEPS, ScanNormed, nchw_sequence
+        from graphs import gated_delta_scan
+
+        torch.manual_seed(5)
+        query = torch.randn(2, STEPS, 32, 128)
+        key = torch.randn(2, STEPS, 32, 128)
+        value = torch.randn(2, STEPS, 32, 128)
+        beta = torch.rand(2, STEPS, 32)
+        decay = -torch.nn.functional.softplus(torch.randn(2, STEPS, 32))
+        with torch.inference_mode():
+            reference = gated_delta_scan(query, key, value, decay, beta)
+            arguments = nchw_sequence(torch.zeros(2, 32, 128, 128), query, key, value, beta, decay)
+            _, got = ScanNormed()(
+                arguments["state"],
+                arguments["key"],
+                arguments["value"],
+                arguments["query"],
+                arguments["beta"],
+                arguments["decay"],
+            )
+        self.assertLess(float((got - reference).abs().max()), 1e-4)
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:

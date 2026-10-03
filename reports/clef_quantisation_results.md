@@ -6,6 +6,8 @@ One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch
 
 Eight chained steps, same row count and level, are a different story. Decay is drawn uniformly from `[0, 1]` and the float state reaches a max of 2.5e5. The quantized emulator then scores state cosine 0.281300 and output cosine 0.467115. The output shapes match PyTorch, so the drop is the int8 range of that exploded state.
 
+The same eight steps with Q/K L2 norm and `exp(g)` decay, `g = -softplus(normal)`, keep the float state max at 0.882. Quantized the same way, the state cosine is 0.996295 (max absolute error 0.0265) and the outputs cosine is 0.991975 (max absolute error 0.00357). That graph compiled.
+
 A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
 
 The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) scored cosine 0.9953, MSE 1.68e-5, and max absolute error 0.0184 under the same emulator and the same optimization level.
