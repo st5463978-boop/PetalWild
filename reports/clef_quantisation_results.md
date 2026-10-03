@@ -22,6 +22,8 @@ The published `question_projection` (4096 to 1024), quantized with 1024 rows at 
 
 The published layer-0 depthwise causal conv (8192 channels, kernel 4, sequence 8, bias left at zero) was quantized with 1024 rows. Optimization level stayed 0 because no GPU is present. Against PyTorch on 4 sequences: cosine 0.997265, MSE 5.37e-5, max absolute error 0.0320. That conv did compile.
 
+The linear-scan prefix (depthwise conv, SiLU, QKV split, beta and decay projections) was quantized with 256 rows, again at optimization level 0. The comparison is the quantized emulator against the float Hailo graph, not against PyTorch. Sixteen outputs score cosine 0.999942 or better. Output 12 scores cosine 0.989363 and max absolute error 0.0265. That prefix did not compile.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).

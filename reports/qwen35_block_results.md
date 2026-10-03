@@ -115,6 +115,22 @@ The linear-block ONNX passes this conv's kernel as a dynamic input, and Hailo di
 
 With 1024 rows and optimization level 0, the quantized emulator matches PyTorch at cosine 0.997265, MSE 5.37e-5, and max absolute error 0.0320. Compile took 32s. `hailo_port/generated/clef_experimental_depthwise_conv.hef` is 241,664 bytes. Totals: control 38.8%, compute 12.9%, memory 13.3%. Cluster 2 is at 100% control, 33.3% compute, and 35.2% memory. The fetched layer-0 shard has no conv bias, so this HEF is the published kernel with bias zero. It is not the rest of the Gated DeltaNet.
 
+## Gated DeltaNet scan
+
+The scatter-free block's conv kernel was a Squeeze/Unsqueeze around the weight, so Hailo treated it as a dynamic rank-3 kernel and died in `get_dynamic_kernel_shape`. Pointing the conv at `layer.linear_attn.conv1d.weight` removes that crash. The scan's initial state is a `ConstantOfShape`. Hailo matches that op as a `Constant` (`startswith`) and `parse_raw_data` indexes an attribute the node does not have. A zero tensor of shape `[1, 32, 128, 128]` replaces it.
+
+Layer creation then rejects the recurrence:
+
+- `Expand` `node_Expand_61` and `node_Expand_68` (`UnexpectedNodeError`). The repeat of key heads is `[1, 1, 1, 2, 1]`.
+- `node_repeat_interleave` and `node_repeat_interleave_1` (`UnsupportedShuffleLayerError`).
+- `node_transpose_2` and `node_transpose_3`, perm `[0, 2, 1, 3]` (`UnsupportedShuffleLayerError`).
+- `ReduceSum` `node_sum_4` through `node_sum_18`, axis `-2`, keepdims 0 (`UnsupportedReduceSumLayerError`). That axis is the key dimension of the state, not a feature axis.
+- `node_mul_7`: the zero state is rearranged to `(128, 128, 32)` and does not broadcast onto `[128, 32, 128]`.
+
+Hailo's own end-node list, with the conv input format set to `[batch, channels, width]`, parses. Default rank-3 format makes the same conv `Kernel features: 8192 Input features: 8 Groups: 0`. The HAR is `artifacts/clef_slice/clef_experimental_linear_scan.har`. It contains the depthwise conv, SiLU, the QKV split, and the beta/decay projections. It does not contain the state update.
+
+That HAR quantizes. Against the float Hailo graph, 256 calibration rows, optimization level 0: 16 of 17 outputs score cosine 0.999942 or better, with max absolute error up to 0.0117. Output 12 scores cosine 0.989363 and max absolute error 0.0265. Compile then fails in 30s. Pre-partition takes 29s. Single-context and multi-context placement both fail in 0s on `feature_splitter1`: `one output isn't supported`. The QKV split is 2048, 2048, and 4096. No HEF.
+
 ## Attention core, one head
 
 The softmax core of one full-attention head is a separate graph: packed Q, K, and V, sequence 8, head dimension 256. Host code still owns Q/K/V projection, Q/K RMSNorm, partial RoPE, and the sigmoid output gate. `hailo_port/compile_attn_core.py` exports that core.
