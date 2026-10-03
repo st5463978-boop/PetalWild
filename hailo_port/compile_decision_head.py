@@ -175,6 +175,9 @@ def fold_constant_transpose() -> None:
         index = list(model.graph.node).index(node)
         model.graph.node.remove(node)
         model.graph.node.insert(index, tile)
+    # An identity reshape of stack_2 to [2, 1024] was tried. node_layer_norm_9
+    # still arrived with an empty input format and failed in
+    # _convert_axes_to_nhwc. The reshape is not kept.
     onnx.save(model, FOLDED_ONNX)
     print(FOLDED_ONNX, flush=True)
 
