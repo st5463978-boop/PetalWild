@@ -405,17 +405,26 @@ def score_decisions() -> None:
         )
 
 
-def export_unrolled_core() -> None:
+def _core_suffix(heads: int, kv_heads: int) -> str:
+    if heads == 16 and kv_heads == 4:
+        return ""
+    return f"_{heads}h_{kv_heads}kv"
+
+
+def export_unrolled_core(heads: int = 16, kv_heads: int = 4) -> None:
     import torch
 
+    if heads % kv_heads != 0:
+        raise SystemExit(f"{heads} query heads do not divide into {kv_heads} KV heads")
     sys.path.insert(0, str(ROOT / "hailo_port"))
     from graphs import UnrolledAttentionCore
 
     module = UnrolledAttentionCore().eval()
-    query = torch.zeros(1, SEQUENCE, 16 * 256)
-    key = torch.zeros(1, 4, SEQUENCE, 256)
-    value = torch.zeros(1, 4, SEQUENCE, 256)
-    path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
+    suffix = _core_suffix(heads, kv_heads)
+    query = torch.zeros(1, SEQUENCE, heads * 256)
+    key = torch.zeros(1, kv_heads, SEQUENCE, 256)
+    value = torch.zeros(1, kv_heads, SEQUENCE, 256)
+    path = ONNX_DIR / f"qwen35_attention_unrolled_core{suffix}.onnx"
     torch.onnx.export(
         module,
         (query, key, value),
@@ -427,26 +436,29 @@ def export_unrolled_core() -> None:
         output_names=["attended"],
     )
     torch.manual_seed(2)
-    query = torch.randn(4, SEQUENCE, 16 * 256)
-    key = torch.randn(4, 4, SEQUENCE, 256)
-    value = torch.randn(4, 4, SEQUENCE, 256)
+    query = torch.randn(4, SEQUENCE, heads * 256)
+    key = torch.randn(4, kv_heads, SEQUENCE, 256)
+    value = torch.randn(4, kv_heads, SEQUENCE, 256)
     with torch.inference_mode():
         output = module(query, key, value)
-    ref = ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz"
+    ref = ROOT / "artifacts" / "clef_slice" / f"unrolled_core_ref{suffix}.npz"
+    ref.parent.mkdir(parents=True, exist_ok=True)
     np.savez(ref, query=query.numpy(), key=key.numpy(), value=value.numpy(), output=output.numpy())
     print(path, path.stat().st_size, output.shape, flush=True)
 
 
-def score_unrolled_core(calibration_rows: int) -> None:
+def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 4) -> None:
     from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
         MatmulEqualization,
     )
     from hailo_sdk_client import ClientRunner
     from hailo_sdk_client.exposed_definitions import InferenceContext
 
-    path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
+    suffix = _core_suffix(heads, kv_heads)
+    model_name = "clef_experimental_attn_unrolled" if suffix == "" else f"clef_experimental_attn_unrolled{suffix}"
+    path = ONNX_DIR / f"qwen35_attention_unrolled_core{suffix}.onnx"
     runner = ClientRunner(hw_arch="hailo10h")
-    runner.translate_onnx_model(str(path), "clef_experimental_attn_unrolled", disable_onnx_simplifier=True)
+    runner.translate_onnx_model(str(path), model_name, disable_onnx_simplifier=True)
     groups = []
     for layer in runner._hn:
         if "matmul" in layer.name:
@@ -476,7 +488,7 @@ def score_unrolled_core(calibration_rows: int) -> None:
         for layer in inputs
     }
     runner.optimize(calib)
-    ref = np.load(ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz")
+    ref = np.load(ROOT / "artifacts" / "clef_slice" / f"unrolled_core_ref{suffix}.npz")
     arrays = [ref["query"], ref["key"], ref["value"]]
     feed = {}
     for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
@@ -502,7 +514,7 @@ def score_unrolled_core(calibration_rows: int) -> None:
         flush=True,
     )
     hef = runner.compile()
-    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_attn_unrolled.hef"
+    dest = ROOT / "hailo_port" / "generated" / f"{model_name}.hef"
     dest.write_bytes(hef)
     print(f"HEF {dest} bytes={len(hef)}", flush=True)
 
@@ -517,9 +529,14 @@ def main() -> None:
         elif command == "export-unrolled":
             export_attention(unroll=True)
         elif command == "export-core":
-            export_unrolled_core()
+            heads = int(sys.argv[2]) if len(sys.argv) > 2 else 16
+            kv_heads = int(sys.argv[3]) if len(sys.argv) > 3 else 4
+            export_unrolled_core(heads, kv_heads)
         elif command == "score-core":
-            score_unrolled_core(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+            rows = int(sys.argv[2]) if len(sys.argv) > 2 else 64
+            heads = int(sys.argv[3]) if len(sys.argv) > 3 else 16
+            kv_heads = int(sys.argv[4]) if len(sys.argv) > 4 else 4
+            score_unrolled_core(rows, heads, kv_heads)
         elif command == "dump-attention":
             dump_attention_reference(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
         elif command == "score-attention":

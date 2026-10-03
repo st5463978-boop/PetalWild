@@ -176,6 +176,27 @@ class RopeTests(unittest.TestCase):
             packed = core(packed_query, key, value)
         self.assertLess(float((packed - ref.reshape(2, 8, -1)).abs().max()), 1e-5)
 
+    def test_one_kv_group_matches_eager(self) -> None:
+        from graphs import UnrolledAttentionCore
+        from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
+
+        class Probe:
+            num_key_value_groups = 4
+            training = False
+
+        torch.manual_seed(3)
+        query = torch.randn(2, 4, 8, 256)
+        key = torch.randn(2, 1, 8, 256)
+        value = torch.randn(2, 1, 8, 256)
+        length = query.shape[2]
+        allowed = torch.ones(length, length, dtype=torch.bool).tril()
+        mask = torch.zeros(1, 1, length, length).masked_fill(~allowed, -64.0)
+        with torch.inference_mode():
+            ref, _ = eager_attention_forward(Probe(), query, key, value, mask, 256**-0.5, 0.0)
+            packed_query = query.permute(0, 2, 1, 3).reshape(query.shape[0], query.shape[2], -1)
+            packed = UnrolledAttentionCore()(packed_query, key, value)
+        self.assertLess(float((packed - ref.reshape(2, 8, -1)).abs().max()), 1e-5)
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
