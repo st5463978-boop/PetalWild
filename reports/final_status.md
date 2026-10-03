@@ -26,7 +26,7 @@
     - Full layer-3 K projection: `hailo_port/generated/clef_experimental_k_proj.hef` (3,067,904 bytes, compile 1m 17s). Quantized emulator cosine 0.999016, max absolute error 0.193.
     - Full layer-3 V projection: `hailo_port/generated/clef_experimental_v_proj.hef` (3,211,264 bytes, compile 1m 19s). Quantized emulator cosine 0.999288, max absolute error 0.147.
     - Full Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`. The compiler has a 17-context partition and is still allocating it.
-12. Next experiment: let the 17-context MLP allocation finish or fail. K and V are HEFs; the full Q projection is 4096 to 8192 and is the next matrix to try. One cluster is already at 100% compute for the 1024-wide K projection, so Q may not place in one context. Do not deploy this over JEV-H.
+12. Next experiment: let the 17-context MLP allocation finish or fail, and let the in-flight single-context compile of full `q_proj` finish or fail. Q already quantized at cosine 0.998160 and max absolute error 0.376. One cluster is at 100% compute for the 1024-wide K projection, so the 8192-wide Q map may not place in one context. Do not deploy this over JEV-H.
 
 ## Smoke records
 
