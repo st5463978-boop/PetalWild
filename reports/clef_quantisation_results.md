@@ -1,6 +1,8 @@
 # Clef quantisation results
 
-Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal rows of shape `(1, 8, 4096)`. It reduced the optimization level to 0 because that is below the recommended 1024 rows and no GPU was available. Adaround, bias correction, and quantization-aware fine-tuning were skipped. The optimized HAR is `artifacts/clef_experimental_mlp.optimized.har`. That HEF does not exist yet, so it was not compared with the reference.
+Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal rows of shape `(1, 8, 4096)`. It reduced the optimization level to 0 because that is below the recommended 1024 rows and no GPU was available. Adaround, bias correction, and quantization-aware fine-tuning were skipped. The optimized HAR is `artifacts/clef_experimental_mlp.optimized.har`. That quantized model is now `artifacts/clef_experimental_mlp.hef`. Against the PyTorch MLP on 4 sequences of shape `(4, 8, 4096)`, the quantized emulator scores cosine 0.966529, MSE 9.30e-3, and max absolute error 2.03. Eight calibration rows and optimization level 0 are why that gap is larger than the width-64 probe.
+
+One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch loop body at state cosine 0.992339 (max absolute error 4.42) and output cosine 0.984008 (max absolute error 31.9).
 
 A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
 
