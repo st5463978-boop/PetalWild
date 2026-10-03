@@ -202,24 +202,31 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
 
 
 class UnrolledAttentionCore(torch.nn.Module):
-    """Per-head matmuls, using the width-slice layout that matches PyTorch.
+    """Per-head matmuls. Query heads are slices of the last axis.
 
-    query is [B, S, D, H]. key and value are [B, KV, S, D].
+    A width slice of query matches PyTorch only as a graph output. Fed to a
+    matmul, Hailo spatial-reshapes it and the product is wrong. Last-axis
+    slices of a rank-3 tensor match. query is [B, S, H*D]. key and value are
+    [B, KV, S, D].
     """
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
         length = query.shape[1]
-        dim = query.shape[2]
-        heads = query.shape[-1]
+        dim = key.shape[-1]
+        heads = query.shape[-1] // dim
         group = heads // key.shape[1]
         key_w = key.permute(0, 3, 2, 1)
         value_w = value.permute(0, 3, 2, 1)
-        flat_mask = causal_mask(query[:, :, 0, :]).reshape(1, length, length)
+        allowed = torch.ones(length, length, dtype=torch.bool, device=query.device).tril()
+        # finfo.min makes the decomposed softmax's exp exponents NaN.
+        flat_mask = torch.zeros(1, length, length, dtype=query.dtype, device=query.device).masked_fill(
+            ~allowed, -64.0
+        )
         scale = dim**-0.5
         outputs = []
         for index in range(heads):
             kv = index // group
-            query_head = query.narrow(-1, index, 1).squeeze(-1)
+            query_head = query.narrow(-1, index * dim, dim)
             key_head = key_w.narrow(-1, kv, 1).squeeze(-1)
             value_head = value_w.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
             scores = torch.matmul(query_head, key_head) * scale + flat_mask

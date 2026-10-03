@@ -412,7 +412,7 @@ def export_unrolled_core() -> None:
     from graphs import UnrolledAttentionCore
 
     module = UnrolledAttentionCore().eval()
-    query = torch.zeros(1, SEQUENCE, 256, 16)
+    query = torch.zeros(1, SEQUENCE, 16 * 256)
     key = torch.zeros(1, 4, SEQUENCE, 256)
     value = torch.zeros(1, 4, SEQUENCE, 256)
     path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
@@ -427,7 +427,7 @@ def export_unrolled_core() -> None:
         output_names=["attended"],
     )
     torch.manual_seed(2)
-    query = torch.randn(4, SEQUENCE, 256, 16)
+    query = torch.randn(4, SEQUENCE, 16 * 256)
     key = torch.randn(4, 4, SEQUENCE, 256)
     value = torch.randn(4, 4, SEQUENCE, 256)
     with torch.inference_mode():
