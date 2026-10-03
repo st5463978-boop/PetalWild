@@ -121,3 +121,9 @@ Two parser fixes were required before `optimize` would finish:
 With those two changes the core compiles in one context in about 1 second. The HEF is `hailo_port/generated/clef_experimental_attn_core.hef` (65,536 bytes). Cluster 2 is the busiest, at 75% control, 27.1% compute, and 20.3% memory. The network total is 17.5% control, 6.3% compute, and 4.7% memory.
 
 On the quantized emulator, four sequences against the PyTorch core scored cosine 0.999709, MSE 2.93e-4, and max absolute error 0.0755. Calibration used 1024 rows. Optimization level stayed 0 because this machine has no GPU, so Adaround and bias correction were skipped. Scrambling V at positions 1..7 left position 0 unchanged in both PyTorch and the emulator (`future_token_leak` 0). A rank-4 mask of shape `[1, 1, 8, 8]` never parsed: matmul shape inference raised `IndexError: list index out of range` on `input_shapes[1]`. A three-input ONNX (separate Q, K, V) was rewritten by the simplifier into one input. The packed QKV tensor is the input that parses.
+
+## Full K and V projections, layer 3
+
+`k_proj` and `v_proj` are the published matrices, hidden 4096 to 1024, bias-free. Hailo parses each as one conv. Both compiled in a single context: K in 1m 17s (`hailo_port/generated/clef_experimental_k_proj.hef`, 3,067,904 bytes) and V in 1m 19s (`hailo_port/generated/clef_experimental_v_proj.hef`, 3,211,264 bytes). The resource table is the same for both, because the shapes match: total control 42.5%, compute 64.2%, memory 38.8%, with cluster 4 at 100% compute and 60.2% memory.
+
+Quantized emulator versus PyTorch, 1024 calibration rows, optimization level 0: K cosine 0.999016, MSE 2.19e-3, max absolute error 0.193. V cosine 0.999288, MSE 1.53e-3, max absolute error 0.147. Q/K RMSNorm and RoPE are not in these HEFs. `q_proj` is 4096 to 8192 and has not been compiled.

@@ -8,6 +8,8 @@ The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) s
 
 The causal attention core (one head, sequence 8, head dimension 256) was quantized and executed in `SDK_QUANTIZED`. The model script set `calibset_size=1024`. The compiler still forced optimization level 0 because no GPU is present, so Adaround, bias correction, and quantization-aware fine-tuning were skipped. Against PyTorch on 4 sequences: cosine 0.999709, MSE 2.93e-4, max absolute error 0.0755. Scrambling future V left position 0 unchanged (leak 0) in both PyTorch and the emulator.
 
+The full layer-3 K and V projections were quantized with the same 1024-row calibration and the same level-0 limit. K versus PyTorch: cosine 0.999016, MSE 2.19e-3, max absolute error 0.193. V: cosine 0.999288, MSE 1.53e-3, max absolute error 0.147. The cosine stays high while the peak error is larger than the attention core, which is what a wide unnormalized projection does under per-tensor activation quantization.
+
 The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
 ## Decision head weights rounded to int8
