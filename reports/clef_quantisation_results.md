@@ -8,6 +8,8 @@ Eight chained steps, same row count and level, are a different story. Decay is d
 
 The same eight steps with Q/K L2 norm and `exp(g)` decay, `g = -softplus(normal)`, keep the float state max at 0.882. Quantized the same way, the state cosine is 0.996295 (max absolute error 0.0265) and the outputs cosine is 0.991975 (max absolute error 0.00357). That graph compiled.
 
+The depthwise conv through the head-pair concat, stopping before the unsupported `[16, 2]` to `32` reshape, was quantized with 64 rows at optimization level 0. Against the float Hailo graph, twelve outputs score cosine 0.723658 to 0.999998, with max absolute error about 0.029. That prefix compiled. It does not include the scan.
+
 A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
 
 The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) scored cosine 0.9953, MSE 1.68e-5, and max absolute error 0.0184 under the same emulator and the same optimization level.

@@ -346,6 +346,131 @@ def compile_normed(calibration_rows: int) -> None:
     print(f"HEF {out} bytes={len(hef)}", flush=True)
 
 
+def repeat_each_head(heads: torch.Tensor) -> torch.Tensor:
+    """Repeat every head twice. ``stack`` is a concat, not ``repeat_interleave``."""
+    paired = torch.stack((heads, heads), dim=3)
+    return paired.reshape(heads.shape[0], heads.shape[1], heads.shape[2] * 2, heads.shape[3])
+
+
+class ConvIntoScan(torch.nn.Module):
+    """Layer-0 depthwise conv, SiLU, Q/K/V slices, head repeat, then the normed scan."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        from compile_depthwise_conv import load_conv
+
+        self.conv = load_conv().conv
+
+    def forward(
+        self,
+        mixed: torch.Tensor,
+        state: torch.Tensor,
+        beta: torch.Tensor,
+        decay: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        activated = F.silu(self.conv(F.pad(mixed, (3, 0, 0, 0))))
+        channels = activated.squeeze(2).transpose(1, 2)
+        query = repeat_each_head(channels[:, :, :2048].reshape(channels.shape[0], STEPS, 16, DIM))
+        key = repeat_each_head(channels[:, :, 2048:4096].reshape(channels.shape[0], STEPS, 16, DIM))
+        value = channels[:, :, 4096:].reshape(channels.shape[0], STEPS, 32, DIM)
+        laid = nchw_sequence(state, query, key, value, beta, decay)
+        return ScanNormed()(
+            laid["state"], laid["key"], laid["value"], laid["query"], laid["beta"], laid["decay"]
+        )
+
+
+def export_conv_scan() -> None:
+    path = ROOT / "artifacts" / "onnx" / "qwen35_conv_scan_8.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    example = (
+        torch.zeros(1, 8192, 1, STEPS),
+        torch.zeros(1, HEADS, DIM, DIM),
+        torch.zeros(1, STEPS, HEADS),
+        torch.zeros(1, STEPS, HEADS),
+    )
+    torch.onnx.export(ConvIntoScan().eval(), example, path, dynamo=True, opset_version=18, external_data=False)
+    print(path, path.stat().st_size, flush=True)
+
+
+# Hailo accepts the conv, the Q/K/V slices, and the head-pair concat.
+# The following reshape of [1, 8, 16, 2, 128] into [1, 8, 32, 128] is the shuffle it rejects.
+CONV_SCAN_ENDS = [
+    "node_slice_10",
+    "node_slice_15",
+    "node_slice_30",
+    "node_slice_25",
+    "node_slice_23",
+    "node_slice_5",
+    "node_slice_20",
+    "node_slice_40",
+    "node_slice_42",
+    "node_stack_1",
+    "node_stack",
+    "node_slice_35",
+]
+
+
+def compile_conv_scan(calibration_rows: int) -> None:
+    import numpy as np
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    path = ROOT / "artifacts" / "onnx" / "qwen35_conv_scan_8.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(
+        str(path),
+        "clef_experimental_conv_scan_8",
+        start_node_names=["mixed", "decay", "beta"],
+        end_node_names=CONV_SCAN_ENDS,
+        disable_onnx_simplifier=True,
+    )
+    ops = {}
+    for layer in runner._hn:
+        ops[str(layer.op)] = ops.get(str(layer.op), 0) + 1
+    print("LAYERS", ops, flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    torch.manual_seed(0)
+    count = max(calibration_rows, 4)
+    mixed = torch.randn(count, 8192, 1, STEPS)
+    beta = torch.rand(count, STEPS, HEADS)
+    decay = -F.softplus(torch.randn(count, STEPS, HEADS))
+    tensors = {"mixed": mixed, "beta": beta, "decay": decay}
+    calib = {}
+    for layer in runner._hn.get_input_layers():
+        source = next(name for name in tensors if name in " ".join(layer.original_names))
+        flat = tensors[source][:calibration_rows].numpy().astype(np.float32)
+        if flat.ndim == 4:
+            flat = np.transpose(flat, (0, 2, 3, 1))
+        want = tuple(calibration_rows if dim < 0 else dim for dim in layer.output_shapes[0])
+        calib[layer.name] = flat.reshape(want)
+        print(f"INPUT {layer.name} {source} {calib[layer.name].shape}", flush=True)
+    runner.optimize(calib)
+    print("OPTIMIZED", flush=True)
+    sample = {name: value[:4] for name, value in calib.items()}
+    with runner.infer_context(InferenceContext.SDK_FP_OPTIMIZED) as native_ctx:
+        native = runner.infer(native_ctx, sample)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as quant_ctx:
+        quantized = runner.infer(quant_ctx, sample)
+    natives = native if isinstance(native, (list, tuple)) else [native]
+    quants = quantized if isinstance(quantized, (list, tuple)) else [quantized]
+    for index, (left, right) in enumerate(zip(natives, quants)):
+        left_v = np.asarray(left, dtype=np.float64).ravel()
+        right_v = np.asarray(right, dtype=np.float64).ravel()
+        denom = np.linalg.norm(left_v) * np.linalg.norm(right_v)
+        cosine = float(left_v @ right_v / denom) if denom else 0.0
+        print(
+            f"output {index} cosine {cosine:.6f} max {float(np.max(np.abs(left_v - right_v))):.6e}",
+            flush=True,
+        )
+    hef = runner.compile()
+    out = ROOT / "artifacts" / "clef_slice" / "clef_experimental_conv_scan_8.hef"
+    out.write_bytes(hef)
+    print(f"HEF {out} bytes={len(hef)}", flush=True)
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "export"
     try:
@@ -361,6 +486,10 @@ def main() -> None:
             export_normed()
         elif command == "compile-8-l2":
             compile_normed(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+        elif command == "export-conv-scan":
+            export_conv_scan()
+        elif command == "compile-conv-scan":
+            compile_conv_scan(int(sys.argv[2]) if len(sys.argv) > 2 else 16)
         else:
             raise SystemExit(f"unknown command {command}")
     except Exception:

@@ -115,6 +115,16 @@ class GatedDeltaScanTests(unittest.TestCase):
             )
         self.assertLess(float((got - reference).abs().max()), 1e-4)
 
+    def test_head_stack_matches_repeat_interleave(self) -> None:
+        from compile_scan_step import repeat_each_head
+
+        torch.manual_seed(1)
+        heads = torch.randn(2, 8, 16, 128)
+        self.assertLess(
+            float((repeat_each_head(heads) - heads.repeat_interleave(2, dim=2)).abs().max()),
+            1e-6,
+        )
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
