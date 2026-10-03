@@ -132,6 +132,26 @@ def _guard_empty_transpose_shapes() -> None:
 
     ONNXConverter._layer_callback_from_vertex = named
 
+    from hailo_sdk_common.hailo_nn.hn_layers.layer import Layer
+
+    original_replace = Layer.replace_input_shape
+
+    def replace_input_shape(self, old_name, new_input_shape):
+        if old_name in self._input_layers:
+            idx = self._input_layers.index(old_name)
+            if idx >= len(self._input_shapes):
+                print(
+                    f"pad input shapes on {self.name} for {old_name} "
+                    f"({len(self._input_shapes)} shapes, index {idx})",
+                    flush=True,
+                )
+                while len(self._input_shapes) <= idx:
+                    self._input_shapes.append(new_input_shape)
+                return
+        return original_replace(self, old_name, new_input_shape)
+
+    Layer.replace_input_shape = replace_input_shape
+
 
 def fold_constant_transpose() -> None:
     """Remove the one transpose whose input is a weight initializer.
