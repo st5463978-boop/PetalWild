@@ -4,6 +4,8 @@ Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal r
 
 Those same quantized activations, 12 sequences, scored by the FP32 joint head: decision agreement 0.75, high-confidence disagreements 0, logit cosine min 0.9336, mean 0.9786, maximum probability change 0.247. Hidden cosine on those 12 sequences is 0.962434 and max absolute error is 1.03. Sequence 8 is repeated to fill the head's length-16 schema. This is layer 3 only.
 
+Partial RoPE (64 of 256, host cos and sin, swap then sign) quantized at 64 rows and optimization level 0 matches the float rotate at cosine 0.999587, MSE 1.03e-3, and max absolute error 0.195. That graph compiled. The same rotate inside layer-3 attention has parsed and has not been quantized yet.
+
 The no-RoPE attention without the MLP, 64 rows and optimization level 0, matches PyTorch at cosine 0.995641, MSE 1.25e-2, and max absolute error 2.12. Feeding that quantized attention through the host post-attention norm and the quantized MLP, then adding the residual, matches the float block on 4 sequences at cosine 0.992361 and max absolute error 4.54. The FP32 head then agrees on 0.75 of those 4 cases, with 0 high-confidence disagreements, logit cosine min 0.9898, and maximum probability change 0.156.
 
 One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch loop body at state cosine 0.992339 (max absolute error 4.42) and output cosine 0.984008 (max absolute error 31.9).

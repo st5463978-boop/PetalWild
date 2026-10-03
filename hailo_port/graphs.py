@@ -113,6 +113,52 @@ class FullAttentionBlockWithoutRope(torch.nn.Module):
         return hidden + self.layer.mlp(self.layer.post_attention_layernorm(hidden))
 
 
+class AttentionOnlyMaskedRope(torch.nn.Module):
+    """Layer-3 attention without the MLP. RoPE swaps halves instead of negating one.
+
+    ``rotate_half`` dies in the DFC 5.4.0 fuser. ``apply_partial_rope`` is the
+    same values. cos/sin stay host inputs, so mRoPE scatter stays off device.
+    """
+
+    def __init__(self, layer: torch.nn.Module):
+        super().__init__()
+        self.layer = layer
+
+    def forward(self, hidden: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+        from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
+
+        attention = self.layer.self_attn
+        residual = hidden
+        normalized = self.layer.input_layernorm(hidden)
+        input_shape = normalized.shape[:-1]
+        hidden_shape = (*input_shape, -1, attention.head_dim)
+        query_states, gate = torch.chunk(
+            attention.q_proj(normalized).view(*input_shape, -1, attention.head_dim * 2),
+            2,
+            dim=-1,
+        )
+        gate = gate.reshape(*input_shape, -1)
+        query_states = attention.q_norm(query_states.view(hidden_shape)).transpose(1, 2)
+        key_states = attention.k_norm(attention.k_proj(normalized).view(hidden_shape)).transpose(1, 2)
+        value_states = attention.v_proj(normalized).view(hidden_shape).transpose(1, 2)
+        broadcast_cos = cos.unsqueeze(1)
+        broadcast_sin = sin.unsqueeze(1)
+        query_states = apply_partial_rope(query_states, broadcast_cos, broadcast_sin)
+        key_states = apply_partial_rope(key_states, broadcast_cos, broadcast_sin)
+        attended, _ = eager_attention_forward(
+            attention,
+            query_states,
+            key_states,
+            value_states,
+            causal_mask(normalized),
+            scaling=attention.scaling,
+            dropout=0.0,
+        )
+        attended = attended.reshape(*input_shape, -1).contiguous()
+        attended = attention.o_proj(attended * torch.sigmoid(gate))
+        return residual + attended
+
+
 class StackedFullAttention(torch.nn.Module):
     def __init__(self, layer: torch.nn.Module, repeats: int):
         super().__init__()

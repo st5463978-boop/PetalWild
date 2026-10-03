@@ -151,6 +151,16 @@ The same channel split, with nothing after it, is three `Slice` nodes rather tha
 
 Putting the published depthwise kernel and SiLU in front of those slices also compiles: `hailo_port/generated/clef_experimental_conv_qkv.hef` (253,952 bytes, 17s). Hailo shows `external_pad`, `dw`, a format conversion, and three slices. No SiLU layer is listed. Against the PyTorch module that does include SiLU, 256 rows and optimization level 0: query cosine 0.986650 max absolute error 0.0256, key cosine 0.992523 max 0.0260, value cosine 0.902513 max 0.0251. Value's standard deviation on these four sequences is 0.023, so the absolute error is about the size of the value signal. Totals: control 43.8%, compute 14.6%, memory 14.4%. Clusters 1 and 4 are at 100% control.
 
+## Partial RoPE
+
+`rotate_half` negates one half and concatenates. On a rank-3 probe, query `[1, 8, 256]` and host cos/sin `[1, 8, 64]`, DFC 5.4.0 enters `_handle_neg_feature_shuffle` and raises `TypeError: object of type 'NoneType' has no len()` because `concat.group_sizes` is `None`. The full block hits the same function and raises `IndexError: list assignment index out of range`.
+
+The same values as a swap of the two halves times `[-1] * 32 + [1] * 32` parse. Hailo keeps the sign as `normalization` after the concat, which is outside the fuser pattern. That probe compiles in one context in about 2s to `hailo_port/generated/qwen35_rope_masked_rank3.hef` (57,344 bytes). Totals: control 12.5%, compute 5%, memory 5.8%. Cluster 0 is 56.3% control, 20.8% compute, and 20.3% memory. Quantized emulator, 64 rows, optimization level 0: cosine 0.999587, MSE 1.03e-3, max absolute error 0.195.
+
+A rank-4 input `[1, 16, 8, 256]` in the default NCHW format does not parse. The stock tail concat reports `[-1, 8, 64, 64]` against `[-1, 8, 192, 16]`.
+
+Layer-3 attention with this swap, MLP removed, matches official `self_attn` plus the residual at max absolute error 0 on one sequence of the published weights and the real mRoPE cos/sin. The ONNX contains no `Neg`. Parse takes 7.33s. HAR `artifacts/qwen35_attention_masked_rope.har` is 235,274,240 bytes. The query splitter has `groups=16` and cuts 4096 features into 1024 and 3072, which is 64 rotary dimensions and 192 pass-through dimensions on each head. The key splitter has `groups=4` and cuts 1024 into 256 and 768. Compile of that HAR is in progress. mRoPE scatter stays on the host.
+
 ## Attention core, one head
 
 The softmax core of one full-attention head is a separate graph: packed Q, K, and V, sequence 8, head dimension 256. Host code still owns Q/K/V projection, Q/K RMSNorm, partial RoPE, and the sigmoid output gate. `hailo_port/compile_attn_core.py` exports that core.

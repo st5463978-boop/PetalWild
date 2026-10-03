@@ -146,10 +146,11 @@ def compile_one(name: str, calibration_rows: int) -> None:
     expected = _numpy_rope(query, cos, sin, rank4)
 
     feed = {}
-    tensors = {"query": query, "cos": cos, "sin": sin}
-    for layer in inputs:
+    tensors = [query, cos, sin]
+    # Hailo renames the ONNX inputs to input_layer1..3 in that order.
+    for layer, array in zip(sorted(inputs, key=lambda item: item.name), tensors, strict=True):
         hailo_shape = layer.output_shapes[0]
-        array = tensors[layer.name]
+        array = np.asarray(array, dtype=np.float32)
         while array.ndim < len(hailo_shape):
             array = array[:, None]
         feed[layer.name] = array
@@ -175,11 +176,55 @@ def compile_one(name: str, calibration_rows: int) -> None:
     print(f"HEF {hef_path} bytes={len(hef)}", flush=True)
 
 
+def export_attention() -> None:
+    """Layer-3 attention, no MLP, masked RoPE. Host still supplies cos and sin."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import AttentionOnlyMaskedRope, causal_mask
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextRotaryEmbedding
+
+    layer, config = load_decoder(3)
+    module = AttentionOnlyMaskedRope(layer).eval()
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(0)
+    hidden = torch.randn(1, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, 1, -1)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        got = module(hidden, cos, sin)
+        official, _ = layer.self_attn(
+            hidden_states=layer.input_layernorm(hidden),
+            position_embeddings=(cos, sin),
+            attention_mask=causal_mask(hidden),
+        )
+        delta = float((got - (hidden + official)).abs().max())
+    print(f"masked vs official max_abs {delta:.6e} cos {tuple(cos.shape)}", flush=True)
+    if delta > 1e-4:
+        raise SystemExit(f"rope mismatch {delta}")
+    path = ONNX_DIR / "qwen35_attention_masked_rope.onnx"
+    torch.onnx.export(
+        module,
+        (hidden, cos, sin),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=True,
+        input_names=["hidden", "cos", "sin"],
+        output_names=["hidden_out"],
+    )
+    data = path.with_suffix(".onnx.data")
+    print(path, path.stat().st_size, data.stat().st_size if data.exists() else 0, flush=True)
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "export"
     try:
         if command == "export":
             export_all()
+        elif command == "export-attention":
+            export_attention()
         elif command == "parse":
             parse_one(sys.argv[2])
         elif command == "compile":
