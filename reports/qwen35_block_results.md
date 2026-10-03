@@ -92,7 +92,7 @@ DFC 5.4.0, architecture `hailo10h`.
 - MLP HAR: `artifacts/clef_experimental_mlp.har` (parsed). Optimized HAR: `artifacts/clef_experimental_mlp.optimized.har`.
 - No-RoPE full-attention HAR: `artifacts/clef_experimental_full_attention_no_rope.har` (parsed).
 - RoPE full-attention, linear block, decision head, and the 2-block stack did not parse. The exceptions are in `reports/hailo_operator_compatibility.md`.
-- `compile()` on the real Clef MLP (hidden 4096) passed pre-partition in 21m 37s and then entered single-context allocation. That search had produced no further log line after about 25 minutes. No HEF. `/dev/hailo0` is not present, so nothing was timed on device.
+- `compile()` on the real Clef MLP (hidden 4096) passed pre-partition in 21m 37s. Single-context placement then failed in 30m 2s because `conv1`, `conv2`, and `conv3` had no successful assignment. No HEF. `/dev/hailo0` is not present, so nothing was timed on device.
 
 The same SwiGLU formula, with random weights and intermediate size 3 × hidden, compiles in one context:
 

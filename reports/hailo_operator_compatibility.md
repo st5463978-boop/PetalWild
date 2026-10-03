@@ -12,7 +12,7 @@ Parser and compiler results:
 |---|---|---|
 | Layer-3 SwiGLU MLP | `translate_onnx_model` | HAR written. Hailo sees 1x1 conv + SiLU + ew multiply + conv. Input `[-1, 1, 8, 4096]`. 151.02M parameters in the Hailo model. |
 | Same MLP | `optimize` | Finished. Hailo lowered the optimization level to 0 because the calibration set had 8 rows and no GPU was visible. Recommended calibration count is 1024. |
-| Same MLP | `compile` | Pre-partition succeeded in 21m 37s. Then `Trying to compile the network in a single context`, with no further log line after about 25 minutes. No HEF. |
+| Same MLP | `compile` | Pre-partition succeeded in 21m 37s. Single context then failed in 30m 2s: `Recoverable single context error - some nodes have no successful assignments: conv1, conv2, conv3`. No HEF. The process was still running after that message. |
 | Same SwiGLU formula, random weights, hidden 64, 256, 512, 1024 | `compile` | HEF written. Single context. Files in `hailo_port/generated/`. Hidden 1024 uses 68.4% memory and one cluster reaches 97.9% compute. |
 | Same formula, hidden 2048 | `compile` | Stopped after 7 minutes while still building optimization options. No HEF. |
 | Full-attention block, RoPE inside | `translate_onnx_model` | Fuser crash after a successful ONNX simplify: `_handle_neg_feature_shuffle` raises `IndexError: list assignment index out of range`. |
