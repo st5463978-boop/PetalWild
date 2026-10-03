@@ -24,6 +24,13 @@ def compile_block(calibration_rows: int) -> None:
     for layer in runner._hn.get_input_layers():
         print(f"INPUT {layer.name} {layer.output_shapes}", flush=True)
     if "quant" not in str(runner.state):
+        from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+            MatmulEqualization,
+        )
+
+        # Grouped attention is 16 query heads against 4 KV heads. Equalization
+        # then subtracts encodings of shape [0, 16] and [0, 4].
+        MatmulEqualization.should_skip_algo = lambda self: True
         runner.load_model_script(
             "model_optimization_config(calibration, batch_size=8, "
             f"calibset_size={calibration_rows})\n"
