@@ -18,6 +18,8 @@ The joint-head ONNX after host type embeddings, the folded weight transpose, and
 
 The parsed head prefix, quantized with 64 rows at optimization level 0, matches the float Hailo graph on five outputs with cosine 0.9996 to 0.9999 and max absolute error 0.055. That prefix did not compile.
 
+The published `question_projection` (4096 to 1024), quantized with 1024 rows at optimization level 0, matches PyTorch at cosine 0.999830 and max absolute error 0.0422. That projection did compile.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).
