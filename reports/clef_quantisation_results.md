@@ -6,6 +6,8 @@ A width-64 copy of the same SwiGLU, random weights, was quantized the same way a
 
 The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) scored cosine 0.9953, MSE 1.68e-5, and max absolute error 0.0184 under the same emulator and the same optimization level.
 
+The causal attention core (one head, sequence 8, head dimension 256) was quantized and executed in `SDK_QUANTIZED`. The model script set `calibset_size=1024`. The compiler still forced optimization level 0 because no GPU is present, so Adaround, bias correction, and quantization-aware fine-tuning were skipped. Against PyTorch on 4 sequences: cosine 0.999709, MSE 2.93e-4, max absolute error 0.0755. Scrambling future V left position 0 unchanged (leak 0) in both PyTorch and the emulator.
+
 The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
 ## Decision head weights rounded to int8

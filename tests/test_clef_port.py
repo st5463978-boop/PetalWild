@@ -32,6 +32,22 @@ class GatedDeltaScanTests(unittest.TestCase):
         self.assertLess(float((ours - reference).abs().max()), 1e-5)
 
 
+class AttentionCoreTests(unittest.TestCase):
+    def test_causal_core_hides_future_values(self) -> None:
+        from compile_attn_core import HEAD, SEQUENCE, PackedAttention
+
+        torch.manual_seed(0)
+        module = PackedAttention("mask3").eval()
+        base = torch.randn(2, SEQUENCE, HEAD * 3)
+        scrambled = base.clone()
+        scrambled[:, 1:, HEAD * 2 :] = torch.randn_like(scrambled[:, 1:, HEAD * 2 :])
+        with torch.inference_mode():
+            left = module(base)
+            right = module(scrambled)
+        self.assertLess(float((left[:, 0] - right[:, 0]).abs().max()), 1e-6)
+        self.assertGreater(float((left[:, -1] - right[:, -1]).abs().max()), 1e-3)
+
+
 class MeasurementRecordTests(unittest.TestCase):
     def test_recorded_exports_match_pytorch(self) -> None:
         path = ROOT / "reports" / "measurements.json"

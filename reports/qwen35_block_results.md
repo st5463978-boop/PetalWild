@@ -107,4 +107,17 @@ At hidden 1024 the busiest cluster was at 97.9% compute and 85.2% memory. Files 
 
 The leading 1024-by-3072 tile of the real Clef layer-3 gate, up, and down matrices compiled in 50 seconds to `hailo_port/generated/clef_experimental_mlp_h1024_tile.hef`. Against that same tile in PyTorch, the Hailo quantized emulator scored cosine 0.9953 and max absolute error 0.0184. The tile does not reproduce the full 4096-wide MLP.
 
-Splitting every real projection into 1024-input by 3072-output tiles does reproduce it. Sixteen gate tiles, sixteen up tiles, a host SiLU multiply, and sixteen down tiles match the full MLP at cosine 0.99999999999976 and max absolute error 1.2e-6. One real gate tile compiled in 30 seconds to `hailo_port/generated/clef_experimental_gate_tile.hef` (quantized emulator cosine 0.9994, max absolute error 0.057, total memory 39.2%). After the single-context failure, the full-MLP compiler logged `Using Multi-context flow` and `Finding the best partition to contexts...`. By 10:30 every recorded multi-context iteration had failed with `Automri finished with too many resources`, spread across context_0 through context_5. No HEF.
+Splitting every real projection into 1024-input by 3072-output tiles does reproduce it. Sixteen gate tiles, sixteen up tiles, a host SiLU multiply, and sixteen down tiles match the full MLP at cosine 0.99999999999976 and max absolute error 1.2e-6. One real gate tile compiled in 30 seconds to `hailo_port/generated/clef_experimental_gate_tile.hef` (quantized emulator cosine 0.9994, max absolute error 0.057, total memory 39.2%). The full-MLP multi-context search then accepted a 17-context partition (`Successful Multi Context Partition`, 33m 31s, control utilization 0.6). Allocation was still running after that, and `artifacts/clef_experimental_mlp.hef` was not written.
+
+## Attention core, one head
+
+The softmax core of one full-attention head is a separate graph: packed Q, K, and V, sequence 8, head dimension 256. Host code still owns Q/K/V projection, Q/K RMSNorm, partial RoPE, and the sigmoid output gate. `hailo_port/compile_attn_core.py` exports that core.
+
+Two parser fixes were required before `optimize` would finish:
+
+- The causal mask is stored as `[8, 8]`. The post-fuser builds a constant of shape `[-1, *mask.shape]` and then crashes in `is_spatial_broadcast` because that rank-3 constant cannot broadcast onto scores of shape `[-1, 1, 8, 8]`. Reshaping the mask parameter to `[1, 8, 8]` makes the constant match the scores.
+- Both matmul inputs are activations. The default zero-point correction (`zp_comp_block`) walks backward looking for a weight producer and raises `No predecessor with weight for layer linear_matmul1`. The model script sets `correction_type=zp_comp_none` on `matmul1` and `matmul2`.
+
+With those two changes the core compiles in one context in about 1 second. The HEF is `hailo_port/generated/clef_experimental_attn_core.hef` (65,536 bytes). Cluster 2 is the busiest, at 75% control, 27.1% compute, and 20.3% memory. The network total is 17.5% control, 6.3% compute, and 4.7% memory.
+
+On the quantized emulator, four sequences against the PyTorch core scored cosine 0.999709, MSE 2.93e-4, and max absolute error 0.0755. Calibration used 1024 rows. Optimization level stayed 0 because this machine has no GPU, so Adaround and bias correction were skipped. Scrambling V at positions 1..7 left position 0 unchanged in both PyTorch and the emulator (`future_token_leak` 0). A rank-4 mask of shape `[1, 1, 8, 8]` never parsed: matmul shape inference raised `IndexError: list index out of range` on `input_shapes[1]`. A three-input ONNX (separate Q, K, V) was rewritten by the simplifier into one input. The packed QKV tensor is the input that parses.
