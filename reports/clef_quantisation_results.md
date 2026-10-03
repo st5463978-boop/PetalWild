@@ -14,6 +14,8 @@ The full Q projection, 4096 to 8192, quantized under the same settings before it
 
 The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
+The joint-head ONNX after host type embeddings, the folded weight transpose, and the Tile replacement of two Expands matches the official head on 4 random cases: max absolute error 4.77e-7, decision agreement 1.0. That graph is what the parser is failing on, not a numerically different head.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).
