@@ -32,6 +32,24 @@ class GatedDeltaScanTests(unittest.TestCase):
         self.assertLess(float((ours - reference).abs().max()), 1e-5)
 
 
+class DepthwiseConvTests(unittest.TestCase):
+    def test_nchw_conv_matches_causal_conv1d(self) -> None:
+        from compile_depthwise_conv import CHANNELS, KERNEL, SEQUENCE, CausalDepthwise
+
+        torch.manual_seed(0)
+        module = CausalDepthwise().eval()
+        hidden = torch.randn(2, CHANNELS, 1, SEQUENCE)
+        weight = module.conv.weight[:, 0, 0, :].unsqueeze(1)
+        with torch.inference_mode():
+            got = module(hidden)[:, :, 0, :]
+            reference = torch.nn.functional.conv1d(
+                torch.nn.functional.pad(hidden[:, :, 0, :], (KERNEL - 1, 0)),
+                weight,
+                groups=CHANNELS,
+            )
+        self.assertLess(float((got - reference).abs().max()), 1e-6)
+
+
 class AttentionCoreTests(unittest.TestCase):
     def test_causal_core_hides_future_values(self) -> None:
         from compile_attn_core import HEAD, SEQUENCE, PackedAttention

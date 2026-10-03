@@ -20,6 +20,8 @@ The parsed head prefix, quantized with 64 rows at optimization level 0, matches 
 
 The published `question_projection` (4096 to 1024), quantized with 1024 rows at optimization level 0, matches PyTorch at cosine 0.999830 and max absolute error 0.0422. That projection did compile.
 
+The published layer-0 depthwise causal conv (8192 channels, kernel 4, sequence 8, bias left at zero) was quantized with 1024 rows. Optimization level stayed 0 because no GPU is present. Against PyTorch on 4 sequences: cosine 0.997265, MSE 5.37e-5, max absolute error 0.0320. That conv did compile.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).
