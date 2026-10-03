@@ -131,6 +131,10 @@ Hailo's own end-node list, with the conv input format set to `[batch, channels, 
 
 That HAR quantizes. Against the float Hailo graph, 256 calibration rows, optimization level 0: 16 of 17 outputs score cosine 0.999942 or better, with max absolute error up to 0.0117. Output 12 scores cosine 0.989363 and max absolute error 0.0265. Compile then fails in 30s. Pre-partition takes 29s. Single-context and multi-context placement both fail in 0s on `feature_splitter1`: `one output isn't supported`. The QKV split is 2048, 2048, and 4096. No HEF.
 
+The same channel split, with nothing after it, is three `Slice` nodes rather than one `Split`. A lone `Split` still becomes a feature splitter and fails because a graph output has no successor name. The slices compile to `hailo_port/generated/clef_experimental_qkv_slice.hef` (36,864 bytes). Quantized emulator versus the input slices: cosine 0.999927, max absolute error 0.0210.
+
+Putting the published depthwise kernel and SiLU in front of those slices also compiles: `hailo_port/generated/clef_experimental_conv_qkv.hef` (253,952 bytes, 17s). Hailo shows `external_pad`, `dw`, a format conversion, and three slices. No SiLU layer is listed. Against the PyTorch module that does include SiLU, 256 rows and optimization level 0: query cosine 0.986650 max absolute error 0.0256, key cosine 0.992523 max 0.0260, value cosine 0.902513 max 0.0251. Value's standard deviation on these four sequences is 0.023, so the absolute error is about the size of the value signal. Totals: control 43.8%, compute 14.6%, memory 14.4%. Clusters 1 and 4 are at 100% control.
+
 ## Attention core, one head
 
 The softmax core of one full-attention head is a separate graph: packed Q, K, and V, sequence 8, head dimension 256. Host code still owns Q/K/V projection, Q/K RMSNorm, partial RoPE, and the sigmoid output gate. `hailo_port/compile_attn_core.py` exports that core.

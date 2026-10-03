@@ -24,6 +24,8 @@ The published layer-0 depthwise causal conv (8192 channels, kernel 4, sequence 8
 
 The linear-scan prefix (depthwise conv, SiLU, QKV split, beta and decay projections) was quantized with 256 rows, again at optimization level 0. The comparison is the quantized emulator against the float Hailo graph, not against PyTorch. Sixteen outputs score cosine 0.999942 or better. Output 12 scores cosine 0.989363 and max absolute error 0.0265. That prefix did not compile.
 
+The QKV widths as three slices, same 256 rows and level 0, match the sliced activation at cosine 0.999927 and max absolute error 0.0210. That graph did compile. The published depthwise conv plus SiLU plus those slices, same calibration, matches PyTorch at query cosine 0.986650 (max 0.0256), key cosine 0.992523 (max 0.0260), and value cosine 0.902513 (max 0.0251). Value's standard deviation is 0.023. That graph also compiled.
+
 ## Decision head weights rounded to int8
 
 - Cases: 12, fixed schema (3-way choice plus true/false).

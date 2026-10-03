@@ -206,6 +206,172 @@ def compile_prefix(calibration_rows: int) -> None:
     print(f"HEF {path} bytes={len(hef)}", flush=True)
 
 
+def export_qkv(kind: str) -> Path:
+    """Q, K, and V as three outputs, with no later reshape for Hailo to fuse."""
+    import numpy as np
+    import onnx
+    from onnx import TensorProto, helper, numpy_helper
+
+    path = ROOT / "artifacts" / "onnx" / f"qwen35_qkv_{kind}.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mixed = helper.make_tensor_value_info("mixed", TensorProto.FLOAT, [1, 8, 8192])
+    outputs = [
+        helper.make_tensor_value_info(name, TensorProto.FLOAT, [1, 8, channels])
+        for name, channels in (("query", 2048), ("key", 2048), ("value", 4096))
+    ]
+    initializers = []
+    if kind == "split":
+        initializers.append(numpy_helper.from_array(np.array([2048, 2048, 4096], np.int64), "sizes"))
+        nodes = [helper.make_node("Split", ["mixed", "sizes"], ["query", "key", "value"], axis=2)]
+    elif kind == "slice":
+        nodes = []
+        for name, start, end in (("query", 0, 2048), ("key", 2048, 4096), ("value", 4096, 8192)):
+            start_name, end_name, axis_name = f"{name}_start", f"{name}_end", f"{name}_axis"
+            initializers.append(numpy_helper.from_array(np.array([start], np.int64), start_name))
+            initializers.append(numpy_helper.from_array(np.array([end], np.int64), end_name))
+            initializers.append(numpy_helper.from_array(np.array([2], np.int64), axis_name))
+            nodes.append(helper.make_node("Slice", ["mixed", start_name, end_name, axis_name], [name]))
+    else:
+        raise SystemExit(f"unknown qkv kind {kind}")
+    graph = helper.make_graph(nodes, f"clef_experimental_qkv_{kind}", [mixed], outputs, initializers)
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 18)])
+    onnx.checker.check_model(model)
+    onnx.save(model, path)
+    print(path, path.stat().st_size, flush=True)
+    return path
+
+
+def compile_qkv(kind: str, calibration_rows: int) -> None:
+    import numpy as np
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    path = export_qkv(kind)
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), f"clef_experimental_qkv_{kind}", disable_onnx_simplifier=True)
+    for layer in runner._hn:
+        print(f"LAYER {layer.op} {layer.name} in={layer.input_shapes} out={layer.output_shapes}", flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    rng = np.random.default_rng(0)
+    hailo_input = next(iter(runner._hn.get_input_layers()))
+    shape = [calibration_rows, *hailo_input.output_shapes[0][1:]]
+    calib = rng.standard_normal(shape).astype(np.float32)
+    print(f"CALIB {hailo_input.name} {calib.shape}", flush=True)
+    runner.optimize(calib)
+    print("OPTIMIZED", flush=True)
+    sample = calib[:4]
+    reference = np.split(sample.reshape(4, 8, 8192), [2048, 4096], axis=-1)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        quantized = runner.infer(ctx, sample)
+    outputs = quantized if isinstance(quantized, (list, tuple)) else [quantized]
+    for index, (got, expect) in enumerate(zip(outputs, reference)):
+        print(f"output {index} shape {np.asarray(got).shape}", flush=True)
+        got_v = np.asarray(got, dtype=np.float64)
+        got_v = np.squeeze(got_v)
+        got_v = got_v.reshape(expect.shape)
+        cosine = float(got_v.ravel() @ expect.ravel() / (np.linalg.norm(got_v) * np.linalg.norm(expect)))
+        print(
+            f"output {index} cosine {cosine:.6f} max {float(np.max(np.abs(got_v - expect))):.6e}",
+            flush=True,
+        )
+    hef = runner.compile()
+    out = ROOT / "artifacts" / "clef_slice" / f"clef_experimental_qkv_{kind}.hef"
+    out.write_bytes(hef)
+    print(f"HEF {out} bytes={len(hef)}", flush=True)
+
+
+def _conv_silu_split():
+    import torch
+    import torch.nn.functional as F
+    from compile_depthwise_conv import KERNEL, load_conv
+
+    conv = load_conv()
+
+    class ConvSiluSplit(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.conv = conv.conv
+
+        def forward(self, hidden: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+            activated = F.silu(self.conv(F.pad(hidden, (KERNEL - 1, 0, 0, 0))))
+            mixed = activated.squeeze(2).transpose(1, 2)
+            return mixed[:, :, :2048], mixed[:, :, 2048:4096], mixed[:, :, 4096:]
+
+    return ConvSiluSplit
+
+
+def export_conv_qkv() -> Path:
+    """Depthwise conv, SiLU, then Q/K/V as channel slices.
+
+    A single Split becomes a feature splitter, which cannot be a graph output.
+    Slices are the split that compiled on their own. Export with system Python;
+    the Hailo venv has no onnxscript.
+    """
+    import torch
+    from compile_depthwise_conv import SEQUENCE
+
+    path = ROOT / "artifacts" / "onnx" / "qwen35_conv_qkv_slice.onnx"
+    module = _conv_silu_split()().eval()
+    torch.onnx.export(
+        module,
+        (torch.zeros(1, 8192, 1, SEQUENCE),),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+    )
+    print(path, path.stat().st_size, flush=True)
+    return path
+
+
+def compile_conv_qkv(calibration_rows: int) -> None:
+    import numpy as np
+    import torch
+    from compile_depthwise_conv import SEQUENCE
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    path = ROOT / "artifacts" / "onnx" / "qwen35_conv_qkv_slice.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_conv_qkv", disable_onnx_simplifier=True)
+    for layer in runner._hn:
+        print(f"LAYER {layer.op} {layer.name} in={layer.input_shapes} out={layer.output_shapes}", flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    torch.manual_seed(0)
+    samples = torch.randn(max(calibration_rows, 4), 8192, 1, SEQUENCE)
+    with torch.inference_mode():
+        expected = _conv_silu_split()().eval()(samples[:4])
+    nchw = samples[:calibration_rows].numpy().astype(np.float32)
+    calib = np.transpose(nchw, (0, 2, 3, 1))
+    runner.optimize(calib)
+    print("OPTIMIZED", flush=True)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        quantized = runner.infer(ctx, calib[:4])
+    outputs = quantized if isinstance(quantized, (list, tuple)) else [quantized]
+    for index, (got, expect) in enumerate(zip(outputs, expected)):
+        got_v = np.squeeze(np.asarray(got, dtype=np.float64))
+        expect_v = expect.numpy().astype(np.float64)
+        print(f"output {index} shape {got_v.shape} expect {expect_v.shape}", flush=True)
+        # Hailo stores the sliced features as width and the time axis as channels.
+        if got_v.shape == (expect_v.shape[0], expect_v.shape[2], expect_v.shape[1]):
+            got_v = np.transpose(got_v, (0, 2, 1))
+        cosine = float(got_v.ravel() @ expect_v.ravel() / (np.linalg.norm(got_v) * np.linalg.norm(expect_v)))
+        print(
+            f"output {index} cosine {cosine:.6f} max {float(np.max(np.abs(got_v - expect_v))):.6e}",
+            flush=True,
+        )
+    hef = runner.compile()
+    out = ROOT / "artifacts" / "clef_slice" / "clef_experimental_conv_qkv.hef"
+    out.write_bytes(hef)
+    print(f"HEF {out} bytes={len(hef)}", flush=True)
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "parse"
     try:
@@ -217,6 +383,14 @@ def main() -> None:
             parse_block()
         elif command == "compile":
             compile_prefix(int(sys.argv[2]) if len(sys.argv) > 2 else 256)
+        elif command == "qkv":
+            kind = sys.argv[2] if len(sys.argv) > 2 else "split"
+            rows = int(sys.argv[3]) if len(sys.argv) > 3 else 256
+            compile_qkv(kind, rows)
+        elif command == "export-conv":
+            export_conv_qkv()
+        elif command == "conv-qkv":
+            compile_conv_qkv(int(sys.argv[2]) if len(sys.argv) > 2 else 256)
         elif command == "parse-prefix":
             from hailo_sdk_client.exposed_definitions import Dims
 
