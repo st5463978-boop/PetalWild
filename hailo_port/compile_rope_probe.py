@@ -413,8 +413,8 @@ def export_unrolled_core() -> None:
 
     module = UnrolledAttentionCore().eval()
     query = torch.zeros(1, SEQUENCE, 256, 16)
-    key = torch.zeros(1, SEQUENCE, 256, 4)
-    value = torch.zeros(1, 256, SEQUENCE, 4)
+    key = torch.zeros(1, 4, SEQUENCE, 256)
+    value = torch.zeros(1, 4, SEQUENCE, 256)
     path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
     torch.onnx.export(
         module,
@@ -428,8 +428,8 @@ def export_unrolled_core() -> None:
     )
     torch.manual_seed(2)
     query = torch.randn(4, SEQUENCE, 256, 16)
-    key = torch.randn(4, SEQUENCE, 256, 4)
-    value = torch.randn(4, 256, SEQUENCE, 4)
+    key = torch.randn(4, 4, SEQUENCE, 256)
+    value = torch.randn(4, 4, SEQUENCE, 256)
     with torch.inference_mode():
         output = module(query, key, value)
     ref = ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz"

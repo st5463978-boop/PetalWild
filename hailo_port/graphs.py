@@ -202,30 +202,27 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
 
 
 class UnrolledAttentionCore(torch.nn.Module):
-    """Per-head matmuls. Head axis is already the width, so Hailo can slice it.
+    """Per-head matmuls, using the width-slice layout that matches PyTorch.
 
-    query is [B, S, D, H], key is [B, S, D, KV], value is [B, D, S, KV].
+    query is [B, S, D, H]. key and value are [B, KV, S, D].
     """
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
         length = query.shape[1]
         dim = query.shape[2]
         heads = query.shape[-1]
-        group = heads // key.shape[-1]
+        group = heads // key.shape[1]
+        key_w = key.permute(0, 3, 2, 1)
+        value_w = value.permute(0, 3, 2, 1)
         flat_mask = causal_mask(query[:, :, 0, :]).reshape(1, length, length)
-        scale = query.new_full((1, length, dim, heads), dim**-0.5)
-        query = query * scale
+        scale = dim**-0.5
         outputs = []
         for index in range(heads):
             kv = index // group
             query_head = query.narrow(-1, index, 1).squeeze(-1)
-            key_head = key.narrow(-1, kv, 1).squeeze(-1)
-            value_head = value.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
-            # Q is signed, so the scores matmul needs its second input transposed
-            # or Hailo rejects the zero point. K @ Q^T is the transpose of Q @ K^T.
-            scores = torch.matmul(key_head, query_head.transpose(-1, -2)).transpose(-1, -2) + flat_mask
-            # Hailo rejects a matmul whose data has a zero point unless the
-            # other input is marked transposed. Value is stored [B, D, S].
+            key_head = key_w.narrow(-1, kv, 1).squeeze(-1)
+            value_head = value_w.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
+            scores = torch.matmul(query_head, key_head) * scale + flat_mask
             outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
         return torch.cat(outputs, dim=-1)
 
