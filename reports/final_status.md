@@ -1,6 +1,6 @@
 # Final status
 
-1. Highest level reached for the real Clef-Flash weights: **LEVEL 2**. The layer-3 SwiGLU MLP and a full-attention block with RoPE removed both parse to Hailo-10H HARs. The real MLP (hidden 4096, intermediate 12288, 151.02M parameters) was quantized at Hailo optimization level 0. Single-context compilation failed after 30m 2s: `Recoverable single context error - some nodes have no successful assignments: conv1, conv2, conv3`. The compiler was still running after that failure. No HEF for the Clef weights. The same SwiGLU formula with random weights compiles to HEF through hidden size 1024. Those HEFs are structural probes, not Clef checkpoints.
+1. Highest level reached for a full Clef-Flash block: **LEVEL 2**. The layer-3 SwiGLU and a full-attention block with RoPE removed parse to Hailo-10H HARs. The full MLP (hidden 4096, intermediate 12288, 151.02M parameters) fails single-context placement after 30m 2s: `Recoverable single context error - some nodes have no successful assignments: conv1, conv2, conv3`. A leading tile of those same weight matrices, hidden 1024 and intermediate 3072, does compile. That HEF is real Clef data and is not a numerically equivalent piece of the full MLP.
 2. Architecture executed: Qwen3.5-9B decoder layer 3 (full attention) and layer 0 (Gated DeltaNet), plus the Clef joint schema head, all from the published Clef-Flash checkpoint. Sequence length 8 for blocks. Head schema is one 3-way choice and one true/false question, sequence 16.
 3. Parts that run on Hailo hardware: none. `/dev/hailo0` is absent. The quantized emulator ran a width-64 SwiGLU. The real MLP graph is still in the compiler.
 4. Parts that remain on CPU: tokenization, mRoPE, span pooling, the exported blocks, and the decision head. Vision encoder not run.
@@ -16,12 +16,10 @@
 8. Decision agreement with reference Clef: the static head matches the official head on 1.000 of the fixed-schema cases (logit cosine min 1.00000000). End-to-end Clef-Flash decisions were not run, because the full backbone was not resident.
 9. Hailo resource usage, single-context structural SwiGLU, totals: hidden 64 is 33.8% control / 30.8% compute / 17.2% memory. Hidden 1024 is 53.8% / 76.3% / 68.4%, with one cluster at 97.9% compute and 85.2% memory. The real 4096-wide MLP has no allocation report yet.
 10. Compile latency on the workstation, not on a Hailo device: 5s, 18s, 33s, and 1m 7s for hidden 64, 256, 512, and 1024. Hidden 2048 was stopped after 7 minutes still building optimization options. The real MLP spent 21m 37s on pre-partition, then 30m 2s failing single-context placement of `conv1`, `conv2`, and `conv3`.
-11. HEF paths, structural probes with random weights, not Clef checkpoints:
-    - `hailo_port/generated/clef_width_h64.hef`
-    - `hailo_port/generated/clef_width_h256.hef`
-    - `hailo_port/generated/clef_width_h512.hef`
-    - `hailo_port/generated/clef_width_h1024.hef`
-    Optimized Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`.
+11. HEF paths:
+    - Real Clef layer-3 weight tile, hidden 1024: `hailo_port/generated/clef_experimental_mlp_h1024_tile.hef` (7,217,152 bytes, compile 50s). Quantized emulator versus the same tile in PyTorch: cosine 0.9953, max absolute error 0.0184.
+    - Random-weight SwiGLU probes: `hailo_port/generated/clef_width_h64.hef`, `clef_width_h256.hef`, `clef_width_h512.hef`, `clef_width_h1024.hef`.
+    - Full Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`.
 12. Next experiment: let the 4096-wide Clef MLP allocator finish or fail. Re-quantize with 1024 calibration rows before treating accuracy as meaningful. Do not deploy this over JEV-H.
 
 ## Smoke records

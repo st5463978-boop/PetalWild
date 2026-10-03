@@ -4,6 +4,8 @@ Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal r
 
 A width-64 copy of the same SwiGLU, random weights, was quantized the same way and executed in the compiler's quantized emulator (`SDK_QUANTIZED`), not on a Hailo device. Against the PyTorch module on 4 sequences: cosine 0.9957, MSE 1.22e-4, max absolute error 0.111. Optimization level 0 and random calibration are why that error is as large as it is.
 
+The leading tile of the real Clef layer-3 MLP (hidden 1024, intermediate 3072) scored cosine 0.9953, MSE 1.68e-5, and max absolute error 0.0184 under the same emulator and the same optimization level.
+
 The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
 ## Decision head weights rounded to int8

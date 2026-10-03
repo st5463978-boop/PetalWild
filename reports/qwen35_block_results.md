@@ -104,3 +104,5 @@ The same SwiGLU formula, with random weights and intermediate size 3 × hidden, 
 | 1024 | 1m 7s | 9,904,128 | 53.8% | 76.3% | 68.4% |
 
 At hidden 1024 the busiest cluster was at 97.9% compute and 85.2% memory. Files are under `hailo_port/generated/`. Hidden 2048 had not left "Building optimization options" after 7 minutes.
+
+The leading 1024-by-3072 tile of the real Clef layer-3 gate, up, and down matrices compiled in 50 seconds to `hailo_port/generated/clef_experimental_mlp_h1024_tile.hef`. Against that same tile in PyTorch, the Hailo quantized emulator scored cosine 0.9953 and max absolute error 0.0184. The tile does not reproduce the full 4096-wide MLP.

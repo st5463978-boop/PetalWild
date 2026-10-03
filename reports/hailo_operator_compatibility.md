@@ -15,6 +15,7 @@ Parser and compiler results:
 | Same MLP | `compile` | Pre-partition succeeded in 21m 37s. Single context then failed in 30m 2s: `Recoverable single context error - some nodes have no successful assignments: conv1, conv2, conv3`. No HEF. The process was still running after that message. |
 | Same SwiGLU formula, random weights, hidden 64, 256, 512, 1024 | `compile` | HEF written. Single context. Files in `hailo_port/generated/`. Hidden 1024 uses 68.4% memory and one cluster reaches 97.9% compute. |
 | Same formula, hidden 2048 | `compile` | Stopped after 7 minutes while still building optimization options. No HEF. |
+| Leading 1024×3072 tile of the real Clef layer-3 MLP weights | `compile` | HEF `hailo_port/generated/clef_experimental_mlp_h1024_tile.hef`, 50s, single context. Quantized emulator cosine 0.9953 against that tile in PyTorch. |
 | Full-attention block, RoPE inside | `translate_onnx_model` | Fuser crash after a successful ONNX simplify: `_handle_neg_feature_shuffle` raises `IndexError: list assignment index out of range`. |
 | Full-attention block, RoPE removed | `translate_onnx_model` | HAR written. Layer types: conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add, feature_splitter. |
 | Linear Gated DeltaNet block | `translate_onnx_model` | `StopIteration` in `_is_spatial_flatten_with_features_to_heads_reshape`. |
