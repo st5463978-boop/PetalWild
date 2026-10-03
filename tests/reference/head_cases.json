@@ -1,0 +1,326 @@
+[
+  {
+    "choices": [
+      "overdue",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "overdue",
+        "confidence": 0.537517786026001,
+        "margin": 0.12836942076683044,
+        "probabilities": {
+          "paid": 0.40914836525917053,
+          "overdue": 0.537517786026001,
+          "draft": 0.05333379656076431
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.8344701528549194,
+        "margin": 0.6689403057098389,
+        "probabilities": {
+          "true": 0.16552986204624176,
+          "false": 0.8344701528549194
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "paid",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "paid",
+        "confidence": 0.5999224185943604,
+        "margin": 0.22724905610084534,
+        "probabilities": {
+          "paid": 0.5999224185943604,
+          "overdue": 0.02740417793393135,
+          "draft": 0.372673362493515
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.5679343342781067,
+        "margin": 0.135868638753891,
+        "probabilities": {
+          "true": 0.4320656955242157,
+          "false": 0.5679343342781067
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "paid",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "paid",
+        "confidence": 0.8291964530944824,
+        "margin": 0.7293503880500793,
+        "probabilities": {
+          "paid": 0.8291964530944824,
+          "overdue": 0.09984608739614487,
+          "draft": 0.07095745205879211
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.6869346499443054,
+        "margin": 0.37386924028396606,
+        "probabilities": {
+          "true": 0.31306540966033936,
+          "false": 0.6869346499443054
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "paid",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "paid",
+        "confidence": 0.9373332858085632,
+        "margin": 0.8819602131843567,
+        "probabilities": {
+          "paid": 0.9373332858085632,
+          "overdue": 0.007293643429875374,
+          "draft": 0.05537306144833565
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.9011998772621155,
+        "margin": 0.8023996949195862,
+        "probabilities": {
+          "true": 0.0988001897931099,
+          "false": 0.9011998772621155
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "overdue",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "overdue",
+        "confidence": 0.8847893476486206,
+        "margin": 0.8244924545288086,
+        "probabilities": {
+          "paid": 0.06029687821865082,
+          "overdue": 0.8847893476486206,
+          "draft": 0.054913826286792755
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.851740300655365,
+        "margin": 0.70348060131073,
+        "probabilities": {
+          "true": 0.148259699344635,
+          "false": 0.851740300655365
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.691088080406189,
+        "margin": 0.4089393615722656,
+        "probabilities": {
+          "paid": 0.026763249188661575,
+          "overdue": 0.28214871883392334,
+          "draft": 0.691088080406189
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.6312854886054993,
+        "margin": 0.26257097721099854,
+        "probabilities": {
+          "true": 0.36871451139450073,
+          "false": 0.6312854886054993
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "true"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.5149983763694763,
+        "margin": 0.2395041286945343,
+        "probabilities": {
+          "paid": 0.275494247674942,
+          "overdue": 0.20950734615325928,
+          "draft": 0.5149983763694763
+        }
+      },
+      {
+        "choice": "true",
+        "confidence": 0.8940497040748596,
+        "margin": 0.7880994081497192,
+        "probabilities": {
+          "true": 0.8940497040748596,
+          "false": 0.10595031827688217
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "overdue",
+      "true"
+    ],
+    "details": [
+      {
+        "choice": "overdue",
+        "confidence": 0.9080842137336731,
+        "margin": 0.8572720885276794,
+        "probabilities": {
+          "paid": 0.050812140107154846,
+          "overdue": 0.9080842137336731,
+          "draft": 0.041103653609752655
+        }
+      },
+      {
+        "choice": "true",
+        "confidence": 0.5582731366157532,
+        "margin": 0.11654624342918396,
+        "probabilities": {
+          "true": 0.5582731366157532,
+          "false": 0.4417268931865692
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.522655725479126,
+        "margin": 0.19226059317588806,
+        "probabilities": {
+          "paid": 0.1469491720199585,
+          "overdue": 0.3303951323032379,
+          "draft": 0.522655725479126
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.5544701814651489,
+        "margin": 0.10894039273262024,
+        "probabilities": {
+          "true": 0.4455297887325287,
+          "false": 0.5544701814651489
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "true"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.8540396690368652,
+        "margin": 0.7784457206726074,
+        "probabilities": {
+          "paid": 0.07036639750003815,
+          "overdue": 0.07559395581483841,
+          "draft": 0.8540396690368652
+        }
+      },
+      {
+        "choice": "true",
+        "confidence": 0.67803555727005,
+        "margin": 0.3560711443424225,
+        "probabilities": {
+          "true": 0.67803555727005,
+          "false": 0.32196441292762756
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "true"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.8546136617660522,
+        "margin": 0.7694534063339233,
+        "probabilities": {
+          "paid": 0.06022614985704422,
+          "overdue": 0.08516023308038712,
+          "draft": 0.8546136617660522
+        }
+      },
+      {
+        "choice": "true",
+        "confidence": 0.8133794665336609,
+        "margin": 0.6267589330673218,
+        "probabilities": {
+          "true": 0.8133794665336609,
+          "false": 0.1866205334663391
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      "draft",
+      "false"
+    ],
+    "details": [
+      {
+        "choice": "draft",
+        "confidence": 0.7344881296157837,
+        "margin": 0.4771919548511505,
+        "probabilities": {
+          "paid": 0.2572961747646332,
+          "overdue": 0.008215700276196003,
+          "draft": 0.7344881296157837
+        }
+      },
+      {
+        "choice": "false",
+        "confidence": 0.5300466418266296,
+        "margin": 0.060093313455581665,
+        "probabilities": {
+          "true": 0.469953328371048,
+          "false": 0.5300466418266296
+        }
+      }
+    ]
+  }
+]
