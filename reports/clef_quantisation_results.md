@@ -4,6 +4,8 @@ Hailo `runner.optimize` ran on the parsed Clef SwiGLU MLP with 8 random normal r
 
 Those same quantized activations, 12 sequences, scored by the FP32 joint head: decision agreement 0.75, high-confidence disagreements 0, logit cosine min 0.9336, mean 0.9786, maximum probability change 0.247. Hidden cosine on those 12 sequences is 0.962434 and max absolute error is 1.03. Sequence 8 is repeated to fill the head's length-16 schema. This is layer 3 only.
 
+The no-RoPE attention without the MLP, 64 rows and optimization level 0, matches PyTorch at cosine 0.995641, MSE 1.25e-2, and max absolute error 2.12. Feeding that quantized attention through the host post-attention norm and the quantized MLP, then adding the residual, matches the float block on 4 sequences at cosine 0.992361 and max absolute error 4.54. The FP32 head then agrees on 0.75 of those 4 cases, with 0 high-confidence disagreements, logit cosine min 0.9898, and maximum probability change 0.156.
+
 One Gated DeltaNet step, 64 rows and the same level-0 limit, matches the PyTorch loop body at state cosine 0.992339 (max absolute error 4.42) and output cosine 0.984008 (max absolute error 31.9).
 
 Eight chained steps, same row count and level, are a different story. Decay is drawn uniformly from `[0, 1]` and the float state reaches a max of 2.5e5. The quantized emulator then scores state cosine 0.281300 and output cosine 0.467115. The output shapes match PyTorch, so the drop is the int8 range of that exploded state.
