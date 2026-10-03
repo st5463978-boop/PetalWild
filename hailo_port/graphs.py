@@ -204,7 +204,7 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
 class UnrolledAttentionCore(torch.nn.Module):
     """Per-head matmuls. Head axis is already the width, so Hailo can slice it.
 
-    query is [B, S, D, H], key is [B, D, S, KV], value is [B, S, D, KV].
+    query is [B, S, D, H], key is [B, S, D, KV], value is [B, D, S, KV].
     """
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
@@ -213,16 +213,19 @@ class UnrolledAttentionCore(torch.nn.Module):
         heads = query.shape[-1]
         group = heads // key.shape[-1]
         flat_mask = causal_mask(query[:, :, 0, :]).reshape(1, length, length)
-        # A Python scalar multiply becomes an ew_mult whose constant has no
-        # spatial axis, and is_spatial_broadcast then indexes shape[1].
-        scale = query.new_full((1, length, dim), dim**-0.5)
+        scale = query.new_full((1, length, dim, heads), dim**-0.5)
+        query = query * scale
         outputs = []
         for index in range(heads):
             kv = index // group
-            query_head = query.narrow(-1, index, 1).squeeze(-1) * scale
+            query_head = query.narrow(-1, index, 1).squeeze(-1)
             key_head = key.narrow(-1, kv, 1).squeeze(-1)
-            value_head = value.narrow(-1, kv, 1).squeeze(-1)
-            scores = torch.matmul(query_head, key_head) + flat_mask
+            value_head = value.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
+            # Q is signed, so the scores matmul needs its second input transposed
+            # or Hailo rejects the zero point. K @ Q^T is the transpose of Q @ K^T.
+            scores = torch.matmul(key_head, query_head.transpose(-1, -2)).transpose(-1, -2) + flat_mask
+            # Hailo rejects a matmul whose data has a zero point unless the
+            # other input is marked transposed. Value is stored [B, D, S].
             outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
         return torch.cat(outputs, dim=-1)
 

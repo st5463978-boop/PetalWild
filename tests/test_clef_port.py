@@ -172,7 +172,7 @@ class RopeTests(unittest.TestCase):
 
         core = UnrolledAttentionCore().eval()
         with torch.inference_mode():
-            packed = core(query.permute(0, 2, 3, 1), key.permute(0, 3, 2, 1), value.permute(0, 2, 3, 1))
+            packed = core(query.permute(0, 2, 3, 1), key.permute(0, 2, 3, 1), value.permute(0, 3, 2, 1))
         self.assertLess(float((packed - ref.reshape(2, 8, -1)).abs().max()), 1e-5)
 
 

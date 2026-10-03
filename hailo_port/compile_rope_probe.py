@@ -413,8 +413,8 @@ def export_unrolled_core() -> None:
 
     module = UnrolledAttentionCore().eval()
     query = torch.zeros(1, SEQUENCE, 256, 16)
-    key = torch.zeros(1, 256, SEQUENCE, 4)
-    value = torch.zeros(1, SEQUENCE, 256, 4)
+    key = torch.zeros(1, SEQUENCE, 256, 4)
+    value = torch.zeros(1, 256, SEQUENCE, 4)
     path = ONNX_DIR / "qwen35_attention_unrolled_core.onnx"
     torch.onnx.export(
         module,
@@ -428,8 +428,8 @@ def export_unrolled_core() -> None:
     )
     torch.manual_seed(2)
     query = torch.randn(4, SEQUENCE, 256, 16)
-    key = torch.randn(4, 256, SEQUENCE, 4)
-    value = torch.randn(4, SEQUENCE, 256, 4)
+    key = torch.randn(4, SEQUENCE, 256, 4)
+    value = torch.randn(4, 256, SEQUENCE, 4)
     with torch.inference_mode():
         output = module(query, key, value)
     ref = ROOT / "artifacts" / "clef_slice" / "unrolled_core_ref.npz"
@@ -452,6 +452,18 @@ def score_unrolled_core(calibration_rows: int) -> None:
         if "matmul" in layer.name:
             groups.append((layer.name, getattr(layer, "groups", None)))
     print("MATMULS", len(groups), groups[:4], flush=True)
+    params = runner.get_params()
+    rewritten = {}
+    for key, value in params.items():
+        if hasattr(value, "ndim") and key.endswith("additive_mask:0"):
+            value = np.array(value, copy=True)
+            # finfo.min makes the softmax exponent fit produce NaNs.
+            value[value < -1000] = np.float32(-64)
+            if value.ndim == 2:
+                value = value.reshape(1, *value.shape)
+            print("widened", key, tuple(value.shape), flush=True)
+        rewritten[key] = value
+    runner.load_params(rewritten)
     MatmulEqualization.should_skip_algo = lambda self: True
     runner.load_model_script(
         "model_optimization_config(calibration, batch_size=8, "
@@ -469,7 +481,10 @@ def score_unrolled_core(calibration_rows: int) -> None:
     feed = {}
     for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
         array = np.asarray(array, dtype=np.float32)
-        while array.ndim < len(layer.output_shapes[0]):
+        hailo_shape = layer.output_shapes[0]
+        if array.ndim == 4 and list(array.shape[1:]) != list(hailo_shape[1:]):
+            array = np.transpose(array, (0, 2, 3, 1))
+        while array.ndim < len(hailo_shape):
             array = array[:, None]
         feed[layer.name] = array
         print("FEED", layer.name, array.shape, layer.output_shapes[0], flush=True)
