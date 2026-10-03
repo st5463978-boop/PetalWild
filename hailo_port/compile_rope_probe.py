@@ -218,6 +218,89 @@ def export_attention() -> None:
     print(path, path.stat().st_size, data.stat().st_size if data.exists() else 0, flush=True)
 
 
+def dump_attention_reference(rows: int) -> None:
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import AttentionOnlyMaskedRope
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextRotaryEmbedding
+
+    layer, config = load_decoder(3)
+    module = AttentionOnlyMaskedRope(layer).eval()
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(2)
+    hidden = torch.randn(rows, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, rows, -1)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        output = module(hidden, cos, sin)
+    path = ROOT / "artifacts" / "clef_slice" / "rope_attn_ref.npz"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, hidden=hidden.numpy(), cos=cos.numpy(), sin=sin.numpy(), output=output.numpy())
+    print(path, output.shape, flush=True)
+
+
+def score_attention(calibration_rows: int) -> None:
+    from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+        MatmulEqualization,
+    )
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    ref = np.load(ROOT / "artifacts" / "clef_slice" / "rope_attn_ref.npz")
+    path = ONNX_DIR / "qwen35_attention_masked_rope.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(
+        str(path),
+        "clef_experimental_attention_masked_rope",
+        disable_onnx_simplifier=True,
+    )
+    MatmulEqualization.should_skip_algo = lambda self: True
+    # matmul1's default zp compensation multiplies a 4096-vector by a
+    # length-8 tensor and the emulator raises. The compiled HEF does not
+    # use this override.
+    runner.load_model_script(
+        "pre_quantization_optimization(matmul_correction, layers=[matmul1], "
+        "correction_type=zp_comp_none)\n"
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {}
+    for layer in inputs:
+        shape = [calibration_rows, *layer.output_shapes[0][1:]]
+        calib[layer.name] = rng.standard_normal(shape).astype(np.float32)
+    runner.optimize(calib)
+    arrays = [ref["hidden"], ref["cos"], ref["sin"]]
+    feed = {}
+    for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
+        array = array.astype(np.float32)
+        while array.ndim < len(layer.output_shapes[0]):
+            array = array[:, None]
+        feed[layer.name] = array
+        print("FEED", layer.name, array.shape, flush=True)
+    expected = ref["output"]
+    for context in (
+        InferenceContext.SDK_NATIVE,
+        InferenceContext.SDK_FP_OPTIMIZED,
+        InferenceContext.SDK_QUANTIZED,
+    ):
+        with runner.infer_context(context) as ctx:
+            got = np.array(runner.infer(ctx, feed))
+        while got.ndim > expected.ndim:
+            got = np.squeeze(got, axis=1)
+        left = expected.astype(np.float64).ravel()
+        right = got.astype(np.float64).ravel()
+        cosine = float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right)))
+        print(
+            f"{context.value} cosine {cosine:.6f} mse {float(np.mean((left - right) ** 2)):.6e} "
+            f"max {float(np.max(np.abs(left - right))):.6e}",
+            flush=True,
+        )
+
+
 def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "export"
     try:
@@ -225,6 +308,10 @@ def main() -> None:
             export_all()
         elif command == "export-attention":
             export_attention()
+        elif command == "dump-attention":
+            dump_attention_reference(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
+        elif command == "score-attention":
+            score_attention(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "parse":
             parse_one(sys.argv[2])
         elif command == "compile":
