@@ -10,6 +10,8 @@ The causal attention core (one head, sequence 8, head dimension 256) was quantiz
 
 The full layer-3 K and V projections were quantized with the same 1024-row calibration and the same level-0 limit. K versus PyTorch: cosine 0.999016, MSE 2.19e-3, max absolute error 0.193. V: cosine 0.999288, MSE 1.53e-3, max absolute error 0.147. The cosine stays high while the peak error is larger than the attention core, which is what a wide unnormalized projection does under per-tensor activation quantization.
 
+The full Q projection, 4096 to 8192, quantized under the same settings before its compile failed single-context placement: cosine 0.998160, MSE 5.19e-3, max absolute error 0.376.
+
 The decision numbers below are still the separate host-side int8 check on the real Clef head and layer 3.
 
 ## Decision head weights rounded to int8
