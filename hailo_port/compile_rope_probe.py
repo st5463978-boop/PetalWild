@@ -241,7 +241,7 @@ def dump_attention_reference(rows: int) -> None:
     print(path, output.shape, flush=True)
 
 
-def score_attention(calibration_rows: int) -> None:
+def score_attention(calibration_rows: int, correction: str = "zp_comp_none") -> None:
     from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
         MatmulEqualization,
     )
@@ -262,7 +262,7 @@ def score_attention(calibration_rows: int) -> None:
     # use this override.
     runner.load_model_script(
         "pre_quantization_optimization(matmul_correction, layers=[matmul1], "
-        "correction_type=zp_comp_none)\n"
+        f"correction_type={correction})\n"
         "model_optimization_config(calibration, batch_size=8, "
         f"calibset_size={calibration_rows})\n"
     )
@@ -282,6 +282,7 @@ def score_attention(calibration_rows: int) -> None:
         feed[layer.name] = array
         print("FEED", layer.name, array.shape, flush=True)
     expected = ref["output"]
+    saved = {}
     for context in (
         InferenceContext.SDK_NATIVE,
         InferenceContext.SDK_FP_OPTIMIZED,
@@ -291,12 +292,114 @@ def score_attention(calibration_rows: int) -> None:
             got = np.array(runner.infer(ctx, feed))
         while got.ndim > expected.ndim:
             got = np.squeeze(got, axis=1)
+        saved[context.value] = got.astype(np.float32)
         left = expected.astype(np.float64).ravel()
         right = got.astype(np.float64).ravel()
         cosine = float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right)))
         print(
             f"{context.value} cosine {cosine:.6f} mse {float(np.mean((left - right) ** 2)):.6e} "
             f"max {float(np.max(np.abs(left - right))):.6e}",
+            flush=True,
+        )
+    if correction != "zp_comp_none":
+        return
+    path = ROOT / "artifacts" / "clef_slice" / "rope_attn_score.npz"
+    np.savez(
+        path,
+        hidden=ref["hidden"],
+        cos=ref["cos"],
+        sin=ref["sin"],
+        output=expected.astype(np.float32),
+        native=saved["sdk_native"],
+        quantized=saved["sdk_quantized"],
+    )
+    print(path, flush=True)
+
+
+def score_decisions() -> None:
+    """Host MLP and FP32 head on the saved Hailo attention outputs."""
+    import json
+
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    sys.path.insert(0, str(ROOT / "hailo_port" / "upstream"))
+    from graphs import StaticJointHead, causal_mask
+    from joint_schema_model import JointSchemaHead
+    from run_experiments import decision_from_logits, load_decoder
+    from safetensors.torch import load_file
+
+    data = np.load(ROOT / "artifacts" / "clef_slice" / "rope_attn_score.npz")
+    layer, _ = load_decoder(3)
+    layer.eval()
+    hidden = torch.from_numpy(data["hidden"])
+    cos = torch.from_numpy(data["cos"])
+    sin = torch.from_numpy(data["sin"])
+    with torch.inference_mode():
+        official = layer(hidden, position_embeddings=(cos, sin), attention_mask=causal_mask(hidden))
+
+        def finish(attn: np.ndarray) -> torch.Tensor:
+            tensor = torch.from_numpy(attn)
+            return tensor + layer.mlp(layer.post_attention_layernorm(tensor))
+
+        finished = {
+            "official": official,
+            "native": finish(data["native"]),
+            "quantized": finish(data["quantized"]),
+        }
+    config = json.loads((ROOT / "artifacts" / "weights" / "joint_head_config.json").read_text())
+    head = JointSchemaHead(**config).eval()
+    head.load_state_dict(load_file(ROOT / "artifacts" / "weights" / "joint_head.safetensors"), strict=True)
+    static = StaticJointHead(head.float(), (3, 2)).eval()
+    torch.manual_seed(1)
+    embedding = torch.randn(24, 4096)
+    token_ids = torch.arange(16)
+    spans = ((6, 8), (8, 10), (10, 12), (12, 14), (14, 16))
+    lexical = torch.stack([embedding[token_ids[start:end]].mean(0) for start, end in spans])
+    type_ids = torch.tensor([1, 0])
+    names = (["paid", "overdue", "draft"], ["true", "false"])
+    cases = hidden.shape[0]
+    for label in ("native", "quantized"):
+        agreements = 0
+        high_confidence = 0
+        logit_cosines = []
+        prob_abs = []
+        with torch.inference_mode():
+            for index in range(cases):
+                left_h = finished["official"][index : index + 1]
+                right_h = finished[label][index : index + 1]
+                left_logits = static(torch.cat([left_h, left_h], dim=1), lexical, type_ids)
+                right_logits = static(torch.cat([right_h, right_h], dim=1), lexical, type_ids)
+                left = left_logits.float().numpy()
+                right = right_logits.float().numpy()
+                logit_cosines.append(float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right))))
+                left_choices = []
+                right_choices = []
+                for start, question_names in ((0, names[0]), (3, names[1])):
+                    original = decision_from_logits(left_logits[start : start + len(question_names)], question_names)
+                    changed = decision_from_logits(right_logits[start : start + len(question_names)], question_names)
+                    left_choices.append(original["choice"])
+                    right_choices.append(changed["choice"])
+                    prob_abs.append(
+                        max(
+                            abs(original["probabilities"][name] - changed["probabilities"][name])
+                            for name in question_names
+                        )
+                    )
+                    if (
+                        original["choice"] != changed["choice"]
+                        and original["margin"] >= 0.2
+                        and original["confidence"] >= 0.7
+                    ):
+                        high_confidence += 1
+                agreements += int(left_choices == right_choices)
+        left_np = finished["official"].float().numpy().astype(np.float64).ravel()
+        right_np = finished[label].float().numpy().astype(np.float64).ravel()
+        print(
+            f"{label} block cosine {float(left_np @ right_np / (np.linalg.norm(left_np) * np.linalg.norm(right_np))):.6f} "
+            f"max {float(np.max(np.abs(left_np - right_np))):.6e} "
+            f"agreement {agreements / cases:.3f} high_confidence {high_confidence} "
+            f"logit_cosine_min {min(logit_cosines):.6f} prob_abs_max {max(prob_abs):.6f}",
             flush=True,
         )
 
@@ -311,7 +414,10 @@ def main() -> None:
         elif command == "dump-attention":
             dump_attention_reference(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
         elif command == "score-attention":
-            score_attention(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+            correction = sys.argv[3] if len(sys.argv) > 3 else "zp_comp_none"
+            score_attention(int(sys.argv[2]) if len(sys.argv) > 2 else 64, correction)
+        elif command == "score-decisions":
+            score_decisions()
         elif command == "parse":
             parse_one(sys.argv[2])
         elif command == "compile":
