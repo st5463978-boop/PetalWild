@@ -8,7 +8,7 @@
    - SwiGLU MLP: parsed. HAR `artifacts/clef_experimental_mlp.har`. Layers are 1x1 conv, SiLU, elementwise multiply, conv. Input shape `[-1, 1, 8, 4096]`.
    - Full-attention block with RoPE: failed in the fuser, `fuser.py _handle_neg_feature_shuffle`, `IndexError: list assignment index out of range`. ONNX simplify succeeded first and did not avoid the crash.
    - Full-attention block with `rotate_half` removed: parsed. HAR `artifacts/clef_experimental_full_attention_no_rope.har`. Hailo layer types include conv, layer_normalization, normalization, matmul, softmax, ew_mult, ew_add.
-   - Scatter-free linear block: failed while classifying a reshape, `onnx_graph.py _is_spatial_flatten_with_features_to_heads_reshape`, `StopIteration`.
+   - Scatter-free linear block: the empty-predecessor reshape crash is skipped. The next failure is `get_dynamic_kernel_shape`, `IndexError: list index out of range`, on a convolution whose kernel input is not rank 4. That is the depthwise causal conv. No linear-block HAR.
    - Joint schema head: rank-1 `type_ids` fails in `get_input_layer_shapes`. Host type embeddings match exactly. After folding one constant transpose and replacing two Expands with Tile, the ONNX still matches the official head (max absolute error 4.77e-7, decision agreement 1.0 on 4 cases). Per-row `Flatten` then `LayerNormalization` gets past the empty-format crash. The parser's supported prefix is now a HAR, `artifacts/clef_slice/clef_head_host_type.har`. It holds the hidden norm, span means, two projections, and the start of lexical L2. Evidence attention and the decision logits are outside that prefix.
    - Two stacked full-attention blocks: failed in transpose shape inference, `IndexError: list index out of range`.
    - One attention head core, sequence 8, head dimension 256, packed QKV: compiled. The rank-3 causal mask had to be widened to `[1, 8, 8]` or the post-fuser crashed in `is_spatial_broadcast`. Dynamic-dynamic matmul needed `zp_comp_none`. HEF `hailo_port/generated/clef_experimental_attn_core.hef`.
@@ -29,7 +29,7 @@
     - Full layer-3 Q projection, four contexts: `hailo_port/generated/clef_experimental_q_proj.hef` (28,893,184 bytes, compile 13m 39s). Quantized emulator cosine 0.998160, max absolute error 0.376.
     - Full Clef MLP HAR, not a HEF: `artifacts/clef_experimental_mlp.optimized.har`. Seventeen contexts allocated on the first attempt. Kernel compilation did not run. The second compile failed single context again in 28m 33s and is still running.
     - Joint-head `question_projection`, 4096 to 1024: `hailo_port/generated/clef_head_test_question_proj.hef` (4,550,656 bytes, 1m 19s). Quantized emulator cosine 0.999830, max absolute error 0.0422, 1024 calibration rows.
-12. Next experiment: let the restarted MLP compile leave the post-failure allocator state and reach kernel compilation. The head prefix quantizes but `conv2` does not place: 133 memory units required, 128 available. Do not deploy this over JEV-H.
+12. Next experiment: let the restarted MLP multi-context search finish. It is failing the same early contexts as the search that later accepted 17 contexts. The driver is alive. Do not deploy this over JEV-H.
 
 ## Smoke records
 
