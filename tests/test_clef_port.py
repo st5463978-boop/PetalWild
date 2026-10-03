@@ -126,6 +126,32 @@ class GatedDeltaScanTests(unittest.TestCase):
         )
 
 
+class RopeTests(unittest.TestCase):
+    def test_masked_rotate_matches_transformers(self) -> None:
+        from graphs import rotate_half_masked
+        from transformers.models.qwen3_5.modeling_qwen3_5 import rotate_half
+
+        torch.manual_seed(0)
+        value = torch.randn(2, 16, 8, 64)
+        self.assertLess(float((rotate_half_masked(value) - rotate_half(value)).abs().max()), 1e-6)
+
+    def test_partial_rope_matches_transformers(self) -> None:
+        from graphs import apply_partial_rope
+        from transformers.models.qwen3_5.modeling_qwen3_5 import apply_rotary_pos_emb
+
+        torch.manual_seed(1)
+        query = torch.randn(2, 16, 8, 256)
+        key = torch.randn(2, 4, 8, 256)
+        cos = torch.randn(2, 8, 64)
+        sin = torch.randn(2, 8, 64)
+        with torch.inference_mode():
+            got_query = apply_partial_rope(query, cos.unsqueeze(1), sin.unsqueeze(1))
+            got_key = apply_partial_rope(key, cos.unsqueeze(1), sin.unsqueeze(1))
+            ref_query, ref_key = apply_rotary_pos_emb(query, key, cos, sin)
+        self.assertLess(float((got_query - ref_query).abs().max()), 1e-6)
+        self.assertLess(float((got_key - ref_key).abs().max()), 1e-6)
+
+
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
         from compile_depthwise_conv import CHANNELS, KERNEL, SEQUENCE, CausalDepthwise

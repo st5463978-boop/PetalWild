@@ -17,6 +17,32 @@ from transformers.models.qwen3_5.modeling_qwen3_5 import (
 )
 
 
+def rotate_half_masked(x: torch.Tensor) -> torch.Tensor:
+    """Same values as ``rotate_half``, without a negate on one split half.
+
+    DFC 5.4.0 fuses that negate-and-concat into ``_handle_neg_feature_shuffle``
+    and then raises ``IndexError``. A swap followed by a constant sign vector
+    is the same rotation.
+    """
+    half = x.shape[-1] // 2
+    swapped = torch.cat((x[..., half:], x[..., :half]), dim=-1)
+    sign = torch.tensor([-1.0] * half + [1.0] * half, dtype=x.dtype, device=x.device)
+    return swapped * sign
+
+
+def apply_partial_rope(states: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    """Partial RoPE. ``cos`` and ``sin`` already broadcast onto ``states``.
+
+    Only the prefix of length ``cos.shape[-1]`` is rotated. The tail is copied.
+    """
+
+    rotary_dim = cos.shape[-1]
+    rotated = states[..., :rotary_dim]
+    passed = states[..., rotary_dim:]
+    embedded = rotated * cos + rotate_half_masked(rotated) * sin
+    return torch.cat((embedded, passed), dim=-1)
+
+
 def causal_mask(hidden: torch.Tensor) -> torch.Tensor:
     """Additive mask. Eager attention does not imply causality when the mask is absent."""
 
