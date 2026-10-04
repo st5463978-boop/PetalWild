@@ -405,8 +405,8 @@ def score_decisions() -> None:
         )
 
 
-def dump_group_qkv(rows: int = 12, group_index: int = 0) -> None:
-    """Q, K, and V for one real layer-3 KV group, after the host RoPE."""
+def dump_group_qkv(rows: int = 12, kv_heads: int = 1) -> None:
+    """Q, K, and V for the first ``kv_heads`` real layer-3 groups, after host RoPE."""
     import torch
 
     sys.path.insert(0, str(ROOT / "hailo_port"))
@@ -439,12 +439,12 @@ def dump_group_qkv(rows: int = 12, group_index: int = 0) -> None:
         value_states = attention.v_proj(normalized).view(hidden_shape).transpose(1, 2)
         query_states = apply_partial_rope(query_states, cos.unsqueeze(1), sin.unsqueeze(1))
         key_states = apply_partial_rope(key_states, cos.unsqueeze(1), sin.unsqueeze(1))
-        query_group = query_states[:, group_index * group : (group_index + 1) * group]
-        key_group = key_states[:, group_index : group_index + 1]
-        value_group = value_states[:, group_index : group_index + 1]
+        query_group = query_states[:, : kv_heads * group]
+        key_group = key_states[:, :kv_heads]
+        value_group = value_states[:, :kv_heads]
         packed = query_group.permute(0, 2, 1, 3).reshape(rows, SEQUENCE, -1)
         reference = UnrolledAttentionCore()(packed, key_group, value_group)
-    path = ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz"
+    path = ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_qkv.npz"
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez(
         path,
@@ -455,13 +455,13 @@ def dump_group_qkv(rows: int = 12, group_index: int = 0) -> None:
         key=key_group.numpy(),
         value=value_group.numpy(),
         reference=reference.numpy(),
-        group_index=np.array(group_index),
+        kv_heads=np.array(kv_heads),
     )
     print(path, packed.shape, key_group.shape, reference.shape, flush=True)
 
 
-def quantize_saved_group(calibration_rows: int = 64) -> None:
-    """Quantized emulator of the compiled one-group HEF on the saved real QKV."""
+def quantize_saved_group(calibration_rows: int = 64, kv_heads: int = 1) -> None:
+    """Quantized emulator of a compiled KV-group HEF on the saved real QKV."""
     from hailo_model_optimization.algorithms.fix_zp_comp_encoding.fix_zp_comp_encoding import (
         FixZpCompEncoding,
     )
@@ -471,10 +471,13 @@ def quantize_saved_group(calibration_rows: int = 64) -> None:
     from hailo_sdk_client import ClientRunner
     from hailo_sdk_client.exposed_definitions import InferenceContext
 
-    data = np.load(ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz")
-    path = ONNX_DIR / "qwen35_attention_unrolled_core_4h_1kv.onnx"
+    heads = kv_heads * 4
+    suffix = _core_suffix(heads, kv_heads)
+    model_name = f"clef_experimental_attn_unrolled{suffix}" if suffix else "clef_experimental_attn_unrolled"
+    data = np.load(ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_qkv.npz")
+    path = ONNX_DIR / f"qwen35_attention_unrolled_core{suffix}.onnx"
     runner = ClientRunner(hw_arch="hailo10h")
-    runner.translate_onnx_model(str(path), "clef_experimental_attn_unrolled_4h_1kv", disable_onnx_simplifier=True)
+    runner.translate_onnx_model(str(path), model_name, disable_onnx_simplifier=True)
     original_walk = FixZpCompEncoding._get_first_real_weight_layer
 
     def walk(self, layer_name):
@@ -512,13 +515,13 @@ def quantize_saved_group(calibration_rows: int = 64) -> None:
     expected = data["reference"]
     cosine, mse, maximum = _score_arrays(expected, got)
     print(f"group quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
-    out = ROOT / "artifacts" / "clef_slice" / "group0_hailo.npz"
+    out = ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_hailo.npz"
     np.savez(out, hailo=got.astype(np.float32))
     print(out, got.shape, flush=True)
 
 
-def score_group_decisions() -> None:
-    """Decisions after replacing one KV group with the quantized Hailo core."""
+def score_group_decisions(kv_heads: int = 1) -> None:
+    """Decisions after replacing the first KV groups with the quantized Hailo core."""
     import json
 
     import torch
@@ -531,8 +534,8 @@ def score_group_decisions() -> None:
     from safetensors.torch import load_file
     from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
 
-    saved = np.load(ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz")
-    hailo = np.load(ROOT / "artifacts" / "clef_slice" / "group0_hailo.npz")["hailo"]
+    saved = np.load(ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_qkv.npz")
+    hailo = np.load(ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_hailo.npz")["hailo"]
     while hailo.ndim > 3:
         hailo = np.squeeze(hailo, axis=1)
     layer, _config = load_decoder(3)
@@ -933,11 +936,15 @@ def main() -> None:
         elif command == "export-unrolled":
             export_attention(unroll=True)
         elif command == "dump-group":
-            dump_group_qkv(int(sys.argv[2]) if len(sys.argv) > 2 else 12)
+            rows = int(sys.argv[2]) if len(sys.argv) > 2 else 12
+            kv_heads = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+            dump_group_qkv(rows, kv_heads)
         elif command == "quant-group":
-            quantize_saved_group(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+            rows = int(sys.argv[2]) if len(sys.argv) > 2 else 64
+            kv_heads = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+            quantize_saved_group(rows, kv_heads)
         elif command == "score-group":
-            score_group_decisions()
+            score_group_decisions(int(sys.argv[2]) if len(sys.argv) > 2 else 1)
         elif command == "export-gqa":
             export_shared_kv_group()
         elif command == "export-core":
