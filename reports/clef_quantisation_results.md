@@ -64,3 +64,5 @@ The QKV widths as three slices, same 256 rows and level 0, match the sliced acti
 A drop in decision agreement here would mean the head is reading features that this rounding damaged. Agreement near 1 with a lower hidden-state cosine means the decision survived even though the activation moved.
 
 Full-backbone Clef decisions were not compared. The 9.4B backbone does not fit in this machine's memory as a single resident model, and only layers 0 and 3 were downloaded. Token-level smoke inputs are in `tests/reference/smoke_records.json` (20 records, token length min 234, max 253). Those records are encoded with the official Clef tokenizer and `encode_record`. They were not passed through the backbone.
+
+The layer-3 output projection, 4096 to 4096, quantized at 256 rows and optimization level 0, scores cosine 0.988959, MSE 2.23e-2, and max absolute error 0.620 against the published matrix. HEF `hailo_port/generated/clef_experimental_o_proj.hef`, 15,720,448 bytes, two contexts, 4m 30s.

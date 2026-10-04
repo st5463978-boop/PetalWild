@@ -1,8 +1,9 @@
-"""Compile a real Clef-Flash layer-3 Q, K, or V projection.
+"""Compile a real Clef-Flash layer-3 Q, K, V, or output projection.
 
 K and V are bias-free linears, hidden 4096 to 1024 (four KV heads of dimension
 256). Q is hidden 4096 to 8192, which includes the per-head output gate.
-RMSNorm and RoPE stay on the host. These are the full published matrices.
+The output projection is hidden 4096 to 4096. RMSNorm and RoPE stay on the
+host. These are the full published matrices.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ PROJECTIONS = {
     "k": ("model.language_model.layers.3.self_attn.k_proj.weight", 1024),
     "v": ("model.language_model.layers.3.self_attn.v_proj.weight", 1024),
     "q": ("model.language_model.layers.3.self_attn.q_proj.weight", 8192),
+    "o": ("model.language_model.layers.3.self_attn.o_proj.weight", 4096),
 }
 
 
@@ -95,7 +97,12 @@ def compile_projection(which: str, calibration_rows: int) -> None:
         flush=True,
     )
     hef = runner.compile()
-    hef_path = OUT / f"{net_name}.hef"
+    if which == "o":
+        hef_path = ROOT / "hailo_port" / "generated" / f"{net_name}.hef"
+    else:
+        hef_path = OUT / f"{net_name}.hef"
+    if hef_path.exists():
+        raise SystemExit(f"refusing to overwrite {hef_path}")
     hef_path.write_bytes(hef)
     print(f"HEF {hef_path} bytes={len(hef)}", flush=True)
 
