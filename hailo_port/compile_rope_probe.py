@@ -439,7 +439,7 @@ def export_post_norm_mlp(intermediate: int = 256, rows: int = 4) -> None:
         module.gate.weight.copy_(raw[prefix + "gate_proj.weight"][:intermediate].float())
         module.up.weight.copy_(raw[prefix + "up_proj.weight"][:intermediate].float())
         module.down.weight.copy_(raw[prefix + "down_proj.weight"][:, :intermediate].float())
-    path = ONNX_DIR / "qwen35_post_norm_mlp256.onnx"
+    path = ONNX_DIR / f"qwen35_post_norm_mlp{intermediate}.onnx"
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         module,
@@ -455,19 +455,21 @@ def export_post_norm_mlp(intermediate: int = 256, rows: int = 4) -> None:
     hidden = torch.randn(rows, SEQUENCE, 4096)
     with torch.inference_mode():
         output = module(hidden)
-    ref = ROOT / "artifacts" / "clef_slice" / "post_norm_mlp256_ref.npz"
+    ref = ROOT / "artifacts" / "clef_slice" / f"post_norm_mlp{intermediate}_ref.npz"
     np.savez(ref, hidden=hidden.numpy(), output=output.numpy())
     print(path, path.stat().st_size, output.shape, flush=True)
 
 
-def compile_post_norm_mlp(calibration_rows: int = 64) -> None:
+def compile_post_norm_mlp(calibration_rows: int = 64, intermediate: int = 256) -> None:
     from hailo_sdk_client import ClientRunner
     from hailo_sdk_client.exposed_definitions import InferenceContext
 
-    data = np.load(ROOT / "artifacts" / "clef_slice" / "post_norm_mlp256_ref.npz")
-    path = ONNX_DIR / "qwen35_post_norm_mlp256.onnx"
+    data = np.load(ROOT / "artifacts" / "clef_slice" / f"post_norm_mlp{intermediate}_ref.npz")
+    path = ONNX_DIR / f"qwen35_post_norm_mlp{intermediate}.onnx"
     runner = ClientRunner(hw_arch="hailo10h")
-    runner.translate_onnx_model(str(path), "clef_experimental_post_norm_mlp256", disable_onnx_simplifier=True)
+    runner.translate_onnx_model(
+        str(path), f"clef_experimental_post_norm_mlp{intermediate}", disable_onnx_simplifier=True
+    )
     for layer in runner._hn:
         print(f"LAYER {layer.op} {_short_name(layer)}", flush=True)
     runner.load_model_script(
@@ -492,7 +494,7 @@ def compile_post_norm_mlp(calibration_rows: int = 64) -> None:
         got = np.array(runner.infer(ctx, feed))
     cosine, mse, maximum = _score_arrays(data["output"], got)
     print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
-    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_post_norm_mlp256.hef"
+    dest = ROOT / "hailo_port" / "generated" / f"clef_experimental_post_norm_mlp{intermediate}.hef"
     if dest.exists():
         raise SystemExit(f"refusing to overwrite {dest}")
     hef = runner.compile()
@@ -1406,9 +1408,11 @@ def main() -> None:
         elif command == "score-gated":
             score_gated_decisions()
         elif command == "export-post-mlp":
-            export_post_norm_mlp()
+            export_post_norm_mlp(int(sys.argv[2]) if len(sys.argv) > 2 else 256)
         elif command == "compile-post-mlp":
-            compile_post_norm_mlp(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+            rows = int(sys.argv[2]) if len(sys.argv) > 2 else 64
+            intermediate = int(sys.argv[3]) if len(sys.argv) > 3 else 256
+            compile_post_norm_mlp(rows, intermediate)
         elif command == "export-post-norm":
             export_post_norm()
         elif command == "compile-post-norm":
