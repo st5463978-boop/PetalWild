@@ -295,6 +295,30 @@ def compile_masked_block(calibration_rows: int = 64) -> None:
     print(f"HEF {dest} bytes={len(hef)}", flush=True)
 
 
+def compile_masked_block_max() -> None:
+    """Compile the already quantized masked-RoPE block at max compiler effort.
+
+    The default allocation died with ``Splitter failed to find a possible
+    solution``. The compiler names this flag as the follow-up. Loading the
+    quantized HAR skips translate and optimize.
+    """
+    from hailo_sdk_client import ClientRunner
+
+    har = ROOT / "artifacts" / "qwen35_masked_rope_block.optimized.har"
+    dest = ROOT / "artifacts" / "clef_experimental_masked_rope_block_max.hef"
+    if dest.exists():
+        raise SystemExit(f"refusing to overwrite {dest}")
+    runner = ClientRunner(har=str(har))
+    print("STATE", runner.state, flush=True)
+    runner.load_model_script(
+        "performance_param(compiler_optimization_level=max)\n",
+        append=True,
+    )
+    hef = runner.compile()
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
 def dump_attention_reference(rows: int) -> None:
     import torch
 
@@ -1634,6 +1658,8 @@ def main() -> None:
             export_masked_block()
         elif command == "compile-masked-block":
             compile_masked_block(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+        elif command == "compile-masked-block-max":
+            compile_masked_block_max()
         elif command == "export-unrolled":
             export_attention(unroll=True)
         elif command == "score-gated":
