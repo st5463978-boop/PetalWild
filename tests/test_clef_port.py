@@ -219,6 +219,19 @@ class RopeTests(unittest.TestCase):
         self.assertLess(float((packed - ref.reshape(2, 8, -1)).abs().max()), 1e-5)
 
 
+    def test_output_slice_matches_padded_projection(self) -> None:
+        torch.manual_seed(0)
+        attended = torch.randn(2, 8, 1024)
+        weight = torch.randn(4096, 1024)
+        narrow = torch.nn.functional.linear(attended, weight)
+        full_weight = torch.zeros(4096, 4096)
+        full_weight[:, :1024] = weight
+        padded = torch.zeros(2, 8, 4096)
+        padded[:, :, :1024] = attended
+        full = torch.nn.functional.linear(padded, full_weight)
+        self.assertLess(float((narrow - full).abs().max()), 1e-4)
+
+
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
         from compile_depthwise_conv import CHANNELS, KERNEL, SEQUENCE, CausalDepthwise

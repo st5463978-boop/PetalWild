@@ -717,6 +717,146 @@ def export_shared_kv_group() -> None:
     print(path, path.stat().st_size, output.shape, f"gap {gap:.3e}", flush=True)
 
 
+def score_group_output_slice(calibration_rows: int = 64) -> None:
+    """Quantize and compile the one-group core plus the matching ``o_proj`` slice."""
+    from hailo_model_optimization.algorithms.fix_zp_comp_encoding.fix_zp_comp_encoding import (
+        FixZpCompEncoding,
+    )
+    from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+        MatmulEqualization,
+    )
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    data = np.load(ROOT / "artifacts" / "clef_slice" / "group_o_slice_ref.npz")
+    path = ONNX_DIR / "qwen35_group_o_slice.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_group_o_slice", disable_onnx_simplifier=True)
+    original_walk = FixZpCompEncoding._get_first_real_weight_layer
+
+    def walk(self, layer_name):
+        try:
+            return original_walk(self, layer_name)
+        except RuntimeError:
+            return layer_name
+
+    FixZpCompEncoding._get_first_real_weight_layer = walk
+    MatmulEqualization.should_skip_algo = lambda self: True
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    arrays = [data["query"], data["key"], data["value"]]
+    feed = {}
+    for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
+        array = np.asarray(array, dtype=np.float32)
+        hailo_shape = layer.output_shapes[0]
+        if array.ndim == 4 and list(array.shape[1:]) != list(hailo_shape[1:]):
+            array = np.transpose(array, (0, 2, 3, 1))
+        while array.ndim < len(hailo_shape):
+            array = array[:, None]
+        feed[layer.name] = array
+        print("FEED", layer.name, array.shape, hailo_shape, flush=True)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    cosine, mse, maximum = _score_arrays(data["output"], got)
+    print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_group_o_slice.hef"
+    if dest.exists():
+        raise SystemExit(f"refusing to overwrite {dest}")
+    hef = runner.compile()
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
+def export_group_output_slice(kv_heads: int = 4) -> None:
+    """Four query heads, then the columns of ``o_proj`` that read those heads.
+
+    The published output projection is 4096 to 4096. Four heads occupy 1024
+    channels, so this graph is that attention core followed by
+    ``o_proj.weight[:, :1024]``. One shared KV head needs the ONNX optimizer
+    off, and that joined graph dies in ``is_null_transpose``. Four KV heads
+    keep a Slice in front of each Squeeze, so the optimizer can stay on.
+    """
+    import torch
+    from safetensors.torch import load_file
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import UnrolledAttentionCore
+
+    class GroupOutput(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            allowed = torch.ones(SEQUENCE, SEQUENCE, dtype=torch.bool).tril()
+            mask = torch.zeros(1, SEQUENCE, SEQUENCE).masked_fill(~allowed, -64.0)
+            self.register_buffer("flat_mask", mask)
+            self.proj = torch.nn.Linear(1024, 4096, bias=False)
+
+        def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
+            dim = key.shape[-1]
+            heads = query.shape[-1] // dim
+            group = heads // key.shape[1]
+            key_w = key.permute(0, 3, 2, 1)
+            value_w = value.permute(0, 3, 2, 1)
+            scale = dim**-0.5
+            outputs = []
+            for index in range(heads):
+                kv = index // group
+                query_head = query.narrow(-1, index * dim, dim)
+                key_head = key_w.narrow(-1, kv, 1).squeeze(-1)
+                value_head = value_w.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
+                scores = torch.matmul(query_head, key_head) * scale + self.flat_mask
+                outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
+            return self.proj(torch.cat(outputs, dim=-1))
+
+    module = GroupOutput().eval()
+    weight = load_file(ROOT / "artifacts" / "weights" / "clef_layer_3.safetensors")
+    key = "model.language_model.layers.3.self_attn.o_proj.weight"
+    with torch.no_grad():
+        module.proj.weight.copy_(weight[key].float()[:, :1024])
+    query = torch.zeros(1, SEQUENCE, 4 * 256)
+    key_tensor = torch.zeros(1, kv_heads, SEQUENCE, 256)
+    value = torch.zeros(1, kv_heads, SEQUENCE, 256)
+    path = ONNX_DIR / "qwen35_group_o_slice.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        module,
+        (query, key_tensor, value),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+        optimize=kv_heads != 1,
+        input_names=["query", "key", "value"],
+        output_names=["projected"],
+    )
+    torch.manual_seed(2)
+    query = torch.randn(4, SEQUENCE, 4 * 256)
+    key_tensor = torch.randn(4, kv_heads, SEQUENCE, 256)
+    value = torch.randn(4, kv_heads, SEQUENCE, 256)
+    with torch.inference_mode():
+        output = module(query, key_tensor, value)
+        attended = UnrolledAttentionCore()(query, key_tensor, value)
+        reference = torch.nn.functional.linear(attended, module.proj.weight)
+    gap = float((output - reference).abs().max())
+    ref = ROOT / "artifacts" / "clef_slice" / "group_o_slice_ref.npz"
+    np.savez(
+        ref,
+        query=query.numpy(),
+        key=key_tensor.numpy(),
+        value=value.numpy(),
+        output=output.numpy(),
+    )
+    print(path, path.stat().st_size, output.shape, f"gap {gap:.3e}", flush=True)
+
+
 def _core_suffix(heads: int, kv_heads: int) -> str:
     if heads == 16 and kv_heads == 4:
         return ""
@@ -945,6 +1085,10 @@ def main() -> None:
             quantize_saved_group(rows, kv_heads)
         elif command == "score-group":
             score_group_decisions(int(sys.argv[2]) if len(sys.argv) > 2 else 1)
+        elif command == "export-group-proj":
+            export_group_output_slice(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
+        elif command == "score-group-proj":
+            score_group_output_slice(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "export-gqa":
             export_shared_kv_group()
         elif command == "export-core":
