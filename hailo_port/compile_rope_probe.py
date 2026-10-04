@@ -405,6 +405,101 @@ def score_decisions() -> None:
         )
 
 
+def export_post_norm_mlp(intermediate: int = 256, rows: int = 4) -> None:
+    """Post-attention RMSNorm, then the first ``intermediate`` SwiGLU channels.
+
+    ``down_proj[:, :intermediate]`` is the part of the published MLP that
+    those channels write into the 4096-wide residual.
+    """
+    import torch
+    from safetensors.torch import load_file
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from run_experiments import load_decoder
+
+    layer, _config = load_decoder(3)
+    raw = load_file(ROOT / "artifacts" / "weights" / "clef_layer_3.safetensors")
+    prefix = "model.language_model.layers.3.mlp."
+
+    class NormThenSlice(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.norm = layer.post_attention_layernorm
+            self.gate = torch.nn.Linear(4096, intermediate, bias=False)
+            self.up = torch.nn.Linear(4096, intermediate, bias=False)
+            self.down = torch.nn.Linear(intermediate, 4096, bias=False)
+
+        def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+            normalized = self.norm(hidden)
+            activated = torch.nn.functional.silu(self.gate(normalized)) * self.up(normalized)
+            return self.down(activated)
+
+    module = NormThenSlice().eval()
+    with torch.no_grad():
+        module.gate.weight.copy_(raw[prefix + "gate_proj.weight"][:intermediate].float())
+        module.up.weight.copy_(raw[prefix + "up_proj.weight"][:intermediate].float())
+        module.down.weight.copy_(raw[prefix + "down_proj.weight"][:, :intermediate].float())
+    path = ONNX_DIR / "qwen35_post_norm_mlp256.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        module,
+        (torch.zeros(1, SEQUENCE, 4096),),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+        input_names=["hidden"],
+        output_names=["mlp"],
+    )
+    torch.manual_seed(0)
+    hidden = torch.randn(rows, SEQUENCE, 4096)
+    with torch.inference_mode():
+        output = module(hidden)
+    ref = ROOT / "artifacts" / "clef_slice" / "post_norm_mlp256_ref.npz"
+    np.savez(ref, hidden=hidden.numpy(), output=output.numpy())
+    print(path, path.stat().st_size, output.shape, flush=True)
+
+
+def compile_post_norm_mlp(calibration_rows: int = 64) -> None:
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    data = np.load(ROOT / "artifacts" / "clef_slice" / "post_norm_mlp256_ref.npz")
+    path = ONNX_DIR / "qwen35_post_norm_mlp256.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_post_norm_mlp256", disable_onnx_simplifier=True)
+    for layer in runner._hn:
+        print(f"LAYER {layer.op} {_short_name(layer)}", flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    hidden = np.asarray(data["hidden"], dtype=np.float32)
+    feed = {}
+    for layer in inputs:
+        array = hidden
+        while array.ndim < len(layer.output_shapes[0]):
+            array = array[:, None]
+        feed[layer.name] = array
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    cosine, mse, maximum = _score_arrays(data["output"], got)
+    print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_post_norm_mlp256.hef"
+    if dest.exists():
+        raise SystemExit(f"refusing to overwrite {dest}")
+    hef = runner.compile()
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
 def export_post_norm(rows: int = 4) -> None:
     """Layer-3 post-attention RMSNorm with the published zero-centered weight."""
     import torch
@@ -1310,6 +1405,10 @@ def main() -> None:
             export_attention(unroll=True)
         elif command == "score-gated":
             score_gated_decisions()
+        elif command == "export-post-mlp":
+            export_post_norm_mlp()
+        elif command == "compile-post-mlp":
+            compile_post_norm_mlp(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "export-post-norm":
             export_post_norm()
         elif command == "compile-post-norm":

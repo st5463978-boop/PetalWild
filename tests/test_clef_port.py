@@ -231,6 +231,30 @@ class RopeTests(unittest.TestCase):
         full = torch.nn.functional.linear(padded, full_weight)
         self.assertLess(float((narrow - full).abs().max()), 1e-4)
 
+    def test_thin_swiglu_matches_zeroed_channels(self) -> None:
+        torch.manual_seed(1)
+        hidden = torch.randn(2, 8, 16)
+        gate = torch.randn(4, 16)
+        up = torch.randn(4, 16)
+        down = torch.randn(16, 4)
+        thin = torch.nn.functional.linear(
+            torch.nn.functional.silu(torch.nn.functional.linear(hidden, gate))
+            * torch.nn.functional.linear(hidden, up),
+            down,
+        )
+        full_gate = torch.zeros(6, 16)
+        full_up = torch.zeros(6, 16)
+        full_down = torch.zeros(16, 6)
+        full_gate[:4] = gate
+        full_up[:4] = up
+        full_down[:, :4] = down
+        full = torch.nn.functional.linear(
+            torch.nn.functional.silu(torch.nn.functional.linear(hidden, full_gate))
+            * torch.nn.functional.linear(hidden, full_up),
+            full_down,
+        )
+        self.assertLess(float((thin - full).abs().max()), 1e-4)
+
 
 class DepthwiseConvTests(unittest.TestCase):
     def test_nchw_conv_matches_causal_conv1d(self) -> None:
