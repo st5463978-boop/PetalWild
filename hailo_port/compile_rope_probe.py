@@ -447,6 +447,15 @@ def export_unrolled_core(heads: int = 16, kv_heads: int = 4) -> None:
     print(path, path.stat().st_size, output.shape, flush=True)
 
 
+def _score_arrays(expected: np.ndarray, got: np.ndarray) -> tuple[float, float, float]:
+    while got.ndim > expected.ndim:
+        got = np.squeeze(got, axis=1)
+    left = expected.astype(np.float64).ravel()
+    right = got.astype(np.float64).ravel()
+    cosine = float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right)))
+    return cosine, float(np.mean((left - right) ** 2)), float(np.max(np.abs(left - right)))
+
+
 def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 4) -> None:
     from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
         MatmulEqualization,
@@ -520,20 +529,17 @@ def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 
     with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
         got = np.array(runner.infer(ctx, feed))
     expected = ref["output"]
-    while got.ndim > expected.ndim:
-        got = np.squeeze(got, axis=1)
-    left = expected.astype(np.float64).ravel()
-    right = got.astype(np.float64).ravel()
-    cosine = float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right)))
-    print(
-        f"quantized cosine {cosine:.6f} mse {float(np.mean((left - right) ** 2)):.6e} "
-        f"max {float(np.max(np.abs(left - right))):.6e}",
-        flush=True,
-    )
-    hef = runner.compile()
-    dest = ROOT / "hailo_port" / "generated" / f"{model_name}.hef"
-    dest.write_bytes(hef)
-    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+    cosine, mse, maximum = _score_arrays(expected, got)
+    print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    # The 64-row file stays. A larger calibration set is a different HEF.
+    dest_name = model_name if calibration_rows == 64 else f"{model_name}_c{calibration_rows}"
+    dest = ROOT / "hailo_port" / "generated" / f"{dest_name}.hef"
+    if dest.exists():
+        print(f"keep {dest} bytes={dest.stat().st_size}", flush=True)
+    else:
+        hef = runner.compile()
+        dest.write_bytes(hef)
+        print(f"HEF {dest} bytes={len(hef)}", flush=True)
 
 
 def main() -> None:
