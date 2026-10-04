@@ -464,6 +464,23 @@ def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 
         if "matmul" in layer.name:
             groups.append((layer.name, getattr(layer, "groups", None)))
     print("MATMULS", len(groups), groups[:4], flush=True)
+    # QK matmuls are transposed and signed, so they need zp_comp_block. The
+    # encoding fix walks back to a weight producer and raises on this
+    # activation-only path. Stop the walk and keep going.
+    from hailo_model_optimization.algorithms.fix_zp_comp_encoding.fix_zp_comp_encoding import (
+        FixZpCompEncoding,
+    )
+
+    original_walk = FixZpCompEncoding._get_first_real_weight_layer
+
+    def walk(self, layer_name):
+        try:
+            return original_walk(self, layer_name)
+        except RuntimeError as exc:
+            print(f"zp walk stopped at {layer_name}: {exc}", flush=True)
+            return layer_name
+
+    FixZpCompEncoding._get_first_real_weight_layer = walk
     params = runner.get_params()
     rewritten = {}
     for key, value in params.items():
