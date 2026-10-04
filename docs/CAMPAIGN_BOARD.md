@@ -2,7 +2,7 @@
 
 ## NOW
 
-Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk.
+Playable gel is thicker under OpenGL 3: core, wet lobe, contact shadow. Pond is one deeper bowl. Grove Park stays closed.
 
 ## NEXT
 
@@ -24,13 +24,13 @@ Paid OpenRouter, Higgsfield, Pi/NPU/hailo service edits, merge to `main`, merge 
 ## VERIFIED
 
 - Hedge Hollow boots. Four beds, stall, HUD Day 1 Morning tin 36.
-- `JELLY_PLAY_OK` `JELLY_ICON_OK` `ICON_GEL_OK` — Bellhelp gel, highlight, two black eyes.
+- `JELLY_PLAY_OK` `JELLY_ICON_OK` `ICON_GEL_OK` — Bellhelp gel, highlight, darker core, contact shadow, two black eyes.
 - `PETAL_TEA_HOUSE_SHOT_OK` — Nessa at the kettle.
 - `PETAL_SHED_SHOT_OK` — Bram at the pan.
 - `PETAL_STALL_SHOT_OK` — Lumen at the counter.
 - `PETAL_GARDEN_LOOK_OK` — real garden overview, not a wireframe.
 - `LANE_LIFE_OK` `PETAL_LANE_LIFE_OK` — dusk sit, night walk home, no leftover tea-house toast.
-- `POND_RIM_OK` `PETAL_POND_SHOT_OK` — scoops widen the live pond; Bulrush on the water.
+- `POND_RIM_OK` `PETAL_POND_SHOT_OK` — scoops widen the live pond; the middle sits darker; Bulrush on the water.
 - `DUSK_LANTERN_OK` `PETAL_DUSK_LANTERN_OK` — Pegapear sits the opening nightlantern at dusk.
 
 ## Do not rebuild

@@ -1,6 +1,6 @@
 # CURRENT_STATE
 
-Updated 2026-09-30 by PETAL-EXEC. Pegapear sits the opening nightlantern at dusk.
+Updated 2026-10-04 by PETAL-EXEC. The held gel reads thicker under OpenGL 3, and the pond is one shaded bowl.
 
 ## HEAD
 
@@ -16,8 +16,8 @@ Godot `4.8.dev6.official.8898c2b3d`. `tools/run.sh` forces OpenGL 3. This VM is 
 
 `scenes/main.tscn` → `scenes/garden.tscn` (`scripts/game/garden.gd`).
 Hedge Hollow garden: till, plant, water, fertilise, tend, pond scoop, home kit, stall, journal, clock, weather, save/load.
-Jellies grab, nuzzle, and throw. Hunger and a grab show the approved-cut-out gel. Resting still uses PETAL-08-101 cards.
-Scoops widen the live `Pond`. Bulrush can sit that rim.
+Jellies grab, nuzzle, and throw. Hunger and a grab show the approved-cut-out gel: a darker core, a view-space wet lobe, and a contact shadow that shrinks in the air. Resting still uses PETAL-08-101 cards. Eyes stay unshaded black.
+Scoops widen the live `Pond`. The water is deeper in the middle. Bulrush can sit that rim.
 At dusk, Pegapear sits the opening nightlantern when no ripe lantern stands.
 Veg folk keep the stall. Tea house, potting shed, and petal stall interiors open on Enter. Leave and load drop the room toast.
 Grove Park lawn stays hidden until Nessa files `parish_park`. `grove_park.active` stays false.
@@ -48,9 +48,11 @@ This Cursor agent is the only writer on this branch. Astra judges look. Hailo fi
 
 ## LATEST TEST RESULT
 
-2026-09-30, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
+2026-10-04, Godot 4.8-dev6, llvmpipe, `DISPLAY=:1`.
 
-`./tools/petal_qa.sh` → `PETAL_QA_SCRIPTS_OK` including `DUSK_LANTERN_OK` `POND_RIM_OK` `LANE_LIFE_OK` `ICON_GEL_OK`.
+`res://tests/test_jelly.gd` → `ICON_GEL_OK` `JELLY_FEEL_OK`.
+`PETAL_JELLY_PLAY=1` → `JELLY_PLAY_OK`. Glossy Bellhelp, two black eyes, contact shadow, real stall and lawn.
+`PETAL_POND_SHOT=1` → `PETAL_POND_SHOT_OK`. One water body, darker middle, Bulrush on it.
 `PETAL_DUSK_LANTERN=1` → `PETAL_DUSK_LANTERN_OK`. Pegapear gel beside the opening lantern. Real bed, not a wireframe.
 
 Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
@@ -63,7 +65,7 @@ Dummy ALSA `ERR_CANT_OPEN` and a GLES texture leak on quit. Expected.
 
 ## CURRENT MAJOR OBJECTIVE
 
-Keep Grove Park a place without a catalog flip. Household already sits the west bench at dusk.
+Keep this playable body. The gel, pond, and garden light are the current fidelity pass. Grove Park stays a place without a catalog flip.
 
 ## NEXT TASKS
 

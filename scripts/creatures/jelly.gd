@@ -59,6 +59,7 @@ var iris_color := Color(1.0, 1.0, 0.85)
 var iris_mats: Array[StandardMaterial3D] = []
 var art_card: Sprite3D
 var icon_root: Node3D
+var contact_shadow: MeshInstance3D
 var work_intensity := 0.0
 var mail_pending := false
 var romance := ""
@@ -301,6 +302,7 @@ func _build(definition: Dictionary) -> void:
 		art_card.name = "Art"
 		root.add_child(art_card)
 	_icon_body(root, shape)
+	_contact_shadow()
 	_sync_presentation()
 
 func _gel_material() -> ShaderMaterial:
@@ -329,6 +331,65 @@ func _gel_material() -> ShaderMaterial:
 	gel_mat = gel
 	return gel
 
+func _icon_core(body: MeshInstance3D) -> void:
+	if gel_mat == null:
+		return
+	var core := MeshInstance3D.new()
+	core.name = "IconCore"
+	var sphere := SphereMesh.new()
+	sphere.radius = radius * 0.52
+	sphere.height = radius * 1.04
+	sphere.radial_segments = 18
+	sphere.rings = 12
+	core.mesh = sphere
+	var core_mat := gel_mat.duplicate() as ShaderMaterial
+	var deep := Color("#1d6a3c")
+	var current: Variant = gel_mat.get_shader_parameter("deep_color")
+	if current is Color:
+		deep = (current as Color).darkened(0.22)
+	core_mat.set_shader_parameter("deep_color", deep)
+	core_mat.set_shader_parameter("transmission", 0.12)
+	core_mat.set_shader_parameter("glow", 0.08)
+	core_mat.set_shader_parameter("wobble_amount", 0.006)
+	core.material_override = core_mat
+	core.position = body.position + Vector3(0.0, -radius * 0.06, radius * 0.06)
+	core.scale = body.scale * 0.62
+	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	icon_root.add_child(core)
+
+func _contact_shadow() -> void:
+	var disc := MeshInstance3D.new()
+	disc.name = "ContactShadow"
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius * 0.78
+	mesh.bottom_radius = radius * 0.96
+	mesh.height = 0.01
+	mesh.radial_segments = 20
+	disc.mesh = mesh
+	var shade := StandardMaterial3D.new()
+	shade.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shade.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shade.albedo_color = Color(0.04, 0.07, 0.03, 0.34)
+	shade.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	shade.cull_mode = BaseMaterial3D.CULL_DISABLED
+	disc.material_override = shade
+	disc.position = Vector3(0.0, 0.018, 0.0)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(disc)
+	contact_shadow = disc
+
+func _tune_shadow() -> void:
+	if contact_shadow == null:
+		return
+	var lift := clampf(global_position.y, 0.0, 1.0)
+	var squat := 1.0 + (1.0 - clampf(squash, 0.55, 1.0)) * 0.5
+	var wide := squat * lerpf(1.0, 0.5, lift)
+	contact_shadow.scale = Vector3(wide, 1.0, wide)
+	contact_shadow.visible = not leaving and lift < 0.95
+	var shade := contact_shadow.material_override as StandardMaterial3D
+	if shade != null:
+		shade.albedo_color.a = 0.34 * (1.0 - lift)
+
 func _icon_highlight(body: MeshInstance3D) -> void:
 	var shine := MeshInstance3D.new()
 	shine.name = "IconHighlight"
@@ -353,12 +414,18 @@ func _icon_highlight(body: MeshInstance3D) -> void:
 func _tune_gel() -> void:
 	if gel_mat == null:
 		return
-	if reduce_motion:
-		gel_mat.set_shader_parameter("wobble_amount", 0.0)
-		gel_mat.set_shader_parameter("move_velocity", Vector3.ZERO)
+	var amount := 0.0 if reduce_motion else 0.012 + ripple * 0.018
+	var move := Vector3.ZERO if reduce_motion else vel * 0.35
+	gel_mat.set_shader_parameter("wobble_amount", amount)
+	gel_mat.set_shader_parameter("move_velocity", move)
+	if icon_root == null:
 		return
-	gel_mat.set_shader_parameter("wobble_amount", 0.012 + ripple * 0.018)
-	gel_mat.set_shader_parameter("move_velocity", vel * 0.35)
+	var core := icon_root.get_node_or_null("IconCore") as MeshInstance3D
+	if core == null or not (core.material_override is ShaderMaterial):
+		return
+	var core_mat := core.material_override as ShaderMaterial
+	core_mat.set_shader_parameter("wobble_amount", amount * 0.45)
+	core_mat.set_shader_parameter("move_velocity", move)
 
 func _icon_body(root: Node3D, shape: String) -> void:
 	icon_root = Node3D.new()
@@ -369,8 +436,8 @@ func _icon_body(root: Node3D, shape: String) -> void:
 	var sphere := SphereMesh.new()
 	sphere.radius = radius * 0.92
 	sphere.height = radius * 1.84
-	sphere.radial_segments = 24
-	sphere.rings = 16
+	sphere.radial_segments = 32
+	sphere.rings = 20
 	body.mesh = sphere
 	body.material_override = _gel_material()
 	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -392,6 +459,7 @@ func _icon_body(root: Node3D, shape: String) -> void:
 			body.scale = Vector3.ONE
 	body.position = Vector3(0.0, radius * body.scale.y, 0.0)
 	icon_root.add_child(body)
+	_icon_core(body)
 	_icon_highlight(body)
 	var eye_mat := StandardMaterial3D.new()
 	eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -959,6 +1027,7 @@ func _apply_deform() -> void:
 		halo.position.y = 0.03
 		halo.scale = Vector3.ONE
 	_tune_gel()
+	_tune_shadow()
 	_sync_presentation()
 	_face_icon(feel_scale)
 

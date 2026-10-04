@@ -12,14 +12,19 @@ void vertex() {
 }
 
 void fragment() {
-	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.1);
-	vec3 deep = vec3(0.07, 0.28, 0.27);
-	vec3 lit = vec3(0.62, 0.84, 0.68);
-	vec3 col = mix(deep, lit, fres);
-	float spark = smoothstep(0.93, 1.0, sin(world_pos.x * 7.0 + TIME * 2.0) * sin(world_pos.z * 5.5 - TIME * 1.4));
+	vec2 center = vec2(8.0, -2.5);
+	float dist = distance(world_pos.xz, center);
+	float depth = smoothstep(0.35, 3.5, dist);
+	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.4);
+	vec3 deep = vec3(0.03, 0.15, 0.17);
+	vec3 shoal = vec3(0.2, 0.46, 0.4);
+	vec3 lit = vec3(0.74, 0.9, 0.74);
+	vec3 col = mix(deep, shoal, depth);
+	col = mix(col, lit, fres * 0.35);
+	float spark = smoothstep(0.96, 1.0, sin(world_pos.x * 9.0 + TIME * 1.7) * sin(world_pos.z * 7.0 - TIME * 1.2));
 	ALBEDO = col;
-	ROUGHNESS = 0.08;
-	SPECULAR = 0.55;
-	EMISSION = vec3(0.95, 0.82, 0.5) * spark * 0.4 + vec3(0.35, 0.7, 0.55) * fres * 0.1;
-	ALPHA = 0.86;
+	ROUGHNESS = mix(0.38, 0.5, depth);
+	SPECULAR = 0.28;
+	EMISSION = vec3(0.9, 0.84, 0.6) * spark * 0.08 + lit * fres * 0.04;
+	ALPHA = mix(0.9, 0.82, fres);
 }

@@ -58,7 +58,7 @@ func make_environment() -> Environment:
 	var environment := Environment.new()
 	var sky := Sky.new()
 	sky.sky_material = make_sky_material()
-	sky.radiance_size = Sky.RADIANCE_SIZE_32 if tier != "a" else Sky.RADIANCE_SIZE_256
+	sky.radiance_size = Sky.RADIANCE_SIZE_64 if tier != "a" else Sky.RADIANCE_SIZE_256
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = sky
 	environment.sky_rotation = SKY_ROT
@@ -80,7 +80,7 @@ func make_environment() -> Environment:
 	environment.fog_aerial_perspective = 0.62
 	environment.fog_sky_affect = 0.42
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.35 if tier == "b" else (0.55 if tier == "a" else 0.28)
+	environment.glow_intensity = 0.38 if tier == "b" else (0.55 if tier == "a" else 0.28)
 	environment.glow_bloom = 0.04
 	environment.glow_hdr_threshold = 1.05
 	if tier == "a":
@@ -123,7 +123,7 @@ func style_sun(light: DirectionalLight3D) -> void:
 	light.light_energy = SUN_ENERGY
 	light.light_angular_distance = SUN_ANGULAR
 	light.shadow_enabled = true
-	light.shadow_blur = 2.4
+	light.shadow_blur = 1.6
 	light.shadow_opacity = 0.78
 	light.light_bake_mode = Light3D.BAKE_DYNAMIC
 	if tier == "a":

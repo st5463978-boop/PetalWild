@@ -93,8 +93,8 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 	# ponytail: the middle sits down; the rim meets the bank.
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings := 14
-	var segments := 28
+	var rings := 18
+	var segments := 36
 	for ring in rings:
 		for seg in segments:
 			var r0 := radius * float(ring) / float(rings)
@@ -107,7 +107,6 @@ static func resize_pond(node: MeshInstance3D, radius: float) -> void:
 			_water_vert(tool, r0, a0, radius)
 			_water_vert(tool, r1, a1, radius)
 			_water_vert(tool, r0, a1, radius)
-	tool.generate_normals()
 	node.set_meta("rim", radius)
 	node.mesh = tool.commit()
 
@@ -116,6 +115,9 @@ static func _water_vert(tool: SurfaceTool, dist: float, angle: float, rim: float
 	var x := center.x + cos(angle) * dist
 	var z := center.z + sin(angle) * dist
 	var y := GardenLayout.pond_surface(x, z, rim)
+	var side := dist / maxf(rim, 0.01)
+	var normal := Vector3(cos(angle) * side * 0.18, 1.0, sin(angle) * side * 0.18).normalized()
+	tool.set_normal(normal)
 	tool.set_uv(Vector2(x, z))
 	tool.add_vertex(Vector3(x, y, z))
 

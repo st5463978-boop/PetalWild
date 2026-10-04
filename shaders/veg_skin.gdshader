@@ -16,11 +16,13 @@ void vertex() {
 void fragment() {
 	vec3 tex = texture(albedo_tex, UV).rgb * skin_tint.rgb;
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.4);
-	ALBEDO = tex;
-	ROUGHNESS = roughness;
-	SPECULAR = 0.28;
+	// OpenGL 3 drops SSS. A soft key wrap keeps the vegetable round.
+	float wrap = pow(clamp(dot(NORMAL, normalize(vec3(-0.35, 0.82, 0.45))), 0.0, 1.0), 0.65);
+	ALBEDO = tex * mix(0.78, 1.06, wrap);
+	ROUGHNESS = mix(roughness + 0.08, roughness * 0.75, wrap);
+	SPECULAR = 0.34;
 	SSS_STRENGTH = sss_strength;
 	SSS_TRANSMITTANCE_COLOR = vec4(tex, 1.0);
 	SSS_TRANSMITTANCE_DEPTH = 0.08;
-	EMISSION = tex * rim * 0.04;
+	EMISSION = tex * rim * 0.08 + tex * wrap * 0.03;
 }

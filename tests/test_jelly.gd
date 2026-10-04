@@ -235,6 +235,10 @@ func _icon_gel() -> void:
 	_expect(sm != null and sm.shader != null and str(sm.shader.resource_path).find("veg_jelly") != -1, "icon reuses veg_jelly")
 	var shine := jelly.get_node_or_null("Body/Icon/IconHighlight") as MeshInstance3D
 	_expect(shine != null, "icon keeps the cut-out highlight")
+	var core := jelly.get_node_or_null("Body/Icon/IconCore") as MeshInstance3D
+	_expect(core != null and core.material_override is ShaderMaterial, "icon keeps a darker gel core")
+	var shade := jelly.get_node_or_null("ContactShadow") as MeshInstance3D
+	_expect(shade != null, "the body keeps a contact shadow")
 	var left := jelly.get_node_or_null("Body/Icon/IconEyeL") as MeshInstance3D
 	var right := jelly.get_node_or_null("Body/Icon/IconEyeR") as MeshInstance3D
 	_expect(left != null and right != null, "icon keeps two eyes")
