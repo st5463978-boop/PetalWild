@@ -219,6 +219,82 @@ def export_attention(unroll: bool = False) -> None:
     print(path, path.stat().st_size, data.stat().st_size if data.exists() else 0, flush=True)
 
 
+def export_masked_block() -> None:
+    """Layer-3 block: masked RoPE attention, post-attention RMSNorm, and the MLP."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import MaskedRopeFullBlock, causal_mask
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextRotaryEmbedding
+
+    layer, config = load_decoder(3)
+    module = MaskedRopeFullBlock(layer).eval()
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(0)
+    hidden = torch.randn(1, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, 1, -1)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        got = module(hidden, cos, sin)
+        official = layer(hidden, position_embeddings=(cos, sin), attention_mask=causal_mask(hidden))
+        delta = float((got - official).abs().max())
+    print(f"masked block vs official max_abs {delta:.6e}", flush=True)
+    if delta > 1e-4:
+        raise SystemExit(f"block mismatch {delta}")
+    path = ONNX_DIR / "qwen35_masked_rope_block.onnx"
+    torch.onnx.export(
+        module,
+        (hidden, cos, sin),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=True,
+        input_names=["hidden", "cos", "sin"],
+        output_names=["hidden_out"],
+    )
+    data = path.with_suffix(".onnx.data")
+    print(path, path.stat().st_size, data.stat().st_size if data.exists() else 0, flush=True)
+
+
+def compile_masked_block(calibration_rows: int = 64) -> None:
+    """Parse and compile the masked-RoPE block. The HEF is not written over an existing file."""
+    from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+        MatmulEqualization,
+    )
+    from hailo_sdk_client import ClientRunner
+
+    path = ONNX_DIR / "qwen35_masked_rope_block.onnx"
+    dest = ROOT / "artifacts" / "clef_experimental_masked_rope_block.hef"
+    if dest.exists():
+        raise SystemExit(f"refusing to overwrite {dest}")
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_masked_rope_block", disable_onnx_simplifier=True)
+    har = ROOT / "artifacts" / "qwen35_masked_rope_block.har"
+    runner.save_har(str(har))
+    print(f"HAR {har} bytes={har.stat().st_size}", flush=True)
+    MatmulEqualization.should_skip_algo = lambda self: True
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    for layer in inputs:
+        print("CALIB", layer.name, calib[layer.name].shape, flush=True)
+    runner.optimize(calib)
+    optimized = ROOT / "artifacts" / "qwen35_masked_rope_block.optimized.har"
+    runner.save_har(str(optimized))
+    print(f"OPTIMIZED {optimized} bytes={optimized.stat().st_size}", flush=True)
+    hef = runner.compile()
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
 def dump_attention_reference(rows: int) -> None:
     import torch
 
@@ -1554,6 +1630,10 @@ def main() -> None:
             export_all()
         elif command == "export-attention":
             export_attention()
+        elif command == "export-masked-block":
+            export_masked_block()
+        elif command == "compile-masked-block":
+            compile_masked_block(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "export-unrolled":
             export_attention(unroll=True)
         elif command == "score-gated":

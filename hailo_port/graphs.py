@@ -201,6 +201,24 @@ class AttentionOnlyMaskedRope(torch.nn.Module):
         return residual + attended
 
 
+class MaskedRopeFullBlock(torch.nn.Module):
+    """Layer-3 attention plus MLP. RoPE swaps halves instead of negating one.
+
+    The no-RoPE block with this MLP parses, then allocation times out.
+    Stock ``rotate_half`` dies in the fuser before that. The attention half
+    of this module is the graph that already compiled.
+    """
+
+    def __init__(self, layer: torch.nn.Module):
+        super().__init__()
+        self.attention = AttentionOnlyMaskedRope(layer)
+
+    def forward(self, hidden: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+        hidden = self.attention(hidden, cos, sin)
+        layer = self.attention.layer
+        return hidden + layer.mlp(layer.post_attention_layernorm(hidden))
+
+
 class UnrolledAttentionCore(torch.nn.Module):
     """Per-head matmuls. Query heads are slices of the last axis.
 
