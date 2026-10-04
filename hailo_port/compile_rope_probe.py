@@ -405,6 +405,75 @@ def score_decisions() -> None:
         )
 
 
+def export_shared_kv_group() -> None:
+    """Four query heads sharing one KV head.
+
+    The ONNX optimizer folds that single KV axis into a bare Squeeze, and
+    Hailo rejects the Squeeze. Leaving the optimizer off keeps a Slice in
+    front of the Squeeze, which parses. The mask is a buffer so the graph
+    does not contain Trilu or Where.
+    """
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import UnrolledAttentionCore
+
+    class Buffered(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            allowed = torch.ones(SEQUENCE, SEQUENCE, dtype=torch.bool).tril()
+            mask = torch.zeros(1, SEQUENCE, SEQUENCE).masked_fill(~allowed, -64.0)
+            self.register_buffer("flat_mask", mask)
+
+        def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> torch.Tensor:
+            dim = key.shape[-1]
+            heads = query.shape[-1] // dim
+            group = heads // key.shape[1]
+            key_w = key.permute(0, 3, 2, 1)
+            value_w = value.permute(0, 3, 2, 1)
+            scale = dim**-0.5
+            outputs = []
+            for index in range(heads):
+                kv = index // group
+                query_head = query.narrow(-1, index * dim, dim)
+                key_head = key_w.narrow(-1, kv, 1).squeeze(-1)
+                value_head = value_w.narrow(-1, kv, 1).squeeze(-1).transpose(-1, -2)
+                scores = torch.matmul(query_head, key_head) * scale + self.flat_mask
+                outputs.append(torch.matmul(torch.softmax(scores, dim=-1), value_head))
+            return torch.cat(outputs, dim=-1)
+
+    module = Buffered().eval()
+    suffix = _core_suffix(4, 1)
+    query = torch.zeros(1, SEQUENCE, 4 * 256)
+    key = torch.zeros(1, 1, SEQUENCE, 256)
+    value = torch.zeros(1, 1, SEQUENCE, 256)
+    path = ONNX_DIR / f"qwen35_attention_unrolled_core{suffix}.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        module,
+        (query, key, value),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+        optimize=False,
+        input_names=["query", "key", "value"],
+        output_names=["attended"],
+    )
+    torch.manual_seed(2)
+    query = torch.randn(4, SEQUENCE, 4 * 256)
+    key = torch.randn(4, 1, SEQUENCE, 256)
+    value = torch.randn(4, 1, SEQUENCE, 256)
+    with torch.inference_mode():
+        output = module(query, key, value)
+        reference = UnrolledAttentionCore()(query, key, value)
+    gap = float((output - reference).abs().max())
+    ref = ROOT / "artifacts" / "clef_slice" / f"unrolled_core_ref{suffix}.npz"
+    ref.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(ref, query=query.numpy(), key=key.numpy(), value=value.numpy(), output=output.numpy())
+    print(path, path.stat().st_size, output.shape, f"gap {gap:.3e}", flush=True)
+
+
 def _core_suffix(heads: int, kv_heads: int) -> str:
     if heads == 16 and kv_heads == 4:
         return ""
@@ -551,6 +620,8 @@ def main() -> None:
             export_attention()
         elif command == "export-unrolled":
             export_attention(unroll=True)
+        elif command == "export-gqa":
+            export_shared_kv_group()
         elif command == "export-core":
             heads = int(sys.argv[2]) if len(sys.argv) > 2 else 16
             kv_heads = int(sys.argv[3]) if len(sys.argv) > 3 else 4
