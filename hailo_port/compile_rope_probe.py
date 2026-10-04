@@ -310,8 +310,9 @@ def compile_masked_block_max() -> None:
         raise SystemExit(f"refusing to overwrite {dest}")
     runner = ClientRunner(har=str(har))
     print("STATE", runner.state, flush=True)
+    # The quantized-state exception matches this string exactly, with no newline.
     runner.load_model_script(
-        "performance_param(compiler_optimization_level=max)\n",
+        "performance_param(compiler_optimization_level=max)",
         append=True,
     )
     hef = runner.compile()
