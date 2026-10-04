@@ -502,6 +502,157 @@ def compile_post_norm_mlp(calibration_rows: int = 64, intermediate: int = 256) -
     print(f"HEF {dest} bytes={len(hef)}", flush=True)
 
 
+def dump_post_mlp_residual(rows: int = 12) -> None:
+    """Residual that enters layer-3 post-attention RMSNorm, plus the official block."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import causal_mask
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextRotaryEmbedding
+
+    layer, config = load_decoder(3)
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(2)
+    hidden = torch.randn(rows, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, rows, -1)
+    captured: dict[str, torch.Tensor] = {}
+
+    def remember(_module, inputs, _output) -> None:
+        captured["residual"] = inputs[0].detach()
+
+    handle = layer.post_attention_layernorm.register_forward_hook(remember)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        official = layer(hidden, position_embeddings=(cos, sin), attention_mask=causal_mask(hidden))
+        residual = captured["residual"]
+        rebuilt = residual + layer.mlp(layer.post_attention_layernorm(residual))
+    handle.remove()
+    gap = float((rebuilt - official).abs().max())
+    path = ROOT / "artifacts" / "clef_slice" / "post_mlp_residual.npz"
+    np.savez(
+        path,
+        hidden=hidden.numpy(),
+        cos=cos.numpy(),
+        sin=sin.numpy(),
+        residual=residual.numpy(),
+        official=official.numpy(),
+    )
+    print(path, residual.shape, f"rebuild_max {gap:.6e}", flush=True)
+
+
+def infer_post_mlp_residual(calibration_rows: int = 64, intermediate: int = 12288) -> None:
+    """Quantized emulator of the post-norm SwiGLU on the saved residual. Does not compile."""
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    saved = np.load(ROOT / "artifacts" / "clef_slice" / "post_mlp_residual.npz")
+    path = ONNX_DIR / f"qwen35_post_norm_mlp{intermediate}.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(
+        str(path), f"clef_experimental_post_norm_mlp{intermediate}", disable_onnx_simplifier=True
+    )
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    residual = np.asarray(saved["residual"], dtype=np.float32)
+    feed = {}
+    for layer in inputs:
+        array = residual
+        while array.ndim < len(layer.output_shapes[0]):
+            array = array[:, None]
+        feed[layer.name] = array
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    out = ROOT / "artifacts" / "clef_slice" / f"post_mlp_{intermediate}_hailo.npz"
+    np.savez(out, hailo=got.astype(np.float32))
+    print(out, got.shape, flush=True)
+
+
+def score_post_mlp_decisions(intermediate: int = 12288) -> None:
+    """Decisions after replacing the layer-3 MLP with the quantized post-norm SwiGLU."""
+    import json
+
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    sys.path.insert(0, str(ROOT / "hailo_port" / "upstream"))
+    from graphs import StaticJointHead
+    from joint_schema_model import JointSchemaHead
+    from run_experiments import decision_from_logits
+    from safetensors.torch import load_file
+
+    saved = np.load(ROOT / "artifacts" / "clef_slice" / "post_mlp_residual.npz")
+    hailo = np.load(ROOT / "artifacts" / "clef_slice" / f"post_mlp_{intermediate}_hailo.npz")["hailo"]
+    while hailo.ndim > 3:
+        hailo = np.squeeze(hailo, axis=1)
+    residual = torch.from_numpy(saved["residual"])
+    official = torch.from_numpy(saved["official"])
+    hailo_block = residual + torch.from_numpy(hailo.astype(np.float32))
+    config = json.loads((ROOT / "artifacts" / "weights" / "joint_head_config.json").read_text())
+    head = JointSchemaHead(**config).eval()
+    head.load_state_dict(load_file(ROOT / "artifacts" / "weights" / "joint_head.safetensors"), strict=True)
+    static = StaticJointHead(head.float(), (3, 2)).eval()
+    torch.manual_seed(1)
+    embedding = torch.randn(24, 4096)
+    token_ids = torch.arange(16)
+    spans = ((6, 8), (8, 10), (10, 12), (12, 14), (14, 16))
+    lexical = torch.stack([embedding[token_ids[start:end]].mean(0) for start, end in spans])
+    type_ids = torch.tensor([1, 0])
+    names = (["paid", "overdue", "draft"], ["true", "false"])
+    cases = official.shape[0]
+    agreements = 0
+    high_confidence = 0
+    logit_cosines = []
+    prob_abs = []
+    with torch.inference_mode():
+        for index in range(cases):
+            left_h = official[index : index + 1]
+            right_h = hailo_block[index : index + 1]
+            left_logits = static(torch.cat([left_h, left_h], dim=1), lexical, type_ids)
+            right_logits = static(torch.cat([right_h, right_h], dim=1), lexical, type_ids)
+            left = left_logits.float().numpy()
+            right = right_logits.float().numpy()
+            logit_cosines.append(float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right))))
+            left_choices = []
+            right_choices = []
+            for start, question_names in ((0, names[0]), (3, names[1])):
+                original = decision_from_logits(left_logits[start : start + len(question_names)], question_names)
+                changed = decision_from_logits(right_logits[start : start + len(question_names)], question_names)
+                left_choices.append(original["choice"])
+                right_choices.append(changed["choice"])
+                prob_abs.append(
+                    max(
+                        abs(original["probabilities"][name] - changed["probabilities"][name])
+                        for name in question_names
+                    )
+                )
+                if (
+                    original["choice"] != changed["choice"]
+                    and original["margin"] >= 0.2
+                    and original["confidence"] >= 0.7
+                ):
+                    high_confidence += 1
+            agreements += int(left_choices == right_choices)
+    left_np = official.float().numpy().astype(np.float64).ravel()
+    right_np = hailo_block.float().numpy().astype(np.float64).ravel()
+    print(
+        f"hailo block cosine {float(left_np @ right_np / (np.linalg.norm(left_np) * np.linalg.norm(right_np))):.6f} "
+        f"max {float(np.max(np.abs(left_np - right_np))):.6e} "
+        f"agreement {agreements / cases:.3f} high_confidence {high_confidence} "
+        f"logit_cosine_min {min(logit_cosines):.6f} prob_abs_max {max(prob_abs):.6f}",
+        flush=True,
+    )
+
+
 def export_post_norm(rows: int = 4) -> None:
     """Layer-3 post-attention RMSNorm with the published zero-centered weight."""
     import torch
@@ -1413,6 +1564,14 @@ def main() -> None:
             rows = int(sys.argv[2]) if len(sys.argv) > 2 else 64
             intermediate = int(sys.argv[3]) if len(sys.argv) > 3 else 256
             compile_post_norm_mlp(rows, intermediate)
+        elif command == "dump-post-mlp":
+            dump_post_mlp_residual(int(sys.argv[2]) if len(sys.argv) > 2 else 12)
+        elif command == "infer-post-mlp":
+            intermediate = int(sys.argv[2]) if len(sys.argv) > 2 else 12288
+            rows = int(sys.argv[3]) if len(sys.argv) > 3 else 64
+            infer_post_mlp_residual(rows, intermediate)
+        elif command == "score-post-mlp":
+            score_post_mlp_decisions(int(sys.argv[2]) if len(sys.argv) > 2 else 12288)
         elif command == "export-post-norm":
             export_post_norm()
         elif command == "compile-post-norm":
