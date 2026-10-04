@@ -405,6 +405,246 @@ def score_decisions() -> None:
         )
 
 
+def dump_group_qkv(rows: int = 12, group_index: int = 0) -> None:
+    """Q, K, and V for one real layer-3 KV group, after the host RoPE."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import UnrolledAttentionCore, apply_partial_rope
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import (
+        Qwen3_5TextRotaryEmbedding,
+        eager_attention_forward,
+    )
+
+    layer, config = load_decoder(3)
+    attention = layer.self_attn
+    group = attention.num_key_value_groups
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(2)
+    hidden = torch.randn(rows, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, rows, -1)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        normalized = layer.input_layernorm(hidden)
+        input_shape = normalized.shape[:-1]
+        hidden_shape = (*input_shape, -1, attention.head_dim)
+        query_states, _gate = torch.chunk(
+            attention.q_proj(normalized).view(*input_shape, -1, attention.head_dim * 2),
+            2,
+            dim=-1,
+        )
+        query_states = attention.q_norm(query_states.view(hidden_shape)).transpose(1, 2)
+        key_states = attention.k_norm(attention.k_proj(normalized).view(hidden_shape)).transpose(1, 2)
+        value_states = attention.v_proj(normalized).view(hidden_shape).transpose(1, 2)
+        query_states = apply_partial_rope(query_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        key_states = apply_partial_rope(key_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        query_group = query_states[:, group_index * group : (group_index + 1) * group]
+        key_group = key_states[:, group_index : group_index + 1]
+        value_group = value_states[:, group_index : group_index + 1]
+        packed = query_group.permute(0, 2, 1, 3).reshape(rows, SEQUENCE, -1)
+        reference = UnrolledAttentionCore()(packed, key_group, value_group)
+    path = ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(
+        path,
+        hidden=hidden.numpy(),
+        cos=cos.numpy(),
+        sin=sin.numpy(),
+        query=packed.numpy(),
+        key=key_group.numpy(),
+        value=value_group.numpy(),
+        reference=reference.numpy(),
+        group_index=np.array(group_index),
+    )
+    print(path, packed.shape, key_group.shape, reference.shape, flush=True)
+
+
+def quantize_saved_group(calibration_rows: int = 64) -> None:
+    """Quantized emulator of the compiled one-group HEF on the saved real QKV."""
+    from hailo_model_optimization.algorithms.fix_zp_comp_encoding.fix_zp_comp_encoding import (
+        FixZpCompEncoding,
+    )
+    from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
+        MatmulEqualization,
+    )
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    data = np.load(ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz")
+    path = ONNX_DIR / "qwen35_attention_unrolled_core_4h_1kv.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_attn_unrolled_4h_1kv", disable_onnx_simplifier=True)
+    original_walk = FixZpCompEncoding._get_first_real_weight_layer
+
+    def walk(self, layer_name):
+        try:
+            return original_walk(self, layer_name)
+        except RuntimeError:
+            return layer_name
+
+    FixZpCompEncoding._get_first_real_weight_layer = walk
+    MatmulEqualization.should_skip_algo = lambda self: True
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    arrays = [data["query"], data["key"], data["value"]]
+    feed = {}
+    for layer, array in zip(sorted(inputs, key=lambda item: item.name), arrays, strict=True):
+        array = np.asarray(array, dtype=np.float32)
+        hailo_shape = layer.output_shapes[0]
+        if array.ndim == 4 and list(array.shape[1:]) != list(hailo_shape[1:]):
+            array = np.transpose(array, (0, 2, 3, 1))
+        while array.ndim < len(hailo_shape):
+            array = array[:, None]
+        feed[layer.name] = array
+        print("FEED", layer.name, array.shape, hailo_shape, flush=True)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    expected = data["reference"]
+    cosine, mse, maximum = _score_arrays(expected, got)
+    print(f"group quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    out = ROOT / "artifacts" / "clef_slice" / "group0_hailo.npz"
+    np.savez(out, hailo=got.astype(np.float32))
+    print(out, got.shape, flush=True)
+
+
+def score_group_decisions() -> None:
+    """Decisions after replacing one KV group with the quantized Hailo core."""
+    import json
+
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    sys.path.insert(0, str(ROOT / "hailo_port" / "upstream"))
+    from graphs import StaticJointHead, causal_mask
+    from joint_schema_model import JointSchemaHead
+    from run_experiments import decision_from_logits, load_decoder
+    from safetensors.torch import load_file
+    from transformers.models.qwen3_5.modeling_qwen3_5 import eager_attention_forward
+
+    saved = np.load(ROOT / "artifacts" / "clef_slice" / "group0_qkv.npz")
+    hailo = np.load(ROOT / "artifacts" / "clef_slice" / "group0_hailo.npz")["hailo"]
+    while hailo.ndim > 3:
+        hailo = np.squeeze(hailo, axis=1)
+    layer, _config = load_decoder(3)
+    attention = layer.self_attn
+    hidden = torch.from_numpy(saved["hidden"])
+    cos = torch.from_numpy(saved["cos"])
+    sin = torch.from_numpy(saved["sin"])
+    reference = torch.from_numpy(saved["reference"])
+    hailo_group = torch.from_numpy(hailo.astype(np.float32))
+    width = reference.shape[-1]
+    with torch.inference_mode():
+        normalized = layer.input_layernorm(hidden)
+        input_shape = normalized.shape[:-1]
+        hidden_shape = (*input_shape, -1, attention.head_dim)
+        _query, gate = torch.chunk(
+            attention.q_proj(normalized).view(*input_shape, -1, attention.head_dim * 2),
+            2,
+            dim=-1,
+        )
+        gate = torch.sigmoid(gate.reshape(*input_shape, -1))
+        query_states = attention.q_norm(_query.view(hidden_shape)).transpose(1, 2)
+        key_states = attention.k_norm(attention.k_proj(normalized).view(hidden_shape)).transpose(1, 2)
+        value_states = attention.v_proj(normalized).view(hidden_shape).transpose(1, 2)
+        from graphs import apply_partial_rope
+
+        query_states = apply_partial_rope(query_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        key_states = apply_partial_rope(key_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        mixed, _weights = eager_attention_forward(
+            attention,
+            query_states,
+            key_states,
+            value_states,
+            causal_mask(hidden),
+            scaling=attention.scaling,
+            dropout=0.0,
+        )
+        mixed = mixed.reshape(*input_shape, -1).contiguous()
+        hailo_mix = mixed.clone()
+        float_mix = mixed.clone()
+        hailo_mix[:, :, :width] = hailo_group
+        float_mix[:, :, :width] = reference
+
+        def block_from(attended: torch.Tensor) -> torch.Tensor:
+            projected = attention.o_proj(attended * gate)
+            hidden_states = hidden + projected
+            return hidden_states + layer.mlp(layer.post_attention_layernorm(hidden_states))
+
+        official = layer(hidden, position_embeddings=(cos, sin), attention_mask=causal_mask(hidden))
+        finished = {
+            "official": official,
+            "float_group": block_from(float_mix),
+            "hailo_group": block_from(hailo_mix),
+        }
+    config = json.loads((ROOT / "artifacts" / "weights" / "joint_head_config.json").read_text())
+    head = JointSchemaHead(**config).eval()
+    head.load_state_dict(load_file(ROOT / "artifacts" / "weights" / "joint_head.safetensors"), strict=True)
+    static = StaticJointHead(head.float(), (3, 2)).eval()
+    torch.manual_seed(1)
+    embedding = torch.randn(24, 4096)
+    token_ids = torch.arange(16)
+    spans = ((6, 8), (8, 10), (10, 12), (12, 14), (14, 16))
+    lexical = torch.stack([embedding[token_ids[start:end]].mean(0) for start, end in spans])
+    type_ids = torch.tensor([1, 0])
+    names = (["paid", "overdue", "draft"], ["true", "false"])
+    cases = hidden.shape[0]
+    for label in ("float_group", "hailo_group"):
+        agreements = 0
+        high_confidence = 0
+        logit_cosines = []
+        prob_abs = []
+        with torch.inference_mode():
+            for index in range(cases):
+                left_h = finished["official"][index : index + 1]
+                right_h = finished[label][index : index + 1]
+                repeated_left = torch.cat([left_h, left_h], dim=1)
+                repeated_right = torch.cat([right_h, right_h], dim=1)
+                left_logits = static(repeated_left, lexical, type_ids)
+                right_logits = static(repeated_right, lexical, type_ids)
+                left = left_logits.float().numpy()
+                right = right_logits.float().numpy()
+                logit_cosines.append(float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right))))
+                left_choices = []
+                right_choices = []
+                for start, question_names in ((0, names[0]), (3, names[1])):
+                    original = decision_from_logits(left_logits[start : start + len(question_names)], question_names)
+                    changed = decision_from_logits(right_logits[start : start + len(question_names)], question_names)
+                    left_choices.append(original["choice"])
+                    right_choices.append(changed["choice"])
+                    prob_abs.append(
+                        max(
+                            abs(original["probabilities"][name] - changed["probabilities"][name])
+                            for name in question_names
+                        )
+                    )
+                    if (
+                        original["choice"] != changed["choice"]
+                        and original["margin"] >= 0.2
+                        and original["confidence"] >= 0.7
+                    ):
+                        high_confidence += 1
+                agreements += int(left_choices == right_choices)
+        left_np = finished["official"].float().numpy().astype(np.float64).ravel()
+        right_np = finished[label].float().numpy().astype(np.float64).ravel()
+        print(
+            f"{label} block cosine {float(left_np @ right_np / (np.linalg.norm(left_np) * np.linalg.norm(right_np))):.6f} "
+            f"max {float(np.max(np.abs(left_np - right_np))):.6e} "
+            f"agreement {agreements / cases:.3f} high_confidence {high_confidence} "
+            f"logit_cosine_min {min(logit_cosines):.6f} prob_abs_max {max(prob_abs):.6f}",
+            flush=True,
+        )
+
+
 def export_shared_kv_group() -> None:
     """Four query heads sharing one KV head.
 
@@ -692,6 +932,12 @@ def main() -> None:
             export_attention()
         elif command == "export-unrolled":
             export_attention(unroll=True)
+        elif command == "dump-group":
+            dump_group_qkv(int(sys.argv[2]) if len(sys.argv) > 2 else 12)
+        elif command == "quant-group":
+            quantize_saved_group(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
+        elif command == "score-group":
+            score_group_decisions()
         elif command == "export-gqa":
             export_shared_kv_group()
         elif command == "export-core":
