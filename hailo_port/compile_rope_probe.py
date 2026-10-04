@@ -405,6 +405,63 @@ def score_decisions() -> None:
         )
 
 
+def dump_gated_inputs(rows: int = 12) -> None:
+    """Attention mix and pre-sigmoid gate from real layer 3, before ``o_proj``."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from graphs import apply_partial_rope, causal_mask
+    from run_experiments import load_decoder
+    from transformers.models.qwen3_5.modeling_qwen3_5 import (
+        Qwen3_5TextRotaryEmbedding,
+        eager_attention_forward,
+    )
+
+    layer, config = load_decoder(3)
+    attention = layer.self_attn
+    rotary = Qwen3_5TextRotaryEmbedding(config).eval()
+    torch.manual_seed(2)
+    hidden = torch.randn(rows, SEQUENCE, config.hidden_size)
+    position = torch.arange(SEQUENCE).view(1, 1, -1).expand(3, rows, -1)
+    with torch.inference_mode():
+        cos, sin = rotary(hidden, position)
+        normalized = layer.input_layernorm(hidden)
+        input_shape = normalized.shape[:-1]
+        hidden_shape = (*input_shape, -1, attention.head_dim)
+        query_states, gate = torch.chunk(
+            attention.q_proj(normalized).view(*input_shape, -1, attention.head_dim * 2),
+            2,
+            dim=-1,
+        )
+        gate = gate.reshape(*input_shape, -1)
+        query_states = attention.q_norm(query_states.view(hidden_shape)).transpose(1, 2)
+        key_states = attention.k_norm(attention.k_proj(normalized).view(hidden_shape)).transpose(1, 2)
+        value_states = attention.v_proj(normalized).view(hidden_shape).transpose(1, 2)
+        query_states = apply_partial_rope(query_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        key_states = apply_partial_rope(key_states, cos.unsqueeze(1), sin.unsqueeze(1))
+        mixed, _weights = eager_attention_forward(
+            attention,
+            query_states,
+            key_states,
+            value_states,
+            causal_mask(hidden),
+            scaling=attention.scaling,
+            dropout=0.0,
+        )
+        attended = mixed.reshape(*input_shape, -1).contiguous()
+    path = ROOT / "artifacts" / "clef_slice" / "gated_o_inputs.npz"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(
+        path,
+        hidden=hidden.numpy(),
+        cos=cos.numpy(),
+        sin=sin.numpy(),
+        attended=attended.numpy(),
+        gate=gate.numpy(),
+    )
+    print(path, attended.shape, gate.shape, flush=True)
+
+
 def dump_group_qkv(rows: int = 12, kv_heads: int = 1) -> None:
     """Q, K, and V for the first ``kv_heads`` real layer-3 groups, after host RoPE."""
     import torch
@@ -518,6 +575,100 @@ def quantize_saved_group(calibration_rows: int = 64, kv_heads: int = 1) -> None:
     out = ROOT / "artifacts" / "clef_slice" / f"group{kv_heads}_hailo.npz"
     np.savez(out, hailo=got.astype(np.float32))
     print(out, got.shape, flush=True)
+
+
+def score_gated_decisions() -> None:
+    """Decisions after replacing the attention output with the quantized gated projection."""
+    import json
+
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    sys.path.insert(0, str(ROOT / "hailo_port" / "upstream"))
+    from graphs import StaticJointHead, causal_mask
+    from joint_schema_model import JointSchemaHead
+    from run_experiments import decision_from_logits, load_decoder
+    from safetensors.torch import load_file
+
+    saved = np.load(ROOT / "artifacts" / "clef_slice" / "gated_o_inputs.npz")
+    hailo = np.load(ROOT / "artifacts" / "clef_slice" / "gated_o_hailo.npz")["hailo"]
+    while hailo.ndim > 3:
+        hailo = np.squeeze(hailo, axis=1)
+    layer, _config = load_decoder(3)
+    hidden = torch.from_numpy(saved["hidden"])
+    cos = torch.from_numpy(saved["cos"])
+    sin = torch.from_numpy(saved["sin"])
+    attended = torch.from_numpy(saved["attended"])
+    gate = torch.sigmoid(torch.from_numpy(saved["gate"]))
+    hailo_proj = torch.from_numpy(hailo.astype(np.float32))
+    with torch.inference_mode():
+        float_proj = layer.self_attn.o_proj(attended * gate)
+
+        def block_from(projected: torch.Tensor) -> torch.Tensor:
+            hidden_states = hidden + projected
+            return hidden_states + layer.mlp(layer.post_attention_layernorm(hidden_states))
+
+        official = layer(hidden, position_embeddings=(cos, sin), attention_mask=causal_mask(hidden))
+        finished = {
+            "official": official,
+            "float_proj": block_from(float_proj),
+            "hailo_proj": block_from(hailo_proj),
+        }
+    config = json.loads((ROOT / "artifacts" / "weights" / "joint_head_config.json").read_text())
+    head = JointSchemaHead(**config).eval()
+    head.load_state_dict(load_file(ROOT / "artifacts" / "weights" / "joint_head.safetensors"), strict=True)
+    static = StaticJointHead(head.float(), (3, 2)).eval()
+    torch.manual_seed(1)
+    embedding = torch.randn(24, 4096)
+    token_ids = torch.arange(16)
+    spans = ((6, 8), (8, 10), (10, 12), (12, 14), (14, 16))
+    lexical = torch.stack([embedding[token_ids[start:end]].mean(0) for start, end in spans])
+    type_ids = torch.tensor([1, 0])
+    names = (["paid", "overdue", "draft"], ["true", "false"])
+    cases = hidden.shape[0]
+    for label in ("float_proj", "hailo_proj"):
+        agreements = 0
+        high_confidence = 0
+        logit_cosines = []
+        prob_abs = []
+        with torch.inference_mode():
+            for index in range(cases):
+                left_h = finished["official"][index : index + 1]
+                right_h = finished[label][index : index + 1]
+                left_logits = static(torch.cat([left_h, left_h], dim=1), lexical, type_ids)
+                right_logits = static(torch.cat([right_h, right_h], dim=1), lexical, type_ids)
+                left = left_logits.float().numpy()
+                right = right_logits.float().numpy()
+                logit_cosines.append(float(left @ right / (np.linalg.norm(left) * np.linalg.norm(right))))
+                left_choices = []
+                right_choices = []
+                for start, question_names in ((0, names[0]), (3, names[1])):
+                    original = decision_from_logits(left_logits[start : start + len(question_names)], question_names)
+                    changed = decision_from_logits(right_logits[start : start + len(question_names)], question_names)
+                    left_choices.append(original["choice"])
+                    right_choices.append(changed["choice"])
+                    prob_abs.append(
+                        max(
+                            abs(original["probabilities"][name] - changed["probabilities"][name])
+                            for name in question_names
+                        )
+                    )
+                    if (
+                        original["choice"] != changed["choice"]
+                        and original["margin"] >= 0.2
+                        and original["confidence"] >= 0.7
+                    ):
+                        high_confidence += 1
+                agreements += int(left_choices == right_choices)
+        left_np = finished["official"].float().numpy().astype(np.float64).ravel()
+        right_np = finished[label].float().numpy().astype(np.float64).ravel()
+        print(
+            f"{label} block cosine {float(left_np @ right_np / (np.linalg.norm(left_np) * np.linalg.norm(right_np))):.6f} "
+            f"max {float(np.max(np.abs(left_np - right_np))):.6e} "
+            f"agreement {agreements / cases:.3f} high_confidence {high_confidence} "
+            f"logit_cosine_min {min(logit_cosines):.6f} prob_abs_max {max(prob_abs):.6f}",
+            flush=True,
+        )
 
 
 def score_group_decisions(kv_heads: int = 1) -> None:
@@ -1075,6 +1226,10 @@ def main() -> None:
             export_attention()
         elif command == "export-unrolled":
             export_attention(unroll=True)
+        elif command == "score-gated":
+            score_gated_decisions()
+        elif command == "dump-gated":
+            dump_gated_inputs(int(sys.argv[2]) if len(sys.argv) > 2 else 12)
         elif command == "dump-group":
             rows = int(sys.argv[2]) if len(sys.argv) > 2 else 12
             kv_heads = int(sys.argv[3]) if len(sys.argv) > 3 else 1
