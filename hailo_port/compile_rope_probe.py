@@ -405,6 +405,88 @@ def score_decisions() -> None:
         )
 
 
+def export_post_norm(rows: int = 4) -> None:
+    """Layer-3 post-attention RMSNorm with the published zero-centered weight."""
+    import torch
+
+    sys.path.insert(0, str(ROOT / "hailo_port"))
+    from run_experiments import load_decoder
+
+    layer, _config = load_decoder(3)
+    norm = layer.post_attention_layernorm
+
+    class Wrapped(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.norm = norm
+
+        def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+            return self.norm(hidden)
+
+    module = Wrapped().eval()
+    sample = torch.zeros(1, SEQUENCE, 4096)
+    path = ONNX_DIR / "qwen35_post_attention_norm.onnx"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        module,
+        (sample,),
+        path,
+        dynamo=True,
+        opset_version=18,
+        external_data=False,
+        input_names=["hidden"],
+        output_names=["normalized"],
+    )
+    torch.manual_seed(0)
+    hidden = torch.randn(rows, SEQUENCE, 4096)
+    with torch.inference_mode():
+        output = module(hidden)
+    ref = ROOT / "artifacts" / "clef_slice" / "post_norm_ref.npz"
+    np.savez(ref, hidden=hidden.numpy(), output=output.numpy())
+    print(path, path.stat().st_size, output.shape, flush=True)
+
+
+def compile_post_norm(calibration_rows: int = 64) -> None:
+    from hailo_sdk_client import ClientRunner
+    from hailo_sdk_client.exposed_definitions import InferenceContext
+
+    data = np.load(ROOT / "artifacts" / "clef_slice" / "post_norm_ref.npz")
+    path = ONNX_DIR / "qwen35_post_attention_norm.onnx"
+    runner = ClientRunner(hw_arch="hailo10h")
+    runner.translate_onnx_model(str(path), "clef_experimental_post_norm", disable_onnx_simplifier=True)
+    for layer in runner._hn:
+        print(f"LAYER {layer.op} {_short_name(layer)}", flush=True)
+    runner.load_model_script(
+        "model_optimization_config(calibration, batch_size=8, "
+        f"calibset_size={calibration_rows})\n"
+    )
+    inputs = list(runner._hn.get_input_layers())
+    rng = np.random.default_rng(0)
+    calib = {
+        layer.name: rng.standard_normal([calibration_rows, *layer.output_shapes[0][1:]]).astype(np.float32)
+        for layer in inputs
+    }
+    runner.optimize(calib)
+    hidden = np.asarray(data["hidden"], dtype=np.float32)
+    feed = {}
+    for layer in inputs:
+        array = hidden
+        while array.ndim < len(layer.output_shapes[0]):
+            array = array[:, None]
+        feed[layer.name] = array
+        print("FEED", layer.name, array.shape, layer.output_shapes[0], flush=True)
+    with runner.infer_context(InferenceContext.SDK_QUANTIZED) as ctx:
+        got = np.array(runner.infer(ctx, feed))
+    cosine, mse, maximum = _score_arrays(data["output"], got)
+    print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    dest = ROOT / "hailo_port" / "generated" / "clef_experimental_post_norm.hef"
+    if dest.exists():
+        raise SystemExit(f"refusing to overwrite {dest}")
+    hef = runner.compile()
+    dest.write_bytes(hef)
+    print(f"HEF {dest} bytes={len(hef)}", flush=True)
+
+
 def dump_gated_inputs(rows: int = 12) -> None:
     """Attention mix and pre-sigmoid gate from real layer 3, before ``o_proj``."""
     import torch
@@ -1228,6 +1310,10 @@ def main() -> None:
             export_attention(unroll=True)
         elif command == "score-gated":
             score_gated_decisions()
+        elif command == "export-post-norm":
+            export_post_norm()
+        elif command == "compile-post-norm":
+            compile_post_norm(int(sys.argv[2]) if len(sys.argv) > 2 else 64)
         elif command == "dump-gated":
             dump_gated_inputs(int(sys.argv[2]) if len(sys.argv) > 2 else 12)
         elif command == "dump-group":
