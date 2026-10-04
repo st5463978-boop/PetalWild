@@ -525,7 +525,73 @@ def _score_arrays(expected: np.ndarray, got: np.ndarray) -> tuple[float, float, 
     return cosine, float(np.mean((left - right) ** 2)), float(np.max(np.abs(left - right)))
 
 
-def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 4) -> None:
+def _short_name(layer) -> str:
+    return layer.name.split("/")[-1]
+
+
+def _kv_group_context_script(runner) -> str:
+    """Put each KV head's matmul chain in its own context.
+
+    The automatic search of twelve query heads and three KV heads accepted
+    18 contexts and then failed in the splitter. One group already fits in
+    one context, so three contexts is the split to try.
+    """
+    graph = runner._hn
+
+    def successors(layer):
+        return list(graph.successors(layer))
+
+    def predecessors(layer):
+        return list(graph.predecessors(layer))
+
+    key = next(layer for layer in graph if _short_name(layer) == "input_layer2")
+    key_slices = []
+    for node in successors(key):
+        key_slices.extend(child for child in successors(node) if _short_name(child).startswith("slice"))
+    if not key_slices:
+        raise SystemExit("no key slices to split into contexts")
+    stop = {"concat1", "output_layer1", "feature_splitter1"}
+    groups = []
+    for key_slice in key_slices:
+        seen = set()
+        stack = list(successors(key_slice))
+        while stack:
+            node = stack.pop()
+            if node in seen or _short_name(node) in stop or _short_name(node).startswith("input_layer"):
+                continue
+            seen.add(node)
+            stack.extend(successors(node))
+        pending = list(seen)
+        while pending:
+            node = pending.pop()
+            for pred in predecessors(node):
+                if pred in seen or _short_name(pred) in stop or _short_name(pred).startswith("input_layer"):
+                    continue
+                slice_children = [child for child in successors(pred) if _short_name(child).startswith("slice")]
+                if len(slice_children) > 1:
+                    continue
+                if any(pred in group for group in groups):
+                    continue
+                seen.add(pred)
+                pending.append(pred)
+        groups.append(seen)
+    for layer in graph:
+        if _short_name(layer) in {"feature_splitter1", "concat1", "output_layer1"}:
+            groups[0].add(layer)
+    lines = []
+    for index, group in enumerate(groups):
+        names = sorted(_short_name(layer) for layer in group)
+        lines.append(f"context_{index} = context([{', '.join(names)}])")
+        print(f"CONTEXT {index} layers={len(names)}", flush=True)
+    return "\n".join(lines) + "\n"
+
+
+def score_unrolled_core(
+    calibration_rows: int,
+    heads: int = 16,
+    kv_heads: int = 4,
+    manual_contexts: bool = False,
+) -> None:
     from hailo_model_optimization.algorithms.matmul_equalization.matmul_equalization import (
         MatmulEqualization,
     )
@@ -600,8 +666,14 @@ def score_unrolled_core(calibration_rows: int, heads: int = 16, kv_heads: int = 
     expected = ref["output"]
     cosine, mse, maximum = _score_arrays(expected, got)
     print(f"quantized cosine {cosine:.6f} mse {mse:.6e} max {maximum:.6e}", flush=True)
+    if manual_contexts:
+        # Optimize replaces softmax and ew_add, so the context script has to
+        # name the layers that exist after that pass.
+        runner.load_model_script(_kv_group_context_script(runner))
     # The 64-row file stays. A larger calibration set is a different HEF.
     dest_name = model_name if calibration_rows == 64 else f"{model_name}_c{calibration_rows}"
+    if manual_contexts:
+        dest_name += "_ctx"
     dest = ROOT / "hailo_port" / "generated" / f"{dest_name}.hef"
     if dest.exists():
         print(f"keep {dest} bytes={dest.stat().st_size}", flush=True)
@@ -630,7 +702,8 @@ def main() -> None:
             rows = int(sys.argv[2]) if len(sys.argv) > 2 else 64
             heads = int(sys.argv[3]) if len(sys.argv) > 3 else 16
             kv_heads = int(sys.argv[4]) if len(sys.argv) > 4 else 4
-            score_unrolled_core(rows, heads, kv_heads)
+            manual_contexts = len(sys.argv) > 5 and sys.argv[5] == "contexts"
+            score_unrolled_core(rows, heads, kv_heads, manual_contexts)
         elif command == "dump-attention":
             dump_attention_reference(int(sys.argv[2]) if len(sys.argv) > 2 else 4)
         elif command == "score-attention":
