@@ -5,7 +5,9 @@ nets). It measures how much of Jev's choice the structured state predicts:
   full          every state column for every coin, position, rules_id, style
   packed        only what the seq128 packer writes (style columns, <=4 coins)
   packed_trunc  packed, minus coin lines that token truncation cuts from each pair
-and how time-eval agreement scales with the number of distinct training snapshots.
+plus which feature groups the full model leans on (drop one group, refit), how
+time-eval agreement scales with the number of distinct training snapshots, and,
+when shadow_gate predictions exist, where the student's and the GBM's errors overlap.
 
 python -m jevh_trading.structured_baseline  ->  artifacts/structured_baseline.json
 Needs lightgbm (analysis only; train.sh does not).
@@ -22,6 +24,7 @@ import random
 import time
 from collections import defaultdict
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 
@@ -346,7 +349,88 @@ def _temperature(scores: list[np.ndarray], gold: np.ndarray) -> float:
     return t_ece
 
 
-def run(threads: int = 4, out_path: Path | None = None, curve: bool = True, seed: int = SEED) -> dict:
+def ablation_groups(names: list[str]) -> dict[str, list[str]]:
+    return {
+        "rules_id": ["rules", "rules_source", "rotating"],
+        "engine_hints": ["desc_rank", "is_top1_coin"],
+        "coin_numbers": [n for n in names if (n.startswith("opt_") and n not in ("opt_index", "opt_side")) or n.startswith("pos_")],
+        "position_account": [n for n in names if n.startswith("me_")],
+        "label_kind": ["label", "kind", "opt_side"],
+        "menu_position": ["opt_index"],
+    }
+
+
+def drop_one_group(mats: dict, fb: FeatureBuilder, obj: str, receipt: dict, threads: int, seed: int) -> dict:
+    """Refit the full model with one feature group blanked to NaN: what Jev's choices lean on."""
+    out = {}
+    for name, cols in ablation_groups(fb.names).items():
+        idx = [fb.names.index(c) for c in cols]
+        blank = {}
+        for k, m in mats.items():
+            X = m["X"].copy()
+            X[:, idx] = np.nan
+            blank[k] = {**m, "X": X}
+        booster = fit_ranker(blank["train"], blank["dev"], obj, fb.cat_idx, threads, seed)
+        res: dict = {"n_features": len(idx)}
+        for k in ("dev", "eval", "eval_rules", "eval_live"):
+            sc = predict_groups(booster, blank[k])
+            res[f"{k}_top1"] = top1(sc, blank[k]["gold"])
+            ix = receipt[k]
+            res[f"{k}_receipt_sample_top1"] = top1([sc[i] for i in ix], blank[k]["gold"][ix])
+        out[name] = res
+        print(f"[gbm-drop] {name}: eval={res['eval_top1']:.4f} rules={res['eval_rules_top1']:.4f}", flush=True)
+    return out
+
+
+def student_vs_gbm(student: list[dict], gbm: dict[str, list[dict]], receipt_ids: dict[str, set], weights: Sequence[float] = tuple(np.round(np.arange(0, 1.01, 0.1), 2))) -> dict:
+    """Overlap of student and GBM errors, and a log-probability blend (student weight fit on dev)."""
+    from .shadow_gate import gate_report, headline
+
+    by_id = {(k, r["id"]): r for k, v in gbm.items() for r in v}
+    pairs: dict[str, list[tuple[dict, dict]]] = defaultdict(list)
+    for s in student:
+        g = by_id.get((s["split"], s["id"]))
+        if g is not None:
+            pairs[s["split"]].append((s, g))
+
+    def blend(s: dict, g: dict, w: float) -> list[float]:
+        ls = np.log(np.clip(np.asarray(s["probs"]), 1e-9, 1.0))
+        lg = np.log(np.clip(np.asarray(g["probs"]), 1e-9, 1.0))
+        return softmax(w * ls + (1 - w) * lg).tolist()
+
+    def hit(probs: Sequence[float], rec: dict) -> bool:
+        return int(np.argmax(probs)) == int(rec["gold"])
+
+    dev = pairs.get("dev") or []
+    w = max(weights, key=lambda x: np.mean([hit(blend(s, g, x), s) for s, g in dev])) if dev else 0.5
+    blended = {k: [{**s, "probs": blend(s, g, w), "logits": None} for s, g in ps] for k, ps in pairs.items()}
+    out: dict = {"student_weight_fit_on_dev": float(w), "splits": {}}
+    for split, ps in pairs.items():
+        row = {}
+        keep = [i for i, (s, _) in enumerate(ps) if s["id"] in receipt_ids.get(split, set())]
+        for name, ix in (("natural", list(range(len(ps)))), ("receipt_sample", keep)):
+            st = np.asarray([hit(ps[i][0]["probs"], ps[i][0]) for i in ix], dtype=bool)
+            gt = np.asarray([hit(ps[i][1]["probs"], ps[i][0]) for i in ix], dtype=bool)
+            bt = np.asarray([hit(blended[split][i]["probs"], ps[i][0]) for i in ix], dtype=bool)
+            if not len(ix):
+                continue
+            row[name] = {
+                "n": len(ix),
+                "student": float(st.mean()),
+                "gbm": float(gt.mean()),
+                "blend": float(bt.mean()),
+                "either_right": float((st | gt).mean()),
+                "student_wrong_gbm_right": float((~st & gt).mean()),
+                "gbm_wrong_student_right": float((st & ~gt).mean()),
+            }
+        out["splits"][split] = row
+    if blended.get("dev"):
+        rep = gate_report(blended["dev"], {k: blended[k] for k in ("eval", "eval_rules", "eval_live") if blended.get(k)})
+        out["gate_blend_headline"] = headline(rep)
+    return out
+
+
+def run(threads: int = 4, out_path: Path | None = None, curve: bool = True, seed: int = SEED, student_recs: Path | None = None) -> dict:
     t0 = time.perf_counter()
     data = load_raw_calls()
     parts, contexts = data["parts"], data["contexts"]
@@ -407,7 +491,13 @@ def run(threads: int = 4, out_path: Path | None = None, curve: bool = True, seed
     write_recs(out_path.parent / "preds_gbm_full.jsonl.gz", [r for v in recs.values() for r in v])
     rep = gate_report(recs["dev"], {k: recs[k] for k in ("eval", "eval_rules", "eval_live")})
     out["gate_full_gbm"] = {"temperature_ece": T, "headline": headline(rep), "agreement": {k: v["agreement"] for k, v in rep["splits"].items()}}
+    if student_recs is not None and student_recs.is_file():
+        from .shadow_gate import read_recs
 
+        ids = {k: {parts[k][i]["id"] for i in ix} for k, ix in receipt.items()}
+        out["student_vs_gbm"] = {"student_recs": str(student_recs), **student_vs_gbm(read_recs(student_recs), recs, ids)}
+
+    out["drop_one_group"] = drop_one_group(mats["full"], fb, obj, receipt, threads, seed)
     if curve:
         out["snapshot_curve"] = snapshot_curve(parts, mats["full"], fb, obj, threads, seed)
     out["wall_s"] = round(time.perf_counter() - t0, 1)
@@ -462,8 +552,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--no-curve", action="store_true")
     p.add_argument("--out", default=None)
+    p.add_argument("--student-recs", default=str(artifacts_dir() / "preds_68m.jsonl.gz"), help="shadow_gate predictions to compare and blend with (skipped if missing)")
     a = p.parse_args(argv)
-    out = run(a.threads, Path(a.out) if a.out else None, curve=not a.no_curve)
+    out = run(a.threads, Path(a.out) if a.out else None, curve=not a.no_curve, student_recs=Path(a.student_recs))
     print(json.dumps({k: out[k] for k in ("variants", "best_full")}, indent=2)[:6000])
     return 0
 

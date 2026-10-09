@@ -555,6 +555,31 @@ class StructuredFeatureTests(unittest.TestCase):
         self.assertEqual(m["groups"].tolist(), [2])
         self.assertEqual(m["y_bin"].tolist(), [0.0, 1.0])
 
+    def test_ablation_groups_cover_known_columns(self):
+        from jevh_trading.structured_baseline import FeatureBuilder, ablation_groups
+
+        names = FeatureBuilder("full", {}, {}).names
+        groups = ablation_groups(names)
+        self.assertTrue(all(c in names for cols in groups.values() for c in cols))
+        self.assertIn("opt_to_trigger_pct_rank", groups["coin_numbers"])
+        self.assertNotIn("opt_index", groups["coin_numbers"])
+
+    def test_student_vs_gbm_blend_fixes_disjoint_errors(self):
+        from jevh_trading.structured_baseline import student_vs_gbm
+
+        def rec(i, gold, probs):
+            return {"id": i, "split": "dev", "gold": gold, "probs": probs, "p_jev": [0.5, 0.5], "style": "breezy"}
+
+        student = [rec(1, 0, [0.9, 0.1]), rec(2, 1, [0.6, 0.4])]
+        gbm = {"dev": [rec(1, 0, [0.4, 0.6]), rec(2, 1, [0.1, 0.9])]}
+        out = student_vs_gbm(student, gbm, {"dev": {1}})
+        nat = out["splits"]["dev"]["natural"]
+        self.assertAlmostEqual(nat["student"], 0.5)
+        self.assertAlmostEqual(nat["gbm"], 0.5)
+        self.assertAlmostEqual(nat["either_right"], 1.0)
+        self.assertAlmostEqual(nat["blend"], 1.0)
+        self.assertEqual(out["splits"]["dev"]["receipt_sample"]["n"], 1)
+
 
 class OptionPackerTests(unittest.TestCase):
     BOOZY_COLS = ["r1h_pct", "r24h_pct", "r7d_pct", "attn_z", "oi1h_pct", "spread_bp", "vol_musd"]
