@@ -502,7 +502,7 @@ def onnx_parity(model, onnx_path: Path, packed: list[dict], recs: list[dict], te
             from onnxruntime.quantization import QuantType, quantize_dynamic
 
             q_path = onnx_path.with_name(onnx_path.stem + "_int8dyn.onnx")
-            if not q_path.is_file():
+            if not q_path.is_file() or q_path.stat().st_mtime < onnx_path.stat().st_mtime:
                 quantize_dynamic(str(onnx_path), str(q_path), weight_type=QuantType.QInt8)
             sessions["int8_dynamic"] = ort.InferenceSession(str(q_path), providers=["CPUExecutionProvider"])
             out["int8_path"] = str(q_path)
