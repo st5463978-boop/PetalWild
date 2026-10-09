@@ -1,82 +1,103 @@
-# JEV-H-68m-v5 receipt
+# JEV-H-68m-v5 receipt (round 2)
 
 Direct successor to the live ettin68m student (seq128, `[qtype] question` + option text).
-No HEF compile. No Pi deploy. No paid APIs.
+No HEF compile. No Pi deploy. No paid APIs. Trained on the template-grouped split (honest).
 
 ## Data
 
-- labels: `/home/ubuntu/.cursor/projects/workspace/uploads/labels_6f4e.jsonl` (4220 rows, 4108 unique questions). Bundled copy: `data/labels.jsonl`.
-- decide (soft labels, never gold): `/home/ubuntu/.cursor/projects/workspace/uploads/decide_questions_dedup_cc6a.jsonl` (9402 rows, 4162 KD train rows). Not committed (~5.4 MB); sample fallback is `data/decide_questions.sample.jsonl`.
-- lane bank: `/home/ubuntu/.cursor/projects/workspace/uploads/jevh_lane_bank_d8df.jsonl` (197 rows). Bundled copy: `data/lane_bank.jsonl`.
-- tokenizer: `/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_fe24.json`. Bundled copy: `data/tokenizer.json`.
-- split seed 42, by unique question, stratified by option count (`artifacts/split.json`)
-- train questions 2873 / rows 2955
-- dev questions 617 / rows 625
-- eval questions 618 / rows 640 (**15.04%** of unique questions)
-- eval yes/no (2-way) rows 175, multi-choice rows 465
-- confident teacher-vs-JEV disagreements in labels: 2228 (train weight 3.0)
+- labels: `/home/ubuntu/.cursor/projects/workspace/uploads/labels_6f4e.jsonl` (4220 rows, 4108 unique questions, 503 templates)
+- decide (soft labels, never gold): `/home/ubuntu/.cursor/projects/workspace/uploads/decide_questions_dedup_cc6a.jsonl` (9402 rows, 5442 KD train rows)
+- JEV-H-large soft labels: `/workspace/tools/orchestration/jevh_68m_v5/data/external/jevh_large_soft_on_decide_questions_dedup.jsonl.gz` (9402 rows; from `cursor/jevh-variant-large-819a`, not merged)
+- KD blend: large 0.65/Qwen 0.35 on argmax-agree, large 0.80/Qwen 0.20 on disagree. `jev_choice` stays gold.
+- lane bank: `/home/ubuntu/.cursor/projects/workspace/uploads/jevh_lane_bank_d8df.jsonl` (197 rows)
+- tokenizer: `/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_fe24.json`
+- split seed 42
+- **template-grouped** (train): questions 2578 / rows 2616; dev 766/795; eval 764/809 (18.6% of unique questions, 269 templates; largest train family 1245 q, largest eval family 305 q)
+- unique-question split (round-1 protocol, eval-only): 618 questions / 640 rows; leaked into template-train: 390
+- eval 2-way (template) 198, multi 611
+- confident teacher-vs-JEV disagreements: 2228 (train weight 3.0)
 
-## Recipe
+## Truncation (seq128)
 
-- backbone `jhu-clsp/ettin-encoder-68m` (ModernBERT, hidden 512, 19 layers, local window 128, RoPE θ 160000)
-- CLS GELU head (Linear 512→512 no bias + GELU + LN + Linear 512→1), live-compatible pair scoring
-- seq_len 128, seed 42
-- freeze embeddings + first 13 layers; train last 6 + final LN + head (68.4M params, 13.6M trainable)
-- listwise CE over options + pairwise hinge (margin 0.5, coef 0.4) vs teacher-wrong and online hard neg
-- option order shuffled every use
-- KD (KL to teacher softmax) on decide rows whose questions are outside eval/dev, coef 0.2; confident-disagreement questions excluded from KD
-- AdamW encoder lr 2e-5, head lr 1e-4, wd 0.01, clip 1.0, microbatch 8 questions
-- epochs run: **2**, train wall: **25.3 min** on 4-core CPU
-- temperature fit on dev NLL: T=1.3000
+{
+  "labels": {
+    "pairs": 14634,
+    "pairs_true_len_gt_128": 0,
+    "pair_overflow_rate": 0.0,
+    "trimmed_question_pairs": 0,
+    "trimmed_option_pairs": 0,
+    "two_way_rows": 1111,
+    "two_way_rows_overflow": 0,
+    "two_way_overflow_rate": 0.0
+  },
+  "kd": {
+    "pairs": 11858,
+    "pairs_true_len_gt_128": 1,
+    "pair_overflow_rate": 8.433125316242199e-05,
+    "trimmed_question_pairs": 1,
+    "trimmed_option_pairs": 0,
+    "two_way_rows": 4948,
+    "two_way_rows_overflow": 1,
+    "two_way_overflow_rate": 0.0002021018593371059
+  }
+}
 
-## Held-out eval (gold = `jev_choice`)
+Smarter truncation (`keep_option`): if a pair would exceed 128, keep option tokens and trim question/context. Labels never overflowed 128; decide had a handful of 2-way overflows.
 
-| split | n | acc vs jev_choice | teacher acc | current student (overlap) | conf-mistakes (≥0.65) | ECE |
-|---|---:|---:|---:|---:|---:|---:|
-| eval T=1.300 | 640 | **0.7641** | 0.4688 | live 0.6579 / v5 0.7281 (n=114) | **18** | 0.0316 |
-| eval T=1 | 640 | 0.7641 | 0.4688 | live 0.6579 | 21 | 0.0285 |
-| eval yes/no (2-way) | 175 | **0.8629** | — | — | — | — |
-| eval multi-choice | 465 | **0.7269** | — | — | — | — |
-| teacher baseline (same 640 rows) | 640 | 0.4688 | — | — | 191 | — |
+## Recipe (round 2 vs round 1)
 
-Dev (T fit only, not model selection leak into the table above except picking the ckpt): n=625 acc=0.7440 ECE=0.0331.
+- backbone `jhu-clsp/ettin-encoder-68m`, CLS GELU head, seq_len 128, seed 42
+- **full encoder unfrozen** including embeddings (round 1: last 6 layers + head)
+- layer-wise LR decay 0.9: last layer 2e-05, embeddings 5e-06, head 8e-05
+- init from round-1 checkpoint: /workspace/tools/orchestration/jevh_68m_v5/artifacts/jevh_68m_v5.pt
+- listwise CE + pairwise hinge (margin 0.5, coef 0.4); option shuffle
+- KD from blended large+Qwen on decide rows outside template eval/dev, coef 0.25; extra KL on gold rows where large agrees with jev_choice
+- AdamW wd 0.01, clip 1.0, microbatch 8, grad checkpointing on
+- early stopping patience 2 on template-dev acc; epochs run 3 / requested 6; train minutes 91.1
+- temperature fit on template-dev NLL: T=0.4000
+- trainable 68.4M / 68.4M
 
-Option-count slices on eval: 2-way 175 @ 0.8629, 3-way 1 @ 1.0, 4-way 461 @ 0.7310, 6-way 3 @ 0.0.
+## Held-out eval (gold = jev_choice)
+
+| split | n | acc | 2-way | multi | teacher | live student / v5 overlap | conf-mist ≥0.65 | ECE |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| template eval T=0.40 (honest) | 809 | 0.9023 | 0.8434 | 0.9214 | 0.6032 | live 0.5414 / v5 0.8854 (n=157) | 60 | 0.0427 |
+| unique-q eval, same rows as round 1 | 640 | 0.7625 | 0.8629 | 0.7247 | 0.4688 | live 0.6579 / v5 0.7105 (n=114) | 25 | 0.0403 |
+| round 1 unique-q T=1.3 (frozen) | 640 | 0.7641 | 0.8629 | 0.7269 | 0.4688 | live 0.6579 / v5 0.7281 (n=114) | 18 | 0.0316 |
+| template-dev (T fit / early stop) | 795 | 0.9623 | 0.8370 | 1.0000 | 0.5321 | live 0.7895 / v5 0.8816 (n=76) | 20 | 0.0103 |
+
+Round-2 minus round-1 unique-q acc: -0.0016 (same 640 rows; 390 of those questions were in template-train).
 
 ## CPU latency (batch 1)
 
-Measured on this VM (4× Xeon, fp32), one option at a time then softmax over the question's options:
-
-| | mean | p50 | p90 |
-|---|---:|---:|---:|
-| per option (batch=1) | 44.5 ms | 44.5 ms | — |
-| per decision (all options) | 103.0 ms | 88.6 ms | 96.9 ms |
+{
+  "n": 40,
+  "decision_ms_mean": 98.8954425000884,
+  "decision_ms_p50": 85.78391549963271,
+  "decision_ms_p90": 89.43189690107829,
+  "option_batch1_ms_mean": 44.10407175000728,
+  "option_batch1_ms_p50": 44.19460450026236,
+  "note": "batch=1 per option, then softmax over options (matches Hailo option loop)"
+}
 
 ## ONNX (Hailo-10H DFC, no compile here)
 
-- path: `tools/orchestration/jevh_68m_v5/artifacts/jevh_68m_v5_seq128.onnx` (gitignored, 277,144,914 bytes)
-- sha256: `a7c37638d7bcf6586e70046671e9c997783abf9e3dc8cd77b17755faf8e933da`
-- opset: 17
-- inputs:
-  - `input_ids`: int64 `[1, 128]`
-  - `attention_mask`: int64 `[1, 128]` (consumed as an additive attention bias; confirmed in graph)
-- output: `logits` float32 `[1, 1]` (one option score; softmax is across options outside the graph, matching the live service)
-- forbidden ops (Loop / If / NonZero): none
-- static shapes only; Reshape/Slice are compile-time constants
-- PyTorch vs onnxruntime cosine on eval logits: **1.000000** (need ≥ 0.999)
+- path: `/workspace/tools/orchestration/jevh_68m_v5/artifacts/jevh_68m_v5_seq128.onnx`
+- sha256: `20bd7dcc33b603eb6ab8774544ccd2567ba177763ff3d7180e341e16ce34868b`
+- size_bytes: 277144914
+- opset: [17]
+- inputs: [{'name': 'input_ids', 'shape': [1, 128], 'elem': 7, 'dtype': 'int64'}, {'name': 'attention_mask', 'shape': [1, 128], 'elem': 7, 'dtype': 'int64'}]
+- outputs: [{'name': 'logits', 'shape': [1, 1], 'elem': 1, 'dtype': 'float32'}]
+- attention_mask used: True
+- forbidden ops: none
+- PyTorch vs ORT cosine on eval logits: 1.000000 (need ≥ 0.999)
 
-Calibration set (256 unique real tokenized pairs, seed 42):
-
-- `artifacts/calib_input_ids.npy` shape `[256, 128]` int64
-- `artifacts/calib_attention_mask.npy` shape `[256, 128]` int64
-
-Reproduce: `./tools/orchestration/jevh_68m_v5/run.sh`
+Calibration set: `/workspace/tools/orchestration/jevh_68m_v5/artifacts/calib_input_ids.npy` + `/workspace/tools/orchestration/jevh_68m_v5/artifacts/calib_attention_mask.npy` shape [256, 128] (real tokenized pairs, seed 42).
 
 ## Known gaps
 
-- Labels were only written when the teacher was unsure or disagreed with JEV, so this eval is biased toward hard cases. Teacher acc 0.47 on this set is that bias, not the teacher's overall quality.
-- Current-student comparison is only the 114 eval rows that also appear in `decide_questions_dedup` with `student_choice`.
-- 6-way eval has n=3 and is not meaningful.
-- Encoder embeddings and the first 13 layers were frozen for the CPU/RAM budget. A full unfreeze might move the multi-choice number.
-- ONNX (~277 MB) is not committed; sha256 is the handle. No HEF compile (no DFC machine). No Pi deploy.
-- Temperature 1.3 trims confident mistakes (21 → 18) with a small ECE trade vs T=1.
+- Early stop at epoch 3: template-dev acc 0.9509 vs best 0.9623
+- Labels are biased to teacher-unsure or teacher-JEV disagreement cases.
+- No HEF compile (no DFC). No deploy. Current-student comparison only on decide overlap rows.
+- Requested 6 epochs, ran 3.
+- Unique-question eval reuses round-1 rows; some of those questions can sit in template-train (see qsplit_eval_leaked). Template eval is the honest number.

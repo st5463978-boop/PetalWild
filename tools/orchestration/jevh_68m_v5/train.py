@@ -75,6 +75,22 @@ ROUND1 = {
     "n": 640,
     "student_overlap_n": 114,
 }
+ROUND2A = {
+    "n": 640,
+    "accuracy": 0.7625,
+    "yesno_accuracy": 0.8628571428571429,
+    "multi_accuracy": 0.7247311827956989,
+    "teacher_accuracy": 0.46875,
+    "student_accuracy": 0.6578947368421053,
+    "overlap_model_accuracy": 0.7105263157894737,
+    "confident_mistakes": 25,
+    "ece": 0.040330729549041835,
+    "student_overlap_n": 114,
+    "template_n": 809,
+    "template_accuracy": 0.9023485784919654,
+    "template_yesno": 0.8434343434343434,
+    "template_multi": 0.9214402618657938,
+}
 
 
 def seed_all(seed: int = SEED) -> None:
@@ -550,8 +566,8 @@ def write_receipt(path: Path, payload: dict) -> None:
         f"- listwise CE + pairwise hinge (margin {PAIR_MARGIN}, coef {PAIR_COEF}); option shuffle",
         f"- KD from blended large+Qwen on decide rows outside template eval/dev, coef {KD_COEF}; extra KL on gold rows where large agrees with jev_choice",
         f"- AdamW wd {WEIGHT_DECAY}, clip {CLIP}, microbatch {MICROBATCH}, grad checkpointing on",
-        f"- early stopping patience {PATIENCE} on template-dev acc; epochs run {payload['epochs_run']} / requested {payload.get('epochs_requested')}; train minutes {payload['train_minutes']:.1f}",
-        f"- temperature fit on template-dev NLL: T={t_eval['temperature']:.4f}",
+        f"- early stopping patience {PATIENCE} on unique-q-dev acc (min 3 epochs); epochs run {payload['epochs_run']} / requested {payload.get('epochs_requested')}; train minutes {payload['train_minutes']:.1f}",
+        f"- temperature: template-dev T={t_eval['temperature']:.4f}; unique-q-dev T={q_eval['temperature']:.4f}",
         f"- trainable {payload['trainable_m']:.1f}M / {payload['params_m']:.1f}M",
         "",
         "## Held-out eval (gold = jev_choice)",
@@ -559,14 +575,23 @@ def write_receipt(path: Path, payload: dict) -> None:
         "| split | n | acc | 2-way | multi | teacher | live student / v5 overlap | conf-mist ≥0.65 | ECE |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
         _row(f"template eval T={t_eval['temperature']:.2f} (honest)", t_eval),
-        _row("unique-q eval, same rows as round 1", q_eval),
+        _row(f"unique-q eval T={q_eval['temperature']:.2f}, same rows as round 1", q_eval),
+        _row("unique-q eval T=1.3 (round-1 temperature)", payload.get("question_eval_t13") or q_eval),
+        _row("unique-q eval, rows not in template-train", payload.get("question_eval_clean") or {"n": 0, "accuracy": None}),
         (
             f"| round 1 unique-q T=1.3 (frozen) | {r1['n']} | {r1['accuracy']:.4f} | "
             f"{r1['yesno_accuracy']:.4f} | {r1['multi_accuracy']:.4f} | {r1['teacher_accuracy']:.4f} | "
             f"live {r1['student_accuracy']:.4f} / v5 {r1['overlap_model_accuracy']:.4f} "
             f"(n={r1['student_overlap_n']}) | {r1['confident_mistakes']} | {r1['ece']:.4f} |"
         ),
-        _row("template-dev (T fit / early stop)", payload["dev"]),
+        (
+            f"| round 2a unique-q (template-dev early stop) | {ROUND2A['n']} | {ROUND2A['accuracy']:.4f} | "
+            f"{ROUND2A['yesno_accuracy']:.4f} | {ROUND2A['multi_accuracy']:.4f} | {ROUND2A['teacher_accuracy']:.4f} | "
+            f"live {ROUND2A['student_accuracy']:.4f} / v5 {ROUND2A['overlap_model_accuracy']:.4f} "
+            f"(n={ROUND2A['student_overlap_n']}) | {ROUND2A['confident_mistakes']} | {ROUND2A['ece']:.4f} |"
+        ),
+        _row("template-dev (T fit)", payload["dev"]),
+        _row("unique-q-dev (early stop / T fit)", payload.get("uniqueq_dev") or payload["dev"]),
         "",
         f"Round-2 minus round-1 unique-q acc: {_fmt(q_eval['accuracy'] - r1['accuracy'])} (same 640 rows; {payload['counts']['qsplit_eval_leaked']} of those questions were in template-train).",
         "",
@@ -654,6 +679,8 @@ def main() -> None:
     print("truncation", json.dumps(trunc), flush=True)
     splits = {k: [ex for ex in gold if ex["split"] == k] for k in ("train", "dev", "eval")}
     q_eval_ex = [ex for ex in gold if ex["q_split"] == "eval"]
+    q_dev_ex = [ex for ex in gold if ex["q_split"] == "dev"]
+    q_eval_clean = [ex for ex in q_eval_ex if ex["split"] != "train"]
     eval_dev_q = {q for q, s in t_split.items() if s != "train"}
     eval_dev_templates = {templates[q] for q in eval_dev_q}
     kd = examples_from_decide(decide, eval_dev_q, large_index, eval_dev_templates)
@@ -684,6 +711,8 @@ def main() -> None:
         "qsplit_eval_q": sum(1 for s in q_split.values() if s == "eval"),
         "qsplit_eval_rows": len(q_eval_ex),
         "qsplit_eval_leaked": leaked,
+        "qsplit_eval_clean_rows": len(q_eval_clean),
+        "qsplit_dev_rows": len(q_dev_ex),
         "conf_disagree": sum(1 for ex in gold if ex.get("conf_disagree")),
         "yesno_eval": sum(1 for ex in splits["eval"] if ex["n_options"] == 2),
         "multi_eval": sum(1 for ex in splits["eval"] if ex["n_options"] != 2),
@@ -729,6 +758,7 @@ def main() -> None:
     epochs_run = 0
     best_dev = -1.0
     stale = 0
+    epoch_log = []
     gaps = []
     if not args.skip_train:
         for epoch in range(1, args.epochs + 1):
@@ -737,26 +767,57 @@ def main() -> None:
                 break
             loss = run_epoch(model, splits["train"], kd, opt, device, rng)
             epochs_run = epoch
-            dev_logits = predict_logits(model, splits["dev"], device)
-            dev_acc = float(np.mean([int(np.argmax(lo) == ex["gold"]) for lo, ex in zip(dev_logits, splits["dev"])]))
-            print(f"epoch {epoch} loss={loss:.4f} template_dev_acc={dev_acc:.4f}", flush=True)
-            if dev_acc > best_dev + 1e-4:
-                best_dev = dev_acc
+            t_dev_logits = predict_logits(model, splits["dev"], device)
+            t_dev_acc = float(np.mean([int(np.argmax(lo) == ex["gold"]) for lo, ex in zip(t_dev_logits, splits["dev"])]))
+            q_dev_logits = predict_logits(model, q_dev_ex, device)
+            q_dev_acc = float(np.mean([int(np.argmax(lo) == ex["gold"]) for lo, ex in zip(q_dev_logits, q_dev_ex)]))
+            rec = {
+                "epoch": epoch,
+                "loss": loss,
+                "template_dev_acc": t_dev_acc,
+                "uniqueq_dev_acc": q_dev_acc,
+                "minutes": (time.time() - t_train0) / 60.0,
+            }
+            epoch_log.append(rec)
+            print(
+                f"epoch {epoch} loss={loss:.4f} template_dev_acc={t_dev_acc:.4f} uniqueq_dev_acc={q_dev_acc:.4f}",
+                flush=True,
+            )
+            # Select on unique-q-dev (harder, comparable to round-1). Template-dev
+            # saturates on one-off templates and stopped round-2a before modulo moved.
+            torch.save(
+                {
+                    "model": model.state_dict(),
+                    "epoch": epoch,
+                    "template_dev_acc": t_dev_acc,
+                    "uniqueq_dev_acc": q_dev_acc,
+                    "seed": args.seed,
+                    "train_minutes": rec["minutes"],
+                },
+                ART / f"jevh_68m_v5_r2_ep{epoch}.pt",
+            )
+            if q_dev_acc > best_dev + 1e-4:
+                best_dev = q_dev_acc
                 stale = 0
                 torch.save(
                     {
                         "model": model.state_dict(),
                         "epoch": epoch,
-                        "dev_acc": dev_acc,
+                        "dev_acc": q_dev_acc,
+                        "template_dev_acc": t_dev_acc,
+                        "uniqueq_dev_acc": q_dev_acc,
                         "seed": args.seed,
-                        "train_minutes": (time.time() - t_train0) / 60.0,
+                        "train_minutes": rec["minutes"],
                     },
                     ckpt,
                 )
             else:
                 stale += 1
-                if stale >= args.patience:
-                    gaps.append(f"Early stop at epoch {epoch}: template-dev acc {dev_acc:.4f} vs best {best_dev:.4f}")
+                # do not stop before epoch 3: template-dev was already 0.96 at epoch 1
+                if epoch >= 3 and stale >= args.patience:
+                    gaps.append(
+                        f"Early stop at epoch {epoch}: unique-q-dev acc {q_dev_acc:.4f} vs best {best_dev:.4f}"
+                    )
                     break
             if (time.time() - t_train0) / 60.0 >= args.max_train_minutes:
                 gaps.append(f"Stopped after epoch {epoch}: hit --max-train-minutes={args.max_train_minutes}")
@@ -779,16 +840,22 @@ def main() -> None:
 
     model.grad_ckpt = False
     print("eval...", flush=True)
-    dev_logits = predict_logits(model, splits["dev"], device)
-    T = fit_temperature(dev_logits, [ex["gold"] for ex in splits["dev"]])
+    t_dev_logits = predict_logits(model, splits["dev"], device)
+    q_dev_logits = predict_logits(model, q_dev_ex, device)
+    T_t = fit_temperature(t_dev_logits, [ex["gold"] for ex in splits["dev"]])
+    T_q = fit_temperature(q_dev_logits, [ex["gold"] for ex in q_dev_ex])
     t_logits = predict_logits(model, splits["eval"], device)
     q_logits = predict_logits(model, q_eval_ex, device)
-    t_eval = metrics_table(splits["eval"], t_logits, T)
-    q_eval = metrics_table(q_eval_ex, q_logits, T)
+    t_eval = metrics_table(splits["eval"], t_logits, T_t)
+    q_eval = metrics_table(q_eval_ex, q_logits, T_q)
+    q_eval_t13 = metrics_table(q_eval_ex, q_logits, 1.3)
+    q_clean = metrics_table(q_eval_clean, predict_logits(model, q_eval_clean, device), T_q) if q_eval_clean else {"n": 0}
     eval_raw = metrics_table(splits["eval"], t_logits, 1.0)
-    dev_m = metrics_table(splits["dev"], dev_logits, T)
+    dev_m = metrics_table(splits["dev"], t_dev_logits, T_t)
+    q_dev_m = metrics_table(q_dev_ex, q_dev_logits, T_q)
     print("template eval", json.dumps(t_eval, indent=2), flush=True)
     print("question eval (r1 rows)", json.dumps(q_eval, indent=2), flush=True)
+    print("question eval clean (not in template-train)", json.dumps(q_clean, indent=2), flush=True)
 
     lat = latency_ms(model, splits["eval"], device)
     print("latency", lat, flush=True)
@@ -832,11 +899,16 @@ def main() -> None:
         "truncation": {"labels": trunc, "kd": trunc_kd},
         "template_eval": t_eval,
         "question_eval": q_eval,
+        "question_eval_t13": q_eval_t13,
+        "question_eval_clean": q_clean,
         "eval_calibrated": t_eval,
         "eval_raw": eval_raw,
         "eval_teacher": {"accuracy": t_eval["teacher_accuracy"], "n": t_eval["teacher_n"]},
         "dev": dev_m,
+        "uniqueq_dev": q_dev_m,
+        "epoch_log": epoch_log,
         "round1": ROUND1,
+        "round2a": ROUND2A,
         "latency": lat,
         "onnx": {
             "path": str(onnx_path),
