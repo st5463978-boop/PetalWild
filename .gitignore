@@ -14,6 +14,8 @@ agent-tools/
 /assets/*.png.import
 Thumbs.db
 /tools/orchestration/runtime/
+/tools/jevh_large/.venv/
+/tools/jevh_large/.hf_cache/
 __pycache__/
 *.pyc
 android/
