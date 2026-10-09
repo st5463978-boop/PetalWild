@@ -421,7 +421,7 @@ def _file_inventory() -> dict:
 def _gaps() -> list[str]:
     return [
         "OHLCV only for BTC/ETH/SOL: no funding, OI, news, spread, or the rest of boozy's universe (STRK, DOGE, ...).",
-        "Paper decisions are too thin to train on (1051 single-option RIDE); used as eval-only Jev-agreement.",
+        "Paper decisions are too thin to train on (1051 single-option RIDE); used as eval-only Jev-agreement. Agreement is near zero because gold is forward outcome, not Jev imitation.",
         "fund_z is always missing in replayed state (null in the live snapshot schema).",
         "Student is a tiny from-scratch encoder (not ettin-68m). Same tokenizer and pair format; new HEF would be required.",
         "No HEF compile, no Pi deploy, no exchange/broker calls.",
@@ -477,7 +477,7 @@ def _write_receipt(path: Path, metrics: dict) -> None:
         "",
         "## ONNX (Hailo-10H DFC input, not compiled)",
         "",
-        f"- path: `{onnx['path']}`",
+        f"- path: `tools/orchestration/jevh_trading/artifacts/{Path(onnx['path']).name}`",
         f"- sha256: `{onnx['sha256']}`",
         f"- opset: {onnx['opset']}",
         f"- inputs: `{onnx['inputs']}`",

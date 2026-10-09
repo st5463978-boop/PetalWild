@@ -6,6 +6,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 export PYTHONPATH="$(cd "$ROOT/.." && pwd)"
+if ! python3 -c "import ensurepip" 2>/dev/null; then
+  echo "python3 venv/ensurepip missing. On Ubuntu: sudo apt install python3.12-venv" >&2
+  exit 1
+fi
 python3 -m venv .venv
 # shellcheck disable=SC1091
 source .venv/bin/activate

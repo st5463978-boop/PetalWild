@@ -6,7 +6,7 @@ Tiny JEV-H student for **agentic trading menu decisions** of the kind the paper-
 
 ## One command
 
-From this directory (pinned deps, seed 42):
+Needs `python3-venv` (Ubuntu: `sudo apt install python3.12-venv`). From this directory (pinned deps, seed 42):
 
 ```bash
 ./train.sh
@@ -51,9 +51,19 @@ The student is a **tiny from-scratch encoder** (seq 128, d=96, 4 layers) using t
 - opset 17, no Loop / If / NonZero
 - Calib: `artifacts/calib/calib_input_ids.npy` + `calib_attention_mask.npy` (≥256 real tokenized pairs)
 
-## Metrics
+## Metrics (seed 42, this run)
 
-See `RECEIPT.md` (written by `train.sh`). Required scores: accuracy, confident mistakes (wrong at p≥0.65), ECE, CPU latency batch 1. Also always-HOLD/RIDE baseline on menus that contain a hold option.
+**Not financial advice.** Outcome gold is 8h risk-adjusted forward return, not Jev imitation.
+
+| split | n | accuracy | confident mistakes (p≥0.65) | ECE | always HOLD/RIDE | beats HOLD/RIDE |
+|---|---:|---:|---:|---:|---:|---|
+| held-out time (outcome gold) | 754 | **0.4218** | 10 | 0.0637 | 0.3939 | yes |
+| paper Jev agreement | 522 | 0.0019 | 0 | 0.3715 | 0.9962 | no |
+| train subset | 400 | 0.5075 | 8 | 0.0567 | 0.4375 | yes |
+
+Held-out also beats chance (mean 1/K = 0.324). CPU latency batch-1: **1.68 ms**. ONNX/PyTorch cos **1.000**.
+
+Paper agreement is near zero on purpose: that 1.5h log is almost all `HOLD_WINNER`/`RIDE`, while the student is trained to pick the ex-post best menu option. Use the time-split row as the outcome test. Full table: `RECEIPT.md`.
 
 ## Layout
 

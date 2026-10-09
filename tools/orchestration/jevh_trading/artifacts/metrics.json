@@ -1,0 +1,369 @@
+{
+  "disclaimer": "Not financial advice. Offline research / backtest only. No live or paper order routing.",
+  "seed": 42,
+  "recipe": {
+    "model": "PairScorer tiny BERT-like (absolute pos, GELU, mask-additive attention)",
+    "d_model": 96,
+    "n_layers": 4,
+    "n_heads": 4,
+    "seq_len": 128,
+    "epochs": 4,
+    "lr": 0.0003,
+    "batch_questions": 6,
+    "horizon_bars": 32,
+    "purge_bars": 96,
+    "warmup_bars": 1600,
+    "stride_bars": 6,
+    "fee_bps_per_side": 5.0,
+    "n_params": 5156353,
+    "tokenizer": "tools/orchestration/jevh_trading/assets/tokenizer.json"
+  },
+  "data": {
+    "market_bars_per_coin": 5000,
+    "market_t0": 1787004900,
+    "market_t1": 1791506700,
+    "replay_after_downsample": {
+      "train": 2193,
+      "eval": 754
+    },
+    "replay_label_distribution": {
+      "HOLD_WINNER": 473,
+      "APE_SOL": 247,
+      "LONG_ETH": 227,
+      "LONG_BTC": 217,
+      "SWITCH": 216,
+      "SHORT_BTC": 207,
+      "RIDE": 206,
+      "SHORT_ETH": 205,
+      "BAIL": 204,
+      "APE_ETH": 156,
+      "APE_BTC": 143,
+      "TRIM_HALF": 86,
+      "HOLD": 76,
+      "DOUBLE_DOWN": 68,
+      "WAIT": 52,
+      "CUT_LOSS": 38,
+      "BREAKOUT_SOL": 37,
+      "SWITCH_COIN": 35,
+      "BREAKOUT_BTC": 25,
+      "FLIP_SHORT": 24,
+      "BREAKOUT_ETH": 5
+    },
+    "eval_label_distribution": {
+      "HOLD_WINNER": 122,
+      "SHORT_ETH": 71,
+      "LONG_BTC": 68,
+      "SWITCH": 64,
+      "APE_SOL": 58,
+      "BAIL": 56,
+      "RIDE": 55,
+      "APE_BTC": 50,
+      "SHORT_BTC": 45,
+      "LONG_ETH": 36,
+      "APE_ETH": 34,
+      "TRIM_HALF": 20,
+      "HOLD": 17,
+      "DOUBLE_DOWN": 12,
+      "SWITCH_COIN": 10,
+      "WAIT": 10,
+      "FLIP_SHORT": 9,
+      "BREAKOUT_BTC": 7,
+      "BREAKOUT_SOL": 5,
+      "CUT_LOSS": 5
+    },
+    "train_n": 2193,
+    "eval_n": 754,
+    "paper_multioption_n": 522,
+    "files": {
+      "market_BTC_15min.json": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_BTC_15min_3f23.json",
+        "bytes": 464223,
+        "rows": 5000
+      },
+      "market_ETH_15min.json": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_ETH_15min_fbd5.json",
+        "bytes": 462340,
+        "rows": 5000
+      },
+      "market_SOL_15min.json": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_SOL_15min_8cf9.json",
+        "bytes": 421516,
+        "rows": 5000
+      },
+      "trading_paper_decisions.jsonl": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_decisions_92e3.jsonl",
+        "bytes": 1222395,
+        "rows": 1581
+      },
+      "trading_paper_ledger.json": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_ledger_388d.json",
+        "bytes": 134854,
+        "rows": null
+      },
+      "trading_strategy_edges.jsonl": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_strategy_edges_017b.jsonl",
+        "bytes": 54265,
+        "rows": 139
+      },
+      "tokenizer.json": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_94c1.json",
+        "bytes": 3583228,
+        "rows": null
+      },
+      "labels.jsonl": {
+        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/labels_ebb6.jsonl",
+        "bytes": 2671732,
+        "rows": 4220
+      }
+    }
+  },
+  "metrics": {
+    "heldout_time": {
+      "n": 754,
+      "accuracy": 0.4217506631299735,
+      "confident_mistakes": 10,
+      "confident_mistake_rate": 0.013262599469496022,
+      "ece": 0.06373871609924325,
+      "mean_confidence": 0.4574890945017812,
+      "hold_ride_baseline_n": 470,
+      "hold_ride_baseline_acc": 0.4340425531914894,
+      "beats_hold_ride_baseline": false,
+      "note_majority_index_acc_unusable": 0.3952254641909814,
+      "hold_ride_always_acc": 0.39389920424403185,
+      "beats_always_hold_ride": true,
+      "by_bee": {
+        "breezy": {
+          "n": 426,
+          "acc": 0.3826291079812207
+        },
+        "boozy": {
+          "n": 284,
+          "acc": 0.4507042253521127
+        },
+        "bizzy": {
+          "n": 44,
+          "acc": 0.6136363636363636
+        }
+      },
+      "label_distribution": {
+        "HOLD_WINNER": 122,
+        "SHORT_ETH": 71,
+        "LONG_BTC": 68,
+        "SWITCH": 64,
+        "APE_SOL": 58,
+        "BAIL": 56,
+        "RIDE": 55,
+        "APE_BTC": 50,
+        "SHORT_BTC": 45,
+        "LONG_ETH": 36,
+        "APE_ETH": 34,
+        "TRIM_HALF": 20,
+        "HOLD": 17,
+        "DOUBLE_DOWN": 12,
+        "SWITCH_COIN": 10,
+        "WAIT": 10,
+        "FLIP_SHORT": 9,
+        "BREAKOUT_BTC": 7,
+        "BREAKOUT_SOL": 5,
+        "CUT_LOSS": 5
+      },
+      "chance_mean_1_over_k": 0.3242
+    },
+    "train_subset": {
+      "n": 400,
+      "accuracy": 0.5075,
+      "confident_mistakes": 8,
+      "confident_mistake_rate": 0.02,
+      "ece": 0.05667203396558764,
+      "mean_confidence": 0.46585549652576447,
+      "hold_ride_baseline_n": 255,
+      "hold_ride_baseline_acc": 0.5019607843137255,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.435,
+      "hold_ride_always_acc": 0.4375,
+      "beats_always_hold_ride": true,
+      "by_bee": {
+        "bizzy": {
+          "n": 34,
+          "acc": 0.5882352941176471
+        },
+        "breezy": {
+          "n": 217,
+          "acc": 0.4792626728110599
+        },
+        "boozy": {
+          "n": 149,
+          "acc": 0.5302013422818792
+        }
+      },
+      "label_distribution": {
+        "HOLD_WINNER": 79,
+        "APE_SOL": 42,
+        "SWITCH": 29,
+        "LONG_ETH": 29,
+        "RIDE": 29,
+        "SHORT_ETH": 26,
+        "LONG_BTC": 25,
+        "BAIL": 21,
+        "APE_ETH": 20,
+        "SHORT_BTC": 18,
+        "APE_BTC": 16,
+        "HOLD": 13,
+        "DOUBLE_DOWN": 12,
+        "TRIM_HALF": 11,
+        "BREAKOUT_SOL": 9,
+        "WAIT": 7,
+        "SWITCH_COIN": 7,
+        "CUT_LOSS": 3,
+        "BREAKOUT_BTC": 2,
+        "FLIP_SHORT": 2
+      }
+    },
+    "paper_jev_agreement": {
+      "n": 522,
+      "accuracy": 0.0019157088122605363,
+      "confident_mistakes": 0,
+      "confident_mistake_rate": 0.0,
+      "ece": 0.3715360950807045,
+      "mean_confidence": 0.37163646884576573,
+      "hold_ride_baseline_n": 519,
+      "hold_ride_baseline_acc": 0.9980732177263969,
+      "beats_hold_ride_baseline": false,
+      "note_majority_index_acc_unusable": 0.9961685823754789,
+      "hold_ride_always_acc": 0.9961685823754789,
+      "beats_always_hold_ride": false,
+      "by_bee": {
+        "boozy": {
+          "n": 3,
+          "acc": 0.3333333333333333
+        },
+        "breezy": {
+          "n": 519,
+          "acc": 0.0
+        }
+      },
+      "label_distribution": {
+        "HOLD_WINNER": 518,
+        "APE_STRK": 1,
+        "APE_DOGE": 1,
+        "SHORT_BTC": 1,
+        "DOUBLE_DOWN": 1
+      }
+    },
+    "paper_outcome_where_possible": {
+      "n_mapped": 0,
+      "note": "Paper run is ~1.5h on 2026-10-08/09 and almost all HOLD_WINNER/RIDE. Forward outcome vs Jev is not claimed here beyond agreement metrics; the time-split replay eval is the outcome-based test.",
+      "jev_hold_share": null
+    },
+    "cpu_latency_batch1": {
+      "n": 64,
+      "mean_ms": 1.6761946250163362,
+      "p50_ms": 1.677251499927479,
+      "p95_ms": 1.749553350066435,
+      "min_ms": 1.6032200001063757,
+      "max_ms": 1.8345260000387498
+    },
+    "confident_mistake_threshold": 0.65
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.1483023637305192,
+      "n": 754,
+      "accuracy": 0.39655172413793105,
+      "confident_mistakes": 0,
+      "ece": 0.09239380197989845
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.1303081694847898,
+      "n": 754,
+      "accuracy": 0.4217506631299735,
+      "confident_mistakes": 10,
+      "ece": 0.06373871609924325
+    },
+    {
+      "epoch": 3,
+      "train_loss": 1.1301370556237267,
+      "n": 754,
+      "accuracy": 0.41644562334217505,
+      "confident_mistakes": 4,
+      "ece": 0.08267912011722041
+    },
+    {
+      "epoch": 4,
+      "train_loss": 1.1200510879031946,
+      "n": 754,
+      "accuracy": 0.3779840848806366,
+      "confident_mistakes": 55,
+      "ece": 0.0950390128739949
+    }
+  ],
+  "onnx": {
+    "path": "tools/orchestration/jevh_trading/artifacts/jevh_trading_seq128.onnx",
+    "sha256": "80cb1a8be6e0e9a002cd4417f0dc33ba929ba29ac96d89f0764c56021ed9312f",
+    "opset": 17,
+    "ops": [
+      "Add",
+      "Cast",
+      "Constant",
+      "Div",
+      "Erf",
+      "Gather",
+      "Gemm",
+      "LayerNormalization",
+      "MatMul",
+      "Mul",
+      "Reshape",
+      "Softmax",
+      "Sub",
+      "Transpose",
+      "Unsqueeze"
+    ],
+    "inputs": {
+      "input_ids": [
+        1,
+        128
+      ],
+      "attention_mask": [
+        1,
+        128
+      ]
+    },
+    "outputs": {
+      "logit": [
+        1,
+        1
+      ]
+    },
+    "seq_len": 128,
+    "batch": 1,
+    "parity": {
+      "cos": 0.9999999999999507,
+      "max_abs": 3.5762786865234375e-07,
+      "n": 32
+    }
+  },
+  "calib": {
+    "n": 256,
+    "shape": [
+      256,
+      128
+    ],
+    "input_ids": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_input_ids.npy",
+    "attention_mask": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_attention_mask.npy",
+    "input_ids_sha256": "e7abcbdb8649215583bf22ff503f702b949803b44fc583f00caee4748f493f56",
+    "attention_mask_sha256": "e69aa9bb04cab837c768cda03fcac493cc52f49c1237afffbb97238a6935c1e3"
+  },
+  "gaps": [
+    "OHLCV only for BTC/ETH/SOL: no funding, OI, news, spread, or the rest of boozy's universe (STRK, DOGE, ...).",
+    "Paper decisions are too thin to train on (1051 single-option RIDE); used as eval-only Jev-agreement.",
+    "fund_z is always missing in replayed state (null in the live snapshot schema).",
+    "Student is a tiny from-scratch encoder (not ettin-68m). Same tokenizer and pair format; new HEF would be required.",
+    "No HEF compile, no Pi deploy, no exchange/broker calls.",
+    "Labels are 8h risk-adjusted forward returns with 5 bp/side fees and ATR/day-open stops \u2014 a research proxy, not a traded P&L.",
+    "Donchian 360-bar lookback exceeds ~52d of 4h history; slicesAvailable < 9 in this window."
+  ],
+  "wall_s": 165.2,
+  "smoke": false
+}

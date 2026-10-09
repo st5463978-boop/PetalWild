@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 *.log
+artifacts/student.pt
+artifacts/examples_train_eval.jsonl
