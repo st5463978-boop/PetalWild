@@ -60,7 +60,7 @@ from .config import (
 from .encode import encode_menu, load_student_tok
 from .ettin import SIZE_17M, SIZE_68M, EttinScorer, EttinSize, load_backbone, n_params
 from .export import export_onnx, parity_check, save_calib
-from .ingest import NEED, ingest, stratified_take, write_split
+from .ingest import NEED, PACKERS, ingest, stratified_take, write_split
 from .metrics import (
     agreement_breakdown,
     always_hold_indices,
@@ -512,8 +512,9 @@ def write_receipt(path: Path, payload: dict) -> None:
     for g in payload["gaps"]:
         lines.append(f"- {g}")
     path.write_text("\n".join(lines) + "\n")
-    pkg = Path(__file__).resolve().parent / "RECEIPT.md"
-    pkg.write_text(path.read_text())
+    if path.parent.resolve() == artifacts_dir().resolve():
+        pkg = Path(__file__).resolve().parent / "RECEIPT.md"
+        pkg.write_text(path.read_text())
 
 
 def gaps(st: dict, rec: dict) -> list[str]:
@@ -535,12 +536,13 @@ def gaps(st: dict, rec: dict) -> list[str]:
 def run(args: argparse.Namespace) -> int:
     t_all = time.perf_counter()
     seed_all(args.seed)
-    art = artifacts_dir()
+    art = Path(args.artifacts) if args.artifacts else artifacts_dir()
+    art.mkdir(parents=True, exist_ok=True)
     print("[jevh-trading] NOT FINANCIAL ADVICE. Offline Jev-distill. No orders.", flush=True)
-    print(f"[jevh-trading] seed={args.seed} artifacts={art}", flush=True)
+    print(f"[jevh-trading] seed={args.seed} artifacts={art} packer={args.packer}", flush=True)
 
     extra = list(args.log or [])
-    bundle = ingest(extra, purge_ms=args.purge_ms, train_frac=args.train_frac, seed=args.seed)
+    bundle = ingest(extra, purge_ms=args.purge_ms, train_frac=args.train_frac, seed=args.seed, packer=args.packer)
     st = bundle["stats"]
     skip_keys = {"needed", "logs", "gold_distribution"}
     print(f"[jevh-trading] ingest {json.dumps({k: st[k] for k in st if k not in skip_keys})}", flush=True)
@@ -614,7 +616,7 @@ def run(args: argparse.Namespace) -> int:
         menu = r.get("menu") or []
         from .ingest import text_a_for
 
-        encode_menu(text_a_for(r), [str(x) for x in menu], tok)
+        encode_menu(r.get("text_a") or text_a_for(r), r.get("option_texts") or [str(x) for x in menu], tok)
         fmt_ok += 1
     print(f"[jevh-trading] format-check encoded {fmt_ok} single-option rows (not trained)", flush=True)
 
@@ -658,7 +660,7 @@ def run(args: argparse.Namespace) -> int:
         if acc >= best_acc:
             best_acc = acc
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-            torch.save({"model": best_state, "size": size.name, "seq": SEQ_LEN}, ckpt)
+            torch.save({"model": best_state, "size": size.name, "seq": SEQ_LEN, "packer": args.packer}, ckpt)
             bad = 0
         else:
             bad += 1
@@ -767,8 +769,17 @@ def run(args: argparse.Namespace) -> int:
         "microbatch": micro,
         "grad_ckpt": bool(getattr(model, "grad_ckpt", False)),
         "train_majority_by_style": maj,
-        "text_a": "[choice] {style_tag} {rules_id} + owner rules prefix (head+tail) + me + up to 4 menu/position coins",
-        "option_text": "label plus menu_detail kind/coin/side/desc when present",
+        "packer": args.packer,
+        "text_a": (
+            "[choice] {style_tag} {rules_id} + me + owner rules + top1 + every coin, all columns"
+            if args.packer == "option"
+            else "[choice] {style_tag} {rules_id} + owner rules prefix (head+tail) + me + up to 4 menu/position coins"
+        ),
+        "option_text": (
+            "label plus menu_detail kind/coin/side/desc, then the option's coin with all columns and #rank among menu coins"
+            if args.packer == "option"
+            else "label plus menu_detail kind/coin/side/desc when present"
+        ),
     }
     payload = {
         "disclaimer": "Not financial advice. Offline research only. No live or paper order routing.",
@@ -828,6 +839,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--purge-ms", type=int, default=5 * 60 * 1000)
     p.add_argument("--train-frac", type=float, default=0.70)
     p.add_argument("--calib-n", type=int, default=256)
+    p.add_argument("--packer", choices=PACKERS, default="v1", help="v1 (shared state in text_a) | option (each option carries its coin row)")
+    p.add_argument("--artifacts", default=None, help="write ckpt/metrics/onnx here instead of artifacts/ (A/B runs)")
     p.add_argument("--ingest-only", action="store_true")
     p.add_argument("--skip-export", action="store_true")
     p.add_argument("--no-backbone", action="store_true", help="skip HF download; random init")

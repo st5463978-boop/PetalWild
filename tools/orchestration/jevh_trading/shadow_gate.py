@@ -443,10 +443,11 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
     from .paths import tokenizer_path
     from .train import fit_temperature, pack_rows, predict_packed
 
-    bundle = ingest(seed=seed)
+    state = torch.load(str(ckpt), map_location="cpu", weights_only=False)
+    packer = str(state.get("packer") or "v1")
+    bundle = ingest(seed=seed, packer=packer)
     raw = load_raw_calls()
     raw_by_id = {r.get("id"): r for r in raw["multi"]}
-    state = torch.load(str(ckpt), map_location="cpu", weights_only=False)
     size = SIZES[state.get("size", "68m")]
     seq = int(state.get("seq") or SEQ_LEN)
     model = EttinScorer(size, seq_len=seq)
@@ -456,7 +457,7 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
     load_student_tok(tok, seq)
     pools = {"dev": bundle["dev"], "eval": bundle["eval"], "eval_rules": bundle["eval_rules"], "eval_live": bundle["eval_live"]}
     rng = random.Random(seed)
-    meta = {"ckpt": str(ckpt), "size": size.name, "seq": seq, "pool_n": {k: len(v) for k, v in pools.items()}, "sampling": "natural (uniform random), not stratified"}
+    meta = {"ckpt": str(ckpt), "size": size.name, "seq": seq, "packer": packer, "pool_n": {k: len(v) for k, v in pools.items()}, "sampling": "natural (uniform random), not stratified"}
     from .config import MAX_DEV_68M, MAX_EVAL_68M
     from .ingest import stratified_take
 

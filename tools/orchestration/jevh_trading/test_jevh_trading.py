@@ -525,5 +525,84 @@ class StructuredFeatureTests(unittest.TestCase):
         self.assertEqual(m["y_bin"].tolist(), [0.0, 1.0])
 
 
+class OptionPackerTests(unittest.TestCase):
+    BOOZY_COLS = ["r1h_pct", "r24h_pct", "r7d_pct", "attn_z", "oi1h_pct", "spread_bp", "vol_musd"]
+    BIZZY_COLS = ["to_trigger_pct", "day_move_pct", "prev_range_pct", "r1h_pct", "fund_z", "oi1h_pct", "spread_bp"]
+
+    def _raw(self, style, menu, detail, choice, state, rules=""):
+        return {
+            "ts_ms": 1,
+            "bee": f"hs-{style}",
+            "source": "hyperspeed",
+            "style": style,
+            "rules_id": f"{style}-test",
+            "menu": menu,
+            "menu_detail": detail,
+            "choice": choice,
+            "probabilities": {m: 1.0 / len(menu) for m in menu},
+            "rules": rules,
+            "state": state,
+        }
+
+    def test_option_coin(self):
+        from jevh_trading.ingest import option_coin
+
+        self.assertEqual(option_coin("SWITCH", {"coin": "eth"}, "BTC"), "ETH")
+        self.assertEqual(option_coin("BREAKOUT_SOL", None, None), "SOL")
+        self.assertEqual(option_coin("CUT_LOSS", {"kind": "close"}, "BTC"), "BTC")
+        self.assertEqual(option_coin("HOLD_WINNER", None, "ETH"), "ETH")
+        self.assertIsNone(option_coin("SWITCH", None, "BTC"))
+        self.assertIsNone(option_coin("WAIT", {"kind": "hold"}, None))
+
+    def test_each_option_carries_its_coin_row_with_ranks(self):
+        from jevh_trading.ingest import parse_row
+
+        detail = [
+            {"label": "APE_STRK", "desc": "#1 momentum", "kind": "open", "coin": "STRK", "side": "long"},
+            {"label": "APE_ONDO", "desc": "#2 momentum", "kind": "open", "coin": "ONDO", "side": "long"},
+            {"label": "APE_BTC", "desc": "#3 momentum", "kind": "open", "coin": "BTC", "side": "long"},
+            {"label": "RIDE", "kind": "hold", "coin": None},
+        ]
+        rows = {
+            "STRK": [-1.2, 13, 33, 0.4, None, 9, 2.9],
+            "ONDO": [-0.8, 1, -4, 0.2, None, 6, 14.1],
+            "BTC": [-0.2, -2, -4, -0.5, None, 0, 423.9],
+            "HYPE": [-0.1, -5, -4, -0.6, None, 0, 13.9],
+        }
+        state = {"me": {"pos": "long HYPE", "usd": 40}, "top1": "STRK x1", "coins": {"cols": self.BOOZY_COLS, "rows": rows}}
+        raw = self._raw("boozy", ["APE_STRK", "APE_ONDO", "APE_BTC", "RIDE"], detail, "APE_STRK", state, "Momentum, but skip wide spreads.")
+        rec = parse_row(raw, "mem", None, "option")
+        a, opts = rec["text_a"], rec["option_texts"]
+        self.assertTrue(a.startswith("[choice] boozy momentum boozy-test\nme: pos=long HYPE"))
+        self.assertLess(a.find("me:"), a.find("rules:"))
+        self.assertIn("\nSTRK r1h=-1.2#4 r24=13#1 r7d=33#1 attn=0.4#1 spr=9#1 vol=2.9#4", opts[0])
+        self.assertIn("ONDO r1h=-0.8#3 r24=1#2 r7d=-4#2", opts[1])
+        self.assertIn("\nHYPE r1h=-0.1#1", opts[3])
+        self.assertNotIn("oi=", a + "".join(opts))
+        self.assertEqual(rec["gold"], 0)
+
+    def test_bizzy_option_rows_keep_trigger_and_split_key(self):
+        from jevh_trading.ingest import ingest, parse_row
+
+        detail = [
+            {"label": "BREAKOUT_BTC", "kind": "open", "coin": "BTC", "side": "long"},
+            {"label": "BREAKOUT_ETH", "kind": "open", "coin": "ETH", "side": "long"},
+            {"label": "WAIT", "kind": "hold", "coin": None},
+        ]
+        state = {
+            "me": {"pos": "flat", "trades": "0/1"},
+            "coins": {"cols": self.BIZZY_COLS, "rows": {"BTC": [0.38, 1.54, 3.85, 0.7, 1, None, 0], "ETH": [2.48, 1.16, 7.33, 0.4, 1, None, 0]}},
+        }
+        raw = self._raw("bizzy", ["BREAKOUT_BTC", "BREAKOUT_ETH", "WAIT"], detail, "BREAKOUT_BTC", state)
+        v1 = parse_row(raw, "mem", None)
+        op = parse_row(raw, "mem", None, "option")
+        self.assertNotIn("trig=", v1["text_a"] + "".join(v1["option_texts"]))
+        self.assertIn("\nBTC trig=0.38 dmove=1.54 prng=3.85 r1h=0.7 fund=1 spr=0", op["option_texts"][0])
+        self.assertNotIn("\n", op["option_texts"][2])
+        self.assertEqual(v1["state_hash"], op["state_hash"])
+        with self.assertRaises(ValueError):
+            ingest(packer="nope")
+
+
 if __name__ == "__main__":
     unittest.main()

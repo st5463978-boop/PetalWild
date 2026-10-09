@@ -92,6 +92,9 @@ _KEY = {
     "vol_musd": "vol",
     "fund_z": "fund",
     "score": "sc",
+    "to_trigger_pct": "trig",
+    "day_move_pct": "dmove",
+    "prev_range_pct": "prng",
 }
 
 
@@ -310,6 +313,104 @@ def text_a_for(row: dict, ctx: dict | None = None) -> str:
     return "\n".join(lines)
 
 
+PACKERS = ("v1", "option")
+
+
+def _seq(v: Any) -> list:
+    return list(v) if isinstance(v, (list, tuple)) else [v]
+
+
+def _as_float(v: Any) -> float | None:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _pos_coin(me: Any) -> str | None:
+    pos = str((me or {}).get("pos") or "") if isinstance(me, dict) else ""
+    bits = pos.replace("/", " ").split()
+    if bits and bits[-1].isalpha() and bits[-1].isupper() and len(bits[-1]) >= 2:
+        return bits[-1]
+    return None
+
+
+_ON_POSITION = frozenset({"HOLD", "RIDE", "HOLD_WINNER", "CUT_LOSS", "BAIL", "TRIM_HALF", "DOUBLE_DOWN"})
+
+
+def option_coin(label: str, detail: Any, pos_coin: str | None) -> str | None:
+    """The coin an option acts on: menu_detail coin, else a ticker in the label, else the open
+    position for hold/close/trim/add. A bare SWITCH without menu_detail names no coin."""
+    if isinstance(detail, dict) and detail.get("coin"):
+        return str(detail["coin"]).upper()
+    for part in reversed(str(label).replace("-", "_").split("_")):
+        if part.isalpha() and part.isupper() and len(part) >= 2 and part not in _NOT_TICKER:
+            return part
+    kind = str(detail.get("kind") or "") if isinstance(detail, dict) else ""
+    if kind in ("hold", "close", "trim", "add") or str(label) in _ON_POSITION:
+        return pos_coin
+    return None
+
+
+def coin_line(coin: str, cols: list, rows: dict, peers: list[str]) -> str:
+    """Every state column for one coin. With 3+ peers, '#k' ranks the value among them (1 = largest)."""
+    seq = _seq(rows[coin])
+    peer_seqs = [_seq(rows[p]) for p in peers]
+    bits = []
+    for i, c in enumerate(cols):
+        v = seq[i] if i < len(seq) else None
+        b = _kv(c, v)
+        if b is None:
+            continue
+        x = _as_float(v)
+        vals = [y for s in peer_seqs if (y := _as_float(s[i] if i < len(s) else None)) is not None]
+        if x is not None and len(vals) >= 3:
+            b += f"#{1 + sum(y > x for y in vals)}"
+        bits.append(b)
+    return f"{coin} " + " ".join(bits) if bits else str(coin)
+
+
+def option_packed(row: dict, ctx: dict | None = None) -> tuple[str, list[str]]:
+    """Option-centric pairs. Each option carries its own coin's full row (keep_option never trims text_b);
+    text_a is header, position, rules, then the whole coin table, so truncation only eats the table tail."""
+    style = (ctx or {}).get("style") or row.get("style") or bee_style(row)
+    rules_id = (ctx or {}).get("rules_id") or row.get("rules_id") or ""
+    q = BEE_TAG.get(style, style)
+    if rules_id:
+        q = f"{q} {rules_id}"
+    state = row.get("state") if isinstance(row.get("state"), dict) else {}
+    me = state.get("me") if isinstance(state.get("me"), dict) else {}
+    coins = state.get("coins") or {}
+    cols = list(coins.get("cols") or [])
+    rows = {str(c): v for c, v in (coins.get("rows") or {}).items()}
+    menu = [str(x) for x in row.get("menu") or []]
+    det_by: dict[str, dict] = {}
+    if isinstance(row.get("menu_detail"), list):
+        det_by = {str(d.get("label")): d for d in row["menu_detail"] if isinstance(d, dict)}
+    pos = _pos_coin(me)
+    opt_coins = [option_coin(lab, det_by.get(lab), pos) for lab in menu]
+    peers = list(dict.fromkeys(c for c in opt_coins if c and c in rows))
+
+    lines = [f"[choice] {q}"]
+    me_bits = [b for k, v in me.items() if (b := _kv(k, v))]
+    if me_bits:
+        lines.append("me: " + " ".join(me_bits))
+    policy = policy_text((ctx or {}).get("strategy") or row.get("strategy"), (ctx or {}).get("rules") or row.get("rules"))
+    if policy:
+        lines.append("rules: " + policy)
+    if state.get("top1"):
+        lines.append(f"top1={state['top1']}")
+    rest = sorted((c for c in rows if c not in peers), key=lambda c: _coin_rank_key(cols, _seq(rows[c])))
+    lines += [coin_line(c, cols, rows, []) for c in peers + rest]
+    opts = []
+    for lab, coin in zip(menu, opt_coins):
+        t = option_text(lab, det_by.get(lab))
+        if coin and coin in rows:
+            t += "\n" + coin_line(coin, cols, rows, peers)
+        opts.append(t)
+    return "\n".join(lines), opts
+
+
 def align_probs(menu: list[str], probabilities: Any, choice: str) -> list[float]:
     probs = probabilities if isinstance(probabilities, dict) else {}
     out = []
@@ -386,7 +487,7 @@ def discover_logs(extra: Iterable[str] | None = None, *, include_default: bool =
     return out
 
 
-def parse_row(r: dict, file_source: str, contexts: dict[str, dict] | None = None) -> dict | None:
+def parse_row(r: dict, file_source: str, contexts: dict[str, dict] | None = None, packer: str = "v1") -> dict | None:
     menu = r.get("menu")
     if not isinstance(menu, list) or not menu:
         return None
@@ -434,8 +535,11 @@ def parse_row(r: dict, file_source: str, contexts: dict[str, dict] | None = None
         {"bee": rec["bee"], "menu": menu, "state": r.get("state") or {}, "ctx": rec["context_id"], "src": row_source}
     )
     rec["varied"] = is_varied(menu, rec["choice"])
-    rec["text_a"] = text_a_for(r, ctx)
-    rec["option_texts"] = option_texts_for(menu, r.get("menu_detail"))
+    if packer == "option":
+        rec["text_a"], rec["option_texts"] = option_packed(r, ctx)
+    else:
+        rec["text_a"] = text_a_for(r, ctx)
+        rec["option_texts"] = option_texts_for(menu, r.get("menu_detail"))
     rec["usable_train"] = not rec["single_option"] and rec["choice"] in menu and not err
     if rec["usable_train"]:
         rec["gold"] = menu.index(rec["choice"])
@@ -533,7 +637,10 @@ def ingest(
     train_frac: float = TRAIN_FRAC,
     seed: int = SEED,
     include_default: bool = True,
+    packer: str = "v1",
 ) -> dict:
+    if packer not in PACKERS:
+        raise ValueError(f"packer {packer!r} not in {PACKERS}")
     logs = discover_logs(extra_logs, include_default=include_default)
     ctx_path = find_file("trading_jev_contexts_v2.jsonl", required=False) if include_default else None
     # extra --log of contexts is unusual; still search default uploads
@@ -543,7 +650,7 @@ def ingest(
     raw: list[dict] = []
     for path in logs:
         for r in iter_jsonl(path):
-            rec = parse_row(r, str(path), contexts)
+            rec = parse_row(r, str(path), contexts, packer)
             if rec:
                 raw.append(rec)
     raw.sort(key=lambda r: (r["ts_ms"], str(r.get("id"))))
@@ -621,6 +728,7 @@ def ingest(
         "purge_ms_used": purge_ms_used,
         "format_check": len(format_check),
         "gold_is": "jev_choice",
+        "packer": packer,
         "soft_targets": "probabilities (renormalized over menu); confidence kept as metadata",
         "regime_note": (
             "This does NOT meet the >=14 days / multiple-regimes bar. "
