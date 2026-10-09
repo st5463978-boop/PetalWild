@@ -1,0 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0+cpu
+numpy==2.2.4
+huggingface_hub==0.30.2
+tokenizers==0.21.1
+onnx==1.17.0
+onnxruntime==1.21.1
+filelock==3.18.0
+fsspec==2025.3.2
+packaging==24.2
+protobuf==5.29.4
+tqdm==4.67.1
+pyyaml==6.0.2
+typing_extensions==4.13.2

@@ -1,0 +1,30 @@
+{
+  "repo": "jhu-clsp/ettin-encoder-17m",
+  "revision": "987607455c61e7a5bbc85f7758e0512ea6d0ae4c",
+  "siblings": [
+    ".gitattributes",
+    "README.md",
+    "config.json",
+    "onnx/model.onnx",
+    "onnx/model_bnb4.onnx",
+    "onnx/model_fp16.onnx",
+    "onnx/model_int8.onnx",
+    "onnx/model_q4.onnx",
+    "onnx/model_q4f16.onnx",
+    "onnx/model_quantized.onnx",
+    "onnx/model_uint8.onnx",
+    "pytorch_model.bin",
+    "special_tokens_map.json",
+    "tokenizer.json",
+    "tokenizer_config.json"
+  ],
+  "config_path": "/workspace/tools/orchestration/jevh_small/artifacts/hf_cache/models--jhu-clsp--ettin-encoder-17m/snapshots/987607455c61e7a5bbc85f7758e0512ea6d0ae4c/config.json",
+  "weight_path": "/workspace/tools/orchestration/jevh_small/artifacts/hf_cache/models--jhu-clsp--ettin-encoder-17m/snapshots/987607455c61e7a5bbc85f7758e0512ea6d0ae4c/pytorch_model.bin",
+  "weight_name": "pytorch_model.bin",
+  "loaded": 44,
+  "skipped": 4,
+  "missing": 0,
+  "unexpected": 0,
+  "missing_keys": [],
+  "unexpected_keys": []
+}

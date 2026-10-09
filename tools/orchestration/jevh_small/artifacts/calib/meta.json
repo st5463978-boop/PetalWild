@@ -1,0 +1,10 @@
+{
+  "n": 256,
+  "seq_len": 128,
+  "input_ids": "/workspace/tools/orchestration/jevh_small/artifacts/calib/input_ids.npy",
+  "attention_mask": "/workspace/tools/orchestration/jevh_small/artifacts/calib/attention_mask.npy",
+  "input_ids_sha256": "90ad7477e4265cf05d1c9da1a1dd9f4ade9be75859a417cdf084060c5102cf15",
+  "attention_mask_sha256": "42a9ec9423a9005e0f6a817c559e69dbce02f5766d61e140a42428e0a392bc9b",
+  "drawn_from": "train labels + lane bank + extra teacher rows",
+  "excluded": "held-out eval questions"
+}
