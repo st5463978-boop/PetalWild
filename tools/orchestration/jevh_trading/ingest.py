@@ -167,14 +167,14 @@ def text_a_for(row: dict, ctx: dict | None = None) -> str:
     q = BEE_TAG.get(style, style)
     if rules_id:
         q = f"{q} {rules_id}"
-    lines = [f"[choice] {q}"]
+    # State first: seq128 keep_option trims the tail, so boilerplate goes last.
+    lines = [f"[choice] {q}", compact_state(row.get("state") or {})]
     strategy = (ctx or {}).get("strategy") or row.get("strategy")
     rules = (ctx or {}).get("rules") or row.get("rules")
     if strategy:
-        lines.append(_clip(strategy, 140))
+        lines.append(_clip(strategy, 80))
     if rules and str(rules).strip() not in (".", "...", "…"):
-        lines.append("rules: " + _clip(rules, 140))
-    lines.append(compact_state(row.get("state") or {}))
+        lines.append("rules: " + _clip(rules, 80))
     return "\n".join(lines)
 
 
