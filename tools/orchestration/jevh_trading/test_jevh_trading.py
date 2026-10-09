@@ -164,5 +164,119 @@ class DistTests(unittest.TestCase):
         self.assertEqual(d["RIDE"], 2)
 
 
+class IngestTests(unittest.TestCase):
+    def test_parse_soft_targets_and_drop_single(self):
+        from jevh_trading.ingest import ingest, is_varied, parse_row
+
+        ape = parse_row(
+            {
+                "ts_ms": 1000,
+                "bee": "bee2",
+                "state": {"me": {"pos": "flat"}, "coins": {"cols": ["r7d_pct"], "rows": {"DOGE": [12]}}},
+                "menu": ["APE_DOGE", "APE_PEPE", "APE_PENGU"],
+                "choice": "APE_DOGE",
+                "probabilities": {"APE_DOGE": 0.87, "APE_PEPE": 0.06, "APE_PENGU": 0.07},
+            },
+            "mem",
+        )
+        self.assertTrue(ape["usable_train"])
+        self.assertTrue(ape["varied"])
+        self.assertEqual(ape["gold"], 0)
+        self.assertAlmostEqual(sum(ape["probs"]), 1.0, places=6)
+
+        ride = parse_row(
+            {
+                "ts_ms": 1001,
+                "bee": "bee2",
+                "state": {"me": {"pos": "long DOGE"}},
+                "menu": ["RIDE"],
+                "choice": "RIDE",
+                "probabilities": {"RIDE": 1},
+            },
+            "mem",
+        )
+        self.assertTrue(ride["single_option"])
+        self.assertFalse(ride["usable_train"])
+        self.assertFalse(is_varied(["HOLD_WINNER", "LONG_BTC", "SWITCH"], "HOLD_WINNER"))
+        self.assertTrue(is_varied(["LONG_BTC", "SHORT_BTC", "LONG_ETH", "SHORT_ETH"], "SHORT_BTC"))
+
+    def test_dedupe_and_time_split(self):
+        from jevh_trading.ingest import ingest
+
+        rows = []
+        # 20 unique multi-option ticks, 10s apart, plus duplicates and a RIDE
+        for i in range(20):
+            rows.append(
+                {
+                    "id": i,
+                    "ts_ms": 1_000_000 + i * 10_000,
+                    "bee": "bee1",
+                    "state": {"me": {"pos": "short BTC", "held_min": i}, "coins": {"cols": ["score"], "rows": {"BTC": [i]}}},
+                    "menu": ["HOLD_WINNER", "LONG_BTC", "SWITCH"],
+                    "choice": "HOLD_WINNER",
+                    "probabilities": {"HOLD_WINNER": 0.7, "LONG_BTC": 0.1, "SWITCH": 0.2},
+                }
+            )
+        rows.append(dict(rows[-1], id=99, ts_ms=rows[-1]["ts_ms"] + 1))  # same state hash later write wins
+        rows.append(
+            {
+                "id": 100,
+                "ts_ms": 1_000_000,
+                "bee": "bee2",
+                "state": {"me": {"pos": "long DOGE"}},
+                "menu": ["RIDE"],
+                "choice": "RIDE",
+                "probabilities": {"RIDE": 1},
+            }
+        )
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "decisions.jsonl"
+            p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+            b = ingest([str(p)], purge_ms=30_000, train_frac=0.7, include_default=False)
+        self.assertEqual(b["stats"]["single_option"], 1)
+        self.assertEqual(b["stats"]["multi_option_trainish"], 20)  # duplicate dropped
+        self.assertGreater(b["stats"]["train"], 0)
+        self.assertGreater(b["stats"]["eval"], 0)
+        if b["train"] and b["eval"]:
+            self.assertLessEqual(max(r["ts_ms"] for r in b["train"]), min(r["ts_ms"] for r in b["eval"]))
+        self.assertFalse(b["stats"]["enough_to_claim"])
+        self.assertGreater(b["stats"]["shortfall"]["varied_multi"], 0)
+
+
+class EncodeKeepOption(unittest.TestCase):
+    def test_keep_option_on_overflow(self):
+        from jevh_trading.encode import encode_pair
+        from jevh_trading.paths import tokenizer_path
+
+        try:
+            tokenizer_path()
+        except FileNotFoundError:
+            self.skipTest("tokenizer missing")
+        text_a = "[choice] " + ("state token " * 80)
+        ids, mask, mode = encode_pair(text_a, "APE_STRK")
+        self.assertEqual(len(ids), SEQ_LEN)
+        self.assertEqual(len(mask), SEQ_LEN)
+        self.assertEqual(ids[0], 50281)
+        self.assertIn(mode, ("only_first", "longest_first", "keep_option"))
+
+
+class SoftMaxMetrics(unittest.TestCase):
+    def test_agreement_breakdown(self):
+        from jevh_trading.metrics import agreement_breakdown
+
+        m = agreement_breakdown(
+            [0, 1, 0],
+            [0, 0, 0],
+            [[0.8, 0.2], [0.3, 0.7], [0.9, 0.1]],
+            [["HOLD_WINNER", "SWITCH"], ["HOLD_WINNER", "SWITCH"], ["APE_BTC", "APE_ETH"]],
+            varied=[False, False, True],
+        )
+        self.assertEqual(m["n"], 3)
+        self.assertAlmostEqual(m["accuracy"], 2 / 3)
+        self.assertEqual(m["by_menu_size"]["2"]["n"], 3)
+        self.assertEqual(m["varied_n"], 1)
+        self.assertEqual(m["collapsed_n"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

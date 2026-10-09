@@ -30,7 +30,7 @@ FEE_BPS = 5.0  # per side, from paper fills (~5 bp taker)
 BARS_PER_4H = 16
 DONCHIAN_LOOKBACKS = (5, 10, 20, 30, 60, 90, 150, 250, 360)
 
-# Train
+# Train (round-1 tiny outcome student)
 MAX_TRAIN_EXAMPLES = 4800
 MAX_EVAL_EXAMPLES = 1600
 HOLD_GOLD_CAP = 0.40  # downsample HOLD/RIDE golds in train only
@@ -40,6 +40,23 @@ WEIGHT_DECAY = 0.01
 BATCH_QUESTIONS = 6
 GRAD_CLIP = 1.0
 LOG_EVERY = 20
+
+# Distill (round 2): gold = Jev choice; probabilities are soft targets.
+# Recipe reused from cursor/jevh-variant-68m-v5-f666 (not merged).
+DISTILL_SIZE_AUTO_N = 1500  # below this, --size auto picks 17m
+PAIR_COEF = 0.4
+PAIR_MARGIN = 0.5
+SOFT_KL_COEF = 0.50
+UNFREEZE_LAST_68M = 6
+UNFREEZE_LAST_17M = 4
+LR_ENCODER = 2e-5
+LR_HEAD = 8e-5
+LR_EMBED = 5e-6
+LAYER_DECAY = 0.9
+MICROBATCH = 8
+DISTILL_EPOCHS = 6
+DISTILL_PATIENCE = 2
+AUTO_17M = True
 
 # Latency
 LATENCY_WARMUP = 8
