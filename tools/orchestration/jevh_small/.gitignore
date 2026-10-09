@@ -1,0 +1,6 @@
+/.venv/
+/artifacts/*.pt
+/artifacts/*.onnx
+/artifacts/*.npy
+/artifacts/hf_cache/
+

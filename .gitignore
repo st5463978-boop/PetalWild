@@ -14,6 +14,13 @@ agent-tools/
 /assets/*.png.import
 Thumbs.db
 /tools/orchestration/runtime/
+/tools/orchestration/jevh_small/.venv/
+/tools/orchestration/jevh_small/artifacts/*.onnx
+/tools/orchestration/jevh_small/artifacts/*.onnx.data
+/tools/orchestration/jevh_small/artifacts/*.pt
+/tools/orchestration/jevh_small/artifacts/*.pth
+/tools/orchestration/jevh_small/artifacts/*.npy
+/tools/orchestration/jevh_small/artifacts/hf_cache/
 __pycache__/
 *.pyc
 android/
