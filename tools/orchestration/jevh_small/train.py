@@ -82,6 +82,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--opset", type=int, default=17)
     p.add_argument("--quick", action="store_true", help="tiny run for smoke (scale-down)")
     p.add_argument("--skip-train", action="store_true")
+    p.add_argument("--skip-eval", action="store_true", help="reuse artifacts/metrics.json")
     p.add_argument("--weights", default="", help="path to ettin 17m checkpoint (otherwise HF download)")
     p.add_argument("--hf-repo", default=HF_REPO)
     p.add_argument("--hf-revision", default="")
@@ -229,14 +230,14 @@ def write_receipt(path: Path, payload: dict[str, Any]) -> None:
         "",
         "## Data",
         "",
-        f"- labels: `{payload['paths']['labels']}` — {payload['counts']['label_rows']} rows, "
+        f"- labels: `{Path(payload['paths']['labels']).name}` — {payload['counts']['label_rows']} rows, "
         f"{payload['counts']['label_questions']} unique questions. Gold = `jev_choice`.",
         "  Biased toward hard cases (teacher unsure or disagreed).",
-        f"- decide_questions_dedup: `{payload['paths']['decide']}` — {payload['counts']['decide_rows']} rows, "
+        f"- decide_questions_dedup: `{Path(payload['paths']['decide']).name}` — {payload['counts']['decide_rows']} rows, "
         f"{payload['counts']['decide_teacher']} with teacher soft scores. **Not gold.**",
-        f"- lane bank: `{payload['paths']['lane']}` — {payload['counts']['lane_rows']} unlabeled game questions "
+        f"- lane bank: `{Path(payload['paths']['lane']).name}` — {payload['counts']['lane_rows']} unlabeled game questions "
         "(calibration only).",
-        f"- tokenizer: `{payload['paths']['tokenizer']}` (live student tokenizer.json).",
+        f"- tokenizer: `{Path(payload['paths']['tokenizer']).name}` (live student tokenizer.json).",
         "- Full files live in the Cloud Agent upload bundle (hashed names) or `$JEVH_DATA_DIR`.",
         "  Samples (not full data) are in `data/`. Do not treat decide rows as gold.",
         "- Mining / teacher-swarm corpora from PR #26 were **not** used.",
@@ -271,19 +272,20 @@ def write_receipt(path: Path, payload: dict[str, Any]) -> None:
         _row("yes/no (2-way)", yn),
         _row("multi-choice", mc),
         "",
-        f"- mean student confidence {m.get('mean_confidence')}.",
-        f"- CPU latency per decision, batch=1 per option: {m.get('latency_batch1_per_option')}.",
-        f"- CPU latency packed options: {m.get('latency_packed_options')}.",
+        f"- mean student confidence {_fmt(m.get('mean_confidence'))}.",
+        f"- CPU latency per decision, batch=1 per option: {_lat(m.get('latency_batch1_per_option'))}.",
+        f"- CPU latency packed options: {_lat(m.get('latency_packed_options'))}.",
         "",
         "## ONNX (Hailo-10H DFC, no compile here)",
         "",
-        f"- path: `{onnx.get('path')}`",
+        f"- path: `artifacts/jevh_small_ettin17m_seq128.onnx` (not committed; ~{int(onnx.get('bytes') or 0)/1e6:.1f} MB, reproduce with `python train.py`)",
         f"- sha256: `{onnx.get('sha256')}`",
         f"- opset {onnx.get('opset')}, nodes {onnx.get('n_nodes')}, bytes {onnx.get('bytes')}.",
-        f"- inputs: `{onnx.get('inputs')}`",
-        f"- outputs: `{onnx.get('outputs')}`",
+        f"- inputs: `{_io(onnx.get('inputs'))}`",
+        f"- outputs: `{_io(onnx.get('outputs'))}`",
         f"- attention_mask used in graph: {onnx.get('attention_mask_used')}",
         f"- forbidden ops (Loop/If/NonZero): `{onnx.get('forbidden_ops')}`",
+        f"- Shape ops remaining: {onnx.get('shape_ops')} (0 wanted for DFC); dynamic Reshape: `{onnx.get('dynamic_reshape_nodes')}`.",
         f"- PyTorch vs ORT cosine: {payload['parity'].get('cosine')} (need ≥ 0.999), ok={payload['parity'].get('ok')}.",
         f"- calib: n={payload['calib'].get('n')} `artifacts/calib/input_ids.npy` + `attention_mask.npy`.",
         "",
@@ -300,17 +302,39 @@ def write_receipt(path: Path, payload: dict[str, Any]) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def _row(name: str, d: dict[str, Any]) -> str:
-    def fmt(x):
-        if x is None:
-            return "—"
-        if isinstance(x, float):
-            return f"{x:.4f}"
-        return str(x)
+def _fmt(x: Any) -> str:
+    if x is None:
+        return "—"
+    if isinstance(x, float):
+        return f"{x:.4f}"
+    return str(x)
 
+
+def _io(items: Any) -> str:
+    if not items:
+        return "—"
+    names = {1: "float32", 6: "int32", 7: "int64"}
+    parts = []
+    for i in items:
+        dt = names.get(i.get("dtype"), str(i.get("dtype")))
+        parts.append(f"{i.get('name')} {i.get('shape')} {dt}")
+    return ", ".join(parts)
+
+
+def _lat(d: Any) -> str:
+    if not isinstance(d, dict) or not d:
+        return "—"
     return (
-        f"| {name} | {fmt(d.get('n'))} | {fmt(d.get('accuracy'))} | "
-        f"{fmt(d.get('teacher_accuracy'))} | {fmt(d.get('confident_mistakes'))} | {fmt(d.get('ece'))} |"
+        f"n={d.get('n')} mean {d.get('mean_ms'):.1f} ms "
+        f"(p50 {d.get('p50_ms'):.1f}, p95 {d.get('p95_ms'):.1f}, "
+        f"min {d.get('min_ms'):.1f}, max {d.get('max_ms'):.1f})"
+    )
+
+
+def _row(name: str, d: dict[str, Any]) -> str:
+    return (
+        f"| {name} | {_fmt(d.get('n'))} | {_fmt(d.get('accuracy'))} | "
+        f"{_fmt(d.get('teacher_accuracy'))} | {_fmt(d.get('confident_mistakes'))} | {_fmt(d.get('ece'))} |"
     )
 
 
@@ -443,12 +467,21 @@ def main() -> int:
         ckpt = out / "jevh_small_ettin17m.pt"
         blob = torch.load(str(ckpt), map_location="cpu", weights_only=False)
         model.load_state_dict(blob["model"])
+        if isinstance(blob.get("recipe"), dict):
+            recipe.update(blob["recipe"])
+        if isinstance(blob.get("hf"), dict):
+            hf_meta.update(blob["hf"])
+        recipe["ckpt"] = str(ckpt)
 
     write_config(out / "config.json", {"n_params": model.n_params()})
     model.eval()
-    metrics, eval_logits, gold, pred, conf = eval_split(model, tok, eval_, args.latency_n)
-    (out / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    print("[jevh-small] eval", json.dumps({k: metrics[k] for k in ("n", "accuracy", "teacher_accuracy", "confident_mistakes", "ece")}), flush=True)
+    if args.skip_eval and (out / "metrics.json").is_file():
+        metrics = json.loads((out / "metrics.json").read_text(encoding="utf-8"))
+        print("[jevh-small] reused eval", json.dumps({k: metrics[k] for k in ("n", "accuracy", "teacher_accuracy", "confident_mistakes", "ece") if k in metrics}), flush=True)
+    else:
+        metrics, eval_logits, gold, pred, conf = eval_split(model, tok, eval_, args.latency_n)
+        (out / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        print("[jevh-small] eval", json.dumps({k: metrics[k] for k in ("n", "accuracy", "teacher_accuracy", "confident_mistakes", "ece")}), flush=True)
 
     onnx_path = out / "jevh_small_ettin17m_seq128.onnx"
     onnx_info = export_onnx(model, onnx_path, opset=args.opset)
@@ -497,7 +530,7 @@ def main() -> int:
         f"Ettin-68m encoder formula ~{p68:,} params (~{p68 / max(p17,1):.1f}×). "
         f"Transformer-body FLOPs scale roughly (19/7)×(512/256)×(768/384) ≈ 11× for FFN; "
         f"the live 68m NPU decision was ~55 ms wall on Hailo-10H (reference service). "
-        f"This 17m CPU batch-1 decision is mean {lat.get('mean_ms')} ms on {threads} threads "
+        f"This 17m CPU batch-1 decision is {_lat(lat)} on {threads} threads "
         f"(not comparable to NPU, but the HEF should be much smaller/faster than 68m). "
         f"68m CPU accuracy was not re-measured (host_weights_v4_ettin68m.npz not attached)."
     )
@@ -514,6 +547,8 @@ def main() -> int:
         gaps.insert(0, "This run used --quick (subset / 1 epoch). Metrics are smoke-only.")
     if onnx_info.get("forbidden_ops"):
         gaps.append(f"ONNX still contains forbidden ops: {onnx_info['forbidden_ops']}")
+    if onnx_info.get("shape_ops"):
+        gaps.append(f"ONNX still contains {onnx_info['shape_ops']} Shape ops.")
     if not onnx_info.get("attention_mask_used"):
         gaps.append("attention_mask was not detected as a used graph input — DFC compile would repeat the Laya no-mask failure.")
     if not parity.get("ok"):

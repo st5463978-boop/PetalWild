@@ -50,9 +50,9 @@ def _gelu(x: torch.Tensor) -> torch.Tensor:
     return F.gelu(x, approximate="none")
 
 
-def rotate_half(x: torch.Tensor) -> torch.Tensor:
-    x1 = x[..., : x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2 :]
+def rotate_half(x: torch.Tensor, half: int) -> torch.Tensor:
+    x1 = x[..., :half]
+    x2 = x[..., half:]
     return torch.cat((-x2, x1), dim=-1)
 
 
@@ -75,8 +75,9 @@ class EttinLayer(nn.Module):
         self.Wqkv = nn.Linear(h, 3 * h, bias=cfg["attention_bias"])
         self.Wo = nn.Linear(h, h, bias=cfg["attention_bias"])
         self.mlp_norm = nn.LayerNorm(h, eps=cfg["norm_eps"], bias=cfg["norm_bias"])
-        self.Wi = nn.Linear(h, int(cfg["intermediate_size"]) * 2, bias=cfg["mlp_bias"])
-        self.Wo_mlp = nn.Linear(cfg["intermediate_size"], h, bias=cfg["mlp_bias"])
+        self.intermediate = int(cfg["intermediate_size"])
+        self.Wi = nn.Linear(h, self.intermediate * 2, bias=cfg["mlp_bias"])
+        self.Wo_mlp = nn.Linear(self.intermediate, h, bias=cfg["mlp_bias"])
         half = int(cfg["local_attention"]) // 2
         win = torch.zeros(seq_len, seq_len, dtype=torch.float32)
         if not self.global_layer:
@@ -95,26 +96,41 @@ class EttinLayer(nn.Module):
     ) -> torch.Tensor:
         h = x
         a = self.attn_norm(x)
+        half = self.head_dim // 2
         if self.static_shapes:
-            bsz, seq, hid = 1, self.seq_len, self.hidden
+            qkv = self.Wqkv(a).view(1, self.seq_len, 3, self.n_heads, self.head_dim)
+            q = qkv[:, :, 0].permute(0, 2, 1, 3)
+            k = qkv[:, :, 1].permute(0, 2, 1, 3)
+            v = qkv[:, :, 2].permute(0, 2, 1, 3)
+            cos_u = cos.unsqueeze(0).unsqueeze(0)
+            sin_u = sin.unsqueeze(0).unsqueeze(0)
+            q = (q * cos_u) + (rotate_half(q, half) * sin_u)
+            k = (k * cos_u) + (rotate_half(k, half) * sin_u)
+            scale = self.head_dim ** -0.5
+            scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+            scores = scores + pad_bias + self.window_bias
+            attn = torch.softmax(scores, dim=-1)
+            ctx = torch.matmul(attn, v).permute(0, 2, 1, 3).contiguous().view(1, self.seq_len, self.hidden)
         else:
             bsz, seq, hid = a.shape
-        qkv = self.Wqkv(a).reshape(bsz, seq, 3, self.n_heads, self.head_dim)
-        q = qkv[:, :, 0].permute(0, 2, 1, 3)
-        k = qkv[:, :, 1].permute(0, 2, 1, 3)
-        v = qkv[:, :, 2].permute(0, 2, 1, 3)
-        cos_u = cos.unsqueeze(0).unsqueeze(0)
-        sin_u = sin.unsqueeze(0).unsqueeze(0)
-        q = (q * cos_u) + (rotate_half(q) * sin_u)
-        k = (k * cos_u) + (rotate_half(k) * sin_u)
-        scale = self.head_dim ** -0.5
-        scores = torch.matmul(q, k.transpose(-2, -1)) * scale
-        scores = scores + pad_bias + self.window_bias
-        attn = torch.softmax(scores, dim=-1)
-        ctx = torch.matmul(attn, v).permute(0, 2, 1, 3).reshape(bsz, seq, hid)
+            qkv = self.Wqkv(a).reshape(bsz, seq, 3, self.n_heads, self.head_dim)
+            q = qkv[:, :, 0].permute(0, 2, 1, 3)
+            k = qkv[:, :, 1].permute(0, 2, 1, 3)
+            v = qkv[:, :, 2].permute(0, 2, 1, 3)
+            cos_u = cos.unsqueeze(0).unsqueeze(0)
+            sin_u = sin.unsqueeze(0).unsqueeze(0)
+            q = (q * cos_u) + (rotate_half(q, half) * sin_u)
+            k = (k * cos_u) + (rotate_half(k, half) * sin_u)
+            scale = self.head_dim ** -0.5
+            scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+            scores = scores + pad_bias + self.window_bias
+            attn = torch.softmax(scores, dim=-1)
+            ctx = torch.matmul(attn, v).permute(0, 2, 1, 3).reshape(bsz, seq, hid)
         h = h + self.Wo(ctx)
         mid = self.mlp_norm(h)
-        inp, gate = self.Wi(mid).chunk(2, dim=-1)
+        wide = self.Wi(mid)
+        inp = wide[..., : self.intermediate]
+        gate = wide[..., self.intermediate :]
         h = h + self.Wo_mlp(_gelu(inp) * gate)
         return h
 

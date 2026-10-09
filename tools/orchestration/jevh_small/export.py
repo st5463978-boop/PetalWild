@@ -39,22 +39,25 @@ def export_onnx(model: OptionScorer, path: Path, opset: int = 17) -> dict[str, A
         raise ValueError(f"opset {opset} not in 13-17")
     path.parent.mkdir(parents=True, exist_ok=True)
     model = model.eval().cpu()
-    model.set_static_shapes(True)
     ids = torch.zeros(1, SEQ_LEN, dtype=torch.long)
     mask = torch.zeros(1, SEQ_LEN, dtype=torch.float32)
     ids[0, :8] = torch.arange(8)
     mask[0, :8] = 1.0
-    torch.onnx.export(
-        model,
-        (ids, mask),
-        str(path),
-        input_names=["input_ids", "attention_mask"],
-        output_names=["logit"],
-        opset_version=opset,
-        do_constant_folding=True,
-        dynamo=False,
-    )
-    return inspect_onnx(path)
+    try:
+        model.set_static_shapes(True)
+        torch.onnx.export(
+            model,
+            (ids, mask),
+            str(path),
+            input_names=["input_ids", "attention_mask"],
+            output_names=["logit"],
+            opset_version=opset,
+            do_constant_folding=True,
+            dynamo=False,
+        )
+        return inspect_onnx(path)
+    finally:
+        model.set_static_shapes(False)
 
 
 def inspect_onnx(path: Path) -> dict[str, Any]:
@@ -67,14 +70,32 @@ def inspect_onnx(path: Path) -> dict[str, Any]:
     # Dynamic reshape: Reshape whose shape input is a graph input or a non-initializer
     init_names = {t.name for t in model.graph.initializer}
     graph_inputs = {i.name for i in model.graph.input}
+    producers = {out: n for n in model.graph.node for out in n.output}
+
+    def _const_valued(name: str, depth: int = 0) -> bool:
+        if not name or depth > 16:
+            return False
+        if name in init_names:
+            return True
+        if name in graph_inputs:
+            return False
+        node = producers.get(name)
+        if node is None:
+            return False
+        if node.op_type in ("Constant", "ConstantOfShape"):
+            return node.op_type == "Constant"
+        if node.op_type in ("Concat", "Unsqueeze", "Squeeze", "Cast", "Gather", "Slice", "Shape"):
+            if node.op_type == "Shape":
+                return False
+            return all(_const_valued(inp, depth + 1) for inp in node.input if inp)
+        return False
+
     dynamic_reshape = []
     for node in model.graph.node:
         if node.op_type != "Reshape":
             continue
         shape_in = node.input[1] if len(node.input) > 1 else ""
-        if shape_in in graph_inputs or (shape_in and shape_in not in init_names):
-            # shape produced upstream is still OK if it is a Constant-foldable chain;
-            # flag it so the receipt can say we inspected it.
+        if shape_in in graph_inputs or not _const_valued(shape_in):
             dynamic_reshape.append(node.name or shape_in)
 
     def _shape(vi) -> list:
@@ -93,6 +114,7 @@ def inspect_onnx(path: Path) -> dict[str, Any]:
         "opset": int(model.opset_import[0].version) if model.opset_import else None,
         "ops": ops,
         "forbidden_ops": forbidden,
+        "shape_ops": sum(1 for n in model.graph.node if n.op_type == "Shape"),
         "dynamic_reshape_nodes": dynamic_reshape,
         "inputs": inputs,
         "outputs": outputs,
@@ -128,14 +150,26 @@ def verify_ort_parity(
     import onnxruntime as ort
 
     pt_model.eval()
-    ids_t = torch.from_numpy(input_ids.astype(np.int64))
-    mask_t = torch.from_numpy(attention_mask.astype(np.float32))
-    with torch.no_grad():
-        pt_logits = pt_model(ids_t, mask_t).cpu().numpy().astype(np.float64)
     sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-    ort_out = sess.run(None, {"input_ids": ids_t.numpy(), "attention_mask": mask_t.numpy()})[0]
-    ort_logits = np.asarray(ort_out, dtype=np.float64).reshape(-1)
-    pt_logits = pt_logits.reshape(-1)
+    pt_chunks = []
+    ort_chunks = []
+    try:
+        pt_model.set_static_shapes(True)
+        for i in range(int(input_ids.shape[0])):
+            ids = np.ascontiguousarray(input_ids[i : i + 1].astype(np.int64))
+            mask = np.ascontiguousarray(attention_mask[i : i + 1].astype(np.float32))
+            with torch.no_grad():
+                pt_chunks.append(pt_model(torch.from_numpy(ids), torch.from_numpy(mask)).cpu().numpy().reshape(-1))
+            ort_chunks.append(
+                np.asarray(
+                    sess.run(None, {"input_ids": ids, "attention_mask": mask})[0],
+                    dtype=np.float64,
+                ).reshape(-1)
+            )
+    finally:
+        pt_model.set_static_shapes(False)
+    pt_logits = np.concatenate(pt_chunks).astype(np.float64)
+    ort_logits = np.concatenate(ort_chunks).astype(np.float64)
     if pt_logits.shape != ort_logits.shape:
         raise RuntimeError(f"shape mismatch pt {pt_logits.shape} ort {ort_logits.shape}")
     a, b = pt_logits, ort_logits
