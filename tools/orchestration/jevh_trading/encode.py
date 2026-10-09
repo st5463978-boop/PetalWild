@@ -114,9 +114,9 @@ class StudentTok:
 
 
 @lru_cache(maxsize=4)
-def load_student_tok(path: str | None = None) -> StudentTok:
+def load_student_tok(path: str | None = None, max_len: int = SEQ_LEN) -> StudentTok:
     p = Path(path) if path else tokenizer_path()
-    return StudentTok(str(p))
+    return StudentTok(str(p), max_len)
 
 
 @lru_cache(maxsize=1)
@@ -134,8 +134,8 @@ def encode_pair(text_a: str, option: str, tok_path: str | None = None) -> tuple[
     return ids[0], mask[0], mode
 
 
-def encode_menu(text_a: str, options: list[str], tok_path: str | None = None) -> dict[str, Any]:
-    tok = load_student_tok(tok_path)
+def encode_menu(text_a: str, options: list[str], tok_path: str | None = None, max_len: int = SEQ_LEN) -> dict[str, Any]:
+    tok = load_student_tok(tok_path, max_len)
     ids, masks, mode, stats = tok.encode(text_a, options)
     return {
         "input_ids": np.asarray(ids, dtype=np.int64),

@@ -29,7 +29,7 @@ from typing import Sequence
 
 import numpy as np
 
-from .config import SEED
+from .config import SEED, SEQ_LEN
 from .jev_ceiling import MARGIN_EDGES, margin_of
 from .metrics import menu_key, softmax
 from .paths import artifacts_dir
@@ -424,14 +424,15 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
     raw_by_id = {r.get("id"): r for r in raw["multi"]}
     state = torch.load(str(ckpt), map_location="cpu", weights_only=False)
     size = SIZES[state.get("size", "68m")]
-    model = EttinScorer(size)
+    seq = int(state.get("seq") or SEQ_LEN)
+    model = EttinScorer(size, seq_len=seq)
     model.load_state_dict(state["model"])
     model.eval()
     tok = str(tokenizer_path())
-    load_student_tok(tok)
+    load_student_tok(tok, seq)
     pools = {"dev": bundle["dev"], "eval": bundle["eval"], "eval_rules": bundle["eval_rules"], "eval_live": bundle["eval_live"]}
     rng = random.Random(seed)
-    meta = {"ckpt": str(ckpt), "size": size.name, "pool_n": {k: len(v) for k, v in pools.items()}, "sampling": "natural (uniform random), not stratified"}
+    meta = {"ckpt": str(ckpt), "size": size.name, "seq": seq, "pool_n": {k: len(v) for k, v in pools.items()}, "sampling": "natural (uniform random), not stratified"}
     from .config import MAX_DEV_68M, MAX_EVAL_68M
     from .ingest import stratified_take
 
@@ -445,7 +446,7 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
         rows = list(pool)
         if max_rows is not None and len(rows) > max_rows:
             rows = sorted(rng.sample(rows, max_rows), key=lambda r: (r["ts_ms"], str(r.get("id"))))
-        packed = pack_rows(rows, tok)
+        packed = pack_rows(rows, tok, seq)
         _, _, logits = predict_packed(model, packed, 1.0)
         rows_by[name], logits_by[name], packed_by[name] = rows, logits, packed
         print(f"[shadow-gate] {name}: {len(rows)} rows scored ({time.perf_counter() - t0:.0f}s)", flush=True)
@@ -524,8 +525,8 @@ def onnx_parity(model, onnx_path: Path, packed: list[dict], recs: list[dict], te
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Shadow-mode gating analysis (offline)")
-    p.add_argument("--ckpt", default=str(artifacts_dir() / "student_68m.pt"))
-    p.add_argument("--onnx", default=str(artifacts_dir() / "jevh_trading_ettin68m_seq128.onnx"))
+    p.add_argument("--ckpt", default=str(artifacts_dir() / "student_68m.pt"), help="train.py checkpoint; seq length is read from it")
+    p.add_argument("--onnx", default=str(artifacts_dir() / "jevh_trading_ettin68m_seq128.onnx"), help="static ONNX with the same seq length")
     p.add_argument("--max-rows", type=int, default=None, help="natural random sample per split (default: whole pool)")
     p.add_argument("--onnx-rows", type=int, default=300)
     p.add_argument("--no-int8", action="store_true")

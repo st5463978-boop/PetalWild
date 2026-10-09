@@ -107,10 +107,10 @@ def ensure_hf(size: EttinSize, dest: Path) -> Path | None:
         return None
 
 
-def pack_rows(rows: list[dict], tok_path: str) -> list[dict]:
+def pack_rows(rows: list[dict], tok_path: str, max_len: int = SEQ_LEN) -> list[dict]:
     packed = []
     for r in rows:
-        enc = encode_menu(r["text_a"], r["option_texts"], tok_path)
+        enc = encode_menu(r["text_a"], r["option_texts"], tok_path, max_len)
         packed.append(
             {
                 "input_ids": enc["input_ids"],
