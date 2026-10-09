@@ -394,5 +394,124 @@ class SoftMaxMetrics(unittest.TestCase):
         self.assertEqual(maj, [0, 1, 1])
 
 
+class GateTests(unittest.TestCase):
+    def test_max_coverage_and_threshold(self):
+        from jevh_trading.shadow_gate import apply_threshold, max_coverage
+
+        score = np.array([0.9, 0.8, 0.7, 0.6])
+        ok = np.array([True, True, False, True])
+        hi = max_coverage(score, ok, 0.99)
+        self.assertAlmostEqual(hi["coverage"], 0.5)
+        self.assertAlmostEqual(hi["threshold"], 0.8)
+        self.assertAlmostEqual(max_coverage(score, ok, 0.75)["coverage"], 1.0)
+        self.assertEqual(max_coverage(score, ok, 0.99, conservative=True)["coverage"], 0.0)
+        res = apply_threshold(score, ok, 0.8)
+        self.assertAlmostEqual(res["coverage"], 0.5)
+        self.assertAlmostEqual(res["selective_agreement"], 1.0)
+        self.assertAlmostEqual(res["system_agreement_with_jev_fallback"], 1.0)
+
+    def test_tied_scores_share_one_cut(self):
+        from jevh_trading.shadow_gate import max_coverage
+
+        score = np.array([1.0, 1.0, 0.5])
+        ok = np.array([True, False, True])
+        self.assertEqual(max_coverage(score, ok, 0.99)["coverage"], 0.0)
+
+    def test_agreement_stats_top2_and_tolerance(self):
+        from jevh_trading.shadow_gate import agreement_stats
+
+        recs = [
+            {"gold": 0, "probs": [0.6, 0.4], "p_jev": [0.51, 0.49], "style": "bizzy", "kinds": ["hold", "close"]},
+            {"gold": 1, "probs": [0.7, 0.2, 0.1], "p_jev": [0.30, 0.65, 0.05], "style": "boozy", "kinds": ["open", "open", "open"]},
+        ]
+        st = agreement_stats(recs)
+        self.assertAlmostEqual(st["top1_agreement"], 0.5)
+        self.assertAlmostEqual(st["top2_agreement"], 1.0)
+        self.assertAlmostEqual(st["action_kind_agreement"], 1.0)
+        self.assertAlmostEqual(st["tolerant_agreement_within_0.05"], 0.5)
+
+    def test_logistic_gate_prefers_confident(self):
+        from jevh_trading.shadow_gate import LogisticGate
+
+        rng = np.random.default_rng(0)
+        recs, ok = [], []
+        for _ in range(400):
+            p = float(rng.uniform(0.5, 1.0))
+            recs.append({"probs": [p, 1 - p], "style": "breezy"})
+            ok.append(rng.uniform() < p)
+        g = LogisticGate().fit(recs, np.asarray(ok))
+        s = g.score([{"probs": [0.55, 0.45], "style": "breezy"}, {"probs": [0.95, 0.05], "style": "breezy"}])
+        self.assertLess(s[0], s[1])
+
+
+class CeilingTests(unittest.TestCase):
+    def test_noise_agreement_zero_sigma_is_argmax(self):
+        from jevh_trading.jev_ceiling import noise_agreement, sigma_for
+
+        rows = [{"p": [0.7, 0.2, 0.1], "gold": 0}, {"p": [0.45, 0.55], "gold": 1}]
+        tab = noise_agreement(rows, sigmas=(0.0, 0.05, 0.5), n_draws=64)
+        self.assertAlmostEqual(tab[0]["agree_with_logged_choice"], 1.0)
+        self.assertGreater(tab[0]["agree_with_logged_choice"], tab[2]["agree_with_logged_choice"])
+        self.assertIsNotNone(sigma_for(tab, 0.9))
+
+    def test_jev_mass_stats_ties_and_margin(self):
+        from jevh_trading.jev_ceiling import jev_mass_stats
+
+        rows = [
+            {"p": [0.5, 0.5], "gold": 1, "menu": ["A", "B"], "confidence": 0.0},
+            {"p": [0.8, 0.2], "gold": 0, "menu": ["A", "B"], "confidence": 0.6},
+        ]
+        st = jev_mass_stats(rows)
+        self.assertAlmostEqual(st["exact_ties_at_max"], 0.5)
+        self.assertAlmostEqual(st["tie_break_first_in_menu"], 0.0)
+        self.assertAlmostEqual(st["E_max_p_sampling_ceiling"], 0.65)
+        self.assertAlmostEqual(st["mean_top2_margin"], 0.3)
+
+
+class StructuredFeatureTests(unittest.TestCase):
+    def _bizzy_row(self):
+        return {
+            "bee_style": "bizzy",
+            "rules_id": "bizzy-majors",
+            "context_id": "",
+            "menu": ["HOLD", "CUT_LOSS"],
+            "menu_detail": [
+                {"label": "HOLD", "kind": "hold", "coin": None, "side": None},
+                {"label": "CUT_LOSS", "kind": "close", "coin": None, "side": None},
+            ],
+            "gold": 1,
+            "p": [0.4, 0.6],
+            "state": {
+                "utc": "11:40",
+                "me": {"pos": "long BTC", "usd": 50, "upl_r": -0.2, "held_min": 264, "trades": "0/1", "fee_left": 0.39},
+                "coins": {
+                    "cols": ["to_trigger_pct", "day_move_pct", "prev_range_pct", "r1h_pct", "fund_z", "oi1h_pct", "spread_bp"],
+                    "rows": {"BTC": [0.38, 1.54, 3.85, 0.7, 1, None, 0], "ETH": [2.48, 1.16, 7.33, 0.4, 1, None, 0]},
+                },
+            },
+        }
+
+    def test_full_sees_trigger_packed_does_not(self):
+        from jevh_trading.structured_baseline import FeatureBuilder, label_parts, parse_me
+
+        self.assertEqual(label_parts("APE_TIA"), ("APE", "TIA", 1))
+        self.assertEqual(label_parts("SHORT_ETH"), ("SHORT", "ETH", -1))
+        self.assertEqual(label_parts("HOLD_WINNER")[0], "HOLD_WINNER")
+        side, coin, nums = parse_me({"pos": "short ETH", "trades": "2/3"})
+        self.assertEqual((side, coin), (-1, "ETH"))
+        self.assertEqual(nums[-2:], [2.0, 3.0])
+        row = self._bizzy_row()
+        full = FeatureBuilder("full", {"bizzy-majors": 0}, {})
+        packed = FeatureBuilder("packed", {"bizzy-majors": 0}, {})
+        i = full.names.index("opt_to_trigger_pct")
+        xf, xp = full.row(row), packed.row(row)
+        self.assertEqual(xf.shape, (2, len(full.names)))
+        self.assertAlmostEqual(float(xf[0, i]), 0.38, places=5)
+        self.assertTrue(np.isnan(xp[0, i]))
+        m = full.matrix([row])
+        self.assertEqual(m["groups"].tolist(), [2])
+        self.assertEqual(m["y_bin"].tolist(), [0.0, 1.0])
+
+
 if __name__ == "__main__":
     unittest.main()

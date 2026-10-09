@@ -9,3 +9,4 @@ artifacts/split.json
 artifacts/hf/
 artifacts/*ettin*.onnx
 artifacts/jevh_trading_ettin*.onnx
+artifacts/preds_*.jsonl.gz
