@@ -479,6 +479,21 @@ class CeilingTests(unittest.TestCase):
         self.assertAlmostEqual(st["E_max_p_sampling_ceiling"], 0.65)
         self.assertAlmostEqual(st["mean_top2_margin"], 0.3)
 
+    def test_receipt_rows_balance_gold_and_hold_baseline(self):
+        from jevh_trading.jev_ceiling import always_hold_agreement, receipt_rows
+
+        def row(i, gold_label):
+            menu = ["APE_SOL", "HOLD"]
+            return {"id": i, "ts_ms": i, "bee_style": "boozy", "n_options": 2, "menu": menu, "gold": menu.index(gold_label), "gold_label": gold_label}
+
+        pool = [row(i, "HOLD") for i in range(9000)] + [row(9000 + i, "APE_SOL") for i in range(500)]
+        parts = {k: list(pool) for k in ("dev", "eval", "eval_live", "eval_rules")}
+        rec = receipt_rows(parts)
+        self.assertEqual(len(rec["dev"]), 2000)
+        self.assertEqual(sum(r["gold_label"] == "APE_SOL" for r in rec["eval"]), 500)
+        self.assertAlmostEqual(always_hold_agreement(rec["eval"]), 5500 / 6000)
+        self.assertAlmostEqual(always_hold_agreement(pool), 9000 / 9500)
+
 
 class StructuredFeatureTests(unittest.TestCase):
     def _bizzy_row(self):

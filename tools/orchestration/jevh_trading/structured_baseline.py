@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 from .config import SEED
-from .jev_ceiling import LineTok, _packed_coins, load_raw_calls, pair_view
+from .jev_ceiling import LineTok, _packed_coins, load_raw_calls, pair_view, receipt_rows
 from .metrics import softmax
 from .paths import artifacts_dir
 
@@ -332,14 +332,10 @@ def top2(scores: list[np.ndarray], gold: np.ndarray) -> float:
 
 def receipt_subsets(parts: dict, seed: int = SEED) -> dict[str, list[int]]:
     """Row indices of the stratified samples train.py scores (same seeds), for like-for-like numbers."""
-    from .config import MAX_DEV_68M, MAX_EVAL_68M
-    from .ingest import stratified_take
-
-    spec = {"dev": (MAX_DEV_68M, 1), "eval": (MAX_EVAL_68M, 2), "eval_live": (MAX_EVAL_68M, 3), "eval_rules": (MAX_EVAL_68M, 4)}
     out = {}
-    for name, (n, off) in spec.items():
+    for name, rows in receipt_rows(parts, seed).items():
         pos = {id(r): i for i, r in enumerate(parts[name])}
-        out[name] = sorted(pos[id(r)] for r in stratified_take(parts[name], n, seed + off))
+        out[name] = sorted(pos[id(r)] for r in rows)
     return out
 
 

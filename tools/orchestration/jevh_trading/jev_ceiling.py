@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from .config import CLS_ID, SEED, SEP_ID, SEQ_LEN
+from .config import CLS_ID, RECEIPT_SAMPLES, SEED, SEP_ID, SEQ_LEN
 from .ingest import (
     _MAX_COINS,
     _RULES_CHARS,
@@ -40,8 +40,10 @@ from .ingest import (
     load_contexts,
     option_texts_for,
     state_hash,
+    stratified_take,
     text_a_for,
 )
+from .metrics import always_hold_indices
 from .paths import artifacts_dir, find_file, tokenizer_path
 
 SPLITS = ("train", "dev", "eval", "eval_rules", "eval_live")
@@ -119,6 +121,18 @@ def load_raw_calls(path: Path | None = None, contexts: dict[str, dict] | None = 
         for r in parts[name]:
             r["split"] = name
     return {"raw": [r for r in raw if r["usable"]], "multi": multi, "parts": parts, "contexts": contexts}
+
+
+def receipt_rows(parts: dict, seed: int = SEED) -> dict[str, list[dict]]:
+    """The stratified (gold-balanced) samples train.py scores for its receipt, same seeds."""
+    return {name: stratified_take(parts[name], n, seed + off) for name, (n, off) in RECEIPT_SAMPLES.items()}
+
+
+def always_hold_agreement(rows: list[dict]) -> float | None:
+    if not rows:
+        return None
+    pred = always_hold_indices([r["menu"] for r in rows])
+    return float(np.mean([int(p == r["gold"]) for p, r in zip(pred, rows)]))
 
 
 def _sorted_p(p: list[float]) -> np.ndarray:
@@ -535,6 +549,22 @@ def run(out_path: Path | None = None, sample_n: int = 3000) -> dict:
             row = min(tbl, key=lambda t: abs(t["sigma"] - round(sig, 4)))
             jn[f"{name}@{label}={sig:.4f}"] = row["agree_with_logged_choice"]
     out["ceiling_if_student_matches_jev_mean_probs"] = jn
+    sig_pts = sorted({0.0, 0.03, 0.05, 0.075, 0.10} | {round(s, 4) for s in (sig_hs, sig_live) if s})
+    mass_keys = ("E_max_p_sampling_ceiling", "mean_top2_margin", "share_margin_lt_0.10", "exact_ties_at_max")
+    out["receipt_samples"] = {
+        "note": "train.py scores these gold-balanced samples; natural pools weight rows as logged.",
+        "splits": {},
+    }
+    for name, rows in receipt_rows(parts).items():
+        mass = jev_mass_stats(rows)
+        out["receipt_samples"]["splits"][name] = {
+            "n": len(rows),
+            "of": len(parts[name]),
+            "always_hold": always_hold_agreement(rows),
+            "always_hold_natural_pool": always_hold_agreement(parts[name]),
+            "jev_mass": {k: mass[k] for k in mass_keys},
+            "noise_table": noise_agreement(rows, sigmas=sig_pts),
+        }
     out["representation"] = representation_audit(multi, data["contexts"], sample_n=sample_n)
     out_path = out_path or (artifacts_dir() / "jev_ceiling.json")
     out_path.write_text(json.dumps(out, indent=2, allow_nan=False))

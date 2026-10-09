@@ -30,7 +30,7 @@ from typing import Sequence
 import numpy as np
 
 from .config import SEED, SEQ_LEN
-from .jev_ceiling import MARGIN_EDGES, margin_of
+from .jev_ceiling import MARGIN_EDGES, margin_of, receipt_rows
 from .metrics import menu_key, softmax
 from .paths import artifacts_dir
 
@@ -458,11 +458,7 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
     pools = {"dev": bundle["dev"], "eval": bundle["eval"], "eval_rules": bundle["eval_rules"], "eval_live": bundle["eval_live"]}
     rng = random.Random(seed)
     meta = {"ckpt": str(ckpt), "size": size.name, "seq": seq, "packer": packer, "pool_n": {k: len(v) for k, v in pools.items()}, "sampling": "natural (uniform random), not stratified"}
-    from .config import MAX_DEV_68M, MAX_EVAL_68M
-    from .ingest import stratified_take
-
-    spec = {"dev": (MAX_DEV_68M, 1), "eval": (MAX_EVAL_68M, 2), "eval_live": (MAX_EVAL_68M, 3), "eval_rules": (MAX_EVAL_68M, 4)}
-    meta["_receipt_ids"] = {k: [r.get("id") for r in stratified_take(pools[k], n, seed + off)] for k, (n, off) in spec.items()}
+    meta["_receipt_ids"] = {k: [r.get("id") for r in v] for k, v in receipt_rows(pools, seed).items()}
     logits_by: dict[str, list[np.ndarray]] = {}
     rows_by: dict[str, list[dict]] = {}
     packed_by: dict[str, list[dict]] = {}

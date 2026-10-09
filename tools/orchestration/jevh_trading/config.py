@@ -65,6 +65,8 @@ AUTO_17M = True
 MAX_TRAIN_68M = 8000
 MAX_DEV_68M = 2000
 MAX_EVAL_68M = 6000
+# Stratified samples train.py scores for the 68m receipt by default: split -> (rows, seed offset).
+RECEIPT_SAMPLES = {"dev": (MAX_DEV_68M, 1), "eval": (MAX_EVAL_68M, 2), "eval_live": (MAX_EVAL_68M, 3), "eval_rules": (MAX_EVAL_68M, 4)}
 PREDICT_BS = 32
 
 # Latency
