@@ -433,7 +433,7 @@ def read_recs(path: Path) -> list[dict]:
         return [json.loads(x) for x in f if x.strip()]
 
 
-def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[str, list[dict]], dict, object, dict]:
+def predict_student(ckpt: Path, max_rows: int | None, seed: int, seq_override: int | None = None) -> tuple[dict[str, list[dict]], dict, object, dict]:
     import torch
 
     from .encode import load_student_tok
@@ -449,7 +449,7 @@ def predict_student(ckpt: Path, max_rows: int | None, seed: int) -> tuple[dict[s
     raw = load_raw_calls()
     raw_by_id = {r.get("id"): r for r in raw["multi"]}
     size = SIZES[state.get("size", "68m")]
-    seq = int(state.get("seq") or SEQ_LEN)
+    seq = int(seq_override or state.get("seq") or SEQ_LEN)
     model = EttinScorer(size, seq_len=seq)
     model.load_state_dict(state["model"])
     model.eval()
@@ -548,6 +548,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Shadow-mode gating analysis (offline)")
     p.add_argument("--ckpt", default=str(artifacts_dir() / "student_68m.pt"), help="train.py checkpoint; seq length is read from it")
     p.add_argument("--onnx", default=str(artifacts_dir() / "jevh_trading_ettin68m_seq128.onnx"), help="static ONNX with the same seq length")
+    p.add_argument("--seq", type=int, default=None, help="seq length for checkpoints saved before train.py recorded it (e.g. 256 for the Kaggle run)")
     p.add_argument("--max-rows", type=int, default=None, help="natural random sample per split (default: whole pool)")
     p.add_argument("--onnx-rows", type=int, default=300)
     p.add_argument("--no-int8", action="store_true")
@@ -565,7 +566,7 @@ def main(argv: list[str] | None = None) -> int:
             recs[r["split"]].append(r)
         meta["recs"] = a.recs
     else:
-        recs, meta, model, packed_by = predict_student(Path(a.ckpt), a.max_rows, a.seed)
+        recs, meta, model, packed_by = predict_student(Path(a.ckpt), a.max_rows, a.seed, a.seq)
         write_recs(art / f"preds_{meta['size']}.jsonl.gz", [r for v in recs.values() for r in v])
         onnx_path = Path(a.onnx)
         if onnx_path.is_file() and a.onnx_rows > 0:
