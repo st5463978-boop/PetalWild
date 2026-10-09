@@ -429,6 +429,18 @@ class GateTests(unittest.TestCase):
         self.assertAlmostEqual(st["top2_agreement"], 1.0)
         self.assertAlmostEqual(st["action_kind_agreement"], 1.0)
         self.assertAlmostEqual(st["tolerant_agreement_within_0.05"], 0.5)
+        self.assertEqual(set(st["by_rules_id"]), {"None"})
+
+    def test_prob_rmse_and_temperature(self):
+        from jevh_trading.shadow_gate import fit_rmse_temperature, prob_rmse
+
+        same = [{"probs": [0.7, 0.3], "p_jev": [0.7, 0.3]}]
+        self.assertAlmostEqual(prob_rmse(same), 0.0)
+        off = [{"probs": [0.9, 0.1], "p_jev": [0.7, 0.3]}]
+        self.assertAlmostEqual(prob_rmse(off), 0.2)
+        sharp = [{"probs": [0.0, 0.0], "logits": [2 * np.log(0.7), 2 * np.log(0.3)], "p_jev": [0.7, 0.3]}]
+        self.assertAlmostEqual(fit_rmse_temperature(sharp), 2.0)
+        self.assertAlmostEqual(prob_rmse(sharp, 2.0), 0.0, places=6)
 
     def test_logistic_gate_prefers_confident(self):
         from jevh_trading.shadow_gate import LogisticGate

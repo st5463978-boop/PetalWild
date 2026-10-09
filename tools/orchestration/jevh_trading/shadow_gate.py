@@ -194,6 +194,7 @@ def agreement_stats(recs: list[dict]) -> dict:
         "top2_agreement": float(top2.mean()),
         "jev_mass_of_student_pick": float(mass.mean()),
         "jev_mass_of_jev_pick": float(pmax.mean()),
+        "prob_rmse_vs_jev": prob_rmse(recs),
     }
     for tol in TOLERANCES:
         out[f"tolerant_agreement_within_{tol:.2f}"] = float((mass >= pmax - tol - 1e-9).mean())
@@ -223,7 +224,30 @@ def agreement_stats(recs: list[dict]) -> dict:
     for r, ok in zip(recs, a["correct"]):
         by_k[str(len(r["probs"]))].append(ok)
     out["by_menu_size"] = {k: {"n": len(v), "top1_agreement": float(np.mean(v))} for k, v in sorted(by_k.items())}
+    by_rules = defaultdict(list)
+    for r, ok in zip(recs, a["correct"]):
+        by_rules[str(r.get("rules_id"))].append(ok)
+    out["by_rules_id"] = {k: {"n": len(v), "top1_agreement": float(np.mean(v))} for k, v in sorted(by_rules.items())}
     return out
+
+
+def prob_rmse(recs: list[dict], temperature: float | None = None) -> float:
+    """Pooled per-option RMSE between student and Jev probabilities (the sigma of jev_ceiling's noise table).
+
+    With a temperature, re-softmaxes the stored logits instead of using rec["probs"].
+    """
+    sq = []
+    for r in recs:
+        if temperature is not None and r.get("logits") is not None:
+            q = softmax(np.asarray(r["logits"], dtype=np.float64) / max(temperature, 1e-6))
+        else:
+            q = np.asarray(r["probs"], dtype=np.float64)
+        sq.append((q - np.asarray(r["p_jev"], dtype=np.float64)) ** 2)
+    return float(np.sqrt(np.concatenate(sq).mean())) if sq else float("nan")
+
+
+def fit_rmse_temperature(recs: list[dict], grid: Sequence[float] = tuple(np.round(np.arange(0.5, 4.01, 0.05), 2))) -> float:
+    return float(min(grid, key=lambda t: prob_rmse(recs, t)))
 
 
 def cluster_key(r: dict) -> str:
@@ -550,6 +574,15 @@ def main(argv: list[str] | None = None) -> int:
         if onnx_path.is_file() and a.onnx_rows > 0:
             onnx_rep = onnx_parity(model, onnx_path, packed_by["eval"], recs["eval"], meta["temperature_ece"], a.onnx_rows, a.seed, not a.no_int8)
     rep = gate_report(recs["dev"], {k: recs[k] for k in ("eval", "eval_rules", "eval_live") if recs.get(k)})
+    rmse = None
+    if recs.get("dev") and recs["dev"][0].get("logits") is not None:
+        t_rmse = fit_rmse_temperature(recs["dev"])
+        rmse = {
+            "temperature_rmse_fit_on_dev": t_rmse,
+            "at_temperature_rmse": {k: prob_rmse(v, t_rmse) for k, v in recs.items() if v},
+            "at_gate_temperature": {k: prob_rmse(v) for k, v in recs.items() if v},
+            "note": "Compare with jev_ceiling noise_table: sigma ~0.085 per option gives ~90% top-1 on time-eval, ~0.031 gives ~96%.",
+        }
     receipt = {}
     for split, ids in (meta.pop("_receipt_ids", None) or {}).items():
         want = set(ids)
@@ -565,6 +598,7 @@ def main(argv: list[str] | None = None) -> int:
         "meta": meta,
         "headline": headline(rep),
         "receipt_sample_top1": receipt,
+        "prob_rmse": rmse,
         "report": rep,
         "onnx": onnx_rep,
     }
