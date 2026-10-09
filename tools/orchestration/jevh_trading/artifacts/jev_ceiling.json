@@ -1,0 +1,809 @@
+{
+  "disclaimer": "Not financial advice. Offline analysis of logged Jev calls; no model, no trades.",
+  "split_sizes": {
+    "train": 59160,
+    "dev": 8533,
+    "eval": 14938,
+    "eval_rules": 14515,
+    "eval_live": 2336,
+    "purge": 3278
+  },
+  "held_rules": [
+    "breezy-cautious",
+    "boozy-diamond",
+    "bizzy-alts"
+  ],
+  "jev_mass": {
+    "hyperspeed": {
+      "n": 99970,
+      "choice_is_argmax_p": 0.9995098529558868,
+      "exact_ties_at_max": 0.014964489346804041,
+      "tie_break_first_in_menu": 0.5200534759358288,
+      "E_max_p_sampling_ceiling": 0.6427368048798479,
+      "E_sum_p2_two_samples_agree": 0.5413948585169368,
+      "mean_top2_margin": 0.3558875864779636,
+      "margin_quantiles_10_25_50_75_90": [
+        0.06,
+        0.13999999999999996,
+        0.31000000000000005,
+        0.54,
+        0.74
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.026407922376713015,
+        "[0.02,0.05)": 0.06900070021006302,
+        "[0.05,0.10)": 0.07351205361608483,
+        "[0.10,0.20)": 0.17641292387716315,
+        "[0.20,0.30)": 0.1318595578673602,
+        "[0.30,0.50)": 0.2311293388016405,
+        "[0.50,1.00)": 0.2916775032509753
+      },
+      "share_margin_lt_0.10": 0.16892067620286086,
+      "share_margin_lt_0.20": 0.345333600080024,
+      "confidence_field": {
+        "mean": 0.4057339201760529,
+        "corr_with_top2_margin": 0.9609679353259927,
+        "corr_with_max_p": 0.8635120986345621,
+        "mean_abs_diff_vs_margin": 0.049846517591641146,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.28,
+        "3": 0.38,
+        "4": 0.25,
+        "5": 0.43999999999999995
+      }
+    },
+    "live_engine": {
+      "n": 2336,
+      "choice_is_argmax_p": 1.0,
+      "exact_ties_at_max": 0.003424657534246575,
+      "tie_break_first_in_menu": 0.75,
+      "E_max_p_sampling_ceiling": 0.742914807319773,
+      "E_sum_p2_two_samples_agree": 0.646780049858625,
+      "mean_top2_margin": 0.5598733914487339,
+      "margin_quantiles_10_25_50_75_90": [
+        0.18,
+        0.28,
+        0.53,
+        0.8799999999999999,
+        0.8999999999999999
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.003424657534246575,
+        "[0.02,0.05)": 0.016695205479452056,
+        "[0.05,0.10)": 0.018407534246575343,
+        "[0.10,0.20)": 0.07919520547945205,
+        "[0.20,0.30)": 0.16267123287671234,
+        "[0.30,0.50)": 0.18022260273972604,
+        "[0.50,1.00)": 0.5393835616438356
+      },
+      "share_margin_lt_0.10": 0.038527397260273974,
+      "share_margin_lt_0.20": 0.11772260273972603,
+      "confidence_field": {
+        "mean": 0.6022688356164384,
+        "corr_with_top2_margin": 0.990650410955427,
+        "corr_with_max_p": 0.9544949526728468,
+        "mean_abs_diff_vs_margin": 0.04239544416770448,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.8799999999999999,
+        "3": 0.51,
+        "4": 0.28,
+        "5": 1.0
+      }
+    },
+    "split:train": {
+      "n": 59160,
+      "choice_is_argmax_p": 0.9996619337390128,
+      "exact_ties_at_max": 0.015365111561866126,
+      "tie_break_first_in_menu": 0.5302530253025303,
+      "E_max_p_sampling_ceiling": 0.6535117640229203,
+      "E_sum_p2_two_samples_agree": 0.5510101236240813,
+      "mean_top2_margin": 0.370565572902794,
+      "margin_quantiles_10_25_50_75_90": [
+        0.06000000000000005,
+        0.15999999999999998,
+        0.33999999999999997,
+        0.5599999999999999,
+        0.74
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.024019607843137256,
+        "[0.02,0.05)": 0.06506085192697769,
+        "[0.05,0.10)": 0.06759634888438133,
+        "[0.10,0.20)": 0.1605814739688979,
+        "[0.20,0.30)": 0.1272312373225152,
+        "[0.30,0.50)": 0.24420216362407032,
+        "[0.50,1.00)": 0.31130831643002027
+      },
+      "share_margin_lt_0.10": 0.1566768086544963,
+      "share_margin_lt_0.20": 0.31725828262339417,
+      "confidence_field": {
+        "mean": 0.419711291413117,
+        "corr_with_top2_margin": 0.961333270582624,
+        "corr_with_max_p": 0.8717589012966003,
+        "mean_abs_diff_vs_margin": 0.049146029258098245,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.32,
+        "3": 0.36,
+        "4": 0.29000000000000004,
+        "5": 0.46
+      }
+    },
+    "split:dev": {
+      "n": 8533,
+      "choice_is_argmax_p": 0.9998828079221844,
+      "exact_ties_at_max": 0.01429743349349584,
+      "tie_break_first_in_menu": 0.47540983606557374,
+      "E_max_p_sampling_ceiling": 0.6363345750958549,
+      "E_sum_p2_two_samples_agree": 0.530527891971599,
+      "mean_top2_margin": 0.3452892454369075,
+      "margin_quantiles_10_25_50_75_90": [
+        0.06000000000000005,
+        0.13999999999999996,
+        0.31999999999999995,
+        0.53,
+        0.6799999999999999
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.02191491855150592,
+        "[0.02,0.05)": 0.07054963084495489,
+        "[0.05,0.10)": 0.07629204265791632,
+        "[0.10,0.20)": 0.17051447322161023,
+        "[0.20,0.30)": 0.13078635884214226,
+        "[0.30,0.50)": 0.24387671393413804,
+        "[0.50,1.00)": 0.2860658619477323
+      },
+      "share_margin_lt_0.10": 0.16875659205437712,
+      "share_margin_lt_0.20": 0.3392710652759873,
+      "confidence_field": {
+        "mean": 0.39303996249853507,
+        "corr_with_top2_margin": 0.9588252507516635,
+        "corr_with_max_p": 0.8354762264643285,
+        "mean_abs_diff_vs_margin": 0.04775071706162766,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.28,
+        "3": 0.41000000000000003,
+        "4": 0.30999999999999994,
+        "5": 0.36
+      }
+    },
+    "split:eval": {
+      "n": 14938,
+      "choice_is_argmax_p": 0.9989958495113135,
+      "exact_ties_at_max": 0.01700361494175927,
+      "tie_break_first_in_menu": 0.5433070866141733,
+      "E_max_p_sampling_ceiling": 0.6329244581306436,
+      "E_sum_p2_two_samples_agree": 0.5322966683500523,
+      "mean_top2_margin": 0.342183131353703,
+      "margin_quantiles_10_25_50_75_90": [
+        0.040000000000000036,
+        0.12000000000000005,
+        0.30000000000000004,
+        0.52,
+        0.7
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.03400722988351854,
+        "[0.02,0.05)": 0.08019815236310082,
+        "[0.05,0.10)": 0.0828089436336859,
+        "[0.10,0.20)": 0.17639576917927433,
+        "[0.20,0.30)": 0.1134020618556701,
+        "[0.30,0.50)": 0.2296157450796626,
+        "[0.50,1.00)": 0.2835720980050877
+      },
+      "share_margin_lt_0.10": 0.19701432588030526,
+      "share_margin_lt_0.20": 0.3734100950595796,
+      "confidence_field": {
+        "mean": 0.3936450662739323,
+        "corr_with_top2_margin": 0.957523454098947,
+        "corr_with_max_p": 0.8473663744031568,
+        "mean_abs_diff_vs_margin": 0.05146193492022923,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.32,
+        "3": 0.42000000000000004,
+        "4": 0.19999999999999996,
+        "5": 0.27
+      }
+    },
+    "split:eval_rules": {
+      "n": 14515,
+      "choice_is_argmax_p": 0.9991732690320358,
+      "exact_ties_at_max": 0.012056493282810886,
+      "tie_break_first_in_menu": 0.4685714285714286,
+      "E_max_p_sampling_ceiling": 0.611308670584592,
+      "E_sum_p2_two_samples_agree": 0.5178112931259027,
+      "mean_top2_margin": 0.3134526526024976,
+      "margin_quantiles_10_25_50_75_90": [
+        0.04999999999999999,
+        0.12000000000000005,
+        0.23000000000000004,
+        0.43000000000000005,
+        0.78
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.03203582500861178,
+        "[0.02,0.05)": 0.07516362383740957,
+        "[0.05,0.10)": 0.08715122287289011,
+        "[0.10,0.20)": 0.24967275232518085,
+        "[0.20,0.30)": 0.16989321391663795,
+        "[0.30,0.50)": 0.16920427144333447,
+        "[0.50,1.00)": 0.21687909059593524
+      },
+      "share_margin_lt_0.10": 0.19435067171891146,
+      "share_margin_lt_0.20": 0.44402342404409234,
+      "confidence_field": {
+        "mean": 0.36572028935583883,
+        "corr_with_top2_margin": 0.9630066779755044,
+        "corr_with_max_p": 0.8625451714228324,
+        "mean_abs_diff_vs_margin": 0.05226763675334121,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.21999999999999997,
+        "3": 0.41000000000000003,
+        "4": 0.09999999999999998,
+        "5": 0.6464646464646464
+      }
+    },
+    "split:eval_live": {
+      "n": 2336,
+      "choice_is_argmax_p": 1.0,
+      "exact_ties_at_max": 0.003424657534246575,
+      "tie_break_first_in_menu": 0.75,
+      "E_max_p_sampling_ceiling": 0.742914807319773,
+      "E_sum_p2_two_samples_agree": 0.646780049858625,
+      "mean_top2_margin": 0.5598733914487339,
+      "margin_quantiles_10_25_50_75_90": [
+        0.18,
+        0.28,
+        0.53,
+        0.8799999999999999,
+        0.8999999999999999
+      ],
+      "margin_bins_share": {
+        "[0.00,0.02)": 0.003424657534246575,
+        "[0.02,0.05)": 0.016695205479452056,
+        "[0.05,0.10)": 0.018407534246575343,
+        "[0.10,0.20)": 0.07919520547945205,
+        "[0.20,0.30)": 0.16267123287671234,
+        "[0.30,0.50)": 0.18022260273972604,
+        "[0.50,1.00)": 0.5393835616438356
+      },
+      "share_margin_lt_0.10": 0.038527397260273974,
+      "share_margin_lt_0.20": 0.11772260273972603,
+      "confidence_field": {
+        "mean": 0.6022688356164384,
+        "corr_with_top2_margin": 0.990650410955427,
+        "corr_with_max_p": 0.9544949526728468,
+        "mean_abs_diff_vs_margin": 0.04239544416770448,
+        "note": "Jev's `confidence` tracks the top-2 margin, not the top probability."
+      },
+      "median_margin_by_menu_size": {
+        "2": 0.8799999999999999,
+        "3": 0.51,
+        "4": 0.28,
+        "5": 1.0
+      }
+    }
+  },
+  "requery_noise": {
+    "hyperspeed": {
+      "groups": 30,
+      "pairs": 30,
+      "choice_flips": 1,
+      "choice_agreement": 0.9666666666666667,
+      "identical_probability_vectors": 0.16666666666666666,
+      "per_option_sd_mean": 0.02210887202509939,
+      "max_abs_dp_mean": 0.05100000000000002,
+      "max_abs_dp_median": 0.030000000000000027,
+      "max_abs_dp_p90": 0.09099999999999998,
+      "repeat_gap_s_median": 10.604500000000002
+    },
+    "live_engine": {
+      "groups": 745,
+      "pairs": 1512,
+      "choice_flips": 0,
+      "choice_agreement": 1.0,
+      "identical_probability_vectors": 0.06481481481481481,
+      "per_option_sd_mean": 0.012821494649694435,
+      "max_abs_dp_mean": 0.030324274490941168,
+      "max_abs_dp_median": 0.03,
+      "max_abs_dp_p90": 0.06,
+      "repeat_gap_s_median": 10.009
+    }
+  },
+  "noise_table": {
+    "eval": {
+      "table": [
+        {
+          "sigma": 0.0,
+          "agree_with_logged_choice": 0.9908957022359084,
+          "two_noisy_copies_agree": 1.0,
+          "top2_contains_logged_choice": 0.9999330566340876
+        },
+        {
+          "sigma": 0.01,
+          "agree_with_logged_choice": 0.9852055161333512,
+          "two_noisy_copies_agree": 0.9813018811085822,
+          "top2_contains_logged_choice": 0.999849377426697
+        },
+        {
+          "sigma": 0.0128,
+          "agree_with_logged_choice": 0.9823646070424421,
+          "two_noisy_copies_agree": 0.976461038961039,
+          "top2_contains_logged_choice": 0.9997949859418932
+        },
+        {
+          "sigma": 0.02,
+          "agree_with_logged_choice": 0.9737414647208462,
+          "two_noisy_copies_agree": 0.9639300776543045,
+          "top2_contains_logged_choice": 0.9993598540634623
+        },
+        {
+          "sigma": 0.0221,
+          "agree_with_logged_choice": 0.9707875886999598,
+          "two_noisy_copies_agree": 0.9605117820324006,
+          "top2_contains_logged_choice": 0.9992259673316375
+        },
+        {
+          "sigma": 0.03,
+          "agree_with_logged_choice": 0.961118456285982,
+          "two_noisy_copies_agree": 0.9465540902396572,
+          "top2_contains_logged_choice": 0.9986695006024903
+        },
+        {
+          "sigma": 0.05,
+          "agree_with_logged_choice": 0.9378263489088231,
+          "two_noisy_copies_agree": 0.9133292609452404,
+          "top2_contains_logged_choice": 0.9960587093319052
+        },
+        {
+          "sigma": 0.075,
+          "agree_with_logged_choice": 0.9100281162136832,
+          "two_noisy_copies_agree": 0.8753849243539965,
+          "top2_contains_logged_choice": 0.9923140648011782
+        },
+        {
+          "sigma": 0.1,
+          "agree_with_logged_choice": 0.8855686838934261,
+          "two_noisy_copies_agree": 0.8423065336725131,
+          "top2_contains_logged_choice": 0.9882388874012585
+        },
+        {
+          "sigma": 0.15,
+          "agree_with_logged_choice": 0.8363904137100013,
+          "two_noisy_copies_agree": 0.7768777614138439,
+          "top2_contains_logged_choice": 0.9765614540099076
+        },
+        {
+          "sigma": 0.2,
+          "agree_with_logged_choice": 0.7891325813361896,
+          "two_noisy_copies_agree": 0.7144279689382782,
+          "top2_contains_logged_choice": 0.9612858147007631
+        },
+        {
+          "sigma": 0.3,
+          "agree_with_logged_choice": 0.708118556701031,
+          "two_noisy_copies_agree": 0.6065612866514929,
+          "top2_contains_logged_choice": 0.9315964319185969
+        }
+      ],
+      "sigma_needed_for_0.90": 0.08524974341430032,
+      "sigma_needed_for_0.96": 0.030960373630321537
+    },
+    "eval_rules": {
+      "table": [
+        {
+          "sigma": 0.0,
+          "agree_with_logged_choice": 0.9926972097829831,
+          "two_noisy_copies_agree": 1.0,
+          "top2_contains_logged_choice": 0.9999311057526696
+        },
+        {
+          "sigma": 0.01,
+          "agree_with_logged_choice": 0.9864924216327937,
+          "two_noisy_copies_agree": 0.9825525318635894,
+          "top2_contains_logged_choice": 0.999091457113331
+        },
+        {
+          "sigma": 0.0128,
+          "agree_with_logged_choice": 0.9833275921460558,
+          "two_noisy_copies_agree": 0.9775663107130554,
+          "top2_contains_logged_choice": 0.9989536686186703
+        },
+        {
+          "sigma": 0.02,
+          "agree_with_logged_choice": 0.9742636927316569,
+          "two_noisy_copies_agree": 0.9644118153634171,
+          "top2_contains_logged_choice": 0.9975800895625215
+        },
+        {
+          "sigma": 0.0221,
+          "agree_with_logged_choice": 0.9714562521529452,
+          "two_noisy_copies_agree": 0.961001550120565,
+          "top2_contains_logged_choice": 0.9971365828453325
+        },
+        {
+          "sigma": 0.03,
+          "agree_with_logged_choice": 0.9615440923182914,
+          "two_noisy_copies_agree": 0.9464476403720289,
+          "top2_contains_logged_choice": 0.995569238718567
+        },
+        {
+          "sigma": 0.05,
+          "agree_with_logged_choice": 0.9353771960041336,
+          "two_noisy_copies_agree": 0.9082974509128487,
+          "top2_contains_logged_choice": 0.9907337237340682
+        },
+        {
+          "sigma": 0.075,
+          "agree_with_logged_choice": 0.90211419221495,
+          "two_noisy_copies_agree": 0.8608293145022391,
+          "top2_contains_logged_choice": 0.9847915949018257
+        },
+        {
+          "sigma": 0.1,
+          "agree_with_logged_choice": 0.8688253530830176,
+          "two_noisy_copies_agree": 0.8156002411298656,
+          "top2_contains_logged_choice": 0.9782724767481915
+        },
+        {
+          "sigma": 0.15,
+          "agree_with_logged_choice": 0.8090337581811918,
+          "two_noisy_copies_agree": 0.7358982087495695,
+          "top2_contains_logged_choice": 0.9639209438511884
+        },
+        {
+          "sigma": 0.2,
+          "agree_with_logged_choice": 0.7576128143300035,
+          "two_noisy_copies_agree": 0.6705907681708577,
+          "top2_contains_logged_choice": 0.9474207716155701
+        },
+        {
+          "sigma": 0.3,
+          "agree_with_logged_choice": 0.6776567344126765,
+          "two_noisy_copies_agree": 0.5753918360316913,
+          "top2_contains_logged_choice": 0.9174517740268687
+        }
+      ],
+      "sigma_needed_for_0.90": 0.07658776354934675,
+      "sigma_needed_for_0.96": 0.031180187592562136
+    },
+    "eval_live": {
+      "table": [
+        {
+          "sigma": 0.0,
+          "agree_with_logged_choice": 0.9991438356164384,
+          "two_noisy_copies_agree": 1.0,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.01,
+          "agree_with_logged_choice": 0.9971104452054794,
+          "two_noisy_copies_agree": 0.9966020976027398,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.0128,
+          "agree_with_logged_choice": 0.996628852739726,
+          "two_noisy_copies_agree": 0.9955854023972602,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.02,
+          "agree_with_logged_choice": 0.9952375856164384,
+          "two_noisy_copies_agree": 0.9935520119863014,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.0221,
+          "agree_with_logged_choice": 0.9945954623287672,
+          "two_noisy_copies_agree": 0.9926423373287672,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.03,
+          "agree_with_logged_choice": 0.9931506849315068,
+          "two_noisy_copies_agree": 0.9910905393835616,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.05,
+          "agree_with_logged_choice": 0.9873180650684932,
+          "two_noisy_copies_agree": 0.9821008133561644,
+          "top2_contains_logged_choice": 0.9999732448630136
+        },
+        {
+          "sigma": 0.075,
+          "agree_with_logged_choice": 0.979050727739726,
+          "two_noisy_copies_agree": 0.967679794520548,
+          "top2_contains_logged_choice": 0.9998394691780822
+        },
+        {
+          "sigma": 0.1,
+          "agree_with_logged_choice": 0.963158176369863,
+          "two_noisy_copies_agree": 0.9449914383561644,
+          "top2_contains_logged_choice": 0.998662243150685
+        },
+        {
+          "sigma": 0.15,
+          "agree_with_logged_choice": 0.9234535530821918,
+          "two_noisy_copies_agree": 0.8829997859589042,
+          "top2_contains_logged_choice": 0.9917861729452054
+        },
+        {
+          "sigma": 0.2,
+          "agree_with_logged_choice": 0.8848994006849316,
+          "two_noisy_copies_agree": 0.8249411386986302,
+          "top2_contains_logged_choice": 0.979318279109589
+        },
+        {
+          "sigma": 0.3,
+          "agree_with_logged_choice": 0.8048212756849316,
+          "two_noisy_copies_agree": 0.7225492294520548,
+          "top2_contains_logged_choice": 0.948068279109589
+        }
+      ],
+      "sigma_needed_for_0.90": 0.18041637751561418,
+      "sigma_needed_for_0.96": 0.1039770889487871
+    },
+    "dev": {
+      "table": [
+        {
+          "sigma": 0.0,
+          "agree_with_logged_choice": 0.9923825149419899,
+          "two_noisy_copies_agree": 1.0,
+          "top2_contains_logged_choice": 1.0
+        },
+        {
+          "sigma": 0.01,
+          "agree_with_logged_choice": 0.9890205672096566,
+          "two_noisy_copies_agree": 0.9863544474393531,
+          "top2_contains_logged_choice": 0.9999267549513653
+        },
+        {
+          "sigma": 0.0128,
+          "agree_with_logged_choice": 0.9863324739247626,
+          "two_noisy_copies_agree": 0.9816814133364584,
+          "top2_contains_logged_choice": 0.9998901324270479
+        },
+        {
+          "sigma": 0.02,
+          "agree_with_logged_choice": 0.978766260400797,
+          "two_noisy_copies_agree": 0.9706800070315247,
+          "top2_contains_logged_choice": 0.9997070198054612
+        },
+        {
+          "sigma": 0.0221,
+          "agree_with_logged_choice": 0.9762979022618071,
+          "two_noisy_copies_agree": 0.9674645493964608,
+          "top2_contains_logged_choice": 0.9997070198054612
+        },
+        {
+          "sigma": 0.03,
+          "agree_with_logged_choice": 0.9688488808156569,
+          "two_noisy_copies_agree": 0.9554889839446853,
+          "top2_contains_logged_choice": 0.9994433376303762
+        },
+        {
+          "sigma": 0.05,
+          "agree_with_logged_choice": 0.9483475917028009,
+          "two_noisy_copies_agree": 0.9269893355209188,
+          "top2_contains_logged_choice": 0.9985497480370327
+        },
+        {
+          "sigma": 0.075,
+          "agree_with_logged_choice": 0.9231366459627329,
+          "two_noisy_copies_agree": 0.8925934606820579,
+          "top2_contains_logged_choice": 0.9967479198406187
+        },
+        {
+          "sigma": 0.1,
+          "agree_with_logged_choice": 0.8998300714871674,
+          "two_noisy_copies_agree": 0.8595819172623931,
+          "top2_contains_logged_choice": 0.9942942107113559
+        },
+        {
+          "sigma": 0.15,
+          "agree_with_logged_choice": 0.8508218094456814,
+          "two_noisy_copies_agree": 0.7928263799367162,
+          "top2_contains_logged_choice": 0.9855487519043713
+        },
+        {
+          "sigma": 0.2,
+          "agree_with_logged_choice": 0.8054245283018868,
+          "two_noisy_copies_agree": 0.7255361537560061,
+          "top2_contains_logged_choice": 0.9736317824915036
+        },
+        {
+          "sigma": 0.3,
+          "agree_with_logged_choice": 0.7154356615492793,
+          "two_noisy_copies_agree": 0.6092889370678543,
+          "top2_contains_logged_choice": 0.9431618422594633
+        }
+      ],
+      "sigma_needed_for_0.90": 0.09981772470144556,
+      "sigma_needed_for_0.96": 0.03863251161128981
+    }
+  },
+  "ceiling_if_student_matches_jev_mean_probs": {
+    "eval@hyperspeed_sd=0.0221": 0.9707875886999598,
+    "eval@live_sd=0.0128": 0.9823646070424421,
+    "eval_rules@hyperspeed_sd=0.0221": 0.9714562521529452,
+    "eval_rules@live_sd=0.0128": 0.9833275921460558,
+    "eval_live@hyperspeed_sd=0.0221": 0.9945954623287672,
+    "eval_live@live_sd=0.0128": 0.996628852739726
+  },
+  "representation": {
+    "by_style": {
+      "breezy": {
+        "n": 34408,
+        "state_cols": [
+          "score",
+          "long_on",
+          "short_on",
+          "slices",
+          "stop_dist_atr",
+          "rv90_pct",
+          "at_10d",
+          "r24h_pct",
+          "fund_z"
+        ],
+        "packer_keeps_cols": [
+          "score",
+          "long_on",
+          "short_on",
+          "r24h_pct",
+          "fund_z"
+        ],
+        "packer_drops_cols": [
+          "slices",
+          "stop_dist_atr",
+          "rv90_pct",
+          "at_10d"
+        ],
+        "coins_per_row": {
+          "1": 11087,
+          "2": 23321
+        },
+        "share_rows_with_a_menu_coin_dropped_by_coin_cap": 0.0
+      },
+      "boozy": {
+        "n": 34578,
+        "state_cols": [
+          "r1h_pct",
+          "r24h_pct",
+          "r7d_pct",
+          "attn_z",
+          "oi1h_pct",
+          "spread_bp",
+          "vol_musd"
+        ],
+        "packer_keeps_cols": [
+          "r7d_pct",
+          "r24h_pct",
+          "r1h_pct",
+          "attn_z",
+          "vol_musd"
+        ],
+        "packer_drops_cols": [
+          "oi1h_pct",
+          "spread_bp"
+        ],
+        "coins_per_row": {
+          "2": 14,
+          "3": 5920,
+          "4": 1622,
+          "5": 21209,
+          "6": 5813
+        },
+        "share_rows_with_a_menu_coin_dropped_by_coin_cap": 0.4988431950951472
+      },
+      "bizzy": {
+        "n": 33320,
+        "state_cols": [
+          "to_trigger_pct",
+          "day_move_pct",
+          "prev_range_pct",
+          "r1h_pct",
+          "fund_z",
+          "oi1h_pct",
+          "spread_bp"
+        ],
+        "packer_keeps_cols": [
+          "r1h_pct",
+          "oi1h_pct"
+        ],
+        "packer_drops_cols": [
+          "to_trigger_pct",
+          "day_move_pct",
+          "prev_range_pct",
+          "fund_z",
+          "spread_bp"
+        ],
+        "coins_per_row": {
+          "2": 12601,
+          "4": 20719
+        },
+        "share_rows_with_a_menu_coin_dropped_by_coin_cap": 0.0
+      }
+    },
+    "rules_chars_by_rules_id": {
+      "setup-3-SleuthBee": 444,
+      "setup-2-WindwardBee": 278,
+      "setup-2-WindwardBee+rotating": 278,
+      "setup-1-HoneySaver": 259,
+      "bizzy-strict": 111,
+      "bizzy-majors": 109,
+      "bizzy-patient": 102,
+      "boozy-attention": 102,
+      "breezy-cautious": 102,
+      "boozy-attention+rotating": 102,
+      "bizzy-alts": 94,
+      "boozy-careful": 76,
+      "boozy-careful+rotating": 76,
+      "boozy-diamond+rotating": 75,
+      "boozy-diamond": 75,
+      "breezy-eth": 72,
+      "breezy-aggressive": 71,
+      "breezy-btc": 45,
+      "boozy-majors": 18,
+      "breezy-original": 0,
+      "bizzy-original": 0,
+      "boozy-original": 0,
+      "boozy-original+rotating": 0
+    },
+    "rules_clip_chars": 180,
+    "rules_ids_clipped": [
+      "setup-1-HoneySaver",
+      "setup-2-WindwardBee",
+      "setup-2-WindwardBee+rotating",
+      "setup-3-SleuthBee"
+    ],
+    "jev_prompt_input_tokens": {
+      "n": 99970,
+      "median": 736.0,
+      "p10": 678.0,
+      "p90": 845.0
+    },
+    "student_tokens_per_pair": 128,
+    "menu_filtered_to_coins_allowed": {
+      "rows_with_allowlist": 29768,
+      "share_menu_coins_all_allowed": 1.0
+    },
+    "token_truncation_sample": {
+      "n_rows": 3000,
+      "pool": "time-eval (natural distribution)",
+      "share_pairs_state_trimmed": 0.5860904794058069,
+      "share_rows_some_menu_coin_line_cut_in_some_pair": 0.31166666666666665,
+      "share_gold_pairs_gold_coin_line_cut": 0.32385466034755134,
+      "share_gold_pairs_rules_line_cut": 0.0,
+      "by_style": {
+        "bizzy": {
+          "rows": 963,
+          "share_pairs_state_trimmed": 0.2585669781931464,
+          "share_rows_menu_coin_line_cut": 0.0
+        },
+        "boozy": {
+          "rows": 1056,
+          "share_pairs_state_trimmed": 1.0,
+          "share_rows_menu_coin_line_cut": 0.6950757575757576
+        },
+        "breezy": {
+          "rows": 981,
+          "share_pairs_state_trimmed": 0.23806298679309176,
+          "share_rows_menu_coin_line_cut": 0.20489296636085627
+        }
+      }
+    }
+  }
+}
