@@ -1,48 +1,419 @@
-# JEV-H-trading receipt (round 2: Jev distill)
+# JEV-H-trading receipt (round 3: real Jev-1.13 calls)
 
 > **Not financial advice.** Offline research only. No live or paper order routing. No exchange or broker calls. Gold is typesafe/jev-1.13's own choice, not a traded P&L.
 
-Seed `42`. Wall 41.1s. Size **17m**. Backbone loaded: True. Smoke=False.
+Seed `42`. Wall 9179.8s. Size **68m**. Backbone loaded: True. Smoke=False.
 
-## Honest data verdict
+## This is not a stand-in
 
-- Unique state+menu rows: **1260** (raw 1581)
-- Multi-option usable for train/dev/eval: **253** (train 177 / dev 38 / eval 24, purge 14 @ 300000 ms)
-- Single-option (format-check only, dropped from train): **1004**
-- Genuinely varied multi-option: **4** (need ~2000; shortfall 1996)
-- Non-hold gold: **4** (need ~400; shortfall 396)
-- Calendar days: **2** (need 14)
-- Gold distribution: `{"HOLD_WINNER": 249, "APE_STRK": 1, "APE_DOGE": 1, "SHORT_BTC": 1, "DOUBLE_DOWN": 1}`
-- Enough to claim a cost-free Jev stand-in: **False**
+This does NOT meet the >=14 days / multiple-regimes bar. live_engine is ~13h of one paper session; hyperspeed is 30 minutes / 30 snapshots of one market regime. Scores mean: mimics Jev in this regime, not a stand-in.
 
-A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-duplicate ticks. Mimicking discretionary Jev (when to leave HOLD, which APE_*, when to SWITCH) wants thousands of *varied* multi-option rows, with each offered action as gold at least ~50 times, over more than one regime.
+- Calendar days: **2** (need 14). Span **12.725 h**. `enough_to_claim`: **False**.
+- Unique state+menu: **105005** (raw 106258)
+- Multi-option usable: **102306** (hyperspeed train pool 59160 / time-dev 8533 / time-eval 14938; live holdout 2336; unseen-rules 14515; purge 3278)
+- Non-hold gold: **56131**. Varied (non-hold-wall): **66980**.
+- Sources: `{"hyperspeed": 99970, "live_engine": 2336}`
+- Held-out rules_id: `['breezy-cautious', 'boozy-diamond', 'bizzy-alts']`
+- Time-eval snapshots (last ~6): `['2026-10-09T12:04:29.935Z', '2026-10-09T12:05:29.934Z', '2026-10-09T12:06:29.935Z', '2026-10-09T12:07:29.937Z', '2026-10-09T12:08:29.959Z', '2026-10-09T12:09:29.958Z']`
+- Single-option format-check only: **2688**
 
 ## Agreement with Jev (gold = choice)
 
-| split | n | agree | varied n/acc | collapsed n/acc | conf-mist ≥0.65 | ECE | always HOLD/RIDE |
-|---|---:|---:|---|---|---:|---:|---:|
-| time-split eval | 24 | 1.0000 | 0/None | 24/1.0 | 0 | 0.0000 | 1.0000 |
-| time-split dev (T fit) | 38 | 1.0000 | 1/1.0 | 37/1.0 | 0 | 0.0031 | 0.9737 |
-| train | 177 | 1.0000 | 3/1.0 | 174/1.0 | 0 | 0.0000 | 0.9944 |
+| split | scored/pool | agree | always HOLD | majority-per-style | conf-mist ≥0.65 | ECE |
+|---|---:|---:|---:|---:|---:|---:|
+| time-eval (last 6 hyperspeed snapshots, seen rules) | 6000/14938 | 0.7518 | 0.4930 | 0.4930 | 601 | 0.0593 |
+| unseen rules_id | 6000/14515 | 0.7568 | 0.6182 | 0.6182 | 1302 | 0.2171 |
+| live_engine (entire slice) | 2336/2336 | 0.8699 | 0.9927 | 0.9927 | 25 | 0.2126 |
+| time-dev (T fit) | 2000/8533 | 0.8120 | 0.4875 | 0.4875 | 219 | 0.0442 |
+| train subset | 400/59160 | 0.9075 | 0.4575 | 0.4575 | 13 | 0.0801 |
 
-### Per menu size (eval)
+Majority-per-style equals always-HOLD here because the train majority gold per style is a hold-class action (`RIDE` / `HOLD_WINNER` / `HOLD`). Time-eval **beats** HOLD (student learned hyperspeed diversity). live_engine **loses** to HOLD-copy: that slice is ~99% HOLD_WINNER/RIDE, while the student was trained on hyperspeed menus where always-HOLD is ~44%.
+
+### Time-eval by menu size / gold / style
 
 ```json
 {
-  "3": {
-    "n": 24,
-    "accuracy": 1.0
+  "by_menu_size": {
+    "2": {
+      "n": 2327,
+      "accuracy": 0.8448646325741298
+    },
+    "3": {
+      "n": 1062,
+      "accuracy": 0.832391713747646
+    },
+    "4": {
+      "n": 1061,
+      "accuracy": 0.6022620169651273
+    },
+    "5": {
+      "n": 1550,
+      "accuracy": 0.6593548387096774
+    }
+  },
+  "by_gold_label": {
+    "HOLD_WINNER": {
+      "n": 793,
+      "accuracy": 0.9747793190416141
+    },
+    "SHORT_BTC": {
+      "n": 530,
+      "accuracy": 0.4641509433962264
+    },
+    "SHORT_ETH": {
+      "n": 530,
+      "accuracy": 0.4660377358490566
+    },
+    "RIDE": {
+      "n": 422,
+      "accuracy": 0.8815165876777251
+    },
+    "APE_NEAR": {
+      "n": 283,
+      "accuracy": 0.31095406360424027
+    },
+    "APE_BTC": {
+      "n": 281,
+      "accuracy": 0.7153024911032029
+    },
+    "APE_TIA": {
+      "n": 277,
+      "accuracy": 0.9638989169675091
+    },
+    "APE_ONDO": {
+      "n": 275,
+      "accuracy": 0.5563636363636364
+    },
+    "APE_DOGE": {
+      "n": 272,
+      "accuracy": 0.6764705882352942
+    },
+    "WAIT": {
+      "n": 265,
+      "accuracy": 0.9811320754716981
+    },
+    "CUT_LOSS": {
+      "n": 265,
+      "accuracy": 0.6754716981132075
+    },
+    "HOLD": {
+      "n": 265,
+      "accuracy": 0.8452830188679246
+    },
+    "BREAKOUT_BTC": {
+      "n": 265,
+      "accuracy": 0.9924528301886792
+    },
+    "BAIL": {
+      "n": 201,
+      "accuracy": 0.8805970149253731
+    },
+    "SWITCH_COIN": {
+      "n": 185,
+      "accuracy": 0.9945945945945946
+    },
+    "APE_PUMP": {
+      "n": 148,
+      "accuracy": 0.9121621621621622
+    },
+    "APE_PEPE": {
+      "n": 123,
+      "accuracy": 0.7967479674796748
+    },
+    "LONG_BTC": {
+      "n": 119,
+      "accuracy": 0.9747899159663865
+    },
+    "APE_HYPE": {
+      "n": 64,
+      "accuracy": 0.859375
+    },
+    "APE_ZEC": {
+      "n": 51,
+      "accuracy": 0.7254901960784313
+    },
+    "APE_LIT": {
+      "n": 42,
+      "accuracy": 0.35714285714285715
+    },
+    "APE_XRP": {
+      "n": 32,
+      "accuracy": 0.40625
+    },
+    "APE_SOL": {
+      "n": 32,
+      "accuracy": 0.71875
+    },
+    "TRIM_HALF": {
+      "n": 28,
+      "accuracy": 1.0
+    },
+    "APE_ENA": {
+      "n": 28,
+      "accuracy": 0.39285714285714285
+    },
+    "APE_INJ": {
+      "n": 23,
+      "accuracy": 0.8695652173913043
+    },
+    "APE_AVAX": {
+      "n": 21,
+      "accuracy": 0.8095238095238095
+    },
+    "APE_GRAM": {
+      "n": 19,
+      "accuracy": 0.8947368421052632
+    },
+    "APE_ADA": {
+      "n": 18,
+      "accuracy": 0.5555555555555556
+    },
+    "APE_LTC": {
+      "n": 15,
+      "accuracy": 0.5333333333333333
+    },
+    "APE_RENDER": {
+      "n": 14,
+      "accuracy": 0.9285714285714286
+    },
+    "APE_FET": {
+      "n": 13,
+      "accuracy": 1.0
+    },
+    "APE_ETH": {
+      "n": 12,
+      "accuracy": 0.5
+    },
+    "APE_LINK": {
+      "n": 11,
+      "accuracy": 0.7272727272727273
+    },
+    "APE_VIRTUAL": {
+      "n": 10,
+      "accuracy": 0.8
+    },
+    "APE_HBAR": {
+      "n": 10,
+      "accuracy": 0.5
+    },
+    "APE_BNB": {
+      "n": 9,
+      "accuracy": 0.5555555555555556
+    },
+    "APE_SUI": {
+      "n": 9,
+      "accuracy": 0.8888888888888888
+    },
+    "APE_WLD": {
+      "n": 7,
+      "accuracy": 0.7142857142857143
+    },
+    "APE_TAO": {
+      "n": 6,
+      "accuracy": 0.8333333333333334
+    },
+    "DOUBLE_DOWN": {
+      "n": 6,
+      "accuracy": 0.0
+    },
+    "APE_BCH": {
+      "n": 4,
+      "accuracy": 0.25
+    },
+    "APE_ARB": {
+      "n": 4,
+      "accuracy": 1.0
+    },
+    "APE_PENGU": {
+      "n": 4,
+      "accuracy": 0.75
+    },
+    "APE_XPL": {
+      "n": 4,
+      "accuracy": 0.75
+    },
+    "APE_TRUMP": {
+      "n": 3,
+      "accuracy": 0.3333333333333333
+    },
+    "APE_VVV": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "APE_XLM": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "by_style": {
+    "boozy": {
+      "n": 2940,
+      "accuracy": 0.7397959183673469
+    },
+    "breezy": {
+      "n": 2000,
+      "accuracy": 0.705
+    },
+    "bizzy": {
+      "n": 1060,
+      "accuracy": 0.8735849056603774
+    }
+  },
+  "by_source": {
+    "hyperspeed": {
+      "n": 6000,
+      "accuracy": 0.7518333333333334
+    }
   }
 }
 ```
 
-### Per action (eval, gold label)
+### Unseen-rules by style / gold
 
 ```json
 {
-  "HOLD_WINNER": {
-    "n": 24,
-    "accuracy": 1.0
+  "by_style": {
+    "breezy": {
+      "n": 2665,
+      "accuracy": 0.5969981238273921
+    },
+    "boozy": {
+      "n": 2124,
+      "accuracy": 0.8639359698681732
+    },
+    "bizzy": {
+      "n": 1211,
+      "accuracy": 0.9207266721717589
+    }
+  },
+  "by_gold_label": {
+    "HOLD_WINNER": {
+      "n": 806,
+      "accuracy": 0.9900744416873449
+    },
+    "RIDE": {
+      "n": 685,
+      "accuracy": 0.9912408759124087
+    },
+    "SHORT_ETH": {
+      "n": 606,
+      "accuracy": 0.7541254125412541
+    },
+    "CUT_LOSS": {
+      "n": 606,
+      "accuracy": 0.8811881188118812
+    },
+    "APE_TIA": {
+      "n": 605,
+      "accuracy": 1.0
+    },
+    "HOLD": {
+      "n": 605,
+      "accuracy": 0.9603305785123967
+    },
+    "LONG_BTC": {
+      "n": 605,
+      "accuracy": 0.27603305785123966
+    },
+    "TRIM_HALF": {
+      "n": 473,
+      "accuracy": 0.0
+    },
+    "APE_STRK": {
+      "n": 241,
+      "accuracy": 0.995850622406639
+    },
+    "APE_NEAR": {
+      "n": 217,
+      "accuracy": 0.2073732718894009
+    },
+    "SHORT_BTC": {
+      "n": 169,
+      "accuracy": 1.0
+    },
+    "APE_PUMP": {
+      "n": 154,
+      "accuracy": 0.538961038961039
+    },
+    "SWITCH_COIN": {
+      "n": 149,
+      "accuracy": 1.0
+    },
+    "APE_ONDO": {
+      "n": 21,
+      "accuracy": 0.047619047619047616
+    },
+    "DOUBLE_DOWN": {
+      "n": 20,
+      "accuracy": 0.45
+    },
+    "APE_JUP": {
+      "n": 18,
+      "accuracy": 1.0
+    },
+    "SWITCH": {
+      "n": 6,
+      "accuracy": 0.0
+    },
+    "APE_GRAM": {
+      "n": 6,
+      "accuracy": 1.0
+    },
+    "APE_LIT": {
+      "n": 5,
+      "accuracy": 0.0
+    },
+    "APE_BTC": {
+      "n": 3,
+      "accuracy": 0.0
+    }
+  }
+}
+```
+
+### live_engine by style / gold
+
+```json
+{
+  "by_style": {
+    "boozy": {
+      "n": 1247,
+      "accuracy": 0.7570168404170008
+    },
+    "breezy": {
+      "n": 1089,
+      "accuracy": 0.9990817263544536
+    }
+  },
+  "by_gold_label": {
+    "RIDE": {
+      "n": 1229,
+      "accuracy": 0.7656631407648494
+    },
+    "HOLD_WINNER": {
+      "n": 1087,
+      "accuracy": 1.0
+    },
+    "DOUBLE_DOWN": {
+      "n": 15,
+      "accuracy": 0.0
+    },
+    "APE_DOGE": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "APE_STRK": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "SHORT_BTC": {
+      "n": 1,
+      "accuracy": 0.0
+    },
+    "SHORT_ETH": {
+      "n": 1,
+      "accuracy": 1.0
+    }
   }
 }
 ```
@@ -54,13 +425,13 @@ A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-d
   "gold": "jev_choice",
   "soft_targets": "probabilities (KL) + listwise CE + pairwise hinge",
   "option_shuffle": true,
-  "size": "17m",
-  "hf_id": "jhu-clsp/ettin-encoder-17m",
-  "hidden": 256,
-  "n_layers": 7,
-  "n_heads": 4,
+  "size": "68m",
+  "hf_id": "jhu-clsp/ettin-encoder-68m",
+  "hidden": 512,
+  "n_layers": 19,
+  "n_heads": 8,
   "seq_len": 128,
-  "unfreeze_last": 4,
+  "unfreeze_last": 6,
   "lr_encoder": 2e-05,
   "lr_head": 8e-05,
   "lr_embed": 5e-06,
@@ -68,52 +439,66 @@ A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-d
   "pair_coef": 0.4,
   "pair_margin": 0.5,
   "soft_kl_coef": 0.5,
-  "epochs_run": 6,
-  "epochs_requested": 6,
-  "microbatch": 8,
-  "temperature": 0.3,
-  "n_params": 16863489,
-  "n_trainable": 2296577,
+  "epochs_run": 4,
+  "epochs_requested": 4,
+  "microbatch": 4,
+  "temperature": 1.2,
+  "n_params": 68407809,
+  "n_trainable": 13639169,
   "backbone_loaded": true,
   "missing_keys": [],
-  "keep_option_rows": 3,
+  "keep_option_rows": 22088,
   "tokenizer": "/workspace/tools/orchestration/jevh_trading/assets/tokenizer.json",
-  "train_minutes": 0.54,
-  "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)"
+  "train_minutes": 122.85,
+  "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)",
+  "n_train_scored": 8000,
+  "n_train_pool": 59160,
+  "n_dev_scored": 2000,
+  "n_dev_pool": 8533,
+  "grad_ckpt": true,
+  "train_majority_by_style": {
+    "boozy": "RIDE",
+    "breezy": "HOLD_WINNER",
+    "bizzy": "HOLD"
+  },
+  "text_a": "[choice] {style_tag} {rules_id} + clipped strategy/rules + compact state",
+  "option_text": "label plus menu_detail kind/coin/side/desc when present",
+  "baseline_note": "always-HOLD / majority-per-style use bare menu labels (HOLD/RIDE/HOLD_WINNER/WAIT), not decorated option_text. Recomputed after the 68m run; student logits unchanged."
 }
 ```
 
-CPU latency batch-1 (PyTorch, one option): mean **8.59 ms** (p50 8.54, p95 9.03).
+CPU latency batch-1 (PyTorch, one option): mean **41.47 ms** (p50 41.55, p95 44.27).
 
 ## ONNX (Hailo-10H DFC input, not compiled)
 
-- path: `/workspace/tools/orchestration/jevh_trading/artifacts/jevh_trading_ettin17m_seq128.onnx`
-- sha256: `b5f2170e30da9282f70d7979daa691ddbdc92a8628576e451535947e4dc95725`
+- path: `/workspace/tools/orchestration/jevh_trading/artifacts/jevh_trading_ettin68m_seq128.onnx`
+- sha256: `5031d09557d896679ed3092c5a67877aa076ce65cd4e664ac104ffaf67e1c597`
 - opset: 17
 - inputs: `{'input_ids': [1, 128], 'attention_mask': [1, 128]}`
 - outputs: `{'logit': [1, 1]}`
 - attention_mask used: True
-- PyTorch/ORT cos: **0.9999999999990233** (max abs 1.621246337890625e-05)
+- PyTorch/ORT cos: **0.999999999999508** (max abs 1.5735626220703125e-05)
 - calib: 256 unique tokenized pairs `[256, 128]`
 
 ## Outcome aux (not gold)
 
 {
   "n_mapped": 0,
-  "paper_span_hours": 1.472,
+  "paper_span_hours": 0.492,
   "horizon_hours": 8,
-  "note": "Forward-outcome labels are an optional auxiliary/eval signal, not gold. This log spans ~1.5h of decisions; an 8h forward window is not available for almost every row. Do not treat outcome-argmax as a Jev stand-in."
+  "note": "Forward-outcome labels are an optional auxiliary/eval signal, not gold. This log spans ~0.5h of decisions; an 8h forward window is not available for almost every row. Do not treat outcome-argmax as a Jev stand-in."
 }
 
 ## Known gaps
 
-- Gold is Jev's logged choice + probabilities, not forward PnL. Not financial advice.
-- Genuinely varied multi-option rows: 4 (need ~2000).
-- Non-hold gold: 4 (need ~400).
-- Single-option RIDE menus are format-check only and never enter the train loss.
-- Collapsed HOLD_WINNER+LONG_BTC+SWITCH ticks dominate; a student can copy HOLD without mimicking discretionary Jev.
-- Backbone 17m (jhu-clsp/ettin-encoder-17m); recipe from 68m-v5, not merged. 17m is the thin-data/CPU fallback.
+- Gold is Jev's logged choice + probabilities, never status/action. Not financial advice.
+- This does NOT meet the >=14 days / multiple-regimes bar. live_engine is ~13h of one paper session; hyperspeed is 30 minutes / 30 snapshots of one market regime. Scores mean: mimics Jev in this regime, not a stand-in.
+- Calendar days 2 (need 14); span 12.725 h.
+- Non-hold gold: 56131. Varied: 66980.
+- live_engine is held out of train when v2 hyperspeed is present.
+- Held-out rules_id: ['breezy-cautious', 'boozy-diamond', 'bizzy-alts']. Time-eval snapshots: ['2026-10-09T12:04:29.935Z', '2026-10-09T12:05:29.934Z', '2026-10-09T12:06:29.935Z', '2026-10-09T12:07:29.937Z', '2026-10-09T12:08:29.959Z', '2026-10-09T12:09:29.958Z'].
+- CPU 68m train cap: scored 8000 of pool 59160 (stratified).
+- Backbone 68m (jhu-clsp/ettin-encoder-68m); 68m-v5 recipe (not merged). last-N unfreeze=6.
 - No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.
-- Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md for the log schema.
-- Forced/vetoed execution is metadata; gold stays Jev's choice even when the engine overrode the fill.
-- seq128 keep_option: 3 encoded rows overflowed; option tokens are kept and state is trimmed from the end.
+- Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md.
+- seq128 keep_option: 22088 encoded rows overflowed; option kept, state trimmed.

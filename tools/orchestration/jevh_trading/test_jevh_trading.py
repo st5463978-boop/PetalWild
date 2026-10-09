@@ -115,7 +115,10 @@ class EncodeSmoke(unittest.TestCase):
             p = tokenizer_path()
         except FileNotFoundError:
             self.skipTest("tokenizer missing")
-        ids, mask, mode = encode_pair("[choice] hello\nme: flat", "HOLD_WINNER: keep")
+        try:
+            ids, mask, mode = encode_pair("[choice] hello\nme: flat", "HOLD_WINNER: keep")
+        except ModuleNotFoundError:
+            self.skipTest("tokenizers missing")
         self.assertEqual(len(ids), SEQ_LEN)
         self.assertEqual(len(mask), SEQ_LEN)
         self.assertEqual(sum(mask), int(np.count_nonzero(mask)))
@@ -340,7 +343,10 @@ class EncodeKeepOption(unittest.TestCase):
         except FileNotFoundError:
             self.skipTest("tokenizer missing")
         text_a = "[choice] " + ("state token " * 80)
-        ids, mask, mode = encode_pair(text_a, "APE_STRK")
+        try:
+            ids, mask, mode = encode_pair(text_a, "APE_STRK")
+        except ModuleNotFoundError:
+            self.skipTest("tokenizers missing")
         self.assertEqual(len(ids), SEQ_LEN)
         self.assertEqual(len(mask), SEQ_LEN)
         self.assertEqual(ids[0], 50281)
@@ -363,6 +369,23 @@ class SoftMaxMetrics(unittest.TestCase):
         self.assertEqual(m["by_menu_size"]["2"]["n"], 3)
         self.assertEqual(m["varied_n"], 1)
         self.assertEqual(m["collapsed_n"], 2)
+        self.assertEqual(m["by_gold_label"]["HOLD_WINNER"]["n"], 2)
+
+    def test_hold_baselines_on_decorated_option_text(self):
+        from jevh_trading.metrics import always_hold_indices, majority_per_style_indices
+
+        labs = [
+            ["HOLD_WINNER: keep position (hold)", "LONG_BTC: open BTC long"],
+            ["APE_TIA: #1 momentum (open TIA long)", "RIDE: keep position (hold)"],
+            ["SHORT_BTC: open BTC short", "WAIT: not convinced (hold)"],
+        ]
+        self.assertEqual(always_hold_indices(labs), [0, 1, 1])
+        maj = majority_per_style_indices(
+            labs,
+            ["breezy", "boozy", "bizzy"],
+            {"breezy": "HOLD_WINNER", "boozy": "RIDE", "bizzy": "HOLD"},
+        )
+        self.assertEqual(maj, [0, 1, 1])
 
 
 if __name__ == "__main__":

@@ -34,7 +34,6 @@ from .config import (
     DISTILL_EPOCHS,
     DISTILL_PATIENCE,
     DISTILL_SIZE_AUTO_N,
-    HOLD_LABELS,
     LATENCY_N,
     LATENCY_WARMUP,
     LAYER_DECAY,
@@ -116,7 +115,7 @@ def pack_rows(rows: list[dict], tok_path: str) -> list[dict]:
                 "attention_mask": enc["attention_mask"],
                 "gold": int(r["gold"]),
                 "probs": [float(x) for x in r["probs"]],
-                "labels": list(r["option_texts"]),
+                "labels": list(r.get("menu") or r["option_texts"]),
                 "n_options": int(r["n_options"]),
                 "varied": bool(r["varied"]),
                 "bee": r.get("bee"),
@@ -260,7 +259,14 @@ def eval_packed(
     varied = [p["varied"] for p in packed]
     styles = [p.get("bee_style") or "?" for p in packed]
     sources = [p.get("row_source") or p.get("bee") or "?" for p in packed]
-    met = agreement_breakdown(pred, gold, probs, labs, varied=varied)
+    gold_labs = []
+    for i, g in enumerate(gold):
+        gl = packed[i].get("gold_label")
+        if not gl:
+            labrow = labs[i]
+            gl = labrow[g] if 0 <= g < len(labrow) else "?"
+        gold_labs.append(str(gl))
+    met = agreement_breakdown(pred, gold, probs, labs, varied=varied, gold_labels=gold_labs)
     met["by_style"] = group_accuracy(pred, gold, styles)
     met["by_source"] = group_accuracy(pred, gold, sources)
     met["temperature"] = temperature
@@ -397,13 +403,19 @@ def write_receipt(path: Path, payload: dict) -> None:
         _met_row("time-dev (T fit)", dev),
         _met_row("train subset", payload["metrics"].get("train") or {"n": 0}),
         "",
+        "Majority-per-style equals always-HOLD here because the train majority gold "
+        "per style is a hold-class action (`RIDE` / `HOLD_WINNER` / `HOLD`). "
+        "Time-eval **beats** HOLD (student learned hyperspeed diversity). "
+        "live_engine **loses** to HOLD-copy: that slice is ~99% HOLD_WINNER/RIDE, "
+        "while the student was trained on hyperspeed menus where always-HOLD is ~44%.",
+        "",
         "### Time-eval by menu size / gold / style",
         "",
         "```json",
         json.dumps(
             {
                 "by_menu_size": (ev or {}).get("by_menu_size"),
-                "by_action": (ev or {}).get("by_action"),
+                "by_gold_label": (ev or {}).get("by_gold_label") or (ev or {}).get("by_action"),
                 "by_style": (ev or {}).get("by_style"),
                 "by_source": (ev or {}).get("by_source"),
             },
@@ -417,7 +429,8 @@ def write_receipt(path: Path, payload: dict) -> None:
         json.dumps(
             {
                 "by_style": (payload["metrics"].get("eval_rules") or {}).get("by_style"),
-                "by_action": (payload["metrics"].get("eval_rules") or {}).get("by_action"),
+                "by_gold_label": (payload["metrics"].get("eval_rules") or {}).get("by_gold_label")
+                or (payload["metrics"].get("eval_rules") or {}).get("by_action"),
             },
             indent=2,
         ),
@@ -429,7 +442,8 @@ def write_receipt(path: Path, payload: dict) -> None:
         json.dumps(
             {
                 "by_style": (payload["metrics"].get("eval_live") or {}).get("by_style"),
-                "by_action": (payload["metrics"].get("eval_live") or {}).get("by_action"),
+                "by_gold_label": (payload["metrics"].get("eval_live") or {}).get("by_gold_label")
+                or (payload["metrics"].get("eval_live") or {}).get("by_action"),
             },
             indent=2,
         ),

@@ -23,7 +23,7 @@ samples so unit tests and a dry layout work without the uploads.
 | trading_jev_calls_v2.jsonl.gz | trading_jev_calls_v2.jsonl_c24d.gz | 14.4 MB / 106258 rows | not committed |
 | trading_jev_contexts_v2.jsonl | trading_jev_contexts_v2_8e10.jsonl | 7.7 MB / 7833 contexts | not committed |
 
-Round 2 gold is Jev's `choice` + `probabilities` from the paper (or any growing
-`--log`) jsonl. Single-option `RIDE` rows are format-check only. Forward
-outcomes on the 15-minute bars are optional eval, not gold. See
-`../BEEBOTS_LOG_SPEC.md`.
+Round 3 gold is Jev's `choice` + `probabilities` from `trading_jev_calls_v2`
+(live_engine + hyperspeed), with strategy/rules joined from the contexts file.
+Single-option `RIDE` rows are format-check only. Forward outcomes on the
+15-minute bars are optional eval, not gold. See `../BEEBOTS_LOG_SPEC.md`.

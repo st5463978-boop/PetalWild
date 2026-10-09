@@ -10,6 +10,11 @@ import numpy as np
 from .config import CONFIDENT_MISTAKE_P, HOLD_LABELS
 
 
+def menu_key(lab: str) -> str:
+    """Bare menu label. option_text may be 'SWITCH: close, go short ETH (switch ETH short)'."""
+    return str(lab).split(":", 1)[0].strip()
+
+
 def softmax(x: np.ndarray) -> np.ndarray:
     z = x - x.max()
     e = np.exp(z)
@@ -54,7 +59,7 @@ def decision_metrics(
     hold_n = 0
     if labels is not None:
         for labs, g, pr in zip(labels, gold, pred):
-            hold = [j for j, lab in enumerate(labs) if lab in HOLD_LABELS]
+            hold = [j for j, lab in enumerate(labs) if menu_key(lab) in HOLD_LABELS]
             if not hold:
                 continue
             hold_n += 1
@@ -90,12 +95,14 @@ def agreement_breakdown(
     labels: Sequence[Sequence[str]],
     *,
     varied: Sequence[bool] | None = None,
+    gold_labels: Sequence[str] | None = None,
     p_star: float = CONFIDENT_MISTAKE_P,
 ) -> dict:
     """Agreement-with-Jev plus per-menu-size and per-action slices."""
     base = decision_metrics(pred_idx, gold_idx, probs, labels, p_star=p_star)
     by_size: dict[str, dict] = {}
     by_action: dict[str, dict] = {}
+    by_gold: dict[str, dict] = {}
     for i, (pr, g, labs) in enumerate(zip(pred_idx, gold_idx, labels)):
         k = str(len(labs))
         slot = by_size.setdefault(k, {"n": 0, "ok": 0})
@@ -105,6 +112,13 @@ def agreement_breakdown(
         act = by_action.setdefault(lab, {"n": 0, "ok": 0})
         act["n"] += 1
         act["ok"] += int(int(pr) == int(g))
+        if gold_labels is not None:
+            gl = menu_key(gold_labels[i])
+        else:
+            gl = menu_key(lab)
+        gold_slot = by_gold.setdefault(gl, {"n": 0, "ok": 0})
+        gold_slot["n"] += 1
+        gold_slot["ok"] += int(int(pr) == int(g))
     base["by_menu_size"] = {
         k: {"n": v["n"], "accuracy": v["ok"] / v["n"] if v["n"] else None}
         for k, v in sorted(by_size.items(), key=lambda kv: int(kv[0]))
@@ -112,6 +126,10 @@ def agreement_breakdown(
     base["by_action"] = {
         k: {"n": v["n"], "accuracy": v["ok"] / v["n"] if v["n"] else None}
         for k, v in sorted(by_action.items(), key=lambda kv: -kv[1]["n"])
+    }
+    base["by_gold_label"] = {
+        k: {"n": v["n"], "accuracy": v["ok"] / v["n"] if v["n"] else None}
+        for k, v in sorted(by_gold.items(), key=lambda kv: -kv[1]["n"])
     }
     if varied is not None:
         for name, flag in (("varied", True), ("collapsed", False)):
@@ -142,7 +160,7 @@ def group_accuracy(pred_idx: Sequence[int], gold_idx: Sequence[int], groups: Seq
 def always_hold_indices(labels: Sequence[Sequence[str]]) -> list[int]:
     out = []
     for labs in labels:
-        hold = [j for j, lab in enumerate(labs) if lab in HOLD_LABELS]
+        hold = [j for j, lab in enumerate(labs) if menu_key(lab) in HOLD_LABELS]
         out.append(hold[0] if hold else 0)
     return out
 
@@ -157,8 +175,9 @@ def majority_per_style_indices(
     hold_fb = always_hold_indices(labels)
     for labs, st, fb in zip(labels, styles, hold_fb):
         want = train_majority.get(st)
-        if want and want in labs:
-            out.append(labs.index(want))
+        keys = [menu_key(x) for x in labs]
+        if want and want in keys:
+            out.append(keys.index(want))
         else:
             out.append(fb)
     return out
