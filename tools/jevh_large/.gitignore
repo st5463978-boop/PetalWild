@@ -4,6 +4,7 @@ __pycache__/
 artifacts/*.onnx
 artifacts/*.onnx.data
 artifacts/*.pt
+artifacts/smoke_*
 artifacts/*.bin
 artifacts/*soft*.jsonl
 artifacts/hf_cache/

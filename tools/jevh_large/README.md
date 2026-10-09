@@ -12,7 +12,9 @@ From the repo root:
 ./tools/jevh_large/run.sh
 ```
 
-That creates `tools/jevh_large/.venv`, installs [requirements.txt](requirements.txt) (CPU torch from the PyTorch CPU index), trains with seed 42, writes metrics, seq128 ONNX (seq256 if it fits), and a 256-row calibration set.
+That creates `tools/jevh_large/.venv`, installs [requirements.txt](requirements.txt) (CPU torch from the PyTorch CPU index), trains with seed 42, writes metrics, seq128 and seq256 static ONNX, and 256-row calibration sets.
+
+Round 2 (same branch): resume the epoch-1 checkpoint, train at **seq256** with keep-option packing, unfreeze more layers + layer-wise LR, extra epochs with early stopping, and report a **template-grouped** eval alongside the unique-question split.
 
 Smoke (tiny random encoder, bundled samples, seconds):
 
@@ -40,20 +42,22 @@ A 20% held-out split is by **unique question** (no leakage), stratified by optio
 
 Input format matches the live JEV-H service: `text_a = "[qtype] question"` (+ context when present); yes/no (`noul`) options expand to `yes: that is true given the state` / `no: that is not true given the state`.
 
-## Recipe (default, CPU)
+## Recipe (round 2 default, CPU)
 
 - Backbone: `jhu-clsp/ettin-encoder-150m` (22 layers, hidden 768, GeGLU, alternating local/global attention).
 - Static padded encoder (no HF unpadding / NonZero). `attention_mask` is an input and is used in attention **and** masked-mean pooling.
-- Freeze embeddings + first 10 encoder layers; train layers 10–21 + head (CPU RAM).
-- 2 epochs, AdamW, seed 42, `1.0 * CE(gold) + 0.3 * KL(teacher_scores)`.
-- `--max-train-minutes 75` stops training early but still evals and exports.
+- Train/eval at **seq256**. Packing keeps the option: trim question/context tail first.
+- Freeze embeddings + first **6** encoder layers; train layers 6–21 + head with **layer-wise LR decay 0.9**.
+- Resume round-1 epoch-1 weights (`--resume artifacts/jevh_large_ettin150m.pt`); extra epochs with early stopping on unique-q eval (`--patience 1`).
+- AdamW, seed 42, `1.0 * CE(gold) + 0.3 * KL(teacher_scores)`, `--max-train-minutes 100`.
 - Head: GELU-erf + LayerNorm + scalar logit per option.
+- Eval: unique-question split (same as round 1) **and** template-grouped (normalize numbers/names/quotes; no template in both train and eval).
 
-If wall time is tight, `run.sh --epochs 1 --freeze-layers 14 --max-soft 1000`.
+Round 1 (seq128, freeze 10) is kept as `artifacts/jevh_large_ettin150m_r1.pt` when round 2 starts. If wall time is tight, `run.sh --epochs 1 --freeze-layers 10 --max-soft 800`.
 
-## This run (CPU, seed 42)
+## Round 1 (CPU, seed 42)
 
-Held-out **823** unique questions (20%, no leakage). Best checkpoint: epoch 1 (epoch 2 hit the 75-minute cap).
+Held-out **823** unique questions (20%, no leakage). Best checkpoint: epoch 1 (epoch 2 hit the 75-minute cap). Round 2 metrics (seq256, more layers, template-grouped eval) land in [RECEIPT.md](RECEIPT.md) after `./tools/jevh_large/run.sh`.
 
 | split | n | student acc | Qwen3 teacher acc | conf-mistakes ≥0.65 | ECE |
 |---|---:|---:|---:|---:|---:|

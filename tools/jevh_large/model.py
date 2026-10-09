@@ -174,6 +174,7 @@ class StaticEttinEncoder(nn.Module):
             [EttinLayer(cfg, i, seq_len, export_batch=export_batch) for i in range(cfg.num_hidden_layers)]
         )
         self.final_norm = nn.LayerNorm(cfg.hidden_size, eps=cfg.norm_eps, bias=cfg.norm_bias)
+        self.gradient_checkpointing = False
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         hidden = self.embeddings["norm"](self.embeddings["tok_embeddings"](input_ids))
@@ -181,7 +182,10 @@ class StaticEttinEncoder(nn.Module):
         pad_bias = (1.0 - mask_f) * NEG_INF
         pad_bias = pad_bias[:, None, None, :]
         for layer in self.layers:
-            hidden = layer(hidden, pad_bias)
+            if self.gradient_checkpointing and self.training:
+                hidden = torch.utils.checkpoint.checkpoint(layer, hidden, pad_bias, use_reentrant=False)
+            else:
+                hidden = layer(hidden, pad_bias)
         return self.final_norm(hidden)
 
     def load_hf_encoder(self, state: dict[str, torch.Tensor]) -> tuple[list[str], list[str]]:
@@ -229,17 +233,39 @@ class PairScorer(nn.Module):
         pooled = self.pool(hidden, attention_mask)
         return self.head(pooled)
 
-    def freeze_bottom_layers(self, n_freeze: int) -> int:
+    def freeze_bottom_layers(self, n_freeze: int, freeze_embeddings: bool = True) -> int:
         frozen = 0
+        for p in self.parameters():
+            p.requires_grad = True
         for i, layer in enumerate(self.encoder.layers):
             if i < n_freeze:
                 for p in layer.parameters():
                     p.requires_grad = False
                     frozen += p.numel()
-        for p in self.encoder.embeddings.parameters():
-            p.requires_grad = False
-            frozen += p.numel()
+        if freeze_embeddings:
+            for p in self.encoder.embeddings.parameters():
+                p.requires_grad = False
+                frozen += p.numel()
         return frozen
+
+    def layerwise_param_groups(self, base_lr: float, head_lr: float, decay: float = 0.9) -> list[dict]:
+        """Higher layers get higher LR. Frozen params are skipped."""
+        n = len(self.encoder.layers)
+        groups: list[dict] = []
+        emb = [p for p in self.encoder.embeddings.parameters() if p.requires_grad]
+        if emb:
+            groups.append({"params": emb, "lr": base_lr * (decay ** n)})
+        for i, layer in enumerate(self.encoder.layers):
+            params = [p for p in layer.parameters() if p.requires_grad]
+            if params:
+                groups.append({"params": params, "lr": base_lr * (decay ** (n - 1 - i))})
+        fn = [p for p in self.encoder.final_norm.parameters() if p.requires_grad]
+        if fn:
+            groups.append({"params": fn, "lr": base_lr})
+        head = [p for p in self.head.parameters() if p.requires_grad]
+        if head:
+            groups.append({"params": head, "lr": head_lr})
+        return groups
 
     def clone_for_seq(self, seq_len: int, export_batch: int | None = None) -> "PairScorer":
         other = PairScorer(self.cfg, seq_len, export_batch=export_batch)

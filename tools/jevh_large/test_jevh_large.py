@@ -8,7 +8,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from dataio import stratified_question_split  # noqa: E402
+from dataio import (  # noqa: E402
+    encode_pair,
+    normalize_template_text,
+    stratified_question_split,
+    stratified_template_split,
+    template_key,
+)
 from model import EttinCfg, PairScorer  # noqa: E402
 from onnx_export import assert_mask_affects_output, export_static_onnx, verify_parity  # noqa: E402
 
@@ -59,7 +65,57 @@ def test_static_onnx_tiny(tmp_path: Path | None = None) -> None:
     assert parity["ok"], parity
 
 
+def test_keep_option_truncation() -> None:
+    class FakeTok:
+        cls_token_id = 1
+        sep_token_id = 2
+        pad_token_id = 0
+
+        def encode(self, text, add_special_tokens=False):
+            if str(text).startswith("QUESTION"):
+                return list(range(10, 50))  # 40 tokens
+            return list(range(100, 112))  # 12 option tokens
+
+    tok = FakeTok()
+    ids, mask, info = encode_pair(tok, "QUESTION long context", "OPTION text", 20, keep_option=True)
+    assert info["kept_b"] == 12, info
+    assert info["truncated_a"]
+    assert not info["truncated_b"]
+    assert ids[0] == 1
+    assert 2 in ids  # SEP
+    assert len(ids) == 20
+    ids2, mask2, info2 = encode_pair(tok, "QUESTION long context", "OPTION text", 20, keep_option=False)
+    assert info2["kept_a"] >= info2["kept_b"], info2
+    assert info2["truncated_b"]
+    assert len(ids) == len(ids2) == 20
+    assert len(mask) == len(mask2) == 20
+
+
+def test_template_split_no_leakage() -> None:
+    recs = []
+    for i in range(40):
+        recs.append({"question": f"Tick modulo {i} on the north wall?", "n_options": 4})
+    for i in range(25):
+        recs.append({"question": f"Can Alice Smith open door {i}?", "n_options": 2})
+    for i in range(15):
+        recs.append({"question": f"Is the red chest locked in room {i}?", "n_options": 2})
+    a = "Can Alice Smith open door 3?"
+    b = "Can Bob Jones open door 9?"
+    assert template_key(a, 2) == template_key(b, 2)
+    assert "name" in normalize_template_text(a)
+    assert "#" in normalize_template_text(a)
+    train_q, eval_q, info = stratified_template_split(recs, seed=42, eval_frac=0.2)
+    assert not (train_q & eval_q)
+    assert info["leakage_templates"] == 0
+    assert len(eval_q) / len(train_q | eval_q) >= 0.15
+    train_t = {template_key(q, 4 if "Tick" in q else 2) for q in train_q}
+    eval_t = {template_key(q, 4 if "Tick" in q else 2) for q in eval_q}
+    assert not (train_t & eval_t), (train_t & eval_t)
+
+
 if __name__ == "__main__":
     test_split_no_leakage()
+    test_keep_option_truncation()
+    test_template_split_no_leakage()
     test_static_onnx_tiny()
     print("ok")
