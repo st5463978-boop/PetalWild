@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+artifacts/*.pt
+artifacts/*.onnx
+artifacts/*.onnx.data
+artifacts/hf/
+artifacts/*.bin
+*.pyc
+.cache/
