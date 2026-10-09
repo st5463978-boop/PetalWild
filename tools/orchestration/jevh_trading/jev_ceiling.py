@@ -97,6 +97,7 @@ def load_raw_calls(path: Path | None = None, contexts: dict[str, dict] | None = 
                     "market_ts": r.get("market_ts"),
                     "menu": menu,
                     "menu_detail": r.get("menu_detail"),
+                    "n_options": len(menu),
                     "gold": menu.index(choice),
                     "gold_label": choice,
                     "p": align_probs(menu, r.get("probabilities"), choice),

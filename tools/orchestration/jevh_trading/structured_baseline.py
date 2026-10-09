@@ -399,18 +399,22 @@ def run(threads: int = 4, out_path: Path | None = None, curve: bool = True, seed
     tot = float(gain.sum()) or 1.0
     out["best_full"]["top_features_by_gain"] = [[fb.names[i], round(float(gain[i]) / tot, 4)] for i in order]
 
-    from .shadow_gate import gate_report, headline, to_recs
+    from .shadow_gate import gate_report, headline, to_recs, write_recs
 
+    out_path = out_path or (artifacts_dir() / "structured_baseline.json")
     scores = {k: predict_groups(booster, mats["full"][k]) for k in ("dev", "eval", "eval_rules", "eval_live")}
     T = _temperature(scores["dev"], mats["full"]["dev"]["gold"])
     recs = {k: to_recs(parts[k], [softmax(s / T).tolist() for s in scores[k]], k, None) for k in scores}
+    for k in recs:
+        for rec, s in zip(recs[k], scores[k]):
+            rec["logits"] = [float(x) for x in s]
+    write_recs(out_path.parent / "preds_gbm_full.jsonl.gz", [r for v in recs.values() for r in v])
     rep = gate_report(recs["dev"], {k: recs[k] for k in ("eval", "eval_rules", "eval_live")})
     out["gate_full_gbm"] = {"temperature_ece": T, "headline": headline(rep), "agreement": {k: v["agreement"] for k, v in rep["splits"].items()}}
 
     if curve:
         out["snapshot_curve"] = snapshot_curve(parts, mats["full"], fb, obj, threads, seed)
     out["wall_s"] = round(time.perf_counter() - t0, 1)
-    out_path = out_path or (artifacts_dir() / "structured_baseline.json")
     out_path.write_text(json.dumps(out, indent=2, allow_nan=False))
     return out
 
