@@ -10,6 +10,10 @@ the current JEV review labels. Same input format as `:8771`:
 This is **not** the teacher-swarm mining work (PR #26). It does not compile a
 HEF, does not flash the Pi, and does not call paid APIs.
 
+Round 2 trains the **full encoder** (layer-wise LR), distills JEV-H-large +
+Qwen3 soft labels, and reports a **template-grouped** eval so near-duplicate
+questions cannot leak. Gold is still `jev_choice`.
+
 ## One command
 
 ```bash
@@ -21,11 +25,9 @@ downloads `jhu-clsp/ettin-encoder-68m` if needed, trains, evaluates, exports
 static ONNX, writes a 256-row calibration `.npy` pair, and overwrites
 `RECEIPT.md`.
 
-Useful flags (passed through to `train.py`):
-
 ```bash
-./tools/orchestration/jevh_68m_v5/run.sh --epochs 2 --unfreeze-last 6 --max-train-minutes 70
-./tools/orchestration/jevh_68m_v5/run.sh --skip-train   # eval/export an existing artifacts/jevh_68m_v5.pt
+./tools/orchestration/jevh_68m_v5/run.sh --epochs 6 --patience 2 --max-train-minutes 90
+./tools/orchestration/jevh_68m_v5/run.sh --skip-train   # eval/export artifacts/jevh_68m_v5_r2.pt
 ```
 
 Unit tests (no training):
@@ -35,28 +37,18 @@ cd tools/orchestration/jevh_68m_v5
 PYTHONPATH=. .venv/bin/python -m unittest test_jevh_68m_v5.py -v
 ```
 
-## Recipe (short)
+## Recipe (round 2)
 
-- Split by **unique question** (no leakage), ≥15% eval, 15% dev, stratified by option count.
-- Gold = `jev_choice`. Teacher `model_choice` is a baseline only.
-- Weight the 2,228 confident teacher-vs-JEV disagreements (JEV conf ≥ 0.65) at 3.0.
-- Listwise CE + pairwise hinge vs the teacher-wrong option and the online near-miss.
-- Shuffle option order every use (kills index bias in the listwise head).
-- KL to teacher softmax on decide rows whose questions are outside eval/dev (never gold).
-- Fit temperature on dev NLL.
-- Freeze embeddings + early layers; train the last 6 encoder layers + head (CPU budget).
-- Export ONNX opset 17, batch 1, seq 128, inputs `input_ids` and `attention_mask` (mask is an additive attention bias).
+- **Train split:** template-grouped (numbers/names/entities normalised). No template in both train and eval. ≥15% eval.
+- Also report the round-1 unique-question eval rows for comparison.
+- Gold = `jev_choice`. Qwen3 `model_choice` and JEV-H-large scores are never gold.
+- Blend large/Qwen soft targets (large 0.65/0.35 on agree, 0.80/0.20 on disagree).
+- Weight confident teacher-vs-JEV disagreements at 3.0. Listwise CE + pairwise hinge. Option shuffle.
+- If a pair would exceed seq128, keep the option and trim question/context.
+- Full encoder + embeddings, layer-wise LR decay 0.9, init from the round-1 checkpoint, early stop on template-dev.
+- Export ONNX opset 17, batch 1, seq 128, `input_ids` + `attention_mask`.
 
-See `RECEIPT.md` for the run that produced metrics / sha256.
-
-## Outputs (gitignored when large)
-
-| file | commit? |
-|---|---|
-| `RECEIPT.md`, `artifacts/metrics.json`, `artifacts/split.json` | yes |
-| `artifacts/calib_input_ids.npy`, `artifacts/calib_attention_mask.npy` | yes (≥256 × 128) |
-| `artifacts/jevh_68m_v5_seq128.onnx` (~270 MB) | no (sha256 in the receipt) |
-| `artifacts/jevh_68m_v5.pt`, `artifacts/hf/` | no |
+See `RECEIPT.md` for metrics / sha256.
 
 ## Hard rules
 

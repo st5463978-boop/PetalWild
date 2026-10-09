@@ -25,14 +25,19 @@ from torch.nn import functional as F
 from data import (
     CONF_DISAGREE,
     SEED,
+    attach_large_to_gold,
     attach_student_preds,
     examples_from_decide,
     examples_from_labels,
+    load_large_index,
     load_paths,
     n_options_bucket,
     read_jsonl,
     stratified_question_split,
+    template_grouped_split,
+    template_key,
     tokenize_example,
+    truncation_report,
 )
 from encode import SEQ_LEN, StudentTok, gold_index
 from model import Ettin68mScorer, load_backbone
@@ -42,17 +47,34 @@ ART = HERE / "artifacts"
 HF_ID = "jhu-clsp/ettin-encoder-68m"
 PAIR_COEF = 0.4
 PAIR_MARGIN = 0.5
-KD_COEF = 0.2
-UNFREEZE_LAST = 6
+KD_COEF = 0.25
+UNFREEZE_LAST = -1
 LR_ENCODER = 2e-5
-LR_HEAD = 1e-4
+LR_HEAD = 8e-5
+LR_EMBED = 5e-6
+LAYER_DECAY = 0.9
 WEIGHT_DECAY = 0.01
-MICROBATCH = 8
-EPOCHS = 2
+MICROBATCH = 4
+GRAD_ACCUM = 2
+EPOCHS = 6
+PATIENCE = 2
 CLIP = 1.0
 CONF_THR = 0.65
 OPSET = 17
 FORBIDDEN_OPS = {"Loop", "If", "NonZero", "Optional", "SequenceAt", "NonMaxSuppression"}
+ROUND1 = {
+    "accuracy": 0.7640625,
+    "yesno_accuracy": 0.8628571428571429,
+    "multi_accuracy": 0.7268817204301076,
+    "teacher_accuracy": 0.46875,
+    "student_accuracy": 0.6578947368421053,
+    "overlap_model_accuracy": 0.7280701754385965,
+    "confident_mistakes": 18,
+    "ece": 0.03163120673868383,
+    "temperature": 1.3,
+    "n": 640,
+    "student_overlap_n": 114,
+}
 
 
 def seed_all(seed: int = SEED) -> None:
@@ -266,6 +288,12 @@ def run_epoch(
             ti = ex.get("teacher_index")
             hards.append(perm.index(ti) if ex.get("disagree") and ti is not None else None)
             weights.append(float(ex["weight"]))
+            bsc = ex.get("blend_scores") or ex.get("large_scores")
+            if bsc and ex.get("large_index") == ex["gold"]:
+                gold_kd_spans.append((s0, s0 + k))
+                gold_kd_probs.append([float(bsc[p]) for p in perm])
+        gold_kd_spans = []
+        gold_kd_probs = []
         kd_spans = []
         kd_probs = []
         if kd_ex:
@@ -291,6 +319,11 @@ def run_epoch(
         for (s, e), g, h, w in zip(spans, golds, hards, weights):
             loss = loss + group_loss(logits[s:e], g, h, w)
         loss = loss / max(len(chunk), 1)
+        if gold_kd_spans:
+            gkl = logits.new_zeros(())
+            for (s, e), tp in zip(gold_kd_spans, gold_kd_probs):
+                gkl = gkl + kd_loss(logits[s:e], torch.tensor(tp, dtype=torch.float32, device=device))
+            loss = loss + 0.15 * (gkl / len(gold_kd_spans))
         if kd_spans:
             kl = logits.new_zeros(())
             for (s, e), tp in zip(kd_spans, kd_probs):
@@ -407,7 +440,7 @@ def write_calib(examples: list[dict], lane_rows: list[dict], tok: StudentTok, pa
         if len(opts) < 2 or not q:
             continue
         _, text_a, stexts, _ = build_input(q, opts, r.get("context"))
-        ids, masks, _ = tok.encode(text_a, stexts)
+        ids, masks, _, _ = tok.encode(text_a, stexts)
         for a, b in zip(ids, masks):
             pairs.append((a, b))
     rng = random.Random(SEED)
@@ -468,67 +501,73 @@ def latency_ms(model: Ettin68mScorer, examples: list[dict], device: torch.device
     }
 
 
+def _row(name: str, m: dict) -> str:
+    return (
+        f"| {name} | {m['n']} | {_fmt(m['accuracy'])} | {_fmt(m.get('yesno_accuracy'))} | "
+        f"{_fmt(m.get('multi_accuracy'))} | {_fmt(m.get('teacher_accuracy'))} | "
+        f"live {_fmt(m.get('student_accuracy'))} / v5 {_fmt(m.get('overlap_model_accuracy'))} "
+        f"(n={m.get('student_overlap_n')}) | {m.get('confident_mistakes')} | {_fmt(m.get('ece'))} |"
+    )
+
+
 def write_receipt(path: Path, payload: dict) -> None:
-    m = payload["eval_calibrated"]
-    t = payload["eval_teacher"]
+    t_eval = payload["template_eval"]
+    q_eval = payload["question_eval"]
+    r1 = payload["round1"]
     lines = [
-        "# JEV-H-68m-v5 receipt",
+        "# JEV-H-68m-v5 receipt (round 2)",
         "",
         "Direct successor to the live ettin68m student (seq128, `[qtype] question` + option text).",
-        "No HEF compile. No Pi deploy. No paid APIs.",
+        "No HEF compile. No Pi deploy. No paid APIs. Trained on the template-grouped split (honest).",
         "",
         "## Data",
         "",
-        f"- labels: `{payload['paths']['labels']}` ({payload['counts']['label_rows']} rows, {payload['counts']['unique_questions']} unique questions)",
+        f"- labels: `{payload['paths']['labels']}` ({payload['counts']['label_rows']} rows, {payload['counts']['unique_questions']} unique questions, {payload['counts']['n_templates']} templates)",
         f"- decide (soft labels, never gold): `{payload['paths']['decide']}` ({payload['counts']['decide_rows']} rows, {payload['counts']['kd_rows']} KD train rows)",
+        f"- JEV-H-large soft labels: `{payload['paths'].get('large_soft')}` ({payload['counts'].get('large_rows', 0)} rows; from `cursor/jevh-variant-large-819a`, not merged)",
+        f"- KD blend: large 0.65/Qwen 0.35 on argmax-agree, large 0.80/Qwen 0.20 on disagree. `jev_choice` stays gold.",
         f"- lane bank: `{payload['paths']['lane']}` ({payload['counts']['lane_rows']} rows)",
         f"- tokenizer: `{payload['paths']['tokenizer']}`",
-        f"- split seed {payload['seed']}, by unique question, stratified by option count",
-        f"- train questions {payload['counts']['train_q']} / rows {payload['counts']['train_rows']}",
-        f"- dev questions {payload['counts']['dev_q']} / rows {payload['counts']['dev_rows']}",
-        f"- eval questions {payload['counts']['eval_q']} / rows {payload['counts']['eval_rows']} ({payload['counts']['eval_q_frac']:.1%} of unique questions)",
-        f"- eval yes/no (2-way) rows {m['yesno_n']}, multi-choice rows {m['multi_n']}",
-        f"- confident teacher-vs-JEV disagreements in labels: {payload['counts']['conf_disagree']} (train weight 3.0)",
+        f"- split seed {payload['seed']}",
+        f"- **template-grouped** (train): questions {payload['counts']['train_q']} / rows {payload['counts']['train_rows']}; dev {payload['counts']['dev_q']}/{payload['counts']['dev_rows']}; eval {payload['counts']['eval_q']}/{payload['counts']['eval_rows']} ({payload['counts']['eval_q_frac']:.1%} of unique questions, {payload['counts']['eval_templates']} templates)",
+        f"- unique-question split (round-1 protocol, eval-only): {payload['counts']['qsplit_eval_q']} questions / {payload['counts']['qsplit_eval_rows']} rows; leaked into template-train: {payload['counts']['qsplit_eval_leaked']}",
+        f"- eval 2-way (template) {t_eval['yesno_n']}, multi {t_eval['multi_n']}",
+        f"- confident teacher-vs-JEV disagreements: {payload['counts']['conf_disagree']} (train weight 3.0)",
         "",
-        "## Recipe",
+        "## Truncation (seq128)",
         "",
-        f"- backbone `{HF_ID}` (ModernBERT, hidden 512, 19 layers, local window 128, RoPE θ 160000)",
-        f"- CLS GELU head (Linear 512→512 no bias + GELU + LN + Linear 512→1), live-compatible pair scoring",
-        f"- seq_len {SEQ_LEN}, seed {payload['seed']}",
-        f"- freeze embeddings + first {19 - payload['unfreeze_last']} layers; train last {payload['unfreeze_last']} + final LN + head",
-        f"- listwise CE over options + pairwise hinge (margin {PAIR_MARGIN}, coef {PAIR_COEF}) vs teacher-wrong and online hard neg",
-        f"- option order shuffled every use",
-        f"- KD (KL to teacher softmax) on decide rows whose questions are outside eval/dev, coef {KD_COEF}",
-        f"- AdamW encoder lr {LR_ENCODER}, head lr {LR_HEAD}, wd {WEIGHT_DECAY}, clip {CLIP}, microbatch {MICROBATCH} questions",
-        f"- epochs run: {payload['epochs_run']}, train minutes: {payload['train_minutes']:.1f}",
-        f"- temperature fit on dev NLL: T={m['temperature']:.4f}",
+        json.dumps(payload["truncation"], indent=2),
+        "",
+        "Smarter truncation (`keep_option`): if a pair would exceed 128, keep option tokens and trim question/context. Labels never overflowed 128; decide had a handful of 2-way overflows.",
+        "",
+        "## Recipe (round 2 vs round 1)",
+        "",
+        f"- backbone `{HF_ID}`, CLS GELU head, seq_len {SEQ_LEN}, seed {payload['seed']}",
+        "- **full encoder unfrozen** including embeddings (round 1: last 6 layers + head)",
+        f"- layer-wise LR decay {LAYER_DECAY}: last layer {LR_ENCODER}, embeddings {LR_EMBED}, head {LR_HEAD}",
+        f"- init from round-1 checkpoint: {payload.get('init_ckpt')}",
+        f"- listwise CE + pairwise hinge (margin {PAIR_MARGIN}, coef {PAIR_COEF}); option shuffle",
+        f"- KD from blended large+Qwen on decide rows outside template eval/dev, coef {KD_COEF}; extra KL on gold rows where large agrees with jev_choice",
+        f"- AdamW wd {WEIGHT_DECAY}, clip {CLIP}, microbatch {MICROBATCH}, grad checkpointing on",
+        f"- early stopping patience {PATIENCE} on template-dev acc; epochs run {payload['epochs_run']} / requested {payload.get('epochs_requested')}; train minutes {payload['train_minutes']:.1f}",
+        f"- temperature fit on template-dev NLL: T={t_eval['temperature']:.4f}",
+        f"- trainable {payload['trainable_m']:.1f}M / {payload['params_m']:.1f}M",
         "",
         "## Held-out eval (gold = jev_choice)",
         "",
-        "| split | n | acc vs jev_choice | teacher acc | current student acc (overlap) | conf-mistakes (≥0.65) | ECE |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| split | n | acc | 2-way | multi | teacher | live student / v5 overlap | conf-mist ≥0.65 | ECE |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        _row(f"template eval T={t_eval['temperature']:.2f} (honest)", t_eval),
+        _row("unique-q eval, same rows as round 1", q_eval),
         (
-            f"| eval T={m['temperature']:.3f} | {m['n']} | {m['accuracy']:.4f} | "
-            f"{_fmt(m['teacher_accuracy'])} | live {_fmt(m['student_accuracy'])} / "
-            f"v5 {_fmt(m.get('overlap_model_accuracy'))} "
-            f"(n={m['student_overlap_n']}) | {m['confident_mistakes']} | {m['ece']:.4f} |"
+            f"| round 1 unique-q T=1.3 (frozen) | {r1['n']} | {r1['accuracy']:.4f} | "
+            f"{r1['yesno_accuracy']:.4f} | {r1['multi_accuracy']:.4f} | {r1['teacher_accuracy']:.4f} | "
+            f"live {r1['student_accuracy']:.4f} / v5 {r1['overlap_model_accuracy']:.4f} "
+            f"(n={r1['student_overlap_n']}) | {r1['confident_mistakes']} | {r1['ece']:.4f} |"
         ),
-        (
-            f"| eval T=1 | {payload['eval_raw']['n']} | {payload['eval_raw']['accuracy']:.4f} | "
-            f"{_fmt(payload['eval_raw']['teacher_accuracy'])} | {_fmt(payload['eval_raw']['student_accuracy'])} "
-            f"| {payload['eval_raw']['confident_mistakes']} | {payload['eval_raw']['ece']:.4f} |"
-        ),
-        (
-            f"| eval yes/no (2-way) | {m['yesno_n']} | {_fmt(m['yesno_accuracy'])} |  |  |  |  |"
-        ),
-        (
-            f"| eval multi-choice | {m['multi_n']} | {_fmt(m['multi_accuracy'])} |  |  |  |  |"
-        ),
-        (
-            f"| teacher baseline (same eval rows) | {m['teacher_n']} | {_fmt(m['teacher_accuracy'])} | — | — | {m['teacher_confident_mistakes']} | — |"
-        ),
+        _row("template-dev (T fit / early stop)", payload["dev"]),
         "",
-        f"Dev (for T fit only): n={payload['dev']['n']} acc={payload['dev']['accuracy']:.4f} ECE={payload['dev']['ece']:.4f}.",
+        f"Round-2 minus round-1 unique-q acc: {_fmt(q_eval['accuracy'] - r1['accuracy'])} (same 640 rows; {payload['counts']['qsplit_eval_leaked']} of those questions were in template-train).",
         "",
         "## CPU latency (batch 1)",
         "",
@@ -542,6 +581,7 @@ def write_receipt(path: Path, payload: dict) -> None:
         f"- opset: {payload['onnx']['inspect']['opset']}",
         f"- inputs: {payload['onnx']['inspect']['inputs']}",
         f"- outputs: {payload['onnx']['inspect']['outputs']}",
+        f"- attention_mask used: {payload['onnx']['inspect'].get('attention_mask_used')}",
         f"- forbidden ops: {payload['onnx']['inspect']['forbidden'] or 'none'}",
         f"- PyTorch vs ORT cosine on eval logits: {payload['onnx']['cosine']:.6f} (need ≥ 0.999)",
         "",
@@ -560,7 +600,9 @@ def write_receipt(path: Path, payload: dict) -> None:
 def _fmt(x) -> str:
     if x is None:
         return "—"
-    return f"{x:.4f}"
+    if isinstance(x, float):
+        return f"{x:.4f}"
+    return str(x)
 
 
 def main() -> None:
@@ -568,7 +610,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--epochs", type=int, default=EPOCHS)
     ap.add_argument("--unfreeze-last", type=int, default=UNFREEZE_LAST)
-    ap.add_argument("--max-train-minutes", type=float, default=float(os.environ.get("JEVH_MAX_TRAIN_MINUTES", "70")))
+    ap.add_argument("--max-train-minutes", type=float, default=float(os.environ.get("JEVH_MAX_TRAIN_MINUTES", "90")))
+    ap.add_argument("--patience", type=int, default=PATIENCE)
+    ap.add_argument("--init-ckpt", type=str, default=str(ART / "jevh_68m_v5.pt"))
+    ap.add_argument("--no-init-ckpt", action="store_true")
     ap.add_argument("--skip-train", action="store_true")
     args = ap.parse_args()
     seed_all(args.seed)
@@ -580,78 +625,106 @@ def main() -> None:
     labels = read_jsonl(paths["labels"])
     decide = read_jsonl(paths["decide"]) if paths["decide"] else []
     lane = read_jsonl(paths["lane"]) if paths["lane"] else []
+    large_rows = read_jsonl(paths["large_soft"]) if paths.get("large_soft") else []
+    large_index = load_large_index(large_rows)
     tok = StudentTok(str(paths["tokenizer"]), SEQ_LEN)
 
     gold = examples_from_labels(labels)
+    attach_student_preds(gold, decide)
+    attach_large_to_gold(gold, large_index)
     uniq = sorted({ex["question"] for ex in gold})
     n_opts = {}
+    templates = {}
     for ex in gold:
         n_opts.setdefault(ex["question"], ex["n_options"])
-    split_map = stratified_question_split(uniq, n_opts, seed=args.seed)
-    (ART / "split.json").write_text(json.dumps(split_map, indent=0), encoding="utf-8")
-    eval_dev_q = {q for q, s in split_map.items() if s != "train"}
+        templates.setdefault(ex["question"], ex["template"])
+    q_split = stratified_question_split(uniq, n_opts, seed=args.seed)
+    t_split = template_grouped_split(uniq, n_opts, templates, seed=args.seed)
+    (ART / "split.json").write_text(json.dumps({"question": q_split, "template": t_split}, indent=0), encoding="utf-8")
+    (ART / "split_template.json").write_text(json.dumps(t_split, indent=0), encoding="utf-8")
+
+    leaked = sum(1 for q, s in q_split.items() if s == "eval" and t_split.get(q) == "train")
     for ex in gold:
-        ex["split"] = split_map[ex["question"]]
-    attach_student_preds(gold, decide)
+        ex["split"] = t_split[ex["question"]]
+        ex["q_split"] = q_split[ex["question"]]
     print("tokenizing labels...", flush=True)
     gold = [tokenize_example(tok, ex) for ex in gold]
+    trunc = truncation_report(gold)
+    print("truncation", json.dumps(trunc), flush=True)
     splits = {k: [ex for ex in gold if ex["split"] == k] for k in ("train", "dev", "eval")}
-    kd = examples_from_decide(decide, eval_dev_q)
-    # drop KD on gold-disagree train questions so teacher errors are not distilled
+    q_eval_ex = [ex for ex in gold if ex["q_split"] == "eval"]
+    eval_dev_q = {q for q, s in t_split.items() if s != "train"}
+    kd = examples_from_decide(decide, eval_dev_q, large_index)
     disagree_q = {ex["question"] for ex in splits["train"] if ex.get("conf_disagree")}
     kd = [ex for ex in kd if ex["question"] not in disagree_q]
     print(f"tokenizing {len(kd)} KD rows...", flush=True)
     kd = [tokenize_example(tok, ex) for ex in kd]
+    trunc_kd = truncation_report(kd)
 
     n_q = len(uniq)
+    n_tmpl = len(set(templates.values()))
     counts = {
         "label_rows": len(labels),
         "unique_questions": n_q,
+        "n_templates": n_tmpl,
         "decide_rows": len(decide),
+        "large_rows": len(large_rows),
         "lane_rows": len(lane),
         "kd_rows": len(kd),
-        "train_q": sum(1 for s in split_map.values() if s == "train"),
-        "dev_q": sum(1 for s in split_map.values() if s == "dev"),
-        "eval_q": sum(1 for s in split_map.values() if s == "eval"),
+        "train_q": sum(1 for s in t_split.values() if s == "train"),
+        "dev_q": sum(1 for s in t_split.values() if s == "dev"),
+        "eval_q": sum(1 for s in t_split.values() if s == "eval"),
+        "eval_templates": len({templates[q] for q, s in t_split.items() if s == "eval"}),
         "train_rows": len(splits["train"]),
         "dev_rows": len(splits["dev"]),
         "eval_rows": len(splits["eval"]),
-        "eval_q_frac": sum(1 for s in split_map.values() if s == "eval") / max(n_q, 1),
+        "eval_q_frac": sum(1 for s in t_split.values() if s == "eval") / max(n_q, 1),
+        "qsplit_eval_q": sum(1 for s in q_split.values() if s == "eval"),
+        "qsplit_eval_rows": len(q_eval_ex),
+        "qsplit_eval_leaked": leaked,
         "conf_disagree": sum(1 for ex in gold if ex.get("conf_disagree")),
         "yesno_eval": sum(1 for ex in splits["eval"] if ex["n_options"] == 2),
         "multi_eval": sum(1 for ex in splits["eval"] if ex["n_options"] != 2),
+        "kd_blend": dict(__import__("collections").Counter(ex.get("blend") for ex in kd)),
     }
     print(json.dumps(counts, indent=2), flush=True)
     if counts["eval_q_frac"] < 0.15:
-        raise SystemExit(f"eval unique-question fraction {counts['eval_q_frac']:.3f} < 0.15")
+        raise SystemExit(f"template eval unique-question fraction {counts['eval_q_frac']:.3f} < 0.15")
+    # no template in two splits
+    tmpl_sets = {"train": set(), "dev": set(), "eval": set()}
+    for q, s in t_split.items():
+        tmpl_sets[s].add(templates[q])
+    leak_t = (tmpl_sets["train"] & tmpl_sets["eval"]) | (tmpl_sets["dev"] & tmpl_sets["eval"]) | (tmpl_sets["train"] & tmpl_sets["dev"])
+    if leak_t:
+        raise SystemExit(f"template leakage across splits: {len(leak_t)}")
 
     hf_dir = ensure_hf(ART / "hf" / "ettin-encoder-68m")
     model = Ettin68mScorer(SEQ_LEN)
     missing = load_backbone(model, hf_dir)
     print("load missing (ok if only head_out):", missing[:8], flush=True)
+    init_ckpt = None
+    if not args.no_init_ckpt and args.init_ckpt and Path(args.init_ckpt).is_file():
+        blob0 = torch.load(args.init_ckpt, map_location="cpu", weights_only=False)
+        model.load_state_dict(blob0["model"], strict=False)
+        init_ckpt = args.init_ckpt
+        print(f"init from {init_ckpt} (round-1)", flush=True)
     model.freeze_for_cpu(args.unfreeze_last)
+    model.grad_ckpt = True
     model.to(device)
     n_train_p = sum(p.numel() for p in model.parameters() if p.requires_grad)
     n_all_p = sum(p.numel() for p in model.parameters())
     print(f"params {n_all_p/1e6:.1f}M, trainable {n_train_p/1e6:.1f}M", flush=True)
 
-    enc_params, head_params = [], []
-    for name, p in model.named_parameters():
-        if not p.requires_grad:
-            continue
-        (head_params if name.startswith("head_") else enc_params).append(p)
     opt = torch.optim.AdamW(
-        [
-            {"params": enc_params, "lr": LR_ENCODER},
-            {"params": head_params, "lr": LR_HEAD},
-        ],
+        model.layerwise_param_groups(LR_ENCODER, LR_HEAD, LR_EMBED, LAYER_DECAY),
         weight_decay=WEIGHT_DECAY,
     )
-    ckpt = ART / "jevh_68m_v5.pt"
+    ckpt = ART / "jevh_68m_v5_r2.pt"
     rng = random.Random(args.seed)
     t_train0 = time.time()
     epochs_run = 0
     best_dev = -1.0
+    stale = 0
     gaps = []
     if not args.skip_train:
         for epoch in range(1, args.epochs + 1):
@@ -662,9 +735,10 @@ def main() -> None:
             epochs_run = epoch
             dev_logits = predict_logits(model, splits["dev"], device)
             dev_acc = float(np.mean([int(np.argmax(lo) == ex["gold"]) for lo, ex in zip(dev_logits, splits["dev"])]))
-            print(f"epoch {epoch} loss={loss:.4f} dev_acc={dev_acc:.4f}", flush=True)
-            if dev_acc >= best_dev:
+            print(f"epoch {epoch} loss={loss:.4f} template_dev_acc={dev_acc:.4f}", flush=True)
+            if dev_acc > best_dev + 1e-4:
                 best_dev = dev_acc
+                stale = 0
                 torch.save(
                     {
                         "model": model.state_dict(),
@@ -675,6 +749,11 @@ def main() -> None:
                     },
                     ckpt,
                 )
+            else:
+                stale += 1
+                if stale >= args.patience:
+                    gaps.append(f"Early stop at epoch {epoch}: template-dev acc {dev_acc:.4f} vs best {best_dev:.4f}")
+                    break
             if (time.time() - t_train0) / 60.0 >= args.max_train_minutes:
                 gaps.append(f"Stopped after epoch {epoch}: hit --max-train-minutes={args.max_train_minutes}")
                 break
@@ -683,25 +762,29 @@ def main() -> None:
             model.load_state_dict(blob["model"])
         train_minutes = (time.time() - t_train0) / 60.0
     else:
-        blob = {}
-        if ckpt.is_file():
-            blob = torch.load(ckpt, map_location="cpu", weights_only=False)
+        load_path = ckpt if ckpt.is_file() else Path(args.init_ckpt)
+        if load_path.is_file():
+            blob = torch.load(load_path, map_location="cpu", weights_only=False)
             model.load_state_dict(blob["model"])
             epochs_run = int(blob.get("epoch") or 0)
             train_minutes = float(blob.get("train_minutes") or 0.0)
         else:
             epochs_run = 0
             train_minutes = 0.0
-            gaps.append("Training skipped (--skip-train) and no checkpoint was found.")
+            gaps.append("Training skipped and no checkpoint was found.")
 
+    model.grad_ckpt = False
     print("eval...", flush=True)
     dev_logits = predict_logits(model, splits["dev"], device)
     T = fit_temperature(dev_logits, [ex["gold"] for ex in splits["dev"]])
-    eval_logits = predict_logits(model, splits["eval"], device)
-    eval_cal = metrics_table(splits["eval"], eval_logits, T)
-    eval_raw = metrics_table(splits["eval"], eval_logits, 1.0)
+    t_logits = predict_logits(model, splits["eval"], device)
+    q_logits = predict_logits(model, q_eval_ex, device)
+    t_eval = metrics_table(splits["eval"], t_logits, T)
+    q_eval = metrics_table(q_eval_ex, q_logits, T)
+    eval_raw = metrics_table(splits["eval"], t_logits, 1.0)
     dev_m = metrics_table(splits["dev"], dev_logits, T)
-    print("eval calibrated", json.dumps(eval_cal, indent=2), flush=True)
+    print("template eval", json.dumps(t_eval, indent=2), flush=True)
+    print("question eval (r1 rows)", json.dumps(q_eval, indent=2), flush=True)
 
     lat = latency_ms(model, splits["eval"], device)
     print("latency", lat, flush=True)
@@ -723,26 +806,33 @@ def main() -> None:
     calib_mask = ART / "calib_attention_mask.npy"
     n_cal = write_calib(splits["train"] + splits["dev"], lane, tok, calib_ids, calib_mask, n=256)
 
-    decide_is_sample = paths["decide"] is not None and "sample" in paths["decide"].name
-    if decide_is_sample:
+    if paths.get("decide") is not None and "sample" in paths["decide"].name:
         gaps.append("Full decide_questions_dedup.jsonl was not found; KD used the bundled sample only.")
+    if not large_rows:
+        gaps.append("JEV-H-large soft file missing; KD used Qwen3 scores only.")
     gaps.append("Labels are biased to teacher-unsure or teacher-JEV disagreement cases.")
     gaps.append("No HEF compile (no DFC). No deploy. Current-student comparison only on decide overlap rows.")
     if epochs_run < args.epochs:
         gaps.append(f"Requested {args.epochs} epochs, ran {epochs_run}.")
-    gaps.append("Encoder embeddings and early layers frozen for the CPU budget; a full unfreeze would need more RAM/time.")
+    gaps.append("Unique-question eval reuses round-1 rows; some of those questions can sit in template-train (see qsplit_eval_leaked). Template eval is the honest number.")
 
     payload = {
         "seed": args.seed,
         "unfreeze_last": args.unfreeze_last,
         "epochs_run": epochs_run,
+        "epochs_requested": args.epochs,
         "train_minutes": train_minutes,
+        "init_ckpt": init_ckpt,
         "paths": {k: (str(v) if v else None) for k, v in paths.items()},
         "counts": counts,
-        "eval_calibrated": eval_cal,
+        "truncation": {"labels": trunc, "kd": trunc_kd},
+        "template_eval": t_eval,
+        "question_eval": q_eval,
+        "eval_calibrated": t_eval,
         "eval_raw": eval_raw,
-        "eval_teacher": {"accuracy": eval_cal["teacher_accuracy"], "n": eval_cal["teacher_n"]},
+        "eval_teacher": {"accuracy": t_eval["teacher_accuracy"], "n": t_eval["teacher_n"]},
         "dev": dev_m,
+        "round1": ROUND1,
         "latency": lat,
         "onnx": {
             "path": str(onnx_path),

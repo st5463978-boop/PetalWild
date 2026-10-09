@@ -98,6 +98,7 @@ class Ettin68mScorer(nn.Module):
         self.head_out = nn.Linear(HIDDEN, 1, bias=True)
         nn.init.normal_(self.head_out.weight, std=HIDDEN ** -0.5)
         nn.init.zeros_(self.head_out.bias)
+        self.grad_ckpt = False
 
         pos = torch.arange(seq_len, dtype=torch.float32)
         inv = 1.0 / (ROPE_THETA ** (torch.arange(0, HEAD_DIM, 2, dtype=torch.float32) / HEAD_DIM))
@@ -120,8 +121,14 @@ class Ettin68mScorer(nn.Module):
         cos = self.rope_cos
         sin = self.rope_sin
         local_bias = self.local_bias
+        ckpt = bool(self.training and getattr(self, "grad_ckpt", False))
         for layer in self.layers:
-            x = layer(x, pad_bias, local_bias, cos, sin)
+            if ckpt:
+                x = torch.utils.checkpoint.checkpoint(
+                    layer, x, pad_bias, local_bias, cos, sin, use_reentrant=False
+                )
+            else:
+                x = layer(x, pad_bias, local_bias, cos, sin)
         return self.final_norm(x)
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
@@ -131,6 +138,10 @@ class Ettin68mScorer(nn.Module):
         return self.head_out(h)
 
     def freeze_for_cpu(self, unfreeze_last: int = 6) -> None:
+        if unfreeze_last < 0 or unfreeze_last >= N_LAYERS:
+            for p in self.parameters():
+                p.requires_grad = True
+            return
         for p in self.parameters():
             p.requires_grad = False
         keep = {self.final_norm, self.head_dense, self.head_norm, self.head_out}
@@ -141,6 +152,33 @@ class Ettin68mScorer(nn.Module):
         for layer in self.layers[start:]:
             for p in layer.parameters():
                 p.requires_grad = True
+
+    def layerwise_param_groups(
+        self,
+        base_lr: float,
+        head_lr: float,
+        embed_lr: float,
+        decay: float,
+    ) -> list[dict]:
+        groups = [
+            {
+                "params": list(self.tok_embeddings.parameters()) + list(self.emb_norm.parameters()),
+                "lr": embed_lr,
+            }
+        ]
+        for i, layer in enumerate(self.layers):
+            lr = base_lr * (decay ** (N_LAYERS - 1 - i))
+            groups.append({"params": list(layer.parameters()), "lr": lr})
+        groups.append({"params": list(self.final_norm.parameters()), "lr": base_lr})
+        groups.append(
+            {
+                "params": list(self.head_dense.parameters())
+                + list(self.head_norm.parameters())
+                + list(self.head_out.parameters()),
+                "lr": head_lr,
+            }
+        )
+        return groups
 
     def load_ettin_encoder(self, bin_path: str | Path) -> list[str]:
         raw = torch.load(str(bin_path), map_location="cpu", weights_only=True)

@@ -9,6 +9,7 @@ falls back to the files in this folder. Override any path with env vars.
 | Decide log (teacher soft labels, never gold) | `JEVH_DECIDE_PATH` | `decide_questions_dedup*.jsonl` | `decide_questions.sample.jsonl` (40 rows) |
 | Hard PetalWild questions | `JEVH_LANE_PATH` | `jevh_lane_bank*.jsonl` | `lane_bank.jsonl` (full, 197 rows) |
 | Live student tokenizer | `JEVH_TOKENIZER_PATH` | `jevh_student_tokenizer*.json` | `tokenizer.json` (3.5 MB) |
+| JEV-H-large soft labels on decide | `JEVH_LARGE_SOFT_PATH` | `jevh_large_soft*.jsonl.gz` | `external/jevh_large_soft_on_decide_questions_dedup.jsonl.gz` (copied from `cursor/jevh-variant-large-819a`, not merged) |
 
 `JEVH_UPLOADS_DIR` defaults to `/home/ubuntu/.cursor/projects/workspace/uploads`.
 

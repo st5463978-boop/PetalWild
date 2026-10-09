@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from data import n_options_bucket, read_jsonl, stratified_question_split
+from data import n_options_bucket, read_jsonl, stratified_question_split, template_grouped_split, template_key
 from encode import NOUL_STEXT, SEQ_LEN, StudentTok, build_input, gold_index, is_yesno
 
 HERE = Path(__file__).resolve().parent
@@ -78,14 +78,64 @@ class EncodeTests(unittest.TestCase):
 
     def test_tokenizer_pair_len(self):
         tok = StudentTok(str(HERE / "data" / "tokenizer.json"), SEQ_LEN)
-        ids, masks, mode = tok.encode("[choice] hello", ["alpha", "beta"])
+        ids, masks, mode, stats = tok.encode("[choice] hello", ["alpha", "beta"])
         self.assertEqual(mode, "only_first")
+        self.assertFalse(stats[0]["overflow"])
         self.assertEqual(len(ids), 2)
         self.assertEqual(len(ids[0]), SEQ_LEN)
         self.assertEqual(len(masks[0]), SEQ_LEN)
         self.assertEqual(sum(masks[0]), sum(1 for t in ids[0] if t != tok.pad_id))
         self.assertEqual(gold_index(["a", "b", "c"], "b"), 1)
         self.assertFalse(is_yesno(["Flag", "Accept"]))
+
+
+class TemplateTests(unittest.TestCase):
+    def test_modulo_and_worker_templates_collapse(self):
+        a = "An event starts at tick 12, is delayed 3 ticks, and uses period 4. What is its modulo slot at execution?"
+        b = "An event starts at tick 0, is delayed 1 ticks, and uses period 2. What is its modulo slot at execution?"
+        self.assertEqual(template_key(a), template_key(b))
+        w1 = "Worker Mina may transfer seeds up to 5 seeds without approval. The proposed action is 9 seeds. Does this action require approval?"
+        w2 = "Worker Otto may queue notices up to 2 notices without approval. The proposed action is 4 notices. Does this action require approval?"
+        self.assertEqual(template_key(w1), template_key(w2))
+
+    def test_template_split_no_leakage(self):
+        rows = read_jsonl(HERE / "data" / "labels.jsonl")
+        questions = list(dict.fromkeys(r["question"] for r in rows))
+        n_opts = {}
+        tmpl = {}
+        for r in rows:
+            n_opts.setdefault(r["question"], len(r["options"]))
+            tmpl.setdefault(r["question"], template_key(r["question"]))
+        split = template_grouped_split(questions, n_opts, tmpl, seed=42)
+        self.assertGreaterEqual(sum(1 for s in split.values() if s == "eval") / len(questions), 0.15)
+        sets = {"train": set(), "dev": set(), "eval": set()}
+        for q, s in split.items():
+            sets[s].add(tmpl[q])
+        self.assertFalse(sets["train"] & sets["eval"])
+        self.assertFalse(sets["dev"] & sets["eval"])
+        self.assertFalse(sets["train"] & sets["dev"])
+
+
+class KeepOptionTests(unittest.TestCase):
+    def test_overflow_keeps_option(self):
+        tok = StudentTok(str(HERE / "data" / "tokenizer.json"), SEQ_LEN)
+        question = "[choice] " + ("The parish page says the far lawn bell still stands. " * 20)
+        option = "UNIQUE_OPTION_TOKEN_xyzzy keep me"
+        ids, masks, mode, stats = tok.encode(question, [option, "other"])
+        self.assertEqual(mode, "keep_option")
+        self.assertTrue(stats[0]["overflow"])
+        self.assertTrue(stats[0]["trimmed_question"])
+        self.assertFalse(stats[0]["trimmed_option"])
+        # option wordpiece ids should appear in the packed sequence
+        opt_core = tok.t_raw.encode(option).ids
+        # strip cls/sep
+        if opt_core and opt_core[0] == 50281:
+            opt_core = opt_core[1:]
+        if opt_core and opt_core[-1] == 50282:
+            opt_core = opt_core[:-1]
+        packed = ids[0]
+        # last non-pad tokens should include option tail
+        self.assertTrue(any(packed[i : i + len(opt_core)] == opt_core for i in range(len(packed) - len(opt_core) + 1)))
 
 
 class MaskTests(unittest.TestCase):
