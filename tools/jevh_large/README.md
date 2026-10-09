@@ -55,9 +55,24 @@ Input format matches the live JEV-H service: `text_a = "[qtype] question"` (+ co
 
 Round 1 (seq128, freeze 10) is kept as `artifacts/jevh_large_ettin150m_r1.pt` when round 2 starts. If wall time is tight, `run.sh --epochs 1 --freeze-layers 10 --max-soft 800`.
 
-## Round 1 (CPU, seed 42)
+## Round 2 (CPU, seed 42, seq256)
 
-Held-out **823** unique questions (20%, no leakage). Best checkpoint: epoch 1 (epoch 2 hit the 75-minute cap). Round 2 metrics (seq256, more layers, template-grouped eval) land in [RECEIPT.md](RECEIPT.md) after `./tools/jevh_large/run.sh`.
+Same unique-question eval (823). Resume epoch-1, freeze 6, layer-wise LR, one extra epoch (100 min cap). Gold truncation at seq128 is **0%** (max pair 113). Unique-q eval is 89.8% template-seen.
+
+| split | n | round 2 | round 1 | teacher | Δ vs R1 |
+|---|---:|---:|---:|---:|---:|
+| unique-q overall | 823 | **0.7655** | 0.7570 | 0.4581 | +0.85 pp |
+| unique-q 2-way | 206 | 0.8641 | 0.8592 | **0.9320** | +0.49 pp |
+| unique-q multi | 617 | **0.7326** | 0.7229 | 0.2998 | +0.97 pp |
+| template-unseen overall | 84 | 0.6071 | — | **0.6190** | honest slice |
+| template-unseen 2-way | 54 | 0.5370 | — | **0.7778** | |
+| template-unseen multi | 30 | **0.7333** | — | 0.3333 | |
+
+Conf-mistakes 23 (was 26). ECE 0.077. CPU batch-1 seq256: **105 ms / option**, ~223 ms / decision. Soft dump on 9,402 decide rows regenerated (`seq_len=256`). Full tables and ONNX sha256: [RECEIPT.md](RECEIPT.md).
+
+## Round 1 (for comparison)
+
+Held-out **823** unique questions. Best checkpoint: epoch 1 at seq128, freeze 10.
 
 | split | n | student acc | Qwen3 teacher acc | conf-mistakes ≥0.65 | ECE |
 |---|---:|---:|---:|---:|---:|
@@ -65,7 +80,7 @@ Held-out **823** unique questions (20%, no leakage). Best checkpoint: epoch 1 (e
 | 2-way | 206 | 0.859 | 0.932 | 13 | 0.084 |
 | multi-choice | 617 | **0.723** | 0.300 | 13 | 0.083 |
 
-Beats the teacher overall, so soft labels on all 9,402 decide rows were exported. CPU batch-1: **62 ms / option**, ~132 ms / decision. Details, ONNX sha256, and gaps: [RECEIPT.md](RECEIPT.md).
+CPU batch-1 seq128: **62 ms / option**, ~132 ms / decision.
 
 ## Artifacts
 
@@ -74,7 +89,8 @@ Under `tools/jevh_large/artifacts/` (ONNX/checkpoints ~570 MB are gitignored; re
 - `jevh_large_ettin150m_seq128.onnx` — batch 1, seq 128, `input_ids` + `attention_mask` → `logits` `[1,1]`
 - `jevh_large_ettin150m_seq256.onnx` — same, seq 256
 - `calib_input_ids_seq128.npy`, `calib_attention_mask_seq128.npy` — 256 real pairs
-- `jevh_large_soft_on_decide_questions_dedup.jsonl.gz` — large-model soft labels on decide traffic
+- `calib_input_ids_seq256.npy`, `calib_attention_mask_seq256.npy` — 256 real pairs
+- `jevh_large_soft_on_decide_questions_dedup.jsonl.gz` — large-model soft labels on decide traffic (round 2, seq256)
 - `metrics.json`, `RECEIPT.md`
 
 ## Hailo notes
