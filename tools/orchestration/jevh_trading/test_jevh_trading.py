@@ -431,6 +431,22 @@ class GateTests(unittest.TestCase):
         self.assertAlmostEqual(st["tolerant_agreement_within_0.05"], 0.5)
         self.assertEqual(set(st["by_rules_id"]), {"None"})
 
+    def test_hold_vs_act(self):
+        from jevh_trading.shadow_gate import agreement_stats
+
+        kinds = ["hold", "open"]
+        recs = [
+            {"gold": 0, "probs": [0.2, 0.8], "p_jev": [0.6, 0.4], "kinds": kinds},
+            {"gold": 1, "probs": [0.9, 0.1], "p_jev": [0.3, 0.7], "kinds": kinds},
+            {"gold": 1, "probs": [0.1, 0.9], "p_jev": [0.3, 0.7], "kinds": kinds},
+            {"gold": 0, "probs": [0.9, 0.1], "p_jev": [0.8, 0.2], "kinds": kinds},
+        ]
+        h = agreement_stats(recs)["hold_vs_act"]
+        self.assertAlmostEqual(h["jev_acted_share"], 0.5)
+        self.assertAlmostEqual(h["jev_acted_student_same_option"], 0.5)
+        self.assertAlmostEqual(h["jev_acted_student_held"], 0.5)
+        self.assertAlmostEqual(h["jev_held_student_acted"], 0.5)
+
     def test_prob_rmse_and_temperature(self):
         from jevh_trading.shadow_gate import fit_rmse_temperature, prob_rmse
 

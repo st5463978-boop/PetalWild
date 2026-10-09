@@ -198,13 +198,21 @@ def agreement_stats(recs: list[dict]) -> dict:
     }
     for tol in TOLERANCES:
         out[f"tolerant_agreement_within_{tol:.2f}"] = float((mass >= pmax - tol - 1e-9).mean())
-    kinds_ok = []
+    kinds_ok, acts = [], []
     for r, pr in zip(recs, a["pred"]):
         kinds = r.get("kinds")
         if kinds:
             kinds_ok.append(kinds[int(pr)] == kinds[int(r["gold"])])
+            acts.append((kinds[int(r["gold"])] != "hold", kinds[int(pr)] != "hold", int(pr) == int(r["gold"])))
     if kinds_ok:
         out["action_kind_agreement"] = float(np.mean(kinds_ok))
+        jev_act, stu_act, same = (np.asarray(x) for x in zip(*acts))
+        out["hold_vs_act"] = {
+            "jev_acted_share": float(jev_act.mean()),
+            "jev_acted_student_same_option": float(same[jev_act].mean()) if jev_act.any() else None,
+            "jev_acted_student_held": float((~stu_act[jev_act]).mean()) if jev_act.any() else None,
+            "jev_held_student_acted": float(stu_act[~jev_act].mean()) if (~jev_act).any() else None,
+        }
     jm = np.asarray([margin_of(r["p_jev"]) for r in recs])
     bins = {}
     for lo, hi in zip(MARGIN_EDGES[:-1], MARGIN_EDGES[1:]):
@@ -552,7 +560,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-rows", type=int, default=None, help="natural random sample per split (default: whole pool)")
     p.add_argument("--onnx-rows", type=int, default=300)
     p.add_argument("--no-int8", action="store_true")
-    p.add_argument("--recs", default=None, help="reuse a preds_*.jsonl.gz instead of re-scoring")
+    p.add_argument("--recs", default=None, help="reuse a preds_*.jsonl.gz instead of re-scoring (keeps meta and the ONNX section of an existing --out)")
     p.add_argument("--seed", type=int, default=SEED)
     p.add_argument("--out", default=str(artifacts_dir() / "shadow_gate.json"))
     a = p.parse_args(argv)
@@ -564,7 +572,13 @@ def main(argv: list[str] | None = None) -> int:
         recs = defaultdict(list)
         for r in all_recs:
             recs[r["split"]].append(r)
+        if Path(a.out).is_file():
+            prev = json.loads(Path(a.out).read_text())
+            meta, onnx_rep = dict(prev.get("meta") or {}), prev.get("onnx")
         meta["recs"] = a.recs
+        from .jev_ceiling import load_raw_calls
+
+        meta["_receipt_ids"] = {k: [r.get("id") for r in v] for k, v in receipt_rows(load_raw_calls()["parts"], a.seed).items()}
     else:
         recs, meta, model, packed_by = predict_student(Path(a.ckpt), a.max_rows, a.seed, a.seq)
         write_recs(art / f"preds_{meta['size']}.jsonl.gz", [r for v in recs.values() for r in v])
