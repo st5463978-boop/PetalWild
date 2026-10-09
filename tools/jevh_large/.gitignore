@@ -1,0 +1,10 @@
+.venv/
+.hf_cache/
+__pycache__/
+artifacts/*.onnx
+artifacts/*.onnx.data
+artifacts/*.pt
+artifacts/*.bin
+artifacts/hf_cache/
+artifacts/checkpoint*/
+*.tmp
