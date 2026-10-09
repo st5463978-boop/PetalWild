@@ -142,6 +142,7 @@ def metrics_table(examples: list[dict], logits: list[np.ndarray], temperature: f
     yn_c = yn_n = mc_c = mc_n = 0
     teacher_c = teacher_n = 0
     student_c = student_n = 0
+    overlap_model_c = 0
     conf_mist = 0
     teacher_conf_mist = 0
     student_conf_mist = 0
@@ -177,6 +178,7 @@ def metrics_table(examples: list[dict], logits: list[np.ndarray], temperature: f
                 teacher_conf_mist += 1
         if ex.get("student_index") is not None:
             student_n += 1
+            overlap_model_c += hit
             sh = int(ex["student_index"] == gold)
             student_c += sh
             sconf = ex.get("student_confidence")
@@ -201,6 +203,7 @@ def metrics_table(examples: list[dict], logits: list[np.ndarray], temperature: f
         "teacher_confident_mistakes": teacher_conf_mist,
         "student_overlap_n": student_n,
         "student_accuracy": (student_c / student_n) if student_n else None,
+        "overlap_model_accuracy": (overlap_model_c / student_n) if student_n else None,
         "student_confident_mistakes": student_conf_mist,
         "temperature": temperature,
         "mean_confidence": float(confs_a.mean()) if len(confs_a) else None,
@@ -343,6 +346,9 @@ def inspect_onnx(path: Path) -> dict:
         shape = [d.dim_value or (d.dim_param or -1) for d in vi.type.tensor_type.shape.dim]
         outputs.append({"name": vi.name, "shape": shape, "elem": vi.type.tensor_type.elem_type})
     consumed = {i for n in m.graph.node for i in n.input}
+    elem_names = {1: "float32", 6: "int32", 7: "int64"}
+    for item in inputs + outputs:
+        item["dtype"] = elem_names.get(item["elem"], str(item["elem"]))
     return {
         "ir_version": m.ir_version,
         "opset": [op.version for op in m.opset_import],
@@ -406,12 +412,20 @@ def write_calib(examples: list[dict], lane_rows: list[dict], tok: StudentTok, pa
             pairs.append((a, b))
     rng = random.Random(SEED)
     rng.shuffle(pairs)
-    # prefer a mix of short and long real masks
-    pairs = pairs[: max(n, 256)]
-    if len(pairs) < 256:
-        raise RuntimeError(f"need >=256 calib rows, got {len(pairs)}")
-    ids = np.asarray([p[0] for p in pairs[: max(n, 256)]], dtype=np.int64)
-    mask = np.asarray([p[1] for p in pairs[: max(n, 256)]], dtype=np.int64)
+    uniq: list[tuple[list[int], list[int]]] = []
+    seen: set[tuple[int, ...]] = set()
+    for ids_row, mask_row in pairs:
+        key = tuple(ids_row)
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append((ids_row, mask_row))
+        if len(uniq) >= max(n, 256):
+            break
+    if len(uniq) < 256:
+        raise RuntimeError(f"need >=256 unique calib rows, got {len(uniq)}")
+    ids = np.asarray([p[0] for p in uniq], dtype=np.int64)
+    mask = np.asarray([p[1] for p in uniq], dtype=np.int64)
     np.save(path_ids, ids)
     np.save(path_mask, mask)
     return int(ids.shape[0])
@@ -495,7 +509,8 @@ def write_receipt(path: Path, payload: dict) -> None:
         "|---|---:|---:|---:|---:|---:|---:|",
         (
             f"| eval T={m['temperature']:.3f} | {m['n']} | {m['accuracy']:.4f} | "
-            f"{_fmt(m['teacher_accuracy'])} | {_fmt(m['student_accuracy'])} "
+            f"{_fmt(m['teacher_accuracy'])} | live {_fmt(m['student_accuracy'])} / "
+            f"v5 {_fmt(m.get('overlap_model_accuracy'))} "
             f"(n={m['student_overlap_n']}) | {m['confident_mistakes']} | {m['ece']:.4f} |"
         ),
         (
@@ -650,20 +665,34 @@ def main() -> None:
             print(f"epoch {epoch} loss={loss:.4f} dev_acc={dev_acc:.4f}", flush=True)
             if dev_acc >= best_dev:
                 best_dev = dev_acc
-                torch.save({"model": model.state_dict(), "epoch": epoch, "dev_acc": dev_acc, "seed": args.seed}, ckpt)
+                torch.save(
+                    {
+                        "model": model.state_dict(),
+                        "epoch": epoch,
+                        "dev_acc": dev_acc,
+                        "seed": args.seed,
+                        "train_minutes": (time.time() - t_train0) / 60.0,
+                    },
+                    ckpt,
+                )
             if (time.time() - t_train0) / 60.0 >= args.max_train_minutes:
                 gaps.append(f"Stopped after epoch {epoch}: hit --max-train-minutes={args.max_train_minutes}")
                 break
         if ckpt.is_file():
             blob = torch.load(ckpt, map_location="cpu", weights_only=False)
             model.load_state_dict(blob["model"])
+        train_minutes = (time.time() - t_train0) / 60.0
     else:
+        blob = {}
         if ckpt.is_file():
             blob = torch.load(ckpt, map_location="cpu", weights_only=False)
             model.load_state_dict(blob["model"])
-        epochs_run = 0
-        gaps.append("Training skipped (--skip-train).")
-    train_minutes = (time.time() - t_train0) / 60.0
+            epochs_run = int(blob.get("epoch") or 0)
+            train_minutes = float(blob.get("train_minutes") or 0.0)
+        else:
+            epochs_run = 0
+            train_minutes = 0.0
+            gaps.append("Training skipped (--skip-train) and no checkpoint was found.")
 
     print("eval...", flush=True)
     dev_logits = predict_logits(model, splits["dev"], device)
