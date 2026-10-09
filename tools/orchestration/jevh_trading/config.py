@@ -54,9 +54,15 @@ LR_HEAD = 8e-5
 LR_EMBED = 5e-6
 LAYER_DECAY = 0.9
 MICROBATCH = 8
+MICROBATCH_68M = 4
 DISTILL_EPOCHS = 6
 DISTILL_PATIENCE = 2
 AUTO_17M = True
+# CPU budget: 68m last-6 on ~100k rows is overnight; stratify a subset and say so.
+MAX_TRAIN_68M = 8000
+MAX_DEV_68M = 2000
+MAX_EVAL_68M = 6000
+PREDICT_BS = 32
 
 # Latency
 LATENCY_WARMUP = 8

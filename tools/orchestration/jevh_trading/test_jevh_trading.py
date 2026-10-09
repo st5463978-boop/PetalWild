@@ -242,6 +242,93 @@ class IngestTests(unittest.TestCase):
         self.assertFalse(b["stats"]["enough_to_claim"])
         self.assertGreater(b["stats"]["shortfall"]["varied_multi"], 0)
 
+    def test_option_text_uses_menu_detail(self):
+        from jevh_trading.ingest import option_text, option_texts_for, parse_row
+
+        self.assertEqual(
+            option_text("SWITCH", {"label": "SWITCH", "kind": "switch", "coin": "ETH", "side": "short", "desc": "close, go short ETH"}),
+            "SWITCH: close, go short ETH (switch ETH short)",
+        )
+        rec = parse_row(
+            {
+                "ts_ms": 1,
+                "bee": "hs-breezy",
+                "source": "hyperspeed",
+                "style": "breezy",
+                "rules_id": "breezy-cautious",
+                "menu": ["HOLD_WINNER", "LONG_BTC", "SWITCH"],
+                "menu_detail": [
+                    {"label": "HOLD_WINNER", "kind": "hold", "desc": "keep position"},
+                    {"label": "LONG_BTC", "kind": "switch", "coin": "BTC", "side": "long"},
+                    {"label": "SWITCH", "kind": "switch", "coin": "ETH", "side": "short", "desc": "close, go short ETH"},
+                ],
+                "choice": "SWITCH",
+                "probabilities": {"HOLD_WINNER": 0.2, "LONG_BTC": 0.1, "SWITCH": 0.7},
+                "state": {"me": {"pos": "short BTC"}},
+            },
+            "mem",
+        )
+        self.assertIn("SWITCH", rec["option_texts"][2])
+        self.assertIn("ETH", rec["option_texts"][2])
+        self.assertTrue(rec["text_a"].startswith("[choice]"))
+        self.assertIn("breezy-cautious", rec["text_a"])
+
+    def test_v2_snapshot_and_rules_holdout(self):
+        from jevh_trading.ingest import ingest
+
+        snaps = [f"2026-10-09T11:{i:02d}:00Z" for i in range(12)]
+        rules = ["breezy-original", "breezy-cautious", "boozy-original", "boozy-diamond", "bizzy-original", "bizzy-alts"]
+        rows = []
+        n = 0
+        for ts in snaps:
+            for style, rid in (("breezy", rules[0]), ("breezy", rules[1]), ("boozy", rules[2]), ("boozy", rules[3]), ("bizzy", rules[4]), ("bizzy", rules[5])):
+                n += 1
+                rows.append(
+                    {
+                        "id": f"hs-{n}",
+                        "source": "hyperspeed",
+                        "bee": f"hs-{style}",
+                        "style": style,
+                        "rules_id": rid,
+                        "market_ts": ts,
+                        "ts_ms": 1_791_000_000_000 + n,
+                        "state": {"me": {"pos": "flat", "i": n}, "coins": {"cols": ["score"], "rows": {"BTC": [n % 9]}}},
+                        "menu": ["LONG_BTC", "SHORT_BTC", "WAIT"],
+                        "choice": "LONG_BTC" if style != "bizzy" else "WAIT",
+                        "probabilities": {"LONG_BTC": 0.5, "SHORT_BTC": 0.2, "WAIT": 0.3},
+                    }
+                )
+        for i in range(5):
+            rows.append(
+                {
+                    "id": f"live-{i}",
+                    "source": "live_engine",
+                    "bee": "bee1",
+                    "ts_ms": 1_790_000_000_000 + i,
+                    "state": {"me": {"pos": "short BTC", "held_min": i}, "coins": {"cols": ["score"], "rows": {"BTC": [-6]}}},
+                    "menu": ["HOLD_WINNER", "LONG_BTC", "SWITCH"],
+                    "choice": "HOLD_WINNER",
+                    "probabilities": {"HOLD_WINNER": 0.8, "LONG_BTC": 0.1, "SWITCH": 0.1},
+                }
+            )
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "calls.jsonl"
+            p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+            b = ingest([str(p)], include_default=False)
+        self.assertEqual(b["stats"]["protocol"], "hyperspeed_market_ts+held_rules+live_holdout")
+        self.assertEqual(b["stats"]["eval_live"], 5)
+        self.assertTrue(b["stats"]["held_rules"])
+        train_rules = {r["rules_id"] for r in b["train"]}
+        for rid in b["stats"]["held_rules"]:
+            self.assertNotIn(rid, train_rules)
+        train_snaps = {r["market_ts"] for r in b["train"]}
+        eval_snaps = set(b["stats"]["eval_snaps"])
+        self.assertTrue(eval_snaps)
+        self.assertFalse(train_snaps & eval_snaps)
+        live_ids = {r["id"] for r in b["eval_live"]}
+        self.assertTrue(all(str(i).startswith("live") for i in live_ids))
+        self.assertFalse(any(r.get("row_source") == "live_engine" for r in b["train"]))
+
 
 class EncodeKeepOption(unittest.TestCase):
     def test_keep_option_on_overflow(self):

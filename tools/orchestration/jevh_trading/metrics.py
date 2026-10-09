@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Sequence
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -124,6 +124,44 @@ def agreement_breakdown(
             base[f"{name}_n"] = len(idx)
             base[f"{name}_accuracy"] = ok / len(idx)
     return base
+
+
+def group_accuracy(pred_idx: Sequence[int], gold_idx: Sequence[int], groups: Sequence[Any]) -> dict:
+    slot: dict[str, dict] = {}
+    for pr, g, gv in zip(pred_idx, gold_idx, groups):
+        key = str(gv)
+        s = slot.setdefault(key, {"n": 0, "ok": 0})
+        s["n"] += 1
+        s["ok"] += int(int(pr) == int(g))
+    return {
+        k: {"n": v["n"], "accuracy": v["ok"] / v["n"] if v["n"] else None}
+        for k, v in sorted(slot.items(), key=lambda kv: -kv[1]["n"])
+    }
+
+
+def always_hold_indices(labels: Sequence[Sequence[str]]) -> list[int]:
+    out = []
+    for labs in labels:
+        hold = [j for j, lab in enumerate(labs) if lab in HOLD_LABELS]
+        out.append(hold[0] if hold else 0)
+    return out
+
+
+def majority_per_style_indices(
+    labels: Sequence[Sequence[str]],
+    styles: Sequence[str],
+    train_majority: dict[str, str],
+) -> list[int]:
+    """Predict the train-set majority gold of this style if it is on the menu."""
+    out = []
+    hold_fb = always_hold_indices(labels)
+    for labs, st, fb in zip(labels, styles, hold_fb):
+        want = train_majority.get(st)
+        if want and want in labs:
+            out.append(labs.index(want))
+        else:
+            out.append(fb)
+    return out
 
 
 def cpu_latency_ms(fn, n_warmup: int, n: int) -> dict:

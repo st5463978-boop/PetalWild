@@ -24,6 +24,14 @@ Append-only JSONL, one object per Jev call. Same schema as `trading_paper_decisi
 | `jev_error` | null or string | Non-null rows are dropped from training. |
 | `id` | int or string | Stable row id; later write wins on the same state hash. |
 | `teacher` | string | e.g. `typesafe/jev-1.13` so mixed-teacher logs can be filtered later. |
+| `source` | string | `live_engine` or `hyperspeed`. Live is held out of train when hyperspeed is present. |
+| `style` | string | `breezy` / `boozy` / `bizzy`. Packed into text_a. |
+| `context_id` | string | Join key into the contexts jsonl (`strategy` + `rules` Jev saw). |
+| `rules_id` | string | Packed into text_a; also the held-out-rules split. |
+| `market_ts` | string | Hyperspeed market snapshot id. Time split holds out the last ~6. |
+| `menu_detail` | object[] | `{label, kind, coin, side, desc}` so `SWITCH` is not ambiguous. |
+
+Contexts file (`trading_jev_contexts_v2.jsonl`): one object per `context_id` with `style`, `rules_id`, `strategy`, `rules`, `coins_allowed`. The student packs a clipped strategy + rules into `text_a`; seq128 will keep_option-trim the tail.
 
 ## Execution metadata (not gold)
 

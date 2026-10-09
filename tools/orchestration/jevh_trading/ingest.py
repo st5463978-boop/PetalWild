@@ -2,25 +2,39 @@
 
 Gold is Jev's `choice` (plus `probabilities` as soft targets).
 Single-option menus are dropped from training and kept only for format checks.
+Hyperspeed v2 logs: time-split on market_ts (last 6 snapshots + purge) and a
+held-out-rules_id eval. live_engine is scored separately and never trained on
+when v2 is present.
+
 Not financial advice. Offline only. Does not call any exchange or the beebots engine.
 """
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
-from collections import Counter
+import random
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
 from .config import BEE_TAG, HOLD_LABELS, SEED
 from .paths import find_file
 
-PURGE_MS_DEFAULT = 5 * 60 * 1000  # 5 minutes
+PURGE_MS_DEFAULT = 5 * 60 * 1000  # 5 minutes (legacy paper-log split)
 TRAIN_FRAC = 0.70
-DEV_FRAC = 0.15  # of the remainder after train; eval is the rest after purge
+DEV_FRAC = 0.15
+EVAL_LAST_SNAPSHOTS = 6
+PURGE_SNAPSHOTS = 1
+TIME_DEV_SNAPSHOTS = 3
+# Prefer these rules_ids as unseen-rules eval (one per style).
+HOLD_RULES_PREF = {
+    "breezy": "breezy-cautious",
+    "boozy": "boozy-diamond",
+    "bizzy": "bizzy-alts",
+}
 
-# Rough data needed before claiming a cost-free Jev stand-in.
 NEED = {
     "multi_option_unique": 2000,
     "non_hold_gold": 400,
@@ -30,7 +44,9 @@ NEED = {
         "A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred "
         "near-duplicate ticks. Mimicking discretionary Jev (when to leave HOLD, which "
         "APE_*, when to SWITCH) wants thousands of *varied* multi-option rows, with "
-        "each offered action as gold at least ~50 times, over more than one regime."
+        "each offered action as gold at least ~50 times, over more than one regime. "
+        "A 13h window plus 30 minutes of one market regime is NOT that bar — scores "
+        "mean 'mimics Jev in this regime', not a cost-free stand-in."
     ),
 }
 
@@ -44,6 +60,8 @@ def state_hash(state: Any) -> str:
 
 
 def bee_style(row: dict) -> str:
+    if row.get("style") in ("breezy", "boozy", "bizzy"):
+        return str(row["style"])
     menu = row.get("menu") or []
     if any(str(x).startswith("BREAKOUT") or str(x) in ("WAIT", "CUT_LOSS") for x in menu):
         return "bizzy"
@@ -53,7 +71,6 @@ def bee_style(row: dict) -> str:
     return "boozy"
 
 
-# Underscores explode under the ettin BPE (upl_r → 3 tokens). Keep keys short.
 _KEY = {
     "upl_r": "upl",
     "at_stop_usd": "stopUsd",
@@ -84,6 +101,13 @@ def _kv(k: Any, v: Any) -> str | None:
     return f"{_KEY.get(str(k), k)}={v}"
 
 
+def _clip(text: Any, n: int = 140) -> str:
+    s = " ".join(str(text or "").split())
+    if len(s) <= n:
+        return s
+    return s[: n - 1] + "…"
+
+
 def compact_state(state: Any) -> str:
     if not isinstance(state, dict):
         return _canon(state)
@@ -106,11 +130,52 @@ def compact_state(state: Any) -> str:
     return "\n".join(lines)
 
 
-def text_a_for(row: dict) -> str:
-    style = bee_style(row)
+def option_text(label: str, detail: Any) -> str:
+    """SWITCH/HOLD/etc. are ambiguous without kind/coin/side from menu_detail."""
+    if not isinstance(detail, dict):
+        return label
+    desc = str(detail.get("desc") or "").strip()
+    kind = str(detail.get("kind") or "").strip()
+    coin = str(detail.get("coin") or "").strip()
+    side = str(detail.get("side") or "").strip()
+    extra = " ".join(x for x in (kind, coin, side) if x)
+    if desc and extra and desc.lower() != extra.lower():
+        return f"{label}: {desc} ({extra})"
+    if desc:
+        return f"{label}: {desc}"
+    if extra:
+        return f"{label}: {extra}"
+    return label
+
+
+def option_texts_for(menu: list[str], menu_detail: Any) -> list[str]:
+    by_lab: dict[str, dict] = {}
+    if isinstance(menu_detail, list):
+        for d in menu_detail:
+            if isinstance(d, dict) and d.get("label") is not None:
+                by_lab[str(d["label"])] = d
+    elif isinstance(menu_detail, dict):
+        for k, v in menu_detail.items():
+            if isinstance(v, dict):
+                by_lab[str(k)] = v
+    return [option_text(lab, by_lab.get(lab)) for lab in menu]
+
+
+def text_a_for(row: dict, ctx: dict | None = None) -> str:
+    style = (ctx or {}).get("style") or row.get("style") or bee_style(row)
+    rules_id = (ctx or {}).get("rules_id") or row.get("rules_id") or ""
     q = BEE_TAG.get(style, style)
-    ctx = compact_state(row.get("state") or {})
-    return f"[choice] {q}\n{ctx}"
+    if rules_id:
+        q = f"{q} {rules_id}"
+    lines = [f"[choice] {q}"]
+    strategy = (ctx or {}).get("strategy") or row.get("strategy")
+    rules = (ctx or {}).get("rules") or row.get("rules")
+    if strategy:
+        lines.append(_clip(strategy, 140))
+    if rules and str(rules).strip() not in (".", "...", "…"):
+        lines.append("rules: " + _clip(rules, 140))
+    lines.append(compact_state(row.get("state") or {}))
+    return "\n".join(lines)
 
 
 def align_probs(menu: list[str], probabilities: Any, choice: str) -> list[float]:
@@ -135,33 +200,51 @@ def is_varied(menu: list[str], choice: str | None) -> bool:
     holdish = [m for m in menu if m in HOLD_LABELS]
     if len(menu) <= 1:
         return False
-    # HOLD_WINNER + LONG_BTC + SWITCH is the collapsed breezy menu in this log.
     if set(menu) <= {"HOLD_WINNER", "LONG_BTC", "SWITCH", "RIDE", "HOLD", "WAIT"}:
         return False
     return len(menu) - len(holdish) >= 2
 
 
-def load_jsonl(path: Path) -> list[dict]:
-    rows = []
-    with path.open() as f:
+def iter_jsonl(path: Path):
+    name = path.name.lower()
+    gz = name.endswith(".gz") or ".jsonl.gz" in name or name.endswith(".gz")
+    opener = gzip.open if gz else open
+    with opener(path, "rt") as f:
         for line in f:
             line = line.strip()
-            if not line:
-                continue
-            rows.append(json.loads(line))
-    return rows
+            if line:
+                yield json.loads(line)
+
+
+def load_jsonl(path: Path) -> list[dict]:
+    return list(iter_jsonl(path))
+
+
+def load_contexts(path: Path | None) -> dict[str, dict]:
+    if path is None or not path.is_file():
+        return {}
+    out = {}
+    for r in iter_jsonl(path):
+        cid = r.get("context_id")
+        if cid:
+            out[str(cid)] = r
+    return out
 
 
 def discover_logs(extra: Iterable[str] | None = None, *, include_default: bool = True) -> list[Path]:
     found: list[Path] = []
-    p = find_file("trading_paper_decisions.jsonl", required=False) if include_default else None
-    if p:
-        found.append(p)
+    if include_default:
+        v2 = find_file("trading_jev_calls_v2.jsonl.gz", required=False)
+        if v2:
+            found.append(v2)
+        else:
+            p = find_file("trading_paper_decisions.jsonl", required=False)
+            if p:
+                found.append(p)
     for raw in extra or []:
         q = Path(raw)
         if q.is_file():
             found.append(q)
-    # unique, preserve order
     out, seen = [], set()
     for x in found:
         k = str(x.resolve())
@@ -171,7 +254,7 @@ def discover_logs(extra: Iterable[str] | None = None, *, include_default: bool =
     return out
 
 
-def parse_row(r: dict, source: str) -> dict | None:
+def parse_row(r: dict, file_source: str, contexts: dict[str, dict] | None = None) -> dict | None:
     menu = r.get("menu")
     if not isinstance(menu, list) or not menu:
         return None
@@ -183,70 +266,71 @@ def parse_row(r: dict, source: str) -> dict | None:
     except (TypeError, ValueError):
         ts = 0
     err = r.get("jev_error")
+    cid = r.get("context_id")
+    ctx = (contexts or {}).get(str(cid)) if cid else None
+    style = (r.get("style") or (ctx or {}).get("style") or bee_style(r))
+    if style not in ("breezy", "boozy", "bizzy"):
+        style = bee_style(r)
+    rules_id = r.get("rules_id") or (ctx or {}).get("rules_id") or ""
+    row_source = str(r.get("source") or file_source)
     rec = {
         "ts_ms": ts,
+        "market_ts": r.get("market_ts"),
         "bee": str(r.get("bee") or ""),
-        "bee_style": bee_style(r),
+        "bee_style": style,
+        "style": style,
+        "rules_id": str(rules_id) if rules_id else "",
+        "context_id": str(cid) if cid else "",
         "menu": menu,
         "choice": None if choice is None else str(choice),
-        "probabilities": r.get("probabilities") if isinstance(r.get("probabilities"), dict) else {},
         "confidence": r.get("confidence"),
         "conviction": r.get("conviction"),
-        "state": r.get("state") or {},
         "action": r.get("action"),
         "vetoed_by": r.get("vetoed_by"),
         "forced_by": r.get("forced_by"),
         "status": r.get("status"),
         "jev_error": err,
-        "source": source,
+        "file_source": file_source,
+        "row_source": row_source,
+        "source": row_source,
         "n_options": len(menu),
         "single_option": len(menu) < 2,
         "id": r.get("id"),
+        "teacher": r.get("teacher"),
     }
-    rec["state_hash"] = state_hash({"bee": rec["bee"], "menu": menu, "state": rec["state"]})
-    rec["varied"] = is_varied(menu, rec["choice"])
-    rec["text_a"] = text_a_for(r)
-    rec["option_texts"] = list(menu)
-    rec["usable_train"] = (
-        not rec["single_option"]
-        and rec["choice"] in menu
-        and not err
+    rec["state_hash"] = r.get("state_hash") or state_hash(
+        {"bee": rec["bee"], "menu": menu, "state": r.get("state") or {}, "ctx": rec["context_id"], "src": row_source}
     )
+    rec["varied"] = is_varied(menu, rec["choice"])
+    rec["text_a"] = text_a_for(r, ctx)
+    rec["option_texts"] = option_texts_for(menu, r.get("menu_detail"))
+    rec["usable_train"] = not rec["single_option"] and rec["choice"] in menu and not err
     if rec["usable_train"]:
         rec["gold"] = menu.index(rec["choice"])
         rec["gold_label"] = rec["choice"]
-        rec["probs"] = align_probs(menu, rec["probabilities"], rec["choice"])
+        rec["probs"] = align_probs(menu, r.get("probabilities"), rec["choice"])
     return rec
 
 
-def ingest(
-    extra_logs: Iterable[str] | None = None,
-    *,
-    purge_ms: int = PURGE_MS_DEFAULT,
-    train_frac: float = TRAIN_FRAC,
-    seed: int = SEED,
-    include_default: bool = True,
-) -> dict:
-    _ = seed  # reserved for future shuffle of equal-timestamp rows
-    logs = discover_logs(extra_logs, include_default=include_default)
-    raw: list[dict] = []
-    for path in logs:
-        for r in load_jsonl(path):
-            rec = parse_row(r, str(path))
-            if rec:
-                raw.append(rec)
-    raw.sort(key=lambda r: (r["ts_ms"], str(r.get("id"))))
+def pick_held_rules(rows: list[dict], seed: int = SEED) -> list[str]:
+    by_style: dict[str, set[str]] = defaultdict(set)
+    for r in rows:
+        if r.get("rules_id"):
+            by_style[r.get("bee_style") or "other"].add(r["rules_id"])
+    held = []
+    rng = random.Random(seed)
+    for style, pref in HOLD_RULES_PREF.items():
+        ids = sorted(by_style.get(style) or [])
+        if not ids:
+            continue
+        if pref in ids:
+            held.append(pref)
+        else:
+            held.append(ids[rng.randrange(len(ids))])
+    return held
 
-    # exact state+menu+bee dedupe, keep latest
-    latest: dict[str, dict] = {}
-    for rec in raw:
-        latest[rec["state_hash"]] = rec
-    unique = sorted(latest.values(), key=lambda r: (r["ts_ms"], str(r.get("id"))))
 
-    format_check = [r for r in unique if r["single_option"]]
-    unusable = [r for r in unique if (not r["single_option"]) and not r["usable_train"]]
-    multi = [r for r in unique if r["usable_train"]]
-
+def _assign_legacy(multi: list[dict], purge_ms: int, train_frac: float) -> tuple[list, list, list, list, int]:
     n = len(multi)
     i_train = int(n * train_frac)
     i_dev = int(n * (train_frac + DEV_FRAC))
@@ -262,12 +346,98 @@ def ingest(
     eval_rows = [r for r in rest if r["ts_ms"] >= cut_ts + purge_ms]
     purged = [r for r in rest if r["ts_ms"] < cut_ts + purge_ms]
     if not eval_rows and rest:
-        # span too short for the configured purge: keep a time-respecting tail
-        eval_rows = rest
-        purged = []
-        purge_ms_used = 0
+        eval_rows, purged, purge_ms_used = rest, [], 0
     else:
         purge_ms_used = purge_ms if eval_rows else 0
+    return train, dev, eval_rows, purged, purge_ms_used
+
+
+def _assign_v2(multi: list[dict], seed: int) -> dict:
+    hs = [r for r in multi if r.get("row_source") == "hyperspeed" and r.get("market_ts")]
+    live = [r for r in multi if r.get("row_source") == "live_engine"]
+    snaps = sorted({r["market_ts"] for r in hs})
+    n_eval = min(EVAL_LAST_SNAPSHOTS, max(1, len(snaps) // 5))
+    n_purge = min(PURGE_SNAPSHOTS, max(0, len(snaps) - n_eval - 4))
+    n_dev = min(TIME_DEV_SNAPSHOTS, max(1, len(snaps) - n_eval - n_purge - 2))
+    eval_snaps = set(snaps[-n_eval:]) if snaps else set()
+    purge_snaps = set(snaps[-(n_eval + n_purge) : -n_eval]) if n_purge else set()
+    remain = [s for s in snaps if s not in eval_snaps and s not in purge_snaps]
+    dev_snaps = set(remain[-n_dev:]) if remain else set()
+    train_snaps = set(remain[:-n_dev] if n_dev else remain)
+    held_rules = pick_held_rules(hs, seed)
+    held_set = set(held_rules)
+
+    def in_snaps(rows, allowed):
+        return [r for r in rows if r.get("market_ts") in allowed]
+
+    hs_seen = [r for r in hs if r.get("rules_id") not in held_set]
+    hs_unseen_rules = [r for r in hs if r.get("rules_id") in held_set]
+    train = in_snaps(hs_seen, train_snaps)
+    dev = in_snaps(hs_seen, dev_snaps)
+    eval_time = in_snaps(hs_seen, eval_snaps)
+    eval_rules = hs_unseen_rules  # any snapshot; rules never in train
+    purged = in_snaps(hs, purge_snaps)
+    return {
+        "train": train,
+        "dev": dev,
+        "eval": eval_time,
+        "eval_live": live,
+        "eval_rules": eval_rules,
+        "purge": purged,
+        "held_rules": held_rules,
+        "eval_snaps": sorted(eval_snaps),
+        "purge_snaps": sorted(purge_snaps),
+        "dev_snaps": sorted(dev_snaps),
+        "train_snaps": sorted(train_snaps),
+        "n_snapshots": len(snaps),
+        "protocol": "hyperspeed_market_ts+held_rules+live_holdout",
+    }
+
+
+def ingest(
+    extra_logs: Iterable[str] | None = None,
+    *,
+    purge_ms: int = PURGE_MS_DEFAULT,
+    train_frac: float = TRAIN_FRAC,
+    seed: int = SEED,
+    include_default: bool = True,
+) -> dict:
+    logs = discover_logs(extra_logs, include_default=include_default)
+    ctx_path = find_file("trading_jev_contexts_v2.jsonl", required=False) if include_default else None
+    # extra --log of contexts is unusual; still search default uploads
+    if ctx_path is None:
+        ctx_path = find_file("trading_jev_contexts_v2.jsonl", required=False)
+    contexts = load_contexts(ctx_path)
+    raw: list[dict] = []
+    for path in logs:
+        for r in iter_jsonl(path):
+            rec = parse_row(r, str(path), contexts)
+            if rec:
+                raw.append(rec)
+    raw.sort(key=lambda r: (r["ts_ms"], str(r.get("id"))))
+
+    latest: dict[str, dict] = {}
+    for rec in raw:
+        latest[f"{rec['row_source']}|{rec['state_hash']}|{rec['rules_id']}"] = rec
+    unique = sorted(latest.values(), key=lambda r: (r["ts_ms"], str(r.get("id"))))
+
+    format_check = [r for r in unique if r["single_option"]]
+    unusable = [r for r in unique if (not r["single_option"]) and not r["usable_train"]]
+    multi = [r for r in unique if r["usable_train"]]
+
+    hs = [r for r in multi if r.get("row_source") == "hyperspeed" and r.get("market_ts")]
+    use_v2 = len({r["market_ts"] for r in hs}) >= 8
+    extra_eval: dict[str, list] = {"eval_live": [], "eval_rules": []}
+    v2meta: dict = {}
+    if use_v2:
+        parts = _assign_v2(multi, seed)
+        train, dev, eval_rows, purged = parts["train"], parts["dev"], parts["eval"], parts["purge"]
+        extra_eval["eval_live"] = parts["eval_live"]
+        extra_eval["eval_rules"] = parts["eval_rules"]
+        v2meta = {k: parts[k] for k in ("held_rules", "eval_snaps", "purge_snaps", "dev_snaps", "train_snaps", "n_snapshots", "protocol")}
+        purge_ms_used = 0
+    else:
+        train, dev, eval_rows, purged, purge_ms_used = _assign_legacy(multi, purge_ms, train_frac)
 
     for r in train:
         r["split"] = "train"
@@ -275,6 +445,10 @@ def ingest(
         r["split"] = "dev"
     for r in eval_rows:
         r["split"] = "eval"
+    for r in extra_eval["eval_live"]:
+        r["split"] = "eval_live"
+    for r in extra_eval["eval_rules"]:
+        r["split"] = "eval_rules"
     for r in purged:
         r["split"] = "purge"
 
@@ -283,20 +457,24 @@ def ingest(
     span_ms = (multi[-1]["ts_ms"] - multi[0]["ts_ms"]) if multi else 0
     day_ids = {r["ts_ms"] // 86_400_000 for r in multi} if multi else set()
     per_action_n = {a: c for a, c in golds.most_common()}
+    src_counts = Counter(r["row_source"] for r in multi)
     stats = {
         "logs": [str(p) for p in logs],
+        "contexts": str(ctx_path) if ctx_path else None,
+        "n_contexts": len(contexts),
         "raw_rows": len(raw),
         "unique_state_menu": len(unique),
         "single_option": len(format_check),
         "unusable_multi": len(unusable),
-        "multi_option_trainish": n,
+        "multi_option_trainish": len(multi),
         "varied_multi": len(varied),
-        "collapsed_multi": n - len(varied),
+        "collapsed_multi": len(multi) - len(varied),
         "non_hold_gold": sum(1 for r in multi if r["gold_label"] not in HOLD_LABELS),
         "gold_distribution": dict(golds.most_common()),
         "menu_size": dict(Counter(r["n_options"] for r in multi).most_common()),
         "bee": dict(Counter(r["bee"] for r in multi).most_common()),
         "bee_style": dict(Counter(r["bee_style"] for r in multi).most_common()),
+        "row_source": dict(src_counts.most_common()),
         "forced": sum(1 for r in unique if r.get("forced_by")),
         "vetoed": sum(1 for r in unique if r.get("vetoed_by")),
         "span_ms": span_ms,
@@ -305,11 +483,19 @@ def ingest(
         "train": len(train),
         "dev": len(dev),
         "eval": len(eval_rows),
+        "eval_live": len(extra_eval["eval_live"]),
+        "eval_rules": len(extra_eval["eval_rules"]),
         "purge": len(purged),
         "purge_ms_used": purge_ms_used,
         "format_check": len(format_check),
         "gold_is": "jev_choice",
         "soft_targets": "probabilities (renormalized over menu); confidence kept as metadata",
+        "regime_note": (
+            "This does NOT meet the >=14 days / multiple-regimes bar. "
+            "live_engine is ~13h of one paper session; hyperspeed is 30 minutes / 30 snapshots "
+            "of one market regime. Scores mean: mimics Jev in this regime, not a stand-in."
+        ),
+        **v2meta,
     }
     stats["enough_to_claim"] = (
         stats["varied_multi"] >= NEED["multi_option_unique"]
@@ -331,6 +517,8 @@ def ingest(
         "train": train,
         "dev": dev,
         "eval": eval_rows,
+        "eval_live": extra_eval["eval_live"],
+        "eval_rules": extra_eval["eval_rules"],
         "purge": purged,
         "format_check": format_check,
         "unusable": unusable,
@@ -338,19 +526,51 @@ def ingest(
     }
 
 
+def stratified_take(rows: list[dict], n: int, seed: int = SEED) -> list[dict]:
+    if n <= 0 or len(rows) <= n:
+        return list(rows)
+    rng = random.Random(seed)
+    buckets: dict[tuple, list[dict]] = defaultdict(list)
+    for r in rows:
+        buckets[(r.get("bee_style"), r.get("gold_label"), r.get("n_options"))].append(r)
+    for b in buckets.values():
+        rng.shuffle(b)
+    keys = list(buckets)
+    rng.shuffle(keys)
+    out: list[dict] = []
+    i = 0
+    while len(out) < n:
+        progressed = False
+        for k in keys:
+            if buckets[k]:
+                out.append(buckets[k].pop())
+                progressed = True
+                if len(out) >= n:
+                    break
+        if not progressed:
+            break
+        i += 1
+    out.sort(key=lambda r: (r["ts_ms"], str(r.get("id"))))
+    return out
+
+
 def write_split(bundle: dict, path: Path) -> None:
     slim = []
-    for split in ("train", "dev", "eval"):
-        for r in bundle[split]:
+    for split in ("train", "dev", "eval", "eval_live", "eval_rules"):
+        for r in bundle.get(split) or []:
             slim.append(
                 {
                     "split": split,
                     "ts_ms": r["ts_ms"],
+                    "market_ts": r.get("market_ts"),
                     "bee": r["bee"],
-                    "gold_label": r["gold_label"],
+                    "bee_style": r.get("bee_style"),
+                    "rules_id": r.get("rules_id"),
+                    "row_source": r.get("row_source"),
+                    "gold_label": r.get("gold_label"),
                     "n_options": r["n_options"],
                     "varied": r["varied"],
                     "state_hash": r["state_hash"],
                 }
             )
-    path.write_text(json.dumps({"stats": bundle["stats"], "rows": slim}, indent=2))
+    path.write_text(json.dumps({"stats": bundle["stats"], "n_rows": len(slim)}, indent=2))

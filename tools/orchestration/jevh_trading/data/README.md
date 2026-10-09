@@ -20,6 +20,8 @@ samples so unit tests and a dry layout work without the uploads.
 | tokenizer.json | jevh_student_tokenizer_94c1.json | 3.5 MB | copied to `../assets/tokenizer.json` |
 | labels.jsonl | labels_ebb6.jsonl | 2.6 MB / 4220 rows | not used for trading gold |
 | decide_questions_dedup.jsonl | decide_questions_dedup_f987.jsonl | 5.4 MB | not committed |
+| trading_jev_calls_v2.jsonl.gz | trading_jev_calls_v2.jsonl_c24d.gz | 14.4 MB / 106258 rows | not committed |
+| trading_jev_contexts_v2.jsonl | trading_jev_contexts_v2_8e10.jsonl | 7.7 MB / 7833 contexts | not committed |
 
 Round 2 gold is Jev's `choice` + `probabilities` from the paper (or any growing
 `--log`) jsonl. Single-option `RIDE` rows are format-check only. Forward

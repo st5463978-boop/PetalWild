@@ -27,6 +27,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from collections import Counter
+
 from .config import (
     CONFIDENT_MISTAKE_P,
     DISTILL_EPOCHS,
@@ -39,10 +41,15 @@ from .config import (
     LR_EMBED,
     LR_ENCODER,
     LR_HEAD,
+    MAX_DEV_68M,
+    MAX_EVAL_68M,
+    MAX_TRAIN_68M,
     MICROBATCH,
+    MICROBATCH_68M,
     OPSET,
     PAIR_COEF,
     PAIR_MARGIN,
+    PREDICT_BS,
     SEED,
     SEQ_LEN,
     SOFT_KL_COEF,
@@ -53,8 +60,15 @@ from .config import (
 from .encode import encode_menu, load_student_tok
 from .ettin import SIZE_17M, SIZE_68M, EttinScorer, EttinSize, load_backbone, n_params
 from .export import export_onnx, parity_check, save_calib
-from .ingest import NEED, ingest, write_split
-from .metrics import agreement_breakdown, cpu_latency_ms, softmax
+from .ingest import NEED, ingest, stratified_take, write_split
+from .metrics import (
+    agreement_breakdown,
+    always_hold_indices,
+    cpu_latency_ms,
+    group_accuracy,
+    majority_per_style_indices,
+    softmax,
+)
 from .paths import artifacts_dir, tokenizer_path
 
 HF_17M = SIZE_17M.hf_id
@@ -107,13 +121,22 @@ def pack_rows(rows: list[dict], tok_path: str) -> list[dict]:
                 "varied": bool(r["varied"]),
                 "bee": r.get("bee"),
                 "bee_style": r.get("bee_style"),
+                "row_source": r.get("row_source") or r.get("source"),
+                "rules_id": r.get("rules_id"),
                 "gold_label": r["gold_label"],
                 "truncation": enc["truncation"],
                 "mode": enc["mode"],
-                "row": r,
             }
         )
     return packed
+
+
+def train_majority_by_style(rows: list[dict]) -> dict[str, str]:
+    counts: dict[str, Counter] = {}
+    for r in rows:
+        st = r.get("bee_style") or "?"
+        counts.setdefault(st, Counter())[r["gold_label"]] += 1
+    return {st: c.most_common(1)[0][0] for st, c in counts.items() if c}
 
 
 def group_loss(scores: torch.Tensor, gold: int, teacher_p: torch.Tensor | None) -> torch.Tensor:
@@ -131,13 +154,19 @@ def group_loss(scores: torch.Tensor, gold: int, teacher_p: torch.Tensor | None) 
     return loss
 
 
-def run_epoch(model: EttinScorer, packed: list[dict], opt: torch.optim.Optimizer, rng: random.Random) -> float:
+def run_epoch(
+    model: EttinScorer,
+    packed: list[dict],
+    opt: torch.optim.Optimizer,
+    rng: random.Random,
+    microbatch: int = MICROBATCH,
+) -> float:
     model.train()
     order = list(range(len(packed)))
     rng.shuffle(order)
     losses = []
-    for start in range(0, len(order), MICROBATCH):
-        chunk = [packed[j] for j in order[start : start + MICROBATCH]]
+    for start in range(0, len(order), microbatch):
+        chunk = [packed[j] for j in order[start : start + microbatch]]
         ids_l, mask_l = [], []
         spans, golds, teachers = [], [], []
         for ex in chunk:
@@ -169,13 +198,31 @@ def run_epoch(model: EttinScorer, packed: list[dict], opt: torch.optim.Optimizer
 
 
 @torch.no_grad()
-def predict_packed(model: EttinScorer, packed: list[dict], temperature: float = 1.0) -> tuple[list[int], list[list[float]], list[np.ndarray]]:
+def predict_packed(
+    model: EttinScorer,
+    packed: list[dict],
+    temperature: float = 1.0,
+    bs: int = PREDICT_BS,
+) -> tuple[list[int], list[list[float]], list[np.ndarray]]:
     model.eval()
+    if not packed:
+        return [], [], []
+    flat_ids, flat_mask, owners = [], [], []
+    for i, p in enumerate(packed):
+        for ids, mask in zip(p["input_ids"], p["attention_mask"]):
+            flat_ids.append(ids)
+            flat_mask.append(mask)
+            owners.append(i)
+    packed_logits: list[list[float]] = [[] for _ in packed]
+    for s in range(0, len(flat_ids), bs):
+        ids = torch.tensor(np.stack(flat_ids[s : s + bs]), dtype=torch.long)
+        mask = torch.tensor(np.stack(flat_mask[s : s + bs]), dtype=torch.long)
+        out = model(ids, mask).squeeze(-1).cpu().numpy().reshape(-1)
+        for owner, val in zip(owners[s : s + bs], out.tolist()):
+            packed_logits[owner].append(float(val))
     pred, probs, logits_out = [], [], []
-    for p in packed:
-        ids = torch.from_numpy(p["input_ids"])
-        mask = torch.from_numpy(p["attention_mask"])
-        logits = model(ids, mask).squeeze(-1).cpu().numpy().astype(np.float64)
+    for row in packed_logits:
+        logits = np.asarray(row, dtype=np.float64)
         pr = softmax(logits / max(temperature, 1e-6))
         pred.append(int(pr.argmax()))
         probs.append([float(x) for x in pr])
@@ -196,7 +243,14 @@ def fit_temperature(logits: list[np.ndarray], golds: list[int]) -> float:
     return best_t
 
 
-def eval_packed(name: str, model: EttinScorer, packed: list[dict], temperature: float) -> dict:
+def eval_packed(
+    name: str,
+    model: EttinScorer,
+    packed: list[dict],
+    temperature: float,
+    train_majority: dict[str, str] | None = None,
+    pool_n: int | None = None,
+) -> dict:
     if not packed:
         print(f"[jevh-trading] {name}: n=0", flush=True)
         return {"n": 0, "accuracy": None}
@@ -204,21 +258,25 @@ def eval_packed(name: str, model: EttinScorer, packed: list[dict], temperature: 
     gold = [p["gold"] for p in packed]
     labs = [p["labels"] for p in packed]
     varied = [p["varied"] for p in packed]
+    styles = [p.get("bee_style") or "?" for p in packed]
+    sources = [p.get("row_source") or p.get("bee") or "?" for p in packed]
     met = agreement_breakdown(pred, gold, probs, labs, varied=varied)
+    met["by_style"] = group_accuracy(pred, gold, styles)
+    met["by_source"] = group_accuracy(pred, gold, sources)
     met["temperature"] = temperature
     met["split"] = name
-    # majority-gold-label baseline (always pick HOLD_WINNER if offered, else first HOLD_*)
-    hold_pred = []
-    for p in packed:
-        labs_p = p["labels"]
-        hold = [j for j, lab in enumerate(labs_p) if lab in HOLD_LABELS]
-        hold_pred.append(hold[0] if hold else 0)
+    met["scored_n"] = met["n"]
+    met["pool_n"] = pool_n if pool_n is not None else met["n"]
+    hold_pred = always_hold_indices(labs)
     met["always_hold_acc"] = float(np.mean([a == b for a, b in zip(hold_pred, gold)]))
+    maj_map = train_majority or {}
+    maj_pred = majority_per_style_indices(labs, styles, maj_map)
+    met["majority_per_style_acc"] = float(np.mean([a == b for a, b in zip(maj_pred, gold)])) if maj_map else None
+    met["beats_always_hold"] = bool(met["accuracy"] > met["always_hold_acc"]) if met["n"] else None
     print(
-        f"[jevh-trading] {name}: n={met['n']} jev_agree={met.get('accuracy')} "
-        f"varied={met.get('varied_n')}/{met.get('varied_accuracy')} "
-        f"conf_mist={met.get('confident_mistakes')} ece={met.get('ece')} "
-        f"hold_copy={met.get('always_hold_acc')}",
+        f"[jevh-trading] {name}: n={met['n']}/{met['pool_n']} jev_agree={met.get('accuracy')} "
+        f"hold={met.get('always_hold_acc')} maj_style={met.get('majority_per_style_acc')} "
+        f"conf_mist={met.get('confident_mistakes')} ece={met.get('ece')}",
         flush=True,
     )
     return met
@@ -283,6 +341,18 @@ def outcome_aux_note(bundle: dict) -> dict:
     }
 
 
+def _met_row(name: str, m: dict) -> str:
+    if not m or not m.get("n"):
+        return f"| {name} | 0 |  |  |  |  |  |  |  |"
+    maj = m.get("majority_per_style_acc")
+    maj_s = "" if maj is None else f"{maj:.4f}"
+    return (
+        f"| {name} | {m.get('scored_n', m.get('n'))}/{m.get('pool_n', m.get('n'))} | "
+        f"{m.get('accuracy'):.4f} | {m.get('always_hold_acc'):.4f} | {maj_s} | "
+        f"{m.get('confident_mistakes')} | {m.get('ece'):.4f} |"
+    )
+
+
 def write_receipt(path: Path, payload: dict) -> None:
     ev = payload["metrics"]["eval"]
     dev = payload["metrics"]["dev"]
@@ -292,7 +362,7 @@ def write_receipt(path: Path, payload: dict) -> None:
     lat = payload["metrics"]["cpu_latency_batch1"]
     need = st.get("needed") or NEED
     lines = [
-        "# JEV-H-trading receipt (round 2: Jev distill)",
+        "# JEV-H-trading receipt (round 3: real Jev-1.13 calls)",
         "",
         "> **Not financial advice.** Offline research only. No live or paper order routing. "
         "No exchange or broker calls. Gold is typesafe/jev-1.13's own choice, not a traded P&L.",
@@ -300,54 +370,69 @@ def write_receipt(path: Path, payload: dict) -> None:
         f"Seed `{payload['seed']}`. Wall {payload['wall_s']}s. Size **{rec['size']}**. "
         f"Backbone loaded: {rec.get('backbone_loaded')}. Smoke={payload['smoke']}.",
         "",
-        "## Honest data verdict",
+        "## This is not a stand-in",
         "",
-        f"- Unique state+menu rows: **{st['unique_state_menu']}** (raw {st['raw_rows']})",
-        f"- Multi-option usable for train/dev/eval: **{st['multi_option_trainish']}** "
-        f"(train {st['train']} / dev {st['dev']} / eval {st['eval']}, purge {st['purge']} @ {st['purge_ms_used']} ms)",
-        f"- Single-option (format-check only, dropped from train): **{st['single_option']}**",
-        f"- Genuinely varied multi-option: **{st['varied_multi']}** "
-        f"(need ~{need['multi_option_unique']}; shortfall {st['shortfall']['varied_multi']})",
-        f"- Non-hold gold: **{st['non_hold_gold']}** "
-        f"(need ~{need['non_hold_gold']}; shortfall {st['shortfall']['non_hold_gold']})",
-        f"- Calendar days: **{st.get('calendar_days', 0)}** (need {need['calendar_days']})",
-        f"- Gold distribution: `{json.dumps(st['gold_distribution'])}`",
-        f"- Enough to claim a cost-free Jev stand-in: **{st['enough_to_claim']}**",
+        st.get("regime_note") or need["note"],
         "",
-        need["note"],
+        f"- Calendar days: **{st.get('calendar_days', 0)}** (need {need['calendar_days']}). "
+        f"Span **{st.get('span_hours')} h**. `enough_to_claim`: **{st['enough_to_claim']}**.",
+        f"- Unique state+menu: **{st['unique_state_menu']}** (raw {st['raw_rows']})",
+        f"- Multi-option usable: **{st['multi_option_trainish']}** "
+        f"(hyperspeed train pool {st['train']} / time-dev {st['dev']} / time-eval {st['eval']}; "
+        f"live holdout {st.get('eval_live', 0)}; unseen-rules {st.get('eval_rules', 0)}; "
+        f"purge {st['purge']})",
+        f"- Non-hold gold: **{st['non_hold_gold']}**. Varied (non-hold-wall): **{st['varied_multi']}**.",
+        f"- Sources: `{json.dumps(st.get('row_source'))}`",
+        f"- Held-out rules_id: `{st.get('held_rules')}`",
+        f"- Time-eval snapshots (last ~6): `{st.get('eval_snaps')}`",
+        f"- Single-option format-check only: **{st['single_option']}**",
         "",
         "## Agreement with Jev (gold = choice)",
         "",
-        "| split | n | agree | varied n/acc | collapsed n/acc | conf-mist ≥0.65 | ECE | always HOLD/RIDE |",
-        "|---|---:|---:|---|---|---:|---:|---:|",
-    ]
-
-    def row(name: str, m: dict) -> str:
-        if not m or not m.get("n"):
-            return f"| {name} | 0 |  |  |  |  |  |  |"
-        return (
-            f"| {name} | {m.get('n')} | {m.get('accuracy'):.4f} | "
-            f"{m.get('varied_n')}/{m.get('varied_accuracy')} | "
-            f"{m.get('collapsed_n')}/{m.get('collapsed_accuracy')} | "
-            f"{m.get('confident_mistakes')} | {m.get('ece'):.4f} | "
-            f"{m.get('always_hold_acc'):.4f} |"
-        )
-
-    lines += [
-        row("time-split eval", ev),
-        row("time-split dev (T fit)", dev),
-        row("train", payload["metrics"].get("train") or {"n": 0}),
+        "| split | scored/pool | agree | always HOLD | majority-per-style | conf-mist ≥0.65 | ECE |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+        _met_row("time-eval (last 6 hyperspeed snapshots, seen rules)", ev),
+        _met_row("unseen rules_id", payload["metrics"].get("eval_rules") or {"n": 0}),
+        _met_row("live_engine (entire slice)", payload["metrics"].get("eval_live") or {"n": 0}),
+        _met_row("time-dev (T fit)", dev),
+        _met_row("train subset", payload["metrics"].get("train") or {"n": 0}),
         "",
-        "### Per menu size (eval)",
+        "### Time-eval by menu size / gold / style",
         "",
         "```json",
-        json.dumps((ev or {}).get("by_menu_size"), indent=2),
+        json.dumps(
+            {
+                "by_menu_size": (ev or {}).get("by_menu_size"),
+                "by_action": (ev or {}).get("by_action"),
+                "by_style": (ev or {}).get("by_style"),
+                "by_source": (ev or {}).get("by_source"),
+            },
+            indent=2,
+        ),
         "```",
         "",
-        "### Per action (eval, gold label)",
+        "### Unseen-rules by style / gold",
         "",
         "```json",
-        json.dumps((ev or {}).get("by_action"), indent=2),
+        json.dumps(
+            {
+                "by_style": (payload["metrics"].get("eval_rules") or {}).get("by_style"),
+                "by_action": (payload["metrics"].get("eval_rules") or {}).get("by_action"),
+            },
+            indent=2,
+        ),
+        "```",
+        "",
+        "### live_engine by style / gold",
+        "",
+        "```json",
+        json.dumps(
+            {
+                "by_style": (payload["metrics"].get("eval_live") or {}).get("by_style"),
+                "by_action": (payload["metrics"].get("eval_live") or {}).get("by_action"),
+            },
+            indent=2,
+        ),
         "```",
         "",
         "## Recipe",
@@ -394,16 +479,17 @@ def write_receipt(path: Path, payload: dict) -> None:
 
 def gaps(st: dict, rec: dict) -> list[str]:
     return [
-        "Gold is Jev's logged choice + probabilities, not forward PnL. Not financial advice.",
-        f"Genuinely varied multi-option rows: {st['varied_multi']} (need ~{NEED['multi_option_unique']}).",
-        f"Non-hold gold: {st['non_hold_gold']} (need ~{NEED['non_hold_gold']}).",
-        "Single-option RIDE menus are format-check only and never enter the train loss.",
-        "Collapsed HOLD_WINNER+LONG_BTC+SWITCH ticks dominate; a student can copy HOLD without mimicking discretionary Jev.",
-        f"Backbone {rec['size']} ({rec.get('hf_id')}); recipe from 68m-v5, not merged. 17m is the thin-data/CPU fallback.",
+        "Gold is Jev's logged choice + probabilities, never status/action. Not financial advice.",
+        st.get("regime_note") or "Scores are regime-local, not a 14-day stand-in.",
+        f"Calendar days {st.get('calendar_days')} (need {NEED['calendar_days']}); span {st.get('span_hours')} h.",
+        f"Non-hold gold: {st['non_hold_gold']}. Varied: {st['varied_multi']}.",
+        "live_engine is held out of train when v2 hyperspeed is present.",
+        f"Held-out rules_id: {st.get('held_rules')}. Time-eval snapshots: {st.get('eval_snaps')}.",
+        f"CPU 68m train cap: scored {rec.get('n_train_scored')} of pool {rec.get('n_train_pool')} (stratified).",
+        f"Backbone {rec['size']} ({rec.get('hf_id')}); 68m-v5 recipe (not merged). last-N unfreeze={rec.get('unfreeze_last')}.",
         "No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.",
-        "Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md for the log schema.",
-        "Forced/vetoed execution is metadata; gold stays Jev's choice even when the engine overrode the fill.",
-        f"seq128 keep_option: {rec.get('keep_option_rows')} encoded rows overflowed; option tokens are kept and state is trimmed from the end.",
+        "Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md.",
+        f"seq128 keep_option: {rec.get('keep_option_rows')} encoded rows overflowed; option kept, state trimmed.",
     ]
 
 
@@ -417,39 +503,58 @@ def run(args: argparse.Namespace) -> int:
     extra = list(args.log or [])
     bundle = ingest(extra, purge_ms=args.purge_ms, train_frac=args.train_frac, seed=args.seed)
     st = bundle["stats"]
-    print(f"[jevh-trading] ingest {json.dumps({k: st[k] for k in st if k not in ('needed', 'logs')})}", flush=True)
+    skip_keys = {"needed", "logs", "gold_distribution"}
+    print(f"[jevh-trading] ingest {json.dumps({k: st[k] for k in st if k not in skip_keys})}", flush=True)
     write_split(bundle, art / "split.json")
     print(
         f"[jevh-trading] VARIETY: multi-option={st['multi_option_trainish']} "
-        f"varied={st['varied_multi']} (need ~{NEED['multi_option_unique']}) "
-        f"non-hold-gold={st['non_hold_gold']} (need ~{NEED['non_hold_gold']}) "
+        f"varied={st['varied_multi']} non-hold-gold={st['non_hold_gold']} "
         f"days={st.get('calendar_days')} (need {NEED['calendar_days']}) "
         f"enough_to_claim={st['enough_to_claim']}",
         flush=True,
     )
+    print(f"[jevh-trading] REGIME: {st.get('regime_note')}", flush=True)
 
     if args.ingest_only:
         (art / "metrics.json").write_text(json.dumps({"ingest": st, "disclaimer": "Not financial advice."}, indent=2))
         return 0
 
-    train_rows, dev_rows, eval_rows = bundle["train"], bundle["dev"], bundle["eval"]
+    train_pool, dev_pool, eval_pool = bundle["train"], bundle["dev"], bundle["eval"]
+    live_pool = bundle.get("eval_live") or []
+    rules_pool = bundle.get("eval_rules") or []
     if args.smoke:
-        train_rows = train_rows[:24]
-        dev_rows = dev_rows[:8] or train_rows[:8]
-        eval_rows = eval_rows[:8] or train_rows[:8]
+        train_pool = train_pool[:24]
+        dev_pool = dev_pool[:8] or train_pool[:8]
+        eval_pool = eval_pool[:8] or train_pool[:8]
+        live_pool = live_pool[:8]
+        rules_pool = rules_pool[:8]
         args.epochs = min(args.epochs, 1)
 
-    if len(train_rows) < 2:
+    if len(train_pool) < 2:
         raise SystemExit(
-            f"not enough multi-option rows to train (train={len(train_rows)}). "
+            f"not enough multi-option rows to train (train={len(train_pool)}). "
             "Log more 2+-option decisions; single-option RIDE is format-check only."
         )
 
-    size = pick_size(args.size, len(train_rows))
+    size = pick_size(args.size, int(st.get("multi_option_trainish") or len(train_pool)))
     unfreeze = args.unfreeze_last
     if unfreeze is None:
         unfreeze = UNFREEZE_LAST_17M if size.name == "17m" else UNFREEZE_LAST_68M
-    print(f"[jevh-trading] size={size.name} hf={size.hf_id} n_train={len(train_rows)} unfreeze_last={unfreeze}", flush=True)
+    max_train = args.max_train if args.max_train is not None else (MAX_TRAIN_68M if size.name == "68m" else len(train_pool))
+    max_dev = args.max_dev if args.max_dev is not None else (MAX_DEV_68M if size.name == "68m" else len(dev_pool))
+    max_eval = args.max_eval if args.max_eval is not None else (MAX_EVAL_68M if size.name == "68m" else 10_000)
+    train_rows = stratified_take(train_pool, max_train, args.seed)
+    dev_rows = stratified_take(dev_pool, max_dev, args.seed + 1)
+    eval_rows = stratified_take(eval_pool, max_eval, args.seed + 2)
+    live_rows = stratified_take(live_pool, max_eval, args.seed + 3)
+    rules_rows = stratified_take(rules_pool, max_eval, args.seed + 4)
+    print(
+        f"[jevh-trading] size={size.name} hf={size.hf_id} unfreeze_last={unfreeze} "
+        f"train {len(train_rows)}/{len(train_pool)} dev {len(dev_rows)}/{len(dev_pool)} "
+        f"time-eval {len(eval_rows)}/{len(eval_pool)} live {len(live_rows)}/{len(live_pool)} "
+        f"rules {len(rules_rows)}/{len(rules_pool)}",
+        flush=True,
+    )
 
     tok = str(tokenizer_path())
     load_student_tok(tok)
@@ -458,8 +563,11 @@ def run(args: argparse.Namespace) -> int:
     train_p = pack_rows(train_rows, tok)
     dev_p = pack_rows(dev_rows, tok)
     eval_p = pack_rows(eval_rows, tok)
-    n_keep = sum(1 for p in train_p + dev_p + eval_p if p["mode"] == "keep_option")
+    live_p = pack_rows(live_rows, tok)
+    rules_p = pack_rows(rules_rows, tok)
+    n_keep = sum(1 for p in train_p + dev_p + eval_p + live_p + rules_p if p["mode"] == "keep_option")
     print(f"[jevh-trading] encoded in {time.perf_counter()-t0:.1f}s keep_option_rows={n_keep}", flush=True)
+    maj = train_majority_by_style(train_rows)
 
     # format-check encode (single-option); failures are bugs, not train data
     fmt_ok = 0
@@ -482,6 +590,8 @@ def run(args: argparse.Namespace) -> int:
             print(f"[jevh-trading] load_backbone failed ({exc!r}); random init", flush=True)
             backbone = None
     model.freeze_for_cpu(unfreeze)
+    if size.name == "68m":
+        model.grad_ckpt = True
     total, trainable = n_params(model)
     print(f"[jevh-trading] params={total:,} trainable={trainable:,} missing_keys={missing[:8]}", flush=True)
 
@@ -490,6 +600,7 @@ def run(args: argparse.Namespace) -> int:
         g["params"] = [p for p in g["params"] if p.requires_grad]
     groups = [g for g in groups if g["params"]]
     opt = torch.optim.AdamW(groups, lr=LR_ENCODER, weight_decay=WEIGHT_DECAY)
+    micro = MICROBATCH_68M if size.name == "68m" else MICROBATCH
 
     rng = random.Random(args.seed)
     ckpt = art / f"student_{size.name}.pt"
@@ -499,7 +610,7 @@ def run(args: argparse.Namespace) -> int:
     bad = 0
     t_train = time.perf_counter()
     for ep in range(1, args.epochs + 1):
-        loss = run_epoch(model, train_p, opt, rng)
+        loss = run_epoch(model, train_p, opt, rng, microbatch=micro)
         pred, probs, logits = predict_packed(model, dev_p if dev_p else train_p[: min(32, len(train_p))], 1.0)
         golds = [p["gold"] for p in (dev_p if dev_p else train_p[: min(32, len(train_p))])]
         acc = float(np.mean([a == b for a, b in zip(pred, golds)])) if golds else 0.0
@@ -528,9 +639,11 @@ def run(args: argparse.Namespace) -> int:
         T = 1.0
     print(f"[jevh-trading] temperature={T:.4f}", flush=True)
 
-    eval_met = eval_packed("eval", model, eval_p, T)
-    dev_met = eval_packed("dev", model, dev_p, T)
-    train_met = eval_packed("train", model, train_p[: min(200, len(train_p))], T)
+    eval_met = eval_packed("time-eval", model, eval_p, T, maj, pool_n=len(eval_pool))
+    rules_met = eval_packed("eval_rules", model, rules_p, T, maj, pool_n=len(rules_pool))
+    live_met = eval_packed("eval_live", model, live_p, T, maj, pool_n=len(live_pool))
+    dev_met = eval_packed("dev", model, dev_p, T, maj, pool_n=len(dev_pool))
+    train_met = eval_packed("train", model, train_p[: min(400, len(train_p))], T, maj, pool_n=len(train_pool))
 
     onnx_info = None
     calib = None
@@ -540,7 +653,7 @@ def run(args: argparse.Namespace) -> int:
         print("[jevh-trading] exporting ONNX...", flush=True)
         onnx_info = export_onnx(model, onnx_path, opset=OPSET, output_name="logit")
         ids_np, mask_np = unique_calib_pairs(
-            [train_p, dev_p, eval_p],
+            [train_p, dev_p, eval_p, live_p, rules_p],
             bundle["format_check"],
             args.calib_n,
         )
@@ -592,6 +705,15 @@ def run(args: argparse.Namespace) -> int:
         "tokenizer": tok,
         "train_minutes": round(train_minutes, 2),
         "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)",
+        "n_train_scored": len(train_rows),
+        "n_train_pool": len(train_pool),
+        "n_dev_scored": len(dev_rows),
+        "n_dev_pool": len(dev_pool),
+        "microbatch": micro,
+        "grad_ckpt": bool(getattr(model, "grad_ckpt", False)),
+        "train_majority_by_style": maj,
+        "text_a": "[choice] {style_tag} {rules_id} + clipped strategy/rules + compact state",
+        "option_text": "label plus menu_detail kind/coin/side/desc when present",
     }
     payload = {
         "disclaimer": "Not financial advice. Offline research only. No live or paper order routing.",
@@ -602,6 +724,8 @@ def run(args: argparse.Namespace) -> int:
         "recipe": rec,
         "metrics": {
             "eval": eval_met,
+            "eval_rules": rules_met,
+            "eval_live": live_met,
             "dev": dev_met,
             "train": train_met,
             "cpu_latency_batch1": lat,
@@ -618,10 +742,12 @@ def run(args: argparse.Namespace) -> int:
     print(
         json.dumps(
             {
-                "eval_jev_agree": eval_met.get("accuracy"),
-                "varied_multi": st["varied_multi"],
-                "need_varied": NEED["multi_option_unique"],
+                "time_eval_jev_agree": eval_met.get("accuracy"),
+                "time_eval_always_hold": eval_met.get("always_hold_acc"),
+                "rules_eval_jev_agree": rules_met.get("accuracy"),
+                "live_eval_jev_agree": live_met.get("accuracy"),
                 "enough_to_claim": st["enough_to_claim"],
+                "calendar_days": st.get("calendar_days"),
                 "size": size.name,
                 "onnx": None if not onnx_info else onnx_info.get("path"),
                 "parity_cos": None if not par else par.get("cos"),
@@ -638,8 +764,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Distill a local JEV-H student from Jev's beebots choices (offline).")
     p.add_argument("--seed", type=int, default=SEED)
     p.add_argument("--epochs", type=int, default=DISTILL_EPOCHS)
-    p.add_argument("--size", default="auto", help="auto | 17m | 68m  (auto uses 17m when n_train < 1500)")
+    p.add_argument("--size", default="auto", help="auto | 17m | 68m  (auto uses 68m when v2 multi-option >= 1500)")
     p.add_argument("--unfreeze-last", type=int, default=None)
+    p.add_argument("--max-train", type=int, default=None)
+    p.add_argument("--max-dev", type=int, default=None)
+    p.add_argument("--max-eval", type=int, default=None)
     p.add_argument("--log", action="append", default=[], help="extra decision jsonl (growing beebots log)")
     p.add_argument("--purge-ms", type=int, default=5 * 60 * 1000)
     p.add_argument("--train-frac", type=float, default=0.70)
