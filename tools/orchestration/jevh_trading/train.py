@@ -34,6 +34,7 @@ from .config import (
     DISTILL_EPOCHS,
     DISTILL_PATIENCE,
     DISTILL_SIZE_AUTO_N,
+    KD_TEMP,
     LATENCY_N,
     LATENCY_WARMUP,
     LAYER_DECAY,
@@ -64,6 +65,7 @@ from .metrics import (
     agreement_breakdown,
     always_hold_indices,
     cpu_latency_ms,
+    ece,
     group_accuracy,
     majority_per_style_indices,
     softmax,
@@ -148,8 +150,12 @@ def group_loss(scores: torch.Tensor, gold: int, teacher_p: torch.Tensor | None) 
         pair = F.relu(PAIR_MARGIN - (scores[gold] - scores[hard]))
     loss = ce + PAIR_COEF * pair
     if teacher_p is not None:
-        log_p = F.log_softmax(scores, dim=-1)
-        loss = loss + SOFT_KL_COEF * F.kl_div(log_p, teacher_p, reduction="batchmean")
+        t = max(float(KD_TEMP), 1e-6)
+        softened = teacher_p.clamp_min(1e-8).pow(1.0 / t)
+        softened = softened / softened.sum().clamp_min(1e-8)
+        log_p = F.log_softmax(scores / t, dim=-1)
+        # No T^2 multiplier: keep hard CE the larger term so argmax agreement stays the target.
+        loss = loss + SOFT_KL_COEF * F.kl_div(log_p, softened, reduction="batchmean")
     return loss
 
 
@@ -229,17 +235,36 @@ def predict_packed(
     return pred, probs, logits_out
 
 
-def fit_temperature(logits: list[np.ndarray], golds: list[int]) -> float:
-    best_t, best_nll = 1.0, 1e9
-    for t in np.concatenate([np.linspace(0.3, 3.0, 28), np.array([1.0])]):
+def _temp_grid() -> np.ndarray:
+    return np.unique(np.concatenate([np.linspace(0.4, 3.0, 53), np.array([1.0, 1.2, 1.5, 2.0])]))
+
+
+def fit_temperature(logits: list[np.ndarray], golds: list[int]) -> tuple[float, float]:
+    """Dev NLL temperature and dev-ECE temperature.
+
+    A positive scalar T does not change argmax, so agreement is invariant.
+    The ECE fit is what we apply at eval (confident mistakes and ECE).
+    """
+    best_nll_t, best_nll = 1.0, 1e9
+    best_ece_t, best_ece = 1.0, 1e9
+    for t in _temp_grid():
         nll = 0.0
+        conf: list[float] = []
+        ok: list[bool] = []
+        tt = max(float(t), 1e-6)
         for logit, g in zip(logits, golds):
-            p = softmax(logit / max(float(t), 1e-6))
-            nll -= math.log(max(float(p[g]), 1e-12))
+            p = softmax(logit / tt)
+            nll -= math.log(max(float(p[int(g)]), 1e-12))
+            pred = int(p.argmax())
+            conf.append(float(p[pred]))
+            ok.append(pred == int(g))
         nll /= max(len(golds), 1)
+        score = ece(conf, ok)
         if nll < best_nll:
-            best_nll, best_t = nll, float(t)
-    return best_t
+            best_nll, best_nll_t = nll, float(t)
+        if score < best_ece:
+            best_ece, best_ece_t = score, float(t)
+    return best_nll_t, best_ece_t
 
 
 def eval_packed(
@@ -645,13 +670,14 @@ def run(args: argparse.Namespace) -> int:
     model.eval()
     train_minutes = (time.perf_counter() - t_train) / 60.0
 
-    # temperature on dev
+    # temperature on dev. Argmax agreement does not depend on T; ECE does.
     if dev_p:
         _, _, dlogits = predict_packed(model, dev_p, 1.0)
-        T = fit_temperature(dlogits, [p["gold"] for p in dev_p])
+        t_nll, t_ece = fit_temperature(dlogits, [p["gold"] for p in dev_p])
     else:
-        T = 1.0
-    print(f"[jevh-trading] temperature={T:.4f}", flush=True)
+        t_nll, t_ece = 1.0, 1.0
+    T = t_ece
+    print(f"[jevh-trading] temperature nll={t_nll:.4f} ece={t_ece:.4f} (eval uses ece)", flush=True)
 
     eval_met = eval_packed("time-eval", model, eval_p, T, maj, pool_n=len(eval_pool))
     rules_met = eval_packed("eval_rules", model, rules_p, T, maj, pool_n=len(rules_pool))
@@ -689,6 +715,16 @@ def run(args: argparse.Namespace) -> int:
 
         lat = cpu_latency_ms(one_forward, 2, 8)
 
+    n_layers = size.n_layers
+    layer_lrs = []
+    for i, layer in enumerate(model.layers):
+        if any(p.requires_grad for p in layer.parameters()):
+            layer_lrs.append(
+                {
+                    "layer": i,
+                    "lr": round(LR_ENCODER * (LAYER_DECAY ** (n_layers - 1 - i)), 8),
+                }
+            )
     rec = {
         "gold": "jev_choice",
         "soft_targets": "probabilities (KL) + listwise CE + pairwise hinge",
@@ -707,6 +743,11 @@ def run(args: argparse.Namespace) -> int:
         "pair_coef": PAIR_COEF,
         "pair_margin": PAIR_MARGIN,
         "soft_kl_coef": SOFT_KL_COEF,
+        "kd_temp": KD_TEMP,
+        "temperature_nll": t_nll,
+        "temperature_ece": t_ece,
+        "temperature_note": "Eval uses temperature_ece. Scalar T does not change argmax agreement. kd_temp softens teacher probs in the KL term.",
+        "layer_lrs": layer_lrs,
         "epochs_run": len(history),
         "epochs_requested": args.epochs,
         "microbatch": MICROBATCH,
@@ -726,7 +767,7 @@ def run(args: argparse.Namespace) -> int:
         "microbatch": micro,
         "grad_ckpt": bool(getattr(model, "grad_ckpt", False)),
         "train_majority_by_style": maj,
-        "text_a": "[choice] {style_tag} {rules_id} + clipped strategy/rules + compact state",
+        "text_a": "[choice] {style_tag} {rules_id} + owner rules prefix (head+tail) + me + up to 4 menu/position coins",
         "option_text": "label plus menu_detail kind/coin/side/desc when present",
     }
     payload = {

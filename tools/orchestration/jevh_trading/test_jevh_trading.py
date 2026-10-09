@@ -267,7 +267,9 @@ class IngestTests(unittest.TestCase):
                 ],
                 "choice": "SWITCH",
                 "probabilities": {"HOLD_WINNER": 0.2, "LONG_BTC": 0.1, "SWITCH": 0.7},
-                "state": {"me": {"pos": "short BTC"}},
+                "strategy": "You are breezy-bee, the calculated one. Trend following boilerplate that must not crowd out the rules.",
+                "rules": "Capital preservation first. Avoid shorts against positive funding. Take half off when the score drops.",
+                "state": {"me": {"pos": "short BTC"}, "coins": {"cols": ["score"], "rows": {"BTC": [-6], "ETH": [-5], "SOL": [1]}}},
             },
             "mem",
         )
@@ -275,6 +277,10 @@ class IngestTests(unittest.TestCase):
         self.assertIn("ETH", rec["option_texts"][2])
         self.assertTrue(rec["text_a"].startswith("[choice]"))
         self.assertIn("breezy-cautious", rec["text_a"])
+        self.assertIn("rules: Capital preservation", rec["text_a"])
+        self.assertLess(rec["text_a"].find("rules:"), rec["text_a"].find("me:"))
+        self.assertNotIn("You are breezy-bee", rec["text_a"])
+        self.assertIn("BTC", rec["text_a"])
 
     def test_v2_snapshot_and_rules_holdout(self):
         from jevh_trading.ingest import ingest

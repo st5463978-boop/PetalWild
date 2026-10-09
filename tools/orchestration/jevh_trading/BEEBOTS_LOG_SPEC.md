@@ -31,7 +31,7 @@ Append-only JSONL, one object per Jev call. Same schema as `trading_paper_decisi
 | `market_ts` | string | Hyperspeed market snapshot id. Time split holds out the last ~6. |
 | `menu_detail` | object[] | `{label, kind, coin, side, desc}` so `SWITCH` is not ambiguous. |
 
-Contexts file (`trading_jev_contexts_v2.jsonl`): one object per `context_id` with `style`, `rules_id`, `strategy`, `rules`, `coins_allowed`. The student packs a clipped strategy + rules into `text_a`; seq128 will keep_option-trim the tail.
+Contexts file (`trading_jev_contexts_v2.jsonl`): one object per `context_id` with `style`, `rules_id`, `strategy`, `rules`, `coins_allowed`. The student packs owner `rules` (head and tail if long) into the **prefix** of `text_a`, then position and up to 4 menu coins. Shared strategy boilerplate is not packed; seq128 `keep_option` trims the tail, so the rules have to be first.
 
 ## Execution metadata (not gold)
 

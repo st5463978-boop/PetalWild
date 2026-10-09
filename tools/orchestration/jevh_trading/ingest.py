@@ -108,6 +108,15 @@ def _clip(text: Any, n: int = 140) -> str:
     return s[: n - 1] + "…"
 
 
+def _clip_ends(text: str, n: int) -> str:
+    """Keep the start and the end. Long owner rules put the action at the tail."""
+    if len(text) <= n:
+        return text
+    head = (n - 1) // 2
+    tail = n - 1 - head
+    return text[:head] + "…" + text[-tail:]
+
+
 def compact_state(state: Any) -> str:
     if not isinstance(state, dict):
         return _canon(state)
@@ -128,6 +137,128 @@ def compact_state(state: Any) -> str:
         bits = [b for c, v in zip(cols, seq) if (b := _kv(c, v))]
         lines.append(f"{coin} " + " ".join(bits) if bits else str(coin))
     return "\n".join(lines)
+
+
+_NOT_TICKER = frozenset(
+    {
+        "APE",
+        "LONG",
+        "SHORT",
+        "HOLD",
+        "WINNER",
+        "SWITCH",
+        "COIN",
+        "BREAKOUT",
+        "CUT",
+        "LOSS",
+        "DOUBLE",
+        "DOWN",
+        "TRIM",
+        "HALF",
+        "BAIL",
+        "WAIT",
+        "RIDE",
+        "OPEN",
+        "CLOSE",
+    }
+)
+_STYLE_COLS = {
+    "breezy": ("score", "long_on", "short_on", "r24h_pct", "fund_z"),
+    "boozy": ("r7d_pct", "r24h_pct", "r1h_pct", "attn_z", "vol_musd"),
+    "bizzy": ("score", "r1h_pct", "oi1h_pct", "vol_musd", "r24h_pct"),
+}
+_MAX_COINS = 4
+_RULES_CHARS = 180
+_EMPTY_RULES = frozenset({"", ".", "...", "…"})
+
+
+def _tickers(menu: Any, menu_detail: Any, me: Any, top1: Any) -> list[str]:
+    out: list[str] = []
+    pos = str((me or {}).get("pos") or "") if isinstance(me, dict) else ""
+    bits = pos.replace("/", " ").split()
+    if bits and bits[-1].isalpha() and bits[-1].isupper() and len(bits[-1]) >= 2:
+        out.append(bits[-1])
+    for lab in menu or []:
+        for part in str(lab).replace("-", "_").split("_"):
+            if part.isalpha() and part.isupper() and len(part) >= 2 and part not in _NOT_TICKER:
+                out.append(part)
+    if isinstance(menu_detail, list):
+        for d in menu_detail:
+            if isinstance(d, dict) and d.get("coin"):
+                out.append(str(d["coin"]).upper())
+    if top1:
+        tok = str(top1).split()[0]
+        if tok.isalpha() and tok.isupper() and len(tok) >= 2:
+            out.append(tok)
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for c in out:
+        if c not in seen:
+            seen.add(c)
+            uniq.append(c)
+    return uniq
+
+
+def _coin_rank_key(cols: list, seq: list) -> float:
+    mapping = {c: v for c, v in zip(cols, seq)}
+    for k in ("score", "r7d_pct", "r24h_pct", "r1h_pct"):
+        if k not in mapping or mapping[k] is None:
+            continue
+        try:
+            return -abs(float(mapping[k]))
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def packed_state(state: Any, menu: Any = None, style: str | None = None, menu_detail: Any = None) -> str:
+    """Position + the coins the menu names. seq128 keep_option keeps the prefix, so this stays short."""
+    if not isinstance(state, dict):
+        return _canon(state)
+    me = state.get("me") or {}
+    me_bits = [b for k, v in me.items() if (b := _kv(k, v))] if isinstance(me, dict) else []
+    coins = state.get("coins") or {}
+    cols = list(coins.get("cols") or [])
+    rows = coins.get("rows") or {}
+    top1 = state.get("top1")
+    lines = []
+    if me_bits:
+        lines.append("me: " + " ".join(me_bits))
+    if top1:
+        lines.append(f"top1={top1}")
+    want = _tickers(menu, menu_detail, me if isinstance(me, dict) else {}, top1)
+    present = [str(c) for c in rows.keys()]
+    ordered = [c for c in want if c in rows]
+    rest = [c for c in present if c not in ordered]
+    rest.sort(key=lambda c: _coin_rank_key(cols, list(rows[c]) if isinstance(rows[c], (list, tuple)) else [rows[c]]))
+    ordered = (ordered + rest)[:_MAX_COINS]
+    pref = _STYLE_COLS.get(style or "", ())
+    use_cols = [c for c in pref if c in cols] or cols[:4]
+    for coin in ordered:
+        seq = list(rows[coin]) if isinstance(rows[coin], (list, tuple)) else [rows[coin]]
+        mapping = {c: v for c, v in zip(cols, seq)}
+        bits = [b for c in use_cols if (b := _kv(c, mapping.get(c)))]
+        lines.append(f"{coin} " + " ".join(bits) if bits else str(coin))
+    return "\n".join(lines)
+
+
+def policy_text(strategy: Any, rules: Any) -> str:
+    """Owner rules, not the shared 'You are X-bee' strategy boilerplate."""
+    rules_s = " ".join(str(rules or "").split())
+    if rules_s not in _EMPTY_RULES:
+        return _clip_ends(rules_s, _RULES_CHARS)
+    strat = " ".join(str(strategy or "").split())
+    if not strat:
+        return ""
+    parts = [p.strip() for p in strat.replace(";", ".").split(".") if p.strip()]
+    hits = [
+        p
+        for p in parts
+        if any(k in p.lower() for k in ("only ever", "only trade", "trade only", "coins allowed", "allowed coin"))
+    ]
+    if not hits:
+        return ""
+    return _clip_ends(". ".join(hits), _RULES_CHARS)
 
 
 def option_text(label: str, detail: Any) -> str:
@@ -167,14 +298,15 @@ def text_a_for(row: dict, ctx: dict | None = None) -> str:
     q = BEE_TAG.get(style, style)
     if rules_id:
         q = f"{q} {rules_id}"
-    # State first: seq128 keep_option trims the tail, so boilerplate goes last.
-    lines = [f"[choice] {q}", compact_state(row.get("state") or {})]
-    strategy = (ctx or {}).get("strategy") or row.get("strategy")
-    rules = (ctx or {}).get("rules") or row.get("rules")
-    if strategy:
-        lines.append(_clip(strategy, 80))
-    if rules and str(rules).strip() not in (".", "...", "…"):
-        lines.append("rules: " + _clip(rules, 80))
+    # keep_option keeps the start of text_a. Rules (what differs across bees) go
+    # before state. Shared strategy boilerplate is dropped; it ate the token budget.
+    lines = [f"[choice] {q}"]
+    policy = policy_text((ctx or {}).get("strategy") or row.get("strategy"), (ctx or {}).get("rules") or row.get("rules"))
+    if policy:
+        lines.append("rules: " + policy)
+    state = packed_state(row.get("state") or {}, row.get("menu") or [], style, row.get("menu_detail"))
+    if state:
+        lines.append(state)
     return "\n".join(lines)
 
 

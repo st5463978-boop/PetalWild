@@ -47,7 +47,10 @@ DISTILL_SIZE_AUTO_N = 1500  # below this, --size auto picks 17m
 PAIR_COEF = 0.4
 PAIR_MARGIN = 0.5
 SOFT_KL_COEF = 0.50
-UNFREEZE_LAST_68M = 6
+# Soften teacher probabilities during KL (p^(1/T)). Scalar eval temperature does
+# not change argmax; this one changes the gradient. No T^2 rescale, so CE stays dominant.
+KD_TEMP = 2.0
+UNFREEZE_LAST_68M = 12  # of 19; layer-wise decay keeps the lower ones at a smaller LR
 UNFREEZE_LAST_17M = 4
 LR_ENCODER = 2e-5
 LR_HEAD = 8e-5
