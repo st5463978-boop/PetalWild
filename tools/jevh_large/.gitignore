@@ -5,6 +5,7 @@ artifacts/*.onnx
 artifacts/*.onnx.data
 artifacts/*.pt
 artifacts/*.bin
+artifacts/*soft*.jsonl
 artifacts/hf_cache/
 artifacts/checkpoint*/
 *.tmp

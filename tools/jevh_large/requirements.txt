@@ -11,3 +11,4 @@ tqdm==4.70.1
 regex==2026.9.29
 protobuf==7.36.2
 ml_dtypes==0.6.0
+onnxsim==0.7.3

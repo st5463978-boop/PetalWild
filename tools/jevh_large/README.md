@@ -51,17 +51,27 @@ Input format matches the live JEV-H service: `text_a = "[qtype] question"` (+ co
 
 If wall time is tight, `run.sh --epochs 1 --freeze-layers 14 --max-soft 1000`.
 
+## This run (CPU, seed 42)
+
+Held-out **823** unique questions (20%, no leakage). Best checkpoint: epoch 1 (epoch 2 hit the 75-minute cap).
+
+| split | n | student acc | Qwen3 teacher acc | conf-mistakes ≥0.65 | ECE |
+|---|---:|---:|---:|---:|---:|
+| overall | 823 | **0.757** | 0.458 | 26 | 0.071 |
+| 2-way | 206 | 0.859 | 0.932 | 13 | 0.084 |
+| multi-choice | 617 | **0.723** | 0.300 | 13 | 0.083 |
+
+Beats the teacher overall, so soft labels on all 9,402 decide rows were exported. CPU batch-1: **62 ms / option**, ~132 ms / decision. Details, ONNX sha256, and gaps: [RECEIPT.md](RECEIPT.md).
+
 ## Artifacts
 
-Written under `tools/jevh_large/artifacts/` (large ONNX/checkpoints are gitignored):
+Under `tools/jevh_large/artifacts/` (ONNX/checkpoints ~570 MB are gitignored; recreate with `run.sh`):
 
-- `jevh_large_ettin150m_seq128.onnx` — batch 1, seq 128, inputs `input_ids`, `attention_mask`, output `logits` `[1,1]`
-- `jevh_large_ettin150m_seq256.onnx` — same, seq 256, when export succeeds
-- `calib_input_ids_seq128.npy`, `calib_attention_mask_seq128.npy` — ≥256 real pairs
-- `jevh_large_soft_on_decide_questions_dedup.jsonl` — only if the large model beats Qwen3 on held-out `jev_choice`
+- `jevh_large_ettin150m_seq128.onnx` — batch 1, seq 128, `input_ids` + `attention_mask` → `logits` `[1,1]`
+- `jevh_large_ettin150m_seq256.onnx` — same, seq 256
+- `calib_input_ids_seq128.npy`, `calib_attention_mask_seq128.npy` — 256 real pairs
+- `jevh_large_soft_on_decide_questions_dedup.jsonl.gz` — large-model soft labels on decide traffic
 - `metrics.json`, `RECEIPT.md`
-
-The receipt (`tools/jevh_large/RECEIPT.md`) has the metrics table, ONNX sha256, and gaps.
 
 ## Hailo notes
 

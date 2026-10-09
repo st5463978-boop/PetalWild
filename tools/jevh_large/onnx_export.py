@@ -49,9 +49,22 @@ def export_static_onnx(
         except TypeError:
             torch.onnx.export(model, (dummy_ids, dummy_mask), str(path), **kwargs)
             dynamic_ok = True
+    simplified = False
+    try:
+        import onnx
+        from onnxsim import simplify
+
+        raw = onnx.load(str(path))
+        sim, ok = simplify(raw, skip_fuse_bn=True)
+        if ok:
+            onnx.save(sim, str(path))
+            simplified = True
+    except Exception as exc:  # noqa: BLE001
+        simplified = f"skipped:{type(exc).__name__}"
     info = inspect_onnx(path, seq_len)
     info["export_used_mixed_mask"] = True
     info["torch_onnx_legacy"] = not dynamic_ok
+    info["onnxsim"] = simplified
     return info
 
 
