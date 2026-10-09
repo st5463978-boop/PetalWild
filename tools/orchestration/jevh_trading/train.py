@@ -621,7 +621,7 @@ def run(args: argparse.Namespace) -> int:
     print(f"[jevh-trading] format-check encoded {fmt_ok} single-option rows (not trained)", flush=True)
 
     model = EttinScorer(size)
-    hf_dir = art / "hf" / size.hf_id.replace("/", "__")
+    hf_dir = artifacts_dir() / "hf" / size.hf_id.replace("/", "__")
     backbone = None if args.no_backbone else ensure_hf(size, hf_dir)
     missing: list[str] = []
     if backbone is not None:
