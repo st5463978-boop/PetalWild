@@ -13,7 +13,7 @@ import math
 import os
 import random
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -54,7 +54,7 @@ LR_HEAD = 8e-5
 LR_EMBED = 5e-6
 LAYER_DECAY = 0.9
 WEIGHT_DECAY = 0.01
-MICROBATCH = 4
+MICROBATCH = 8
 GRAD_ACCUM = 2
 EPOCHS = 6
 PATIENCE = 2
@@ -274,6 +274,8 @@ def run_epoch(
         golds = []
         hards = []
         weights = []
+        gold_kd_spans: list[tuple[int, int]] = []
+        gold_kd_probs: list[list[float]] = []
         for ex in chunk:
             k = ex["n_options"]
             perm = list(range(k))
@@ -283,7 +285,6 @@ def run_epoch(
                 mask_l.append(ex["attention_mask"][p])
             s0 = len(ids_l) - k
             spans.append((s0, len(ids_l)))
-            inv = [perm.index(i) for i in range(k)]
             golds.append(perm.index(ex["gold"]))
             ti = ex.get("teacher_index")
             hards.append(perm.index(ti) if ex.get("disagree") and ti is not None else None)
@@ -292,8 +293,6 @@ def run_epoch(
             if bsc and ex.get("large_index") == ex["gold"]:
                 gold_kd_spans.append((s0, s0 + k))
                 gold_kd_probs.append([float(bsc[p]) for p in perm])
-        gold_kd_spans = []
-        gold_kd_probs = []
         kd_spans = []
         kd_probs = []
         if kd_ex:
@@ -321,8 +320,10 @@ def run_epoch(
         loss = loss / max(len(chunk), 1)
         if gold_kd_spans:
             gkl = logits.new_zeros(())
-            for (s, e), tp in zip(gold_kd_spans, gold_kd_probs):
-                gkl = gkl + kd_loss(logits[s:e], torch.tensor(tp, dtype=torch.float32, device=device))
+            for (s, e), raw_p in zip(gold_kd_spans, gold_kd_probs):
+                tp = torch.tensor(raw_p, dtype=torch.float32, device=device)
+                tp = tp / tp.sum().clamp_min(1e-8)
+                gkl = gkl + kd_loss(logits[s:e], tp)
             loss = loss + 0.15 * (gkl / len(gold_kd_spans))
         if kd_spans:
             kl = logits.new_zeros(())
@@ -529,7 +530,7 @@ def write_receipt(path: Path, payload: dict) -> None:
         f"- lane bank: `{payload['paths']['lane']}` ({payload['counts']['lane_rows']} rows)",
         f"- tokenizer: `{payload['paths']['tokenizer']}`",
         f"- split seed {payload['seed']}",
-        f"- **template-grouped** (train): questions {payload['counts']['train_q']} / rows {payload['counts']['train_rows']}; dev {payload['counts']['dev_q']}/{payload['counts']['dev_rows']}; eval {payload['counts']['eval_q']}/{payload['counts']['eval_rows']} ({payload['counts']['eval_q_frac']:.1%} of unique questions, {payload['counts']['eval_templates']} templates)",
+        f"- **template-grouped** (train): questions {payload['counts']['train_q']} / rows {payload['counts']['train_rows']}; dev {payload['counts']['dev_q']}/{payload['counts']['dev_rows']}; eval {payload['counts']['eval_q']}/{payload['counts']['eval_rows']} ({payload['counts']['eval_q_frac']:.1%} of unique questions, {payload['counts']['eval_templates']} templates; largest train family {payload['counts'].get('max_train_template_q')} q, largest eval family {payload['counts'].get('max_eval_template_q')} q)",
         f"- unique-question split (round-1 protocol, eval-only): {payload['counts']['qsplit_eval_q']} questions / {payload['counts']['qsplit_eval_rows']} rows; leaked into template-train: {payload['counts']['qsplit_eval_leaked']}",
         f"- eval 2-way (template) {t_eval['yesno_n']}, multi {t_eval['multi_n']}",
         f"- confident teacher-vs-JEV disagreements: {payload['counts']['conf_disagree']} (train weight 3.0)",
@@ -654,7 +655,8 @@ def main() -> None:
     splits = {k: [ex for ex in gold if ex["split"] == k] for k in ("train", "dev", "eval")}
     q_eval_ex = [ex for ex in gold if ex["q_split"] == "eval"]
     eval_dev_q = {q for q, s in t_split.items() if s != "train"}
-    kd = examples_from_decide(decide, eval_dev_q, large_index)
+    eval_dev_templates = {templates[q] for q in eval_dev_q}
+    kd = examples_from_decide(decide, eval_dev_q, large_index, eval_dev_templates)
     disagree_q = {ex["question"] for ex in splits["train"] if ex.get("conf_disagree")}
     kd = [ex for ex in kd if ex["question"] not in disagree_q]
     print(f"tokenizing {len(kd)} KD rows...", flush=True)
@@ -685,7 +687,9 @@ def main() -> None:
         "conf_disagree": sum(1 for ex in gold if ex.get("conf_disagree")),
         "yesno_eval": sum(1 for ex in splits["eval"] if ex["n_options"] == 2),
         "multi_eval": sum(1 for ex in splits["eval"] if ex["n_options"] != 2),
-        "kd_blend": dict(__import__("collections").Counter(ex.get("blend") for ex in kd)),
+        "kd_blend": dict(Counter(ex.get("blend") for ex in kd)),
+        "max_train_template_q": max(Counter(templates[q] for q, s in t_split.items() if s == "train").values(), default=0),
+        "max_eval_template_q": max(Counter(templates[q] for q, s in t_split.items() if s == "eval").values(), default=0),
     }
     print(json.dumps(counts, indent=2), flush=True)
     if counts["eval_q_frac"] < 0.15:

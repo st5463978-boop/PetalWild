@@ -193,9 +193,9 @@ def template_grouped_split(
     assign_t: dict[str, str] = {}
     for bucket, ts in sorted(by_b.items()):
         rng.shuffle(ts)
-        # size-weighted: shuffle then fill eval/dev by question count
-        sizes = [len(groups[t]) for t in ts]
-        n_q_b = sum(sizes)
+        # smallest groups first so a giant family (e.g. modulo-slot) stays in train
+        ts.sort(key=lambda t: len(groups[t]))
+        n_q_b = sum(len(groups[t]) for t in ts)
         need_e = int(math.ceil(n_q_b * eval_frac)) if n_q_b else 0
         need_d = int(math.ceil(n_q_b * dev_frac)) if n_q_b else 0
         got_e = got_d = 0
@@ -209,9 +209,8 @@ def template_grouped_split(
                 got_d += n
             else:
                 assign_t[t] = "train"
-        # keep at least one train group when possible
-        if all(assign_t[t] != "train" for t in ts) and len(ts) >= 2:
-            # move the last eval/dev group to train
+        # keep at least one train group when possible (prefer keeping the largest)
+        if all(assign_t.get(t) != "train" for t in ts) and len(ts) >= 2:
             for t in reversed(ts):
                 if assign_t[t] != "train" and len(groups[t]) < n_q_b:
                     assign_t[t] = "train"
@@ -221,9 +220,10 @@ def template_grouped_split(
     n_eval_q = sum(1 for s in assign.values() if s == "eval")
     need = int(math.ceil(n_q * eval_frac))
     if n_eval_q < need:
-        # move whole train templates into eval until we hit the floor
+        # move whole train templates into eval until we hit the floor (smallest first)
         train_t = [t for t, s in assign_t.items() if s == "train"]
         rng.shuffle(train_t)
+        train_t.sort(key=lambda t: len(groups[t]))
         for t in train_t:
             if n_eval_q >= need:
                 break
@@ -330,13 +330,18 @@ def examples_from_decide(
     rows: list[dict[str, Any]],
     eval_dev_questions: set[str],
     large_index: dict[tuple[str, tuple[str, ...]], dict[str, Any]] | None = None,
+    eval_dev_templates: set[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """Soft-label / unlabeled rows. Never gold. Skip eval/dev questions."""
+    """Soft-label / unlabeled rows. Never gold. Skip eval/dev questions and templates."""
     out = []
     large_index = large_index or {}
+    skip_tmpl = eval_dev_templates or set()
     for i, r in enumerate(rows):
         q = str(r.get("question") or "").strip()
         if not q or q in eval_dev_questions:
+            continue
+        tmpl = template_key(q)
+        if tmpl in skip_tmpl:
             continue
         options = [str(o) for o in (r.get("options") or [])]
         if len(options) < 2:
@@ -361,7 +366,7 @@ def examples_from_decide(
                 "id": f"decide-{i}",
                 "source": "decide",
                 "question": q,
-                "template": template_key(q),
+                "template": tmpl,
                 "options": options,
                 "option_texts": stexts,
                 "text_a": text_a,

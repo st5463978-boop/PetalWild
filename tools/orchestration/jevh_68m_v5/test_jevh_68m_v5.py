@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from collections import Counter
 from pathlib import Path
 
 from data import n_options_bucket, read_jsonl, stratified_question_split, template_grouped_split, template_key
@@ -114,6 +115,15 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(sets["train"] & sets["eval"])
         self.assertFalse(sets["dev"] & sets["eval"])
         self.assertFalse(sets["train"] & sets["dev"])
+
+        counts = Counter(tmpl[q] for q in questions)
+        biggest, biggest_n = counts.most_common(1)[0]
+        self.assertGreater(biggest_n, 100)
+        for q, t in tmpl.items():
+            if t == biggest:
+                self.assertEqual(split[q], "train", "giant template families belong in train")
+        eval_frac = sum(1 for s in split.values() if s == "eval") / len(questions)
+        self.assertLess(eval_frac, 0.25, "smallest-first fill should not dump a giant family into eval")
 
 
 class KeepOptionTests(unittest.TestCase):
