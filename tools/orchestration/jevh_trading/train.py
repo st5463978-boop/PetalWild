@@ -403,6 +403,7 @@ def gaps(st: dict, rec: dict) -> list[str]:
         "No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.",
         "Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md for the log schema.",
         "Forced/vetoed execution is metadata; gold stays Jev's choice even when the engine overrode the fill.",
+        f"seq128 keep_option: {rec.get('keep_option_rows')} encoded rows overflowed; option tokens are kept and state is trimmed from the end.",
     ]
 
 

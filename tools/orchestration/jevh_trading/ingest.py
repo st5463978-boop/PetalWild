@@ -13,7 +13,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-from .config import BEE_STRATEGY, HOLD_LABELS, SEED
+from .config import BEE_TAG, HOLD_LABELS, SEED
 from .paths import find_file
 
 PURGE_MS_DEFAULT = 5 * 60 * 1000  # 5 minutes
@@ -53,30 +53,62 @@ def bee_style(row: dict) -> str:
     return "boozy"
 
 
+# Underscores explode under the ettin BPE (upl_r → 3 tokens). Keep keys short.
+_KEY = {
+    "upl_r": "upl",
+    "at_stop_usd": "stopUsd",
+    "held_min": "held",
+    "flat_min": "flat",
+    "fee_left": "fee",
+    "long_on": "L",
+    "short_on": "S",
+    "slices": "sl",
+    "stop_dist_atr": "stop",
+    "rv90_pct": "rv90",
+    "at_10d": "at10",
+    "r24h_pct": "r24",
+    "r1h_pct": "r1h",
+    "r7d_pct": "r7d",
+    "attn_z": "attn",
+    "oi1h_pct": "oi",
+    "spread_bp": "spr",
+    "vol_musd": "vol",
+    "fund_z": "fund",
+    "score": "sc",
+}
+
+
+def _kv(k: Any, v: Any) -> str | None:
+    if v is None or v == "na":
+        return None
+    return f"{_KEY.get(str(k), k)}={v}"
+
+
 def compact_state(state: Any) -> str:
     if not isinstance(state, dict):
         return _canon(state)
     me = state.get("me") or {}
-    me_s = "me: " + " ".join(f"{k}={v}" for k, v in me.items())
+    me_bits = [b for k, v in me.items() if (b := _kv(k, v))]
     coins = state.get("coins") or {}
     cols = list(coins.get("cols") or [])
     rows = coins.get("rows") or {}
-    lines = [me_s]
-    extra = {k: v for k, v in state.items() if k not in ("me", "coins")}
-    if extra:
-        lines.append("meta: " + " ".join(f"{k}={v}" for k, v in extra.items()))
+    lines = []
+    if me_bits:
+        lines.append("me: " + " ".join(me_bits))
+    extra = {k: v for k, v in state.items() if k not in ("me", "coins", "utc")}
+    extra_bits = [b for k, v in extra.items() if (b := _kv(k, v))]
+    if extra_bits:
+        lines.append("meta: " + " ".join(extra_bits))
     for coin, vals in rows.items():
-        bits = []
         seq = list(vals) if isinstance(vals, (list, tuple)) else [vals]
-        for c, v in zip(cols, seq):
-            bits.append(f"{c}={v if v is not None else 'na'}")
-        lines.append(f"{coin} " + " ".join(bits))
+        bits = [b for c, v in zip(cols, seq) if (b := _kv(c, v))]
+        lines.append(f"{coin} " + " ".join(bits) if bits else str(coin))
     return "\n".join(lines)
 
 
 def text_a_for(row: dict) -> str:
     style = bee_style(row)
-    q = BEE_STRATEGY[style] + " Pick your next move."
+    q = BEE_TAG.get(style, style)
     ctx = compact_state(row.get("state") or {})
     return f"[choice] {q}\n{ctx}"
 

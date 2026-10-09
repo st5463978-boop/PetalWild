@@ -1,109 +1,48 @@
-# JEV-H-trading receipt
+# JEV-H-trading receipt (round 2: Jev distill)
 
-> **Not financial advice.** Offline research / backtest only. No live or paper order routing. No exchange or broker calls.
+> **Not financial advice.** Offline research only. No live or paper order routing. No exchange or broker calls. Gold is typesafe/jev-1.13's own choice, not a traded P&L.
 
-Seed `42`. Wall 165.2s. Smoke=False.
+Seed `42`. Wall 41.1s. Size **17m**. Backbone loaded: True. Smoke=False.
 
-## Data
+## Honest data verdict
+
+- Unique state+menu rows: **1260** (raw 1581)
+- Multi-option usable for train/dev/eval: **253** (train 177 / dev 38 / eval 24, purge 14 @ 300000 ms)
+- Single-option (format-check only, dropped from train): **1004**
+- Genuinely varied multi-option: **4** (need ~2000; shortfall 1996)
+- Non-hold gold: **4** (need ~400; shortfall 396)
+- Calendar days: **2** (need 14)
+- Gold distribution: `{"HOLD_WINNER": 249, "APE_STRK": 1, "APE_DOGE": 1, "SHORT_BTC": 1, "DOUBLE_DOWN": 1}`
+- Enough to claim a cost-free Jev stand-in: **False**
+
+A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-duplicate ticks. Mimicking discretionary Jev (when to leave HOLD, which APE_*, when to SWITCH) wants thousands of *varied* multi-option rows, with each offered action as gold at least ~50 times, over more than one regime.
+
+## Agreement with Jev (gold = choice)
+
+| split | n | agree | varied n/acc | collapsed n/acc | conf-mist ≥0.65 | ECE | always HOLD/RIDE |
+|---|---:|---:|---|---|---:|---:|---:|
+| time-split eval | 24 | 1.0000 | 0/None | 24/1.0 | 0 | 0.0000 | 1.0000 |
+| time-split dev (T fit) | 38 | 1.0000 | 1/1.0 | 37/1.0 | 0 | 0.0031 | 0.9737 |
+| train | 177 | 1.0000 | 3/1.0 | 174/1.0 | 0 | 0.0000 | 0.9944 |
+
+### Per menu size (eval)
 
 ```json
 {
-  "market_bars_per_coin": 5000,
-  "market_t0": 1787004900,
-  "market_t1": 1791506700,
-  "replay_after_downsample": {
-    "train": 2193,
-    "eval": 754
-  },
-  "replay_label_distribution": {
-    "HOLD_WINNER": 473,
-    "APE_SOL": 247,
-    "LONG_ETH": 227,
-    "LONG_BTC": 217,
-    "SWITCH": 216,
-    "SHORT_BTC": 207,
-    "RIDE": 206,
-    "SHORT_ETH": 205,
-    "BAIL": 204,
-    "APE_ETH": 156,
-    "APE_BTC": 143,
-    "TRIM_HALF": 86,
-    "HOLD": 76,
-    "DOUBLE_DOWN": 68,
-    "WAIT": 52,
-    "CUT_LOSS": 38,
-    "BREAKOUT_SOL": 37,
-    "SWITCH_COIN": 35,
-    "BREAKOUT_BTC": 25,
-    "FLIP_SHORT": 24,
-    "BREAKOUT_ETH": 5
-  },
-  "eval_label_distribution": {
-    "HOLD_WINNER": 122,
-    "SHORT_ETH": 71,
-    "LONG_BTC": 68,
-    "SWITCH": 64,
-    "APE_SOL": 58,
-    "BAIL": 56,
-    "RIDE": 55,
-    "APE_BTC": 50,
-    "SHORT_BTC": 45,
-    "LONG_ETH": 36,
-    "APE_ETH": 34,
-    "TRIM_HALF": 20,
-    "HOLD": 17,
-    "DOUBLE_DOWN": 12,
-    "SWITCH_COIN": 10,
-    "WAIT": 10,
-    "FLIP_SHORT": 9,
-    "BREAKOUT_BTC": 7,
-    "BREAKOUT_SOL": 5,
-    "CUT_LOSS": 5
-  },
-  "train_n": 2193,
-  "eval_n": 754,
-  "paper_multioption_n": 522,
-  "files": {
-    "market_BTC_15min.json": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_BTC_15min_3f23.json",
-      "bytes": 464223,
-      "rows": 5000
-    },
-    "market_ETH_15min.json": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_ETH_15min_fbd5.json",
-      "bytes": 462340,
-      "rows": 5000
-    },
-    "market_SOL_15min.json": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_SOL_15min_8cf9.json",
-      "bytes": 421516,
-      "rows": 5000
-    },
-    "trading_paper_decisions.jsonl": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_decisions_92e3.jsonl",
-      "bytes": 1222395,
-      "rows": 1581
-    },
-    "trading_paper_ledger.json": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_ledger_388d.json",
-      "bytes": 134854,
-      "rows": null
-    },
-    "trading_strategy_edges.jsonl": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_strategy_edges_017b.jsonl",
-      "bytes": 54265,
-      "rows": 139
-    },
-    "tokenizer.json": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_94c1.json",
-      "bytes": 3583228,
-      "rows": null
-    },
-    "labels.jsonl": {
-      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/labels_ebb6.jsonl",
-      "bytes": 2671732,
-      "rows": 4220
-    }
+  "3": {
+    "n": 24,
+    "accuracy": 1.0
+  }
+}
+```
+
+### Per action (eval, gold label)
+
+```json
+{
+  "HOLD_WINNER": {
+    "n": 24,
+    "accuracy": 1.0
   }
 }
 ```
@@ -112,54 +51,69 @@ Seed `42`. Wall 165.2s. Smoke=False.
 
 ```json
 {
-  "model": "PairScorer tiny BERT-like (absolute pos, GELU, mask-additive attention)",
-  "d_model": 96,
-  "n_layers": 4,
+  "gold": "jev_choice",
+  "soft_targets": "probabilities (KL) + listwise CE + pairwise hinge",
+  "option_shuffle": true,
+  "size": "17m",
+  "hf_id": "jhu-clsp/ettin-encoder-17m",
+  "hidden": 256,
+  "n_layers": 7,
   "n_heads": 4,
   "seq_len": 128,
-  "epochs": 4,
-  "lr": 0.0003,
-  "batch_questions": 6,
-  "horizon_bars": 32,
-  "purge_bars": 96,
-  "warmup_bars": 1600,
-  "stride_bars": 6,
-  "fee_bps_per_side": 5.0,
-  "n_params": 5156353,
-  "tokenizer": "tools/orchestration/jevh_trading/assets/tokenizer.json"
+  "unfreeze_last": 4,
+  "lr_encoder": 2e-05,
+  "lr_head": 8e-05,
+  "lr_embed": 5e-06,
+  "layer_decay": 0.9,
+  "pair_coef": 0.4,
+  "pair_margin": 0.5,
+  "soft_kl_coef": 0.5,
+  "epochs_run": 6,
+  "epochs_requested": 6,
+  "microbatch": 8,
+  "temperature": 0.3,
+  "n_params": 16863489,
+  "n_trainable": 2296577,
+  "backbone_loaded": true,
+  "missing_keys": [],
+  "keep_option_rows": 3,
+  "tokenizer": "/workspace/tools/orchestration/jevh_trading/assets/tokenizer.json",
+  "train_minutes": 0.54,
+  "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)"
 }
 ```
 
-## Metrics
-
-| split | n | accuracy | confident mistakes (p>=0.65) | ECE | always HOLD/RIDE acc | beats baseline |
-|---|---:|---:|---:|---:|---:|---|
-| held-out time (outcome gold) | 754 | 0.4218 | 10 | 0.0637 | 0.3939 | True |
-| paper Jev agreement | 522 | 0.0019 | 0 | 0.3715 | 0.9962 | False |
-| train subset | 400 | 0.5075 | 8 | 0.0567 | 0.4375 | True |
-
-Held-out chance (mean 1/K over menus) is 0.324. The student beats both chance and always-HOLD/RIDE on the time split.
-
-CPU latency batch-1 (PyTorch): mean **1.68 ms** (p50 1.68, p95 1.75).
-
-Paper Jev agreement is near zero because gold in training is forward outcome, not Jev's choice, and the 1.5h paper log is ~all HOLD_WINNER/RIDE.
+CPU latency batch-1 (PyTorch, one option): mean **8.59 ms** (p50 8.54, p95 9.03).
 
 ## ONNX (Hailo-10H DFC input, not compiled)
 
-- path: `tools/orchestration/jevh_trading/artifacts/jevh_trading_seq128.onnx`
-- sha256: `80cb1a8be6e0e9a002cd4417f0dc33ba929ba29ac96d89f0764c56021ed9312f`
+- path: `/workspace/tools/orchestration/jevh_trading/artifacts/jevh_trading_ettin17m_seq128.onnx`
+- sha256: `b5f2170e30da9282f70d7979daa691ddbdc92a8628576e451535947e4dc95725`
 - opset: 17
 - inputs: `{'input_ids': [1, 128], 'attention_mask': [1, 128]}`
 - outputs: `{'logit': [1, 1]}`
-- PyTorch parity cos: **1.000000** (max abs 3.576e-07)
-- calib: 256 rows of input_ids + attention_mask `[256, 128]`
+- attention_mask used: True
+- PyTorch/ORT cos: **0.9999999999990233** (max abs 1.621246337890625e-05)
+- calib: 256 unique tokenized pairs `[256, 128]`
+
+## Outcome aux (not gold)
+
+{
+  "n_mapped": 0,
+  "paper_span_hours": 1.472,
+  "horizon_hours": 8,
+  "note": "Forward-outcome labels are an optional auxiliary/eval signal, not gold. This log spans ~1.5h of decisions; an 8h forward window is not available for almost every row. Do not treat outcome-argmax as a Jev stand-in."
+}
 
 ## Known gaps
 
-- OHLCV only for BTC/ETH/SOL: no funding, OI, news, spread, or the rest of boozy's universe (STRK, DOGE, ...).
-- Paper decisions are too thin to train on (1051 single-option RIDE); used as eval-only Jev-agreement. Agreement is near zero because gold is forward outcome, not Jev imitation.
-- fund_z is always missing in replayed state (null in the live snapshot schema).
-- Student is a tiny from-scratch encoder (not ettin-68m). Same tokenizer and pair format; new HEF would be required.
-- No HEF compile, no Pi deploy, no exchange/broker calls.
-- Labels are 8h risk-adjusted forward returns with 5 bp/side fees and ATR/day-open stops — a research proxy, not a traded P&L.
-- Donchian 360-bar lookback exceeds ~52d of 4h history; slicesAvailable < 9 in this window.
+- Gold is Jev's logged choice + probabilities, not forward PnL. Not financial advice.
+- Genuinely varied multi-option rows: 4 (need ~2000).
+- Non-hold gold: 4 (need ~400).
+- Single-option RIDE menus are format-check only and never enter the train loss.
+- Collapsed HOLD_WINNER+LONG_BTC+SWITCH ticks dominate; a student can copy HOLD without mimicking discretionary Jev.
+- Backbone 17m (jhu-clsp/ettin-encoder-17m); recipe from 68m-v5, not merged. 17m is the thin-data/CPU fallback.
+- No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.
+- Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md for the log schema.
+- Forced/vetoed execution is metadata; gold stays Jev's choice even when the engine overrode the fill.
+- seq128 keep_option: 3 encoded rows overflowed; option tokens are kept and state is trimmed from the end.

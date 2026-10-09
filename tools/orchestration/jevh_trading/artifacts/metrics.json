@@ -1,324 +1,294 @@
 {
-  "disclaimer": "Not financial advice. Offline research / backtest only. No live or paper order routing.",
+  "disclaimer": "Not financial advice. Offline research only. No live or paper order routing.",
   "seed": 42,
-  "recipe": {
-    "model": "PairScorer tiny BERT-like (absolute pos, GELU, mask-additive attention)",
-    "d_model": 96,
-    "n_layers": 4,
-    "n_heads": 4,
-    "seq_len": 128,
-    "epochs": 4,
-    "lr": 0.0003,
-    "batch_questions": 6,
-    "horizon_bars": 32,
-    "purge_bars": 96,
-    "warmup_bars": 1600,
-    "stride_bars": 6,
-    "fee_bps_per_side": 5.0,
-    "n_params": 5156353,
-    "tokenizer": "tools/orchestration/jevh_trading/assets/tokenizer.json"
-  },
-  "data": {
-    "market_bars_per_coin": 5000,
-    "market_t0": 1787004900,
-    "market_t1": 1791506700,
-    "replay_after_downsample": {
-      "train": 2193,
-      "eval": 754
+  "smoke": false,
+  "wall_s": 41.1,
+  "ingest": {
+    "logs": [
+      "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_decisions_92e3.jsonl"
+    ],
+    "raw_rows": 1581,
+    "unique_state_menu": 1260,
+    "single_option": 1004,
+    "unusable_multi": 3,
+    "multi_option_trainish": 253,
+    "varied_multi": 4,
+    "collapsed_multi": 249,
+    "non_hold_gold": 4,
+    "gold_distribution": {
+      "HOLD_WINNER": 249,
+      "APE_STRK": 1,
+      "APE_DOGE": 1,
+      "SHORT_BTC": 1,
+      "DOUBLE_DOWN": 1
     },
-    "replay_label_distribution": {
-      "HOLD_WINNER": 473,
-      "APE_SOL": 247,
-      "LONG_ETH": 227,
-      "LONG_BTC": 217,
-      "SWITCH": 216,
-      "SHORT_BTC": 207,
-      "RIDE": 206,
-      "SHORT_ETH": 205,
-      "BAIL": 204,
-      "APE_ETH": 156,
-      "APE_BTC": 143,
-      "TRIM_HALF": 86,
-      "HOLD": 76,
-      "DOUBLE_DOWN": 68,
-      "WAIT": 52,
-      "CUT_LOSS": 38,
-      "BREAKOUT_SOL": 37,
-      "SWITCH_COIN": 35,
-      "BREAKOUT_BTC": 25,
-      "FLIP_SHORT": 24,
-      "BREAKOUT_ETH": 5
+    "menu_size": {
+      "3": 250,
+      "5": 1,
+      "4": 1,
+      "2": 1
     },
-    "eval_label_distribution": {
-      "HOLD_WINNER": 122,
-      "SHORT_ETH": 71,
-      "LONG_BTC": 68,
-      "SWITCH": 64,
-      "APE_SOL": 58,
-      "BAIL": 56,
-      "RIDE": 55,
-      "APE_BTC": 50,
-      "SHORT_BTC": 45,
-      "LONG_ETH": 36,
-      "APE_ETH": 34,
-      "TRIM_HALF": 20,
-      "HOLD": 17,
-      "DOUBLE_DOWN": 12,
-      "SWITCH_COIN": 10,
-      "WAIT": 10,
-      "FLIP_SHORT": 9,
-      "BREAKOUT_BTC": 7,
-      "BREAKOUT_SOL": 5,
-      "CUT_LOSS": 5
+    "bee": {
+      "bee1": 250,
+      "bee2": 2,
+      "bee3": 1
     },
-    "train_n": 2193,
-    "eval_n": 754,
-    "paper_multioption_n": 522,
-    "files": {
-      "market_BTC_15min.json": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_BTC_15min_3f23.json",
-        "bytes": 464223,
-        "rows": 5000
-      },
-      "market_ETH_15min.json": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_ETH_15min_fbd5.json",
-        "bytes": 462340,
-        "rows": 5000
-      },
-      "market_SOL_15min.json": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/market_SOL_15min_8cf9.json",
-        "bytes": 421516,
-        "rows": 5000
-      },
-      "trading_paper_decisions.jsonl": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_decisions_92e3.jsonl",
-        "bytes": 1222395,
-        "rows": 1581
-      },
-      "trading_paper_ledger.json": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_paper_ledger_388d.json",
-        "bytes": 134854,
-        "rows": null
-      },
-      "trading_strategy_edges.jsonl": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_strategy_edges_017b.jsonl",
-        "bytes": 54265,
-        "rows": 139
-      },
-      "tokenizer.json": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_94c1.json",
-        "bytes": 3583228,
-        "rows": null
-      },
-      "labels.jsonl": {
-        "path": "/home/ubuntu/.cursor/projects/workspace/uploads/labels_ebb6.jsonl",
-        "bytes": 2671732,
-        "rows": 4220
+    "bee_style": {
+      "breezy": 250,
+      "boozy": 3
+    },
+    "forced": 1,
+    "vetoed": 4,
+    "span_ms": 5299908,
+    "span_hours": 1.472,
+    "calendar_days": 2,
+    "train": 177,
+    "dev": 38,
+    "eval": 24,
+    "purge": 14,
+    "purge_ms_used": 300000,
+    "format_check": 1004,
+    "gold_is": "jev_choice",
+    "soft_targets": "probabilities (renormalized over menu); confidence kept as metadata",
+    "enough_to_claim": false,
+    "needed": {
+      "multi_option_unique": 2000,
+      "non_hold_gold": 400,
+      "per_action_gold": 50,
+      "calendar_days": 14,
+      "note": "A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-duplicate ticks. Mimicking discretionary Jev (when to leave HOLD, which APE_*, when to SWITCH) wants thousands of *varied* multi-option rows, with each offered action as gold at least ~50 times, over more than one regime."
+    },
+    "shortfall": {
+      "varied_multi": 1996,
+      "non_hold_gold": 396,
+      "days": 12,
+      "per_action_below_50": {
+        "APE_STRK": 49,
+        "APE_DOGE": 49,
+        "SHORT_BTC": 49,
+        "DOUBLE_DOWN": 49
       }
     }
   },
+  "recipe": {
+    "gold": "jev_choice",
+    "soft_targets": "probabilities (KL) + listwise CE + pairwise hinge",
+    "option_shuffle": true,
+    "size": "17m",
+    "hf_id": "jhu-clsp/ettin-encoder-17m",
+    "hidden": 256,
+    "n_layers": 7,
+    "n_heads": 4,
+    "seq_len": 128,
+    "unfreeze_last": 4,
+    "lr_encoder": 2e-05,
+    "lr_head": 8e-05,
+    "lr_embed": 5e-06,
+    "layer_decay": 0.9,
+    "pair_coef": 0.4,
+    "pair_margin": 0.5,
+    "soft_kl_coef": 0.5,
+    "epochs_run": 6,
+    "epochs_requested": 6,
+    "microbatch": 8,
+    "temperature": 0.3,
+    "n_params": 16863489,
+    "n_trainable": 2296577,
+    "backbone_loaded": true,
+    "missing_keys": [],
+    "keep_option_rows": 3,
+    "tokenizer": "/workspace/tools/orchestration/jevh_trading/assets/tokenizer.json",
+    "train_minutes": 0.54,
+    "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)"
+  },
   "metrics": {
-    "heldout_time": {
-      "n": 754,
-      "accuracy": 0.4217506631299735,
-      "confident_mistakes": 10,
-      "confident_mistake_rate": 0.013262599469496022,
-      "ece": 0.06373871609924325,
-      "mean_confidence": 0.4574890945017812,
-      "hold_ride_baseline_n": 470,
-      "hold_ride_baseline_acc": 0.4340425531914894,
-      "beats_hold_ride_baseline": false,
-      "note_majority_index_acc_unusable": 0.3952254641909814,
-      "hold_ride_always_acc": 0.39389920424403185,
-      "beats_always_hold_ride": true,
-      "by_bee": {
-        "breezy": {
-          "n": 426,
-          "acc": 0.3826291079812207
-        },
-        "boozy": {
-          "n": 284,
-          "acc": 0.4507042253521127
-        },
-        "bizzy": {
-          "n": 44,
-          "acc": 0.6136363636363636
-        }
-      },
-      "label_distribution": {
-        "HOLD_WINNER": 122,
-        "SHORT_ETH": 71,
-        "LONG_BTC": 68,
-        "SWITCH": 64,
-        "APE_SOL": 58,
-        "BAIL": 56,
-        "RIDE": 55,
-        "APE_BTC": 50,
-        "SHORT_BTC": 45,
-        "LONG_ETH": 36,
-        "APE_ETH": 34,
-        "TRIM_HALF": 20,
-        "HOLD": 17,
-        "DOUBLE_DOWN": 12,
-        "SWITCH_COIN": 10,
-        "WAIT": 10,
-        "FLIP_SHORT": 9,
-        "BREAKOUT_BTC": 7,
-        "BREAKOUT_SOL": 5,
-        "CUT_LOSS": 5
-      },
-      "chance_mean_1_over_k": 0.3242
-    },
-    "train_subset": {
-      "n": 400,
-      "accuracy": 0.5075,
-      "confident_mistakes": 8,
-      "confident_mistake_rate": 0.02,
-      "ece": 0.05667203396558764,
-      "mean_confidence": 0.46585549652576447,
-      "hold_ride_baseline_n": 255,
-      "hold_ride_baseline_acc": 0.5019607843137255,
-      "beats_hold_ride_baseline": true,
-      "note_majority_index_acc_unusable": 0.435,
-      "hold_ride_always_acc": 0.4375,
-      "beats_always_hold_ride": true,
-      "by_bee": {
-        "bizzy": {
-          "n": 34,
-          "acc": 0.5882352941176471
-        },
-        "breezy": {
-          "n": 217,
-          "acc": 0.4792626728110599
-        },
-        "boozy": {
-          "n": 149,
-          "acc": 0.5302013422818792
-        }
-      },
-      "label_distribution": {
-        "HOLD_WINNER": 79,
-        "APE_SOL": 42,
-        "SWITCH": 29,
-        "LONG_ETH": 29,
-        "RIDE": 29,
-        "SHORT_ETH": 26,
-        "LONG_BTC": 25,
-        "BAIL": 21,
-        "APE_ETH": 20,
-        "SHORT_BTC": 18,
-        "APE_BTC": 16,
-        "HOLD": 13,
-        "DOUBLE_DOWN": 12,
-        "TRIM_HALF": 11,
-        "BREAKOUT_SOL": 9,
-        "WAIT": 7,
-        "SWITCH_COIN": 7,
-        "CUT_LOSS": 3,
-        "BREAKOUT_BTC": 2,
-        "FLIP_SHORT": 2
-      }
-    },
-    "paper_jev_agreement": {
-      "n": 522,
-      "accuracy": 0.0019157088122605363,
+    "eval": {
+      "n": 24,
+      "accuracy": 1.0,
       "confident_mistakes": 0,
       "confident_mistake_rate": 0.0,
-      "ece": 0.3715360950807045,
-      "mean_confidence": 0.37163646884576573,
-      "hold_ride_baseline_n": 519,
-      "hold_ride_baseline_acc": 0.9980732177263969,
+      "ece": 1.592649653447964e-05,
+      "mean_confidence": 0.9999840735034655,
+      "hold_ride_baseline_n": 24,
+      "hold_ride_baseline_acc": 1.0,
       "beats_hold_ride_baseline": false,
-      "note_majority_index_acc_unusable": 0.9961685823754789,
-      "hold_ride_always_acc": 0.9961685823754789,
-      "beats_always_hold_ride": false,
-      "by_bee": {
-        "boozy": {
-          "n": 3,
-          "acc": 0.3333333333333333
-        },
-        "breezy": {
-          "n": 519,
-          "acc": 0.0
+      "note_majority_index_acc_unusable": 1.0,
+      "by_menu_size": {
+        "3": {
+          "n": 24,
+          "accuracy": 1.0
         }
       },
-      "label_distribution": {
-        "HOLD_WINNER": 518,
-        "APE_STRK": 1,
-        "APE_DOGE": 1,
-        "SHORT_BTC": 1,
-        "DOUBLE_DOWN": 1
-      }
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 24,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 0,
+      "varied_accuracy": null,
+      "collapsed_n": 24,
+      "collapsed_accuracy": 1.0,
+      "temperature": 0.3,
+      "split": "eval",
+      "always_hold_acc": 1.0
     },
-    "paper_outcome_where_possible": {
-      "n_mapped": 0,
-      "note": "Paper run is ~1.5h on 2026-10-08/09 and almost all HOLD_WINNER/RIDE. Forward outcome vs Jev is not claimed here beyond agreement metrics; the time-split replay eval is the outcome-based test.",
-      "jev_hold_share": null
+    "dev": {
+      "n": 38,
+      "accuracy": 1.0,
+      "confident_mistakes": 0,
+      "confident_mistake_rate": 0.0,
+      "ece": 0.0031262418635895073,
+      "mean_confidence": 0.9968737581364107,
+      "hold_ride_baseline_n": 38,
+      "hold_ride_baseline_acc": 0.9736842105263158,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.9736842105263158,
+      "by_menu_size": {
+        "2": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "3": {
+          "n": 37,
+          "accuracy": 1.0
+        }
+      },
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 37,
+          "accuracy": 1.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 1,
+      "varied_accuracy": 1.0,
+      "collapsed_n": 37,
+      "collapsed_accuracy": 1.0,
+      "temperature": 0.3,
+      "split": "dev",
+      "always_hold_acc": 0.9736842105263158
+    },
+    "train": {
+      "n": 177,
+      "accuracy": 1.0,
+      "confident_mistakes": 0,
+      "confident_mistake_rate": 0.0,
+      "ece": 9.65150580078955e-06,
+      "mean_confidence": 0.9999903484941992,
+      "hold_ride_baseline_n": 174,
+      "hold_ride_baseline_acc": 1.0,
+      "beats_hold_ride_baseline": false,
+      "note_majority_index_acc_unusable": 0.9943502824858758,
+      "by_menu_size": {
+        "3": {
+          "n": 175,
+          "accuracy": 1.0
+        },
+        "4": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "5": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 174,
+          "accuracy": 1.0
+        },
+        "APE_STRK": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_DOGE": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "SHORT_BTC": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 3,
+      "varied_accuracy": 1.0,
+      "collapsed_n": 174,
+      "collapsed_accuracy": 1.0,
+      "temperature": 0.3,
+      "split": "train",
+      "always_hold_acc": 0.9943502824858758
     },
     "cpu_latency_batch1": {
       "n": 64,
-      "mean_ms": 1.6761946250163362,
-      "p50_ms": 1.677251499927479,
-      "p95_ms": 1.749553350066435,
-      "min_ms": 1.6032200001063757,
-      "max_ms": 1.8345260000387498
+      "mean_ms": 8.587789609364904,
+      "p50_ms": 8.537007500081017,
+      "p95_ms": 9.032036500207141,
+      "min_ms": 8.139432999996643,
+      "max_ms": 10.116687999925489
     },
     "confident_mistake_threshold": 0.65
   },
   "history": [
     {
       "epoch": 1,
-      "train_loss": 1.1483023637305192,
-      "n": 754,
-      "accuracy": 0.39655172413793105,
-      "confident_mistakes": 0,
-      "ece": 0.09239380197989845
+      "train_loss": 0.3562964738711067,
+      "dev_agree_t1": 1.0
     },
     {
       "epoch": 2,
-      "train_loss": 1.1303081694847898,
-      "n": 754,
-      "accuracy": 0.4217506631299735,
-      "confident_mistakes": 10,
-      "ece": 0.06373871609924325
+      "train_loss": 0.11637076573527377,
+      "dev_agree_t1": 1.0
     },
     {
       "epoch": 3,
-      "train_loss": 1.1301370556237267,
-      "n": 754,
-      "accuracy": 0.41644562334217505,
-      "confident_mistakes": 4,
-      "ece": 0.08267912011722041
+      "train_loss": 0.10536452609559764,
+      "dev_agree_t1": 1.0
     },
     {
       "epoch": 4,
-      "train_loss": 1.1200510879031946,
-      "n": 754,
-      "accuracy": 0.3779840848806366,
-      "confident_mistakes": 55,
-      "ece": 0.0950390128739949
+      "train_loss": 0.09708390125761861,
+      "dev_agree_t1": 1.0
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.0895276960471402,
+      "dev_agree_t1": 1.0
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.08821934332018314,
+      "dev_agree_t1": 1.0
     }
   ],
   "onnx": {
-    "path": "tools/orchestration/jevh_trading/artifacts/jevh_trading_seq128.onnx",
-    "sha256": "80cb1a8be6e0e9a002cd4417f0dc33ba929ba29ac96d89f0764c56021ed9312f",
+    "path": "/workspace/tools/orchestration/jevh_trading/artifacts/jevh_trading_ettin17m_seq128.onnx",
+    "sha256": "b5f2170e30da9282f70d7979daa691ddbdc92a8628576e451535947e4dc95725",
     "opset": 17,
     "ops": [
       "Add",
       "Cast",
+      "Concat",
       "Constant",
       "Div",
       "Erf",
       "Gather",
       "Gemm",
-      "LayerNormalization",
       "MatMul",
       "Mul",
+      "Neg",
+      "Pow",
+      "ReduceMean",
       "Reshape",
+      "Slice",
       "Softmax",
+      "Sqrt",
       "Sub",
-      "Transpose",
-      "Unsqueeze"
+      "Transpose"
     ],
     "inputs": {
       "input_ids": [
@@ -338,10 +308,15 @@
     },
     "seq_len": 128,
     "batch": 1,
+    "attention_mask_used": true,
+    "input_ids_is_input": true,
+    "attention_mask_is_input": true,
+    "bytes": 68722315,
     "parity": {
-      "cos": 0.9999999999999507,
-      "max_abs": 3.5762786865234375e-07,
-      "n": 32
+      "cos": 0.9999999999990233,
+      "max_abs": 1.621246337890625e-05,
+      "n": 32,
+      "output_name": "logit"
     }
   },
   "calib": {
@@ -352,18 +327,25 @@
     ],
     "input_ids": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_input_ids.npy",
     "attention_mask": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_attention_mask.npy",
-    "input_ids_sha256": "e7abcbdb8649215583bf22ff503f702b949803b44fc583f00caee4748f493f56",
-    "attention_mask_sha256": "e69aa9bb04cab837c768cda03fcac493cc52f49c1237afffbb97238a6935c1e3"
+    "input_ids_sha256": "db980409b54aa17546aacaca62813d32580b7fceae75782cc859e6426d385512",
+    "attention_mask_sha256": "6dfc04b3ad2b3c1605a89b143298be67e9d9c577aee66a5c8033fe5c7ce7a712"
+  },
+  "outcome_aux": {
+    "n_mapped": 0,
+    "paper_span_hours": 1.472,
+    "horizon_hours": 8,
+    "note": "Forward-outcome labels are an optional auxiliary/eval signal, not gold. This log spans ~1.5h of decisions; an 8h forward window is not available for almost every row. Do not treat outcome-argmax as a Jev stand-in."
   },
   "gaps": [
-    "OHLCV only for BTC/ETH/SOL: no funding, OI, news, spread, or the rest of boozy's universe (STRK, DOGE, ...).",
-    "Paper decisions are too thin to train on (1051 single-option RIDE); used as eval-only Jev-agreement.",
-    "fund_z is always missing in replayed state (null in the live snapshot schema).",
-    "Student is a tiny from-scratch encoder (not ettin-68m). Same tokenizer and pair format; new HEF would be required.",
-    "No HEF compile, no Pi deploy, no exchange/broker calls.",
-    "Labels are 8h risk-adjusted forward returns with 5 bp/side fees and ATR/day-open stops \u2014 a research proxy, not a traded P&L.",
-    "Donchian 360-bar lookback exceeds ~52d of 4h history; slicesAvailable < 9 in this window."
-  ],
-  "wall_s": 165.2,
-  "smoke": false
+    "Gold is Jev's logged choice + probabilities, not forward PnL. Not financial advice.",
+    "Genuinely varied multi-option rows: 4 (need ~2000).",
+    "Non-hold gold: 4 (need ~400).",
+    "Single-option RIDE menus are format-check only and never enter the train loss.",
+    "Collapsed HOLD_WINNER+LONG_BTC+SWITCH ticks dominate; a student can copy HOLD without mimicking discretionary Jev.",
+    "Backbone 17m (jhu-clsp/ettin-encoder-17m); recipe from 68m-v5, not merged. 17m is the thin-data/CPU fallback.",
+    "No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.",
+    "Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md for the log schema.",
+    "Forced/vetoed execution is metadata; gold stays Jev's choice even when the engine overrode the fill.",
+    "seq128 keep_option: 3 encoded rows overflowed; option tokens are kept and state is trimmed from the end."
+  ]
 }

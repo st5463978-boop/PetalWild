@@ -55,6 +55,18 @@ A stand-in for discretionary Jev is **not** “copy HOLD_WINNER on a 90-minute l
 
 What the bees should keep appending: [`BEEBOTS_LOG_SPEC.md`](BEEBOTS_LOG_SPEC.md). Engine code is not edited here.
 
+## Metrics (seed 42, ettin-17m, this paper log)
+
+**Not financial advice.** Gold = Jev `choice`. This is **not** a Jev stand-in.
+
+| split | n | agree-with-Jev | varied n/acc | conf-mist ≥0.65 | ECE | always HOLD/RIDE |
+|---|---:|---:|---|---:|---:|---:|
+| time-split eval | 24 | 1.000 | 0 / — | 0 | ~0 | 1.000 |
+| time-split dev | 38 | 1.000 | 1 / 1.0 | 0 | 0.003 | 0.974 |
+| train | 177 | 1.000 | 3 / 1.0 | 0 | ~0 | 0.994 |
+
+Eval is 24 consecutive `HOLD_WINNER` ticks. Agreement equals the HOLD-copy baseline. The four non-hold golds (`APE_STRK`, `APE_DOGE`, `SHORT_BTC`, `DOUBLE_DOWN`) are memorized in train/dev, not held out. CPU latency batch-1: **8.6 ms**. ONNX/ORT cos **1.000**. `enough_to_claim=false` (need ~2000 varied / ~400 non-hold / 14 days). Full table: `RECEIPT.md`.
+
 ## Hailo export
 
 `artifacts/jevh_trading_ettin{17m|68m}_seq128.onnx` (gitignored; rebuild locally)

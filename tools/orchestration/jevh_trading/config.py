@@ -81,4 +81,11 @@ BEE_STRATEGY = {
     ),
 }
 
+# Short tags for seq128 pair encoding (full BEE_STRATEGY ate the token budget).
+BEE_TAG = {
+    "breezy": "breezy Donchian",
+    "boozy": "boozy momentum",
+    "bizzy": "bizzy breakout",
+}
+
 HOLD_LABELS = frozenset({"HOLD", "RIDE", "HOLD_WINNER", "WAIT"})
