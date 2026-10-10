@@ -1033,6 +1033,188 @@
           "share_rows_menu_coin_line_cut": 0.20489296636085627
         }
       }
+    },
+    "packer_truncation": {
+      "eval_natural": {
+        "v1": {
+          "rows": 3000,
+          "pairs": 8886,
+          "mean_option_tokens": 11.684447445419762,
+          "share_pairs_text_a_trimmed": 0.5860904794058069,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.5183027371660988,
+          "share_gold_pairs_seeing_gold_coin_numbers": 0.7699680511182109,
+          "share_gold_pairs_rules_cut": 0.0,
+          "share_gold_pairs_me_cut": 0.015333333333333332,
+          "share_gold_pairs_top1_cut": 0.04450757575757576,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 0.2585669781931464,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": 0.04450757575757576
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 0.23806298679309176,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        },
+        "option": {
+          "rows": 3000,
+          "pairs": 8886,
+          "mean_option_tokens": 48.8547152824668,
+          "share_pairs_text_a_trimmed": 0.9997749268512266,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.029201315026107136,
+          "share_gold_pairs_seeing_gold_coin_numbers": 1.0,
+          "share_gold_pairs_rules_cut": 0.2693409742120344,
+          "share_gold_pairs_me_cut": 0.0,
+          "share_gold_pairs_top1_cut": 0.36079545454545453,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.3125884016973126,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.36616702355460384,
+              "share_gold_pairs_top1_cut": 0.36079545454545453
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 0.9993227226549272,
+              "share_gold_pairs_rules_cut": 0.11845386533665836,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        }
+      },
+      "eval_receipt": {
+        "v1": {
+          "rows": 6000,
+          "pairs": 19834,
+          "mean_option_tokens": 11.957900574770596,
+          "share_pairs_text_a_trimmed": 0.6729353635171927,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.4036073757951526,
+          "share_gold_pairs_seeing_gold_coin_numbers": 0.6334786399302529,
+          "share_gold_pairs_rules_cut": 0.0,
+          "share_gold_pairs_me_cut": 0.028166666666666666,
+          "share_gold_pairs_top1_cut": 0.06054421768707483,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 0.17169811320754716,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": 0.06054421768707483
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 0.2142501245640259,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        },
+        "option": {
+          "rows": 6000,
+          "pairs": 19834,
+          "mean_option_tokens": 50.456438439044064,
+          "share_pairs_text_a_trimmed": 0.9998991630533427,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.02512910684370111,
+          "share_gold_pairs_seeing_gold_coin_numbers": 1.0,
+          "share_gold_pairs_rules_cut": 0.28436948421259073,
+          "share_gold_pairs_me_cut": 0.0,
+          "share_gold_pairs_top1_cut": 0.4306122448979592,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.21863799283154123,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.41748304446119067,
+              "share_gold_pairs_top1_cut": 0.4306122448979592
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 0.9996678292642418,
+              "share_gold_pairs_rules_cut": 0.09888059701492537,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        }
+      },
+      "eval_rules_receipt": {
+        "v1": {
+          "rows": 6000,
+          "pairs": 20795,
+          "mean_option_tokens": 11.084058667949026,
+          "share_pairs_text_a_trimmed": 0.4002885308968502,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.5696795906452832,
+          "share_gold_pairs_seeing_gold_coin_numbers": 0.9295,
+          "share_gold_pairs_rules_cut": 0.0,
+          "share_gold_pairs_me_cut": 0.0,
+          "share_gold_pairs_top1_cut": 0.0,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 0.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": 0.0
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 0.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        },
+        "option": {
+          "rows": 6000,
+          "pairs": 20795,
+          "mean_option_tokens": 49.35571050733349,
+          "share_pairs_text_a_trimmed": 1.0,
+          "share_pairs_option_trimmed": 0.0,
+          "share_text_a_coin_lines_visible": 0.0,
+          "share_gold_pairs_seeing_gold_coin_numbers": 1.0,
+          "share_gold_pairs_rules_cut": 0.0085,
+          "share_gold_pairs_me_cut": 0.0,
+          "share_gold_pairs_top1_cut": 0.032015065913371,
+          "by_style": {
+            "bizzy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.042113955408753095,
+              "share_gold_pairs_top1_cut": null
+            },
+            "boozy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": 0.032015065913371
+            },
+            "breezy": {
+              "share_pairs_text_a_trimmed": 1.0,
+              "share_gold_pairs_rules_cut": 0.0,
+              "share_gold_pairs_top1_cut": null
+            }
+          }
+        }
+      }
     }
   }
 }
