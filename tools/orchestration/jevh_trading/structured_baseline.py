@@ -5,9 +5,11 @@ nets). It measures how much of Jev's choice the structured state predicts:
   full          every state column for every coin, position, rules_id, style
   packed        only what the seq128 packer writes (style columns, <=4 coins)
   packed_trunc  packed, minus coin lines that token truncation cuts from each pair
-plus which feature groups the full model leans on (drop one group, refit), how
-time-eval agreement scales with the number of distinct training snapshots, and,
-when shadow_gate predictions exist, where the student's and the GBM's errors overlap.
+plus which feature groups the full model leans on (drop one group, refit), what
+the training mix does (train.py's gold-balanced 68m sample vs as many natural rows
+vs all rows), how time-eval agreement scales with the number of distinct training
+snapshots, and, when shadow_gate predictions exist, where the student's and the
+GBM's errors overlap.
 
 python -m jevh_trading.structured_baseline  ->  artifacts/structured_baseline.json
 Needs lightgbm (analysis only; train.sh does not).
@@ -28,7 +30,8 @@ from typing import Sequence
 
 import numpy as np
 
-from .config import SEED
+from .config import MAX_TRAIN_68M, SEED
+from .ingest import stratified_take
 from .jev_ceiling import LineTok, _packed_coins, load_raw_calls, pair_view, receipt_rows
 from .metrics import softmax
 from .paths import artifacts_dir
@@ -382,6 +385,33 @@ def drop_one_group(mats: dict, fb: FeatureBuilder, obj: str, receipt: dict, thre
     return out
 
 
+def training_mix(parts: dict, mats: dict, fb: FeatureBuilder, obj: str, receipt: dict, threads: int, seed: int) -> dict:
+    """Same features, three training sets: train.py's gold-balanced 68m sample, as many natural rows, all rows."""
+    from .shadow_gate import agreement_stats, to_recs
+
+    pos = {id(r): i for i, r in enumerate(parts["train"])}
+    n = min(MAX_TRAIN_68M, len(parts["train"]))
+    sets = {
+        "balanced_68m_sample": sorted(pos[id(r)] for r in stratified_take(parts["train"], n, seed)),
+        "natural_same_size": sorted(random.Random(seed).sample(range(len(parts["train"])), n)),
+        "natural_all": list(range(len(parts["train"]))),
+    }
+    out = {}
+    for name, idx in sets.items():
+        booster = fit_ranker(_subset(mats["train"], idx), mats["dev"], obj, fb.cat_idx, threads, seed)
+        res: dict = {"n_rows": len(idx)}
+        for k in ("dev", "eval", "eval_rules", "eval_live"):
+            sc = predict_groups(booster, mats[k])
+            res[f"{k}_top1"] = top1(sc, mats[k]["gold"])
+            ix = receipt[k]
+            res[f"{k}_receipt_sample_top1"] = top1([sc[i] for i in ix], mats[k]["gold"][ix])
+            if k == "eval":
+                res["eval_hold_vs_act"] = agreement_stats(to_recs(parts[k], [softmax(s).tolist() for s in sc], k, None))["hold_vs_act"]
+        out[name] = res
+        print(f"[gbm-mix] {name}: eval={res['eval_top1']:.4f} eval_receipt={res['eval_receipt_sample_top1']:.4f}", flush=True)
+    return out
+
+
 def student_vs_gbm(student: list[dict], gbm: dict[str, list[dict]], receipt_ids: dict[str, set], weights: Sequence[float] = tuple(np.round(np.arange(0, 1.01, 0.1), 2))) -> dict:
     """Overlap of student and GBM errors, and a log-probability blend (student weight fit on dev)."""
     from .shadow_gate import gate_report, headline
@@ -498,6 +528,7 @@ def run(threads: int = 4, out_path: Path | None = None, curve: bool = True, seed
         out["student_vs_gbm"] = {"student_recs": str(student_recs), **student_vs_gbm(read_recs(student_recs), recs, ids)}
 
     out["drop_one_group"] = drop_one_group(mats["full"], fb, obj, receipt, threads, seed)
+    out["training_mix"] = training_mix(parts, mats["full"], fb, obj, receipt, threads, seed)
     if curve:
         out["snapshot_curve"] = snapshot_curve(parts, mats["full"], fb, obj, threads, seed)
     out["wall_s"] = round(time.perf_counter() - t0, 1)
