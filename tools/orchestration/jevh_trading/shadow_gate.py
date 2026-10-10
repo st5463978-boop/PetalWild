@@ -564,7 +564,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--seed", type=int, default=SEED)
     p.add_argument("--out", default=str(artifacts_dir() / "shadow_gate.json"))
     a = p.parse_args(argv)
-    art = artifacts_dir()
     meta: dict = {}
     onnx_rep = None
     if a.recs:
@@ -581,7 +580,7 @@ def main(argv: list[str] | None = None) -> int:
         meta["_receipt_ids"] = {k: [r.get("id") for r in v] for k, v in receipt_rows(load_raw_calls()["parts"], a.seed).items()}
     else:
         recs, meta, model, packed_by = predict_student(Path(a.ckpt), a.max_rows, a.seed, a.seq)
-        write_recs(art / f"preds_{meta['size']}.jsonl.gz", [r for v in recs.values() for r in v])
+        write_recs(Path(a.out).with_name(f"preds_{meta['size']}.jsonl.gz"), [r for v in recs.values() for r in v])
         onnx_path = Path(a.onnx)
         if onnx_path.is_file() and a.onnx_rows > 0:
             onnx_rep = onnx_parity(model, onnx_path, packed_by["eval"], recs["eval"], meta["temperature_ece"], a.onnx_rows, a.seed, not a.no_int8)
