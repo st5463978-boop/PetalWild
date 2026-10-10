@@ -19,7 +19,7 @@ Append-only JSONL, one object per Jev call. Same schema as `trading_paper_decisi
 
 | field | type | why |
 |---|---|---|
-| `confidence` | float | Jev's reported p(choice). Used in ECE / confident-mistake eval. |
+| `confidence` | float | Jev's self-reported confidence. In the v2 dump it tracks the gap between Jev's top two probabilities (corr 0.96), not p(choice) (corr 0.86): mean 0.41 vs mean top probability 0.64. Metadata only; ECE and the shadow gate use `probabilities`. |
 | `conviction` | float | Logged as metadata; not gold. |
 | `jev_error` | null or string | Non-null rows are dropped from training. |
 | `id` | int or string | Stable row id; later write wins on the same state hash. |
@@ -58,6 +58,13 @@ Roughly enough to *claim* a cost-free Jev stand-in (not a traded edge):
 
 Until then the pipeline still runs, but a high agreement-with-Jev number is mostly “copy HOLD_WINNER”.
 
+For the ≥90% agreement target ([`PATH_TO_90.md`](PATH_TO_90.md)), what matters is spread, not volume:
+
+- **Distinct market states.** Hyperspeed snapshots from many days and regimes, with a smaller bee × rules × position fan-out per snapshot. The v2 dump's 20 training snapshots come from one 30-minute window, and past the first two a structured-feature model gains only about 1 point per doubling of them, because consecutive snapshots share most of their state.
+- **Distinct rules texts.** Many `rules` variants per style (reworded, different thresholds, different coin lists), so a student learns to read rules instead of memorizing `rules_id`. Today 23 `rules_id`s carry 15 non-empty texts (each `+rotating` id reuses its base text), 13 of them in the training split.
+- **Repeated calls.** Re-ask Jev an identical call (same `state_hash`) for about 1% of hyperspeed calls. Jev's own noise sets the ceiling, and today the hyperspeed estimate rests on 30 repeats.
+- **The natural mix.** Keep logging hold-walls and repeats with `source`; the chip's thresholds have to be calibrated on what it will actually see.
+
 ## Example (valid)
 
 ```json
@@ -79,7 +86,7 @@ Until then the pipeline still runs, but a high agreement-with-Jev number is most
   "menu": ["APE_STRK", "APE_ONDO", "APE_BTC"],
   "choice": "APE_STRK",
   "probabilities": {"APE_STRK": 0.72, "APE_ONDO": 0.19, "APE_BTC": 0.09},
-  "confidence": 0.72,
+  "confidence": 0.53,
   "conviction": 0.77,
   "jev_error": null,
   "action": {"kind": "open", "instId": "STRK-USD_UM_XPERP-310919", "side": "long", "notionalUsd": 42.68},
