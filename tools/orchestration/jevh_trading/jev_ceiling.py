@@ -7,7 +7,7 @@ Reads the raw v2 calls (no model). Splits exactly like ingest.py. Reports:
     copy of Jev's mean probabilities could reach given that noise.
   - A noise-to-agreement table: how precise a student's probabilities must be.
   - Representation audit of the seq128 pair text: dropped columns, coin cap,
-    rules clipping, and token truncation on a sample.
+    rules clipping, and token truncation on a sample, for both packers.
 
 python -m jevh_trading.jev_ceiling   ->  artifacts/jev_ceiling.json
 
@@ -31,13 +31,17 @@ from .ingest import (
     _MAX_COINS,
     _RULES_CHARS,
     _STYLE_COLS,
+    PACKERS,
     _assign_v2,
     _coin_rank_key,
+    _pos_coin,
     _tickers,
     align_probs,
     bee_style,
     iter_jsonl,
     load_contexts,
+    option_coin,
+    option_packed,
     option_texts_for,
     state_hash,
     stratified_take,
@@ -426,10 +430,12 @@ class LineTok:
         return len(ids)
 
 
-def pair_view(row: dict, ctx: dict | None, lt: LineTok) -> dict:
+def pair_view(row: dict, ctx: dict | None, lt: LineTok, packer: str = "v1") -> dict:
     """Mirror encode.StudentTok: a pair that overflows keeps the option and a text_a prefix."""
-    text_a = text_a_for(row, ctx)
-    opts = option_texts_for(row["menu"], row.get("menu_detail"))
+    if packer == "option":
+        text_a, opts = option_packed(row, ctx)
+    else:
+        text_a, opts = text_a_for(row, ctx), option_texts_for(row["menu"], row.get("menu_detail"))
     lines = text_a.split("\n")
     lens = [lt.core_len(x) + (1 if i < len(lines) - 1 else 0) for i, x in enumerate(lines)]
     cum = np.cumsum(lens)
@@ -439,15 +445,106 @@ def pair_view(row: dict, ctx: dict | None, lt: LineTok) -> dict:
         head = ln.split(" ", 1)[0]
         if head.isupper() and head.isalpha():
             coin_line[head] = i
-    visible = []
+    visible, opt_tokens, opt_trimmed = [], [], []
     for opt in opts:
         b_len = lt.core_len(opt)
+        opt_tokens.append(b_len)
+        opt_trimmed.append(b_len > SEQ_LEN - 3 - 8)
         if a_len + b_len + 3 <= SEQ_LEN:
             visible.append(len(lines))
         else:
             budget = SEQ_LEN - 3 - min(b_len, SEQ_LEN - 3 - 8)
             visible.append(int(np.searchsorted(cum, budget, side="right")))
-    return {"lines": lines, "visible": visible, "coin_line": coin_line}
+    return {
+        "lines": lines,
+        "visible": visible,
+        "coin_line": coin_line,
+        "options": opts,
+        "option_tokens": opt_tokens,
+        "option_trimmed": opt_trimmed,
+    }
+
+
+def _packer_stats(rows: list[dict], contexts: dict[str, dict], lt: LineTok, packer: str) -> dict:
+    c: Counter = Counter()
+    by_style: dict[str, Counter] = defaultdict(Counter)
+    for r in rows:
+        view = pair_view(r, contexts.get(r.get("context_id") or ""), lt, packer)
+        lines, coin_line = view["lines"], view["coin_line"]
+        at = {
+            name: next((i for i, ln in enumerate(lines) if ln.startswith(prefix)), None)
+            for name, prefix in (("rules", "rules: "), ("me", "me: "), ("top1", "top1="))
+        }
+        det = r.get("menu_detail")
+        det_by = {str(d.get("label")): d for d in det if isinstance(d, dict)} if isinstance(det, list) else {}
+        me = (r.get("state") or {}).get("me")
+        gold_label = r["menu"][r["gold"]]
+        gold_coin = option_coin(gold_label, det_by.get(gold_label), _pos_coin(me if isinstance(me, dict) else {}))
+        st = r.get("bee_style") or "?"
+        for j, vis in enumerate(view["visible"]):
+            c["pairs"] += 1
+            by_style[st]["pairs"] += 1
+            c["text_a_trimmed"] += int(vis < len(lines))
+            by_style[st]["text_a_trimmed"] += int(vis < len(lines))
+            c["option_tokens"] += view["option_tokens"][j]
+            c["option_trimmed"] += int(view["option_trimmed"][j])
+            c["coin_lines"] += len(coin_line)
+            c["coin_lines_visible"] += sum(i < vis for i in coin_line.values())
+            if j != r["gold"]:
+                continue
+            for name, i in at.items():
+                if i is not None:
+                    for cc in (c, by_style[st]):
+                        cc[f"gold_has_{name}"] += 1
+                        cc[f"gold_{name}_cut"] += int(i >= vis)
+            if gold_coin:
+                c["gold_coin"] += 1
+                if packer == "option":
+                    seen = f"\n{gold_coin} " in view["options"][j] and not view["option_trimmed"][j]
+                else:
+                    seen = coin_line.get(gold_coin, len(lines)) < vis
+                c["gold_coin_seen"] += int(seen)
+
+    def share(num: str, den: str, cc: Counter = c) -> float | None:
+        return cc[num] / cc[den] if cc[den] else None
+
+    return {
+        "rows": len(rows),
+        "pairs": c["pairs"],
+        "mean_option_tokens": share("option_tokens", "pairs"),
+        "share_pairs_text_a_trimmed": share("text_a_trimmed", "pairs"),
+        "share_pairs_option_trimmed": share("option_trimmed", "pairs"),
+        "share_text_a_coin_lines_visible": share("coin_lines_visible", "coin_lines"),
+        "share_gold_pairs_seeing_gold_coin_numbers": share("gold_coin_seen", "gold_coin"),
+        "share_gold_pairs_rules_cut": share("gold_rules_cut", "gold_has_rules"),
+        "share_gold_pairs_me_cut": share("gold_me_cut", "gold_has_me"),
+        "share_gold_pairs_top1_cut": share("gold_top1_cut", "gold_has_top1"),
+        "by_style": {
+            st: {
+                "share_pairs_text_a_trimmed": share("text_a_trimmed", "pairs", v),
+                "share_gold_pairs_rules_cut": share("gold_rules_cut", "gold_has_rules", v),
+                "share_gold_pairs_top1_cut": share("gold_top1_cut", "gold_has_top1", v),
+            }
+            for st, v in sorted(by_style.items())
+        },
+    }
+
+
+def packer_truncation(parts: dict, contexts: dict[str, dict], n: int = 3000, seed: int = SEED) -> dict:
+    """Both packers on the same rows: what a seq128 pair still shows of the rules text, the position
+    line, the top1 hint and the gold option's own coin numbers. The gold coin is the one the option
+    acts on (menu_detail coin, ticker in the label, or the open position for hold/close/trim/add)."""
+    try:
+        lt = LineTok()
+    except ModuleNotFoundError:
+        return {"skipped": "tokenizers not installed"}
+    rec = receipt_rows(parts)
+    samples = {
+        "eval_natural": random.Random(seed).sample(parts["eval"], min(n, len(parts["eval"]))),
+        "eval_receipt": rec["eval"],
+        "eval_rules_receipt": rec["eval_rules"],
+    }
+    return {name: {p: _packer_stats(rows, contexts, lt, p) for p in PACKERS} for name, rows in samples.items()}
 
 
 def _truncation_sample(rows: list[dict], contexts: dict[str, dict], n: int, seed: int) -> dict:
@@ -566,6 +663,7 @@ def run(out_path: Path | None = None, sample_n: int = 3000) -> dict:
             "noise_table": noise_agreement(rows, sigmas=sig_pts),
         }
     out["representation"] = representation_audit(multi, data["contexts"], sample_n=sample_n)
+    out["representation"]["packer_truncation"] = packer_truncation(parts, data["contexts"], sample_n)
     out_path = out_path or (artifacts_dir() / "jev_ceiling.json")
     out_path.write_text(json.dumps(out, indent=2, allow_nan=False))
     return out

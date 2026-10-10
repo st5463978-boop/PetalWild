@@ -510,6 +510,38 @@ class CeilingTests(unittest.TestCase):
         self.assertAlmostEqual(always_hold_agreement(rec["eval"]), 5500 / 6000)
         self.assertAlmostEqual(always_hold_agreement(pool), 9000 / 9500)
 
+    def test_packer_stats_rules_and_gold_coin(self):
+        from jevh_trading.jev_ceiling import LineTok, _packer_stats
+
+        try:
+            lt = LineTok()
+        except (ModuleNotFoundError, FileNotFoundError):
+            self.skipTest("tokenizer missing")
+        cols = ["score", "r1h_pct", "r24h_pct", "fund_z", "oi1h_pct", "spread_bp"]
+        coins = ["BTC", "ETH", "SOL", "TIA", "DOGE", "PEPE", "NEAR", "ONDO"]
+        row = {
+            "bee_style": "boozy",
+            "context_id": "c1",
+            "menu": ["RIDE", "APE_TIA", "APE_NEAR"],
+            "menu_detail": [
+                {"label": "RIDE", "kind": "hold"},
+                {"label": "APE_TIA", "kind": "open", "coin": "TIA", "side": "long"},
+                {"label": "APE_NEAR", "kind": "open", "coin": "NEAR", "side": "long"},
+            ],
+            "gold": 2,
+            "state": {
+                "me": {"pos": "long BTC", "usd": 50},
+                "top1": "TIA",
+                "coins": {"cols": cols, "rows": {c: [0.1 * i, 1.0 + i, -2.0 * i, 0.5, 3.0, 1.0] for i, c in enumerate(coins)}},
+            },
+        }
+        ctx = {"c1": {"rules_id": "boozy-x", "rules": "only ever trade the top coin by score " * 6}}
+        v1 = _packer_stats([row], ctx, lt, "v1")
+        opt = _packer_stats([row], ctx, lt, "option")
+        self.assertEqual(v1["share_gold_pairs_rules_cut"], 0.0)
+        self.assertEqual(opt["share_gold_pairs_seeing_gold_coin_numbers"], 1.0)
+        self.assertGreater(opt["mean_option_tokens"], v1["mean_option_tokens"])
+
 
 class StructuredFeatureTests(unittest.TestCase):
     def _bizzy_row(self):
