@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "meta": {
+    "name": "Hedge Hollow",
+    "day": 3,
+    "coins": 40,
+    "saved_at": "2026-09-25T12:00:00"
+  },
+  "state": {
+    "name": "Hedge Hollow",
+    "clock": {"day": 3, "minute": 610.0, "scale": 6.0, "weather": "golden"},
+    "economy": {
+      "coins": 40,
+      "selected_seed": "meadowbell_seed",
+      "bag": {
+        "meadowbell_seed": 6,
+        "fertilizer": 2,
+        "peach": 1
+      }
+    },
+    "trust": {
+      "levels": {"lumen": 0, "bram": 1, "nessa": 0},
+      "audit": []
+    },
+    "soil": [],
+    "ecology": {
+      "states": {},
+      "actors": [
+        {"species": "bellhelp", "life": "resident", "bond": 0.4, "position": [1.2, 0.0, -3.4]}
+      ]
+    },
+    "extra_note": "keep extra keys"
+  }
+}

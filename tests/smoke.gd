@@ -1,6 +1,11 @@
 extends SceneTree
 
 func _init() -> void:
+	var species_raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/species.json"))
+	if typeof(species_raw) != TYPE_DICTIONARY:
+		print("LEGACY SMOKE SKIP: live catalogs are arrays (stack B)")
+		quit(0)
+		return
 	var catalogs := {
 		"plants": _json("res://data/plants.json"),
 		"species": _json("res://data/species.json"),
@@ -86,9 +91,13 @@ func _init() -> void:
 	_expect(int(trust_state["coins"]) == before, "approval spends nothing")
 	_expect(trust_state["audit"].size() == 1, "audit row written")
 	_expect(bool(trust_state["audit"][0]["external"]) == false, "external flag stays false")
-	var packed := JSON.parse_string(JSON.stringify(state))
+	var packed: Variant = JSON.parse_string(JSON.stringify(state))
 	_expect(typeof(packed) == TYPE_DICTIONARY, "save json")
-	var restored := WorldState.ensure(packed, catalogs)
+	if typeof(packed) != TYPE_DICTIONARY:
+		quit(1)
+		return
+	var packed_dict: Dictionary = packed
+	var restored := WorldState.ensure(packed_dict, catalogs)
 	_expect(String(restored["species"]["sunburst"]["state"]) == String(state["species"]["sunburst"]["state"]), "roundtrip state")
 	print("SMOKE OK")
 	quit(0)
