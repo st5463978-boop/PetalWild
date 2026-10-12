@@ -66,8 +66,8 @@ System-1 choices go to JEV-H on Scott's Pi (`piai-1`, Hailo-10H), port 8771. Tha
 
 Addresses:
 
-- Discovery: optional `HAILO_DECIDE_DISCOVERY_URL` = `https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest`. Take the last line that starts with `https://`. That is the base. Do not commit the topic name. If unset, `tools/hailo_decide_url.py` still uses an in-tree default.
-- Tailscale fallback: `http://<TAILSCALE_IP>:8771/v1/decide` (MagicDNS `http://piai-1:8771/v1/decide` is the same host). Look up the CGNAT address with `tailscale status`; do not commit it. Device name `piai-1`. Port `8771`.
+- Discovery: `HAILO_DECIDE_DISCOVERY_URL` = `https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest`. Take the last line that starts with `https://`. That is the base. Do not commit the topic name. Unset with no `HAILO_DECIDE_URL` is a hard error.
+- Direct URL: `HAILO_DECIDE_URL` (example MagicDNS: `http://piai-1:8771/v1/decide`). Look up a Tailscale CGNAT address with `tailscale status`; do not commit it. Device name `piai-1`. Port `8771`.
 - Health: `GET <base>/health` (also `/v1/health`). Expect `ok: true`.
 - Decide: `POST <base>/v1/decide` (also `/decide`). Body `{"question": "...", "options": ["...", "..."]}` with at least two options. Optional `context`, `agent`, `kind` / `question_kind` / `category`, `qtype`. The client tries `/decide` then `/v1/decide`.
 - A health check alone is not proof. A real decide must return a choice.
@@ -77,9 +77,9 @@ Addresses:
 URL resolution (`tools/hailo_decide_url.py`), wired into `decide_url()` and into a single retry inside `post_decide()`:
 
 1. If `HAILO_DECIDE_URL` is set on purpose and that origin is healthy, use it.
-2. Else fetch `HAILO_DECIDE_DISCOVERY_URL` if set, otherwise the in-tree discovery default, and take the last `https://` line. Health-check `<base>/health` (or `/v1/health`). If ok, set `HAILO_DECIDE_URL` to `<base>/v1/decide`.
+2. Else if `HAILO_DECIDE_DISCOVERY_URL` is set, fetch it and take the last `https://` line. Health-check `<base>/health` (or `/v1/health`). If ok, set `HAILO_DECIDE_URL` to `<base>/v1/decide`.
 3. Else keep the existing `HAILO_DECIDE_URL`.
-4. Else the in-tree Tailscale fallback `http://<TAILSCALE_IP>:8771/v1/decide`.
+4. Else raise `DecideUrlError` naming both env vars. There is no in-tree Tailscale or ntfy default.
 
 Startup: `decide_url()` and `service.py` `main()`. After a decide failure: `resolve_decide_url(force=True)` and retry once if the origin changed. Shell form: `eval "$(python3 tools/hailo_decide_url.py --export)"`.
 
@@ -87,7 +87,7 @@ Related env names, values not recorded here: `HAILO_DECIDE_URL`, `HAILO_DECIDE_D
 
 Tailscale on a new VM: `tailscale` is installed at `/usr/bin/tailscale`. This cloud VM was already logged into the tailnet (`tailscale status` shows this node and `piai-1`; use that command for the CGNAT address and do not write it into git). No Tailscale auth-key env var was present in the process environment (no `TS_AUTHKEY`). Do not invent one. If `tailscale status` shows the VM logged out, join with `tailscale up` using Scott's tailnet auth; the secret name was not available in this environment. A connmark iptables warning on `tailscale status` (`unknown option "--nfmask"`) did not block HTTP to the Pi.
 
-Quick-tunnel hosts are perishable. After a Pi reboot, rediscover. Do not use port 8766 or the old Qwen3 tunnel hosts. A long decide can return HTTP 502 at about 20s from both the tunnel and Tailscale while `/health` is still 200. Retry the same body on Tailscale `/v1/decide`. Do not take `options[0]` for an HTTP 502. The TimeoutError rule is different: on `TimeoutError` only, use `options[0]` once and append a line to `tools/orchestration/runtime/decide-receipts.jsonl`. That file is tracked even though `tools/orchestration/runtime/` is gitignored; `git add` of the directory fails, `git add` of the file works when it is already tracked.
+Quick-tunnel hosts are perishable. After a Pi reboot, rediscover. Do not use port 8766 or the old Qwen3 tunnel hosts. A long decide can return HTTP 502 at about 20s from both the tunnel and Tailscale while `/health` is still 200. Retry the same body after setting `HAILO_DECIDE_URL` to the Tailscale host from `tailscale status`. Do not take `options[0]` for an HTTP 502. The TimeoutError rule is different: on `TimeoutError` only, use `options[0]` once and append a line to `tools/orchestration/runtime/decide-receipts.jsonl`. That file is tracked even though `tools/orchestration/runtime/` is gitignored; `git add` of the directory fails, `git add` of the file works when it is already tracked.
 
 Commit messages for a Hailo world change name the piece in the subject and put index, latency, raw, model, shuffle, and presented_index in the body. No AI attribution trailer.
 
@@ -138,7 +138,7 @@ WIP that was not on `main`: Godot `.import` sidecars for six screenshots and `.u
 - A short doc sentence such as "A short meadowbell at the east end of that strip..." is shared by many paces. Anchor the replace on the unique preceding sentence or you will rewrite the whole road.
 - Smoke checks are single very long lines. Insert the new count beside the previous piece's count for both the hidden (`!= 0`) and filed (`!= 1`) asserts. There are four lines.
 - Count functions must keep the x lower bound (`pos.x < min` returns -1) and the north-edge test. Dropping either makes the smoke pass a stone that sits in the wrong place.
-- `resolve_decide_url(force=True)` will keep a tunnel whose `/health` is 200 even when `/v1/decide` is 502. If the retry is still 502, call Tailscale `http://<TAILSCALE_IP>:8771/v1/decide` directly (MagicDNS `http://piai-1:8771/v1/decide` is the same host).
+- `resolve_decide_url(force=True)` will keep a tunnel whose `/health` is 200 even when `/v1/decide` is 502. If the retry is still 502, set `HAILO_DECIDE_URL` to the Tailscale host from `tailscale status` (MagicDNS example: `http://piai-1:8771/v1/decide`) and retry. Do not hardcode the CGNAT address.
 - `index` wins over `raw`.
 - Nightlantern bulbs must not be committed clipped to 255.
 - Do not generate images in this repo.

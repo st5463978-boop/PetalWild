@@ -2,7 +2,7 @@
 
 Directory ownership for parallel work. Stay inside the owned paths. Integration (`PETAL_00`) is the only lane that edits `project.godot`, `scenes/main.tscn`, and `scripts/main.gd`.
 
-The Hailo foreman in `tools/orchestration/` is studio tooling. It must not be imported by the game. That directory is owned by the executive lane, not by a creature or town agent. System-1 choices call JEV-H on the Pi (port 8771, not the Qwen3 chat decide service on 8766). `HAILO_DECIDE_URL` overrides when set. When it is unset, discovery uses `HAILO_DECIDE_DISCOVERY_URL` if set (`https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest`), otherwise the in-tree default, then Tailscale `http://<TAILSCALE_IP>:8771/v1/decide`. MagicDNS `http://piai-1:8771/v1/decide` is the same host. Do not commit the topic or CGNAT address. See `tools/orchestration/STATUS.md`.
+The Hailo foreman in `tools/orchestration/` is studio tooling. It must not be imported by the game. That directory is owned by the executive lane, not by a creature or town agent. System-1 choices call JEV-H on the Pi (port 8771, not the Qwen3 chat decide service on 8766). Set `HAILO_DECIDE_URL` (example MagicDNS: `http://piai-1:8771/v1/decide`) or `HAILO_DECIDE_DISCOVERY_URL` (`https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest`). Missing both is an error; there is no in-tree Tailscale or ntfy default. Do not commit the topic or CGNAT address. See `tools/orchestration/STATUS.md`.
 
 | Lane | Owns | Does not touch |
 | --- | --- | --- |

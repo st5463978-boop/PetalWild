@@ -3,24 +3,29 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT.parent))
 
 from petal_dispatch.hailo_backend import (  # noqa: E402
-    DEFAULT_DECIDE_URL,
     DECIDE_MODEL,
-    MAGICDNS_DECIDE_URL,
     choice_from_payload,
     post_decide,
     question_for,
 )
-from hailo_decide_url import DISCOVERY_URL, TAILSCALE_DEFAULT  # noqa: E402
+from hailo_decide_url import DecideUrlError, resolve_decide_url  # noqa: E402
 from petal_dispatch.router import Backend, decide, extract_json  # noqa: E402
 from petal_dispatch.schema import parse_decision, prompt_for  # noqa: E402
+
+
+def _env_without(*names: str) -> dict[str, str]:
+    return {k: v for k, v in os.environ.items() if k not in names}
 
 
 def _good(**overrides) -> str:
@@ -134,14 +139,59 @@ class RouterTests(unittest.TestCase):
         self.assertIn("build_failed", text)
         self.assertNotIn("PETAL_03_JELLY", text)
 
-    def test_decide_defaults_are_jevh(self) -> None:
-        self.assertIn("jevh-decide-05923aed092556ed", DISCOVERY_URL)
-        self.assertIn(":8771/", TAILSCALE_DEFAULT)
-        self.assertNotIn(":8766", TAILSCALE_DEFAULT)
-        self.assertIn(":8771/", DEFAULT_DECIDE_URL)
-        self.assertNotIn(":8766", DEFAULT_DECIDE_URL)
-        self.assertIn(":8771/", MAGICDNS_DECIDE_URL)
+    def test_decide_model_is_jevh_without_hardcoded_hosts(self) -> None:
+        import hailo_decide_url as hdu
+        from petal_dispatch import hailo_backend as hb
+
         self.assertEqual(DECIDE_MODEL, "JEV-H")
+        self.assertFalse(hasattr(hdu, "TAILSCALE_DEFAULT"))
+        self.assertFalse(hasattr(hdu, "DISCOVERY_URL"))
+        self.assertFalse(hasattr(hb, "DEFAULT_DECIDE_URL"))
+        self.assertFalse(hasattr(hb, "MAGICDNS_DECIDE_URL"))
+        for path in (
+            Path(__file__).resolve().parents[2] / "hailo_decide_url.py",
+            ROOT / "petal_dispatch" / "hailo_backend.py",
+            Path(__file__).resolve(),
+        ):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"100\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+            self.assertNotRegex(text, r"ntfy\.sh/[A-Za-z0-9][A-Za-z0-9._-]{8,}")
+
+    def test_resolve_fails_when_env_unset(self) -> None:
+        env = _env_without("HAILO_DECIDE_URL", "HAILO_DECIDE_DISCOVERY_URL")
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(DecideUrlError) as ctx:
+                resolve_decide_url()
+        msg = str(ctx.exception)
+        self.assertIn("HAILO_DECIDE_URL", msg)
+        self.assertIn("HAILO_DECIDE_DISCOVERY_URL", msg)
+        self.assertIn("no in-tree", msg)
+
+    def test_resolve_uses_hailo_decide_url_when_healthy(self) -> None:
+        url = "http://piai-1:8771/v1/decide"
+        env = _env_without("HAILO_DECIDE_DISCOVERY_URL")
+        env["HAILO_DECIDE_URL"] = url
+        with patch.dict(os.environ, env, clear=True):
+            with patch("hailo_decide_url._healthy", return_value=True):
+                self.assertEqual(resolve_decide_url(), url)
+        self.assertIn(":8771/", url)
+        self.assertNotIn(":8766", url)
+
+    def test_resolve_uses_discovery_when_url_unset(self) -> None:
+        env = _env_without("HAILO_DECIDE_URL")
+        env["HAILO_DECIDE_DISCOVERY_URL"] = "https://example.test/discovery"
+        with patch.dict(os.environ, env, clear=True):
+            with patch("hailo_decide_url.discover_base", return_value="https://tunnel.example"):
+                with patch("hailo_decide_url._healthy", return_value=True):
+                    self.assertEqual(resolve_decide_url(), "https://tunnel.example/v1/decide")
+
+    def test_resolve_fails_when_discovery_misses_and_url_unset(self) -> None:
+        env = _env_without("HAILO_DECIDE_URL")
+        env["HAILO_DECIDE_DISCOVERY_URL"] = "https://example.test/discovery"
+        with patch.dict(os.environ, env, clear=True):
+            with patch("hailo_decide_url.discover_base", return_value=None):
+                with self.assertRaises(DecideUrlError):
+                    resolve_decide_url()
 
     def test_post_decide_refreshes_once_when_origin_changes(self) -> None:
         from unittest.mock import patch

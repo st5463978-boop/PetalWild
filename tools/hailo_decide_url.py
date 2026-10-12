@@ -1,20 +1,37 @@
-"""Resolve HAILO_DECIDE_URL from the Pi's public JEV-H discovery topic (ntfy.sh).
+"""Resolve HAILO_DECIDE_URL from env, then the ntfy discovery topic.
 
 JEV-H is port 8771. Port 8766 is the old Qwen3 chat decide service — do not use it.
 Do not hardcode a trycloudflare host; the public base changes when the tunnel restarts.
+Do not commit a Tailscale IP or ntfy topic.
 
-Order: discovery (live tunnel, /health-checked) -> existing env HAILO_DECIDE_URL -> Tailscale default.
-HAILO_DECIDE_URL overrides when set on purpose and that origin is healthy.
+Order: existing env HAILO_DECIDE_URL (health-checked) -> HAILO_DECIDE_DISCOVERY_URL
+(live tunnel, /health-checked) -> existing env HAILO_DECIDE_URL. If both env vars
+are unset, or discovery fails and HAILO_DECIDE_URL is unset, raise DecideUrlError.
 Usage:  eval "$(python3 tools/hailo_decide_url.py --export)"   # at startup
         from hailo_decide_url import resolve_decide_url; url = resolve_decide_url(force=True)  # on failure
 """
 import json, os, sys, urllib.request
 
-DISCOVERY_URL = os.environ.get(
-    "HAILO_DECIDE_DISCOVERY_URL",
-    "https://ntfy.sh/jevh-decide-05923aed092556ed/raw?poll=1&since=latest",
+MISSING_ENV = (
+    "Cannot resolve Hailo decide URL: set HAILO_DECIDE_URL "
+    "(for example http://piai-1:8771/v1/decide from MagicDNS or tailscale status) "
+    "or HAILO_DECIDE_DISCOVERY_URL "
+    "(https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest). "
+    "There is no in-tree Tailscale or ntfy default."
 )
-TAILSCALE_DEFAULT = "http://100.126.22.71:8771/v1/decide"
+
+
+class DecideUrlError(RuntimeError):
+    """HAILO_DECIDE_URL / HAILO_DECIDE_DISCOVERY_URL missing or unusable."""
+
+
+def _env(name: str) -> str:
+    return os.environ.get(name, "").strip()
+
+
+def discovery_url() -> str:
+    """Return HAILO_DECIDE_DISCOVERY_URL, or empty if unset."""
+    return _env("HAILO_DECIDE_DISCOVERY_URL")
 
 
 def _get(url, timeout=15):
@@ -36,8 +53,11 @@ def _healthy(base):
 
 def discover_base():
     """Return the newest published tunnel base URL (no path) or None."""
+    url = discovery_url()
+    if not url:
+        return None
     try:
-        _, text = _get(DISCOVERY_URL)
+        _, text = _get(url)
         lines = [l.strip() for l in text.splitlines() if l.strip().startswith("https://")]
         return lines[-1].rstrip("/") if lines else None
     except Exception:
@@ -45,7 +65,7 @@ def discover_base():
 
 
 def resolve_decide_url(force=False):
-    env = os.environ.get("HAILO_DECIDE_URL", "").strip()
+    env = _env("HAILO_DECIDE_URL")
     if env and not force and _healthy(env.split("/v1/decide")[0].split("/decide")[0]):
         return env
     base = discover_base()
@@ -54,11 +74,15 @@ def resolve_decide_url(force=False):
     elif env:
         url = env
     else:
-        url = TAILSCALE_DEFAULT
+        raise DecideUrlError(MISSING_ENV)
     os.environ["HAILO_DECIDE_URL"] = url
     return url
 
 
 if __name__ == "__main__":
-    url = resolve_decide_url(force=True)
+    try:
+        url = resolve_decide_url(force=True)
+    except DecideUrlError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(1)
     print(f"export HAILO_DECIDE_URL={url}" if "--export" in sys.argv else url)
