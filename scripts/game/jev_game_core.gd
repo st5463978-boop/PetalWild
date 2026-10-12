@@ -39,7 +39,7 @@ func discover() -> String:
 
 func set_configured_url(url: String) -> bool:
 	var cleaned := url.strip_edges()
-	if _looks_like_ntfy(cleaned):
+	if looks_like_ntfy(cleaned):
 		push_error("JevGameCore refuses ntfy discovery URLs; set an explicit game-core URL.")
 		configured_url = ""
 		return false
@@ -141,14 +141,19 @@ func _finish_offline(ticket: int, req: Dictionary, paid_approved: bool) -> void:
 	decided.emit(ticket, body)
 
 
-func _looks_like_ntfy(url: String) -> bool:
-	if url == "":
+static func looks_like_ntfy(url: String) -> bool:
+	var lower := url.strip_edges().to_lower()
+	if lower == "":
 		return false
-	var lower := url.to_lower()
-	if lower.find("ntfy.sh") >= 0:
-		return true
-	if lower.find("ntfy.") >= 0:
-		return true
 	if lower.begins_with("ntfy:"):
+		return true
+	var rest := lower
+	var scheme := rest.find("://")
+	if scheme >= 0:
+		rest = rest.substr(scheme + 3)
+	var host := rest.split("/")[0].split(":")[0]
+	if host == "ntfy.sh" or host.ends_with(".ntfy.sh"):
+		return true
+	if host == "ntfy" or host.begins_with("ntfy."):
 		return true
 	return false

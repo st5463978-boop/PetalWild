@@ -13,6 +13,8 @@ func _initialize() -> void:
 	t.expect(core.discover() == "", "discover is a no-op until a URL is set")
 	t.expect(core.set_configured_url("http://127.0.0.1:8771"), "explicit URL is accepted")
 	t.expect(core.configured_url == "http://127.0.0.1:8771", "configured URL is stored")
+	t.expect(core.set_configured_url("http://not-ntfy.invalid:8771"), "host names that only contain ntfy as a substring are allowed")
+	t.expect(core.configured_url == "http://not-ntfy.invalid:8771", "substring ntfy in a host is stored")
 	t.expect(not core.set_configured_url("https://ntfy.sh/jevh-decide-05923aed092556ed/raw"), "ntfy discovery URL is refused")
 	t.expect(core.configured_url == "", "refused ntfy URL is not stored")
 	t.expect(core.set_configured_url("http://127.0.0.1:8771"), "explicit URL can be set again")

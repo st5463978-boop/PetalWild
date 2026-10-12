@@ -113,7 +113,10 @@ func meta(slot: int) -> Dictionary:
 	var text := FileAccess.get_file_as_string(path_for(slot))
 	if text.strip_edges() == "":
 		return {}
-	var parsed: Variant = JSON.parse_string(text)
+	var parser := JSON.new()
+	if parser.parse(text) != OK:
+		return {}
+	var parsed: Variant = parser.data
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
 	var header: Variant = parsed.get("meta", {})

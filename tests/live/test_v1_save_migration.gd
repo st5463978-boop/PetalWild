@@ -116,3 +116,13 @@ func _write_roundtrip(t: PetalAssert) -> void:
 		t.expect(int(parsed.get("version", 0)) == 2, "new writes are version 2")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
+	var empty_slot := 92
+	var empty_path := str(_save().call("path_for", empty_slot))
+	DirAccess.make_dir_recursive_absolute("user://saves")
+	var empty := FileAccess.open(empty_path, FileAccess.WRITE)
+	if empty != null:
+		empty.store_string("")
+	var empty_loaded: Variant = _save().call("read_slot", empty_slot)
+	t.expect(typeof(empty_loaded) == TYPE_DICTIONARY and (empty_loaded as Dictionary).is_empty(), "empty slot file is refused")
+	if FileAccess.file_exists(empty_path):
+		DirAccess.remove_absolute(empty_path)

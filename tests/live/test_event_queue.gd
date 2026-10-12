@@ -55,6 +55,10 @@ func _recurrence(t: PetalAssert) -> void:
 	sim.skip_to(100.0)
 	t.expect(hits[0] == 10, "recurring event fires floor(span / period) times")
 	t.expect(is_equal_approx(sim.now(), 100.0), "skip_to lands on absolute minutes")
+	sim.skip_to(1500.0)
+	t.expect(is_equal_approx(sim.now(), 1500.0), "absolute minutes wrap into the next day")
+	t.expect(int(_clock().get("day")) == 2, "day 2 starts at 1440")
+	t.expect(is_equal_approx(float(_clock().get("minute")), 60.0), "minute 60 on day 2")
 
 
 func _cancel(t: PetalAssert) -> void:
