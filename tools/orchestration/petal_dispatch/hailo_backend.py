@@ -2,10 +2,11 @@
 
 High-frequency choices go to JEV-H on the Pi (port 8771), not the Qwen3
 chat decide service on port 8766. `HAILO_DECIDE_URL` is resolved at
-startup from the ntfy discovery topic (health-checked tunnel), then the
-existing env value, then the Pi on Tailscale. A decide failure resolves
-again and retries once if the origin changed. This module does not call
-`/v1/chat/completions`. It does not download or recompile HEFs.
+startup from the env value (health-checked), then `HAILO_DECIDE_DISCOVERY_URL`
+(health-checked tunnel). Missing both is an error; there is no Tailscale or
+ntfy default. A decide failure resolves again and retries once if the origin
+changed. This module does not call `/v1/chat/completions`. It does not
+download or recompile HEFs.
 """
 
 from __future__ import annotations
@@ -26,10 +27,9 @@ from petal_dispatch.discover import discover
 from petal_dispatch.router import Backend
 from petal_dispatch.schema import OWNER_ACTION, OWNERS
 
-# Pi Tailscale JEV-H. MagicDNS http://piai-1:8771/v1/decide is the same service.
-# Port 8766 is the old Qwen3 chat decide service.
-DEFAULT_DECIDE_URL = "http://100.126.22.71:8771/v1/decide"
-MAGICDNS_DECIDE_URL = "http://piai-1:8771/v1/decide"
+# Port 8766 is the old Qwen3 chat decide service. Set HAILO_DECIDE_URL
+# (MagicDNS example: http://piai-1:8771/v1/decide) or HAILO_DECIDE_DISCOVERY_URL.
+# There is no in-tree Tailscale IP or ntfy topic.
 DECIDE_MODEL = "JEV-H"
 DECIDE_TIMEOUT = 75.0
 
@@ -78,7 +78,7 @@ def list_models(base_url: str, timeout: float = 2.0) -> list[str]:
 
 
 def decide_url() -> str:
-    """Startup resolve: discovery, then existing HAILO_DECIDE_URL, then Tailscale."""
+    """Startup resolve: HAILO_DECIDE_URL, then HAILO_DECIDE_DISCOVERY_URL."""
     return resolve_decide_url().rstrip("/")
 
 

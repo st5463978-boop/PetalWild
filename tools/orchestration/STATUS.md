@@ -2,22 +2,22 @@
 
 System-1 routes call JEV-H on the Pi Hailo-10H (port 8771). That is the small Hailo student, not the Qwen3 chat decide service on port 8766.
 
-- Discovery: `https://ntfy.sh/jevh-decide-05923aed092556ed/raw?poll=1&since=latest` (last `https://` line is the live tunnel base). Override: `HAILO_DECIDE_DISCOVERY_URL`
-- `HAILO_DECIDE_URL` overrides when set on purpose
-- Tailscale fallback: `http://100.126.22.71:8771/v1/decide`
-- MagicDNS equivalent: `http://piai-1:8771/v1/decide`
+- Discovery: `HAILO_DECIDE_DISCOVERY_URL` = `https://ntfy.sh/<NTFY_TOPIC>/raw?poll=1&since=latest` (last `https://` line is the live tunnel base). Do not commit the topic name.
+- `HAILO_DECIDE_URL` overrides when set on purpose (example MagicDNS: `http://piai-1:8771/v1/decide`). Look up a Tailscale address with `tailscale status`; do not commit it.
+- Missing both env vars is a hard error. There is no in-tree Tailscale or ntfy default.
+- Git history still contains the old CGNAT address and ntfy topic, so rotate the topic and point `HAILO_DECIDE_DISCOVERY_URL` at the new one.
 - Health: `GET /health` (also `/v1/health`)
 - Choice: `POST /v1/decide` (also `/decide`) with `{"question","options"}` (at least two options)
 - Client timeout on decide: 75s
 - Model: JEV-H on Hailo-10H
 - No auth
-- Do not hardcode a trycloudflare host; the public base changes when the tunnel restarts
+- Do not hardcode a trycloudflare host; the public base changes when the tunnel restarts. Do not commit the ntfy topic.
 
 A health check alone is not proof. A real decide must return a choice.
 
 ## Smoke (2026-09-29)
 
-Caller with no `HAILO_DECIDE_URL`. Discovery from the jevh-decide ntfy topic, then a real `POST /v1/decide`.
+Caller with `HAILO_DECIDE_DISCOVERY_URL` set and no `HAILO_DECIDE_URL`. Discovery from the ntfy topic, then a real `POST /v1/decide`.
 
 | Call | Result | Latency |
 | --- | --- | --- |
