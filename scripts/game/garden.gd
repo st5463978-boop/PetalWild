@@ -52,9 +52,13 @@ var bird_day := -1
 var bee_day := -1
 var bee_note_day := -1
 var bee_flower := Vector3.ZERO
+var sim := SimClock.new()
+var jev_core := JevGameCore.new()
 
 func _ready() -> void:
 	ThemeKit.boot()
+	sim.clock_node = Clock
+	jev_core.set_configured_url(Settings.jev_game_core_url)
 	_build()
 	if SaveGame.pending_state != null:
 		apply_state(SaveGame.pending_state)
@@ -141,6 +145,7 @@ func _process(delta: float) -> void:
 		_hold_bells(minutes / 60.0)
 		_browse(minutes / 60.0)
 		_bee_growth(minutes / 60.0)
+		sim.advance(minutes)
 	var world := world_snapshot()
 	if minutes > 0.0:
 		_ring_bells(world)
@@ -5823,10 +5828,17 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
+		"sim": {
+			"schema": 1,
+			"clock": sim.to_state(),
+		},
 	}
 
 func apply_state(data: Dictionary) -> void:
 	Clock.apply_state(data.get("clock", {}))
+	var sim_data: Variant = data.get("sim", {})
+	if typeof(sim_data) == TYPE_DICTIONARY:
+		sim.apply_state(sim_data.get("clock", {}))
 	Economy.apply_state(data.get("economy", {}))
 	Trust.apply_state(data.get("trust", {}))
 	soil.apply_state(data.get("soil", []))

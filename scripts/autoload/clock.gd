@@ -33,6 +33,18 @@ func _process(delta: float) -> void:
 func hour() -> float:
 	return minute / 60.0
 
+
+func absolute_minutes() -> float:
+	return float(day - 1) * 24.0 * 60.0 + minute
+
+
+func set_from_absolute(value: float) -> void:
+	var wrapped := maxf(value, 0.0)
+	var day_span := 24.0 * 60.0
+	day = int(wrapped / day_span) + 1
+	minute = wrapped - float(day - 1) * day_span
+	weather = weather_for(hour(), day)
+
 func clock_label() -> String:
 	var h := hour()
 	var name := "Night"

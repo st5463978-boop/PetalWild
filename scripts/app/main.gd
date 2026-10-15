@@ -153,6 +153,20 @@ func _show_settings() -> void:
 		Settings.save_settings()
 	)
 	_box().add_child(calm)
+	_box().add_child(ThemeKit.label("JEV game core URL. Explicit only. Blank is offline. Paid calls show the cost and wait.", 14))
+	var core_url := LineEdit.new()
+	core_url.placeholder_text = "http://127.0.0.1:8771"
+	core_url.text = Settings.jev_game_core_url
+	core_url.text_changed.connect(func(v):
+		var core := JevGameCore.new()
+		if core.set_configured_url(str(v)):
+			Settings.jev_game_core_url = core.configured_url
+		else:
+			Settings.jev_game_core_url = ""
+			core_url.text = ""
+		Settings.save_settings()
+	)
+	_box().add_child(core_url)
 	_box().add_child(ThemeKit.label("Right-drag orbits. Wheel zooms. WASD pans. H picks a creature up.", 14))
 
 func _show_licences() -> void:
