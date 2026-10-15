@@ -1,0 +1,385 @@
+{
+  "data": {
+    "labels": {
+      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/labels_c563.jsonl",
+      "rows": 4220,
+      "bytes": 2671732,
+      "sha256": "b2cb4b2621a32307e2d8fb29abfbcf389de72aadc0dbe673f8e1438587bd4430"
+    },
+    "decide": {
+      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/decide_questions_dedup_e594.jsonl",
+      "rows": 9402,
+      "bytes": 5640555,
+      "sha256": "5c61b3aa54c2368c933c7b08ff2341a7707b2216385d7b89d70b03f87f7934f5"
+    },
+    "lane_bank": {
+      "path": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_lane_bank_128a.jsonl",
+      "rows": 197,
+      "bytes": 106496,
+      "sha256": "be0268a783f1225f0e5cf92179c1248a93054af0f8d209b1a691b262c5207e09"
+    },
+    "lane_n": 197
+  },
+  "split": {
+    "train": {
+      "rows": 3287,
+      "unique_questions": 3285,
+      "nopt": {
+        "2": 823,
+        "3": 4,
+        "4": 2460
+      },
+      "yesno": 9,
+      "binary": 823,
+      "multi": 2464
+    },
+    "eval": {
+      "rows": 823,
+      "unique_questions": 823,
+      "nopt": {
+        "6": 1,
+        "2": 206,
+        "3": 1,
+        "4": 615
+      },
+      "yesno": 3,
+      "binary": 206,
+      "multi": 617
+    },
+    "eval_frac_questions": 0.20034079844206426,
+    "leakage_questions": 0
+  },
+  "recipe": {
+    "backbone": "jhu-clsp/ettin-encoder-150m",
+    "seq_len": 128,
+    "export_seq256": true,
+    "freeze_layers": 10,
+    "epochs": 2,
+    "lr": 2e-05,
+    "head_lr": 0.0001,
+    "gold_weight": 1.0,
+    "soft_weight": 0.3,
+    "seed": 42,
+    "eval_frac": 0.2,
+    "params_total": 149605633,
+    "params_trainable": 60772609,
+    "n_soft_train": 2500,
+    "cpu": 4,
+    "smoke": false
+  },
+  "train": {
+    "steps": 3947,
+    "epochs_ran": 1,
+    "stop_reason": "max_train_minutes=75.0",
+    "best_eval_acc": 0.7569866342648846,
+    "log": [
+      {
+        "epoch": 1,
+        "train_loss": 0.7301612965853731,
+        "steps": 2253,
+        "eval": {
+          "overall": {
+            "split": "all",
+            "n": 823,
+            "accuracy": 0.7569866342648846,
+            "teacher_accuracy": 0.4580801944106926,
+            "teacher_n": 823,
+            "beats_teacher": true,
+            "confident_mistakes": 26,
+            "confident_mistake_rate": 0.031591737545565005,
+            "ece": 0.07115136132205531,
+            "mean_confidence": 0.6977117649332721
+          },
+          "binary_2way": {
+            "split": "binary_2way",
+            "n": 206,
+            "accuracy": 0.8592233009708737,
+            "teacher_accuracy": 0.9320388349514563,
+            "teacher_n": 206,
+            "beats_teacher": false,
+            "confident_mistakes": 13,
+            "confident_mistake_rate": 0.06310679611650485,
+            "ece": 0.08415292970185141,
+            "mean_confidence": 0.8692592142276394
+          },
+          "multi_choice": {
+            "split": "multi_choice",
+            "n": 617,
+            "accuracy": 0.7228525121555915,
+            "teacher_accuracy": 0.29983792544570503,
+            "teacher_n": 617,
+            "beats_teacher": true,
+            "confident_mistakes": 13,
+            "confident_mistake_rate": 0.02106969205834684,
+            "ece": 0.08262598046027667,
+            "mean_confidence": 0.6404366035805336
+          },
+          "literal_yesno": {
+            "split": "literal_yesno",
+            "n": 3,
+            "accuracy": 1.0,
+            "teacher_accuracy": 0.0,
+            "teacher_n": 3,
+            "beats_teacher": true,
+            "confident_mistakes": 0,
+            "confident_mistake_rate": 0.0,
+            "ece": 0.47725900014241535,
+            "mean_confidence": 0.5227409998575846
+          }
+        }
+      }
+    ],
+    "train_seconds": 4500.862777709961
+  },
+  "metrics": {
+    "overall": {
+      "split": "all",
+      "n": 823,
+      "accuracy": 0.7569866342648846,
+      "teacher_accuracy": 0.4580801944106926,
+      "teacher_n": 823,
+      "beats_teacher": true,
+      "confident_mistakes": 26,
+      "confident_mistake_rate": 0.031591737545565005,
+      "ece": 0.07115136132205531,
+      "mean_confidence": 0.6977117649332721
+    },
+    "binary_2way": {
+      "split": "binary_2way",
+      "n": 206,
+      "accuracy": 0.8592233009708737,
+      "teacher_accuracy": 0.9320388349514563,
+      "teacher_n": 206,
+      "beats_teacher": false,
+      "confident_mistakes": 13,
+      "confident_mistake_rate": 0.06310679611650485,
+      "ece": 0.08415292970185141,
+      "mean_confidence": 0.8692592142276394
+    },
+    "multi_choice": {
+      "split": "multi_choice",
+      "n": 617,
+      "accuracy": 0.7228525121555915,
+      "teacher_accuracy": 0.29983792544570503,
+      "teacher_n": 617,
+      "beats_teacher": true,
+      "confident_mistakes": 13,
+      "confident_mistake_rate": 0.02106969205834684,
+      "ece": 0.08262598046027667,
+      "mean_confidence": 0.6404366035805336
+    },
+    "literal_yesno": {
+      "split": "literal_yesno",
+      "n": 3,
+      "accuracy": 1.0,
+      "teacher_accuracy": 0.0,
+      "teacher_n": 3,
+      "beats_teacher": true,
+      "confident_mistakes": 0,
+      "confident_mistake_rate": 0.0,
+      "ece": 0.47725900014241535,
+      "mean_confidence": 0.5227409998575846
+    }
+  },
+  "latency": {
+    "n_decisions": 40,
+    "n_option_forwards": 85,
+    "batch": 1,
+    "per_option_ms": {
+      "mean": 62.11776405886185,
+      "p50": 62.01586299994233,
+      "p90": 63.359868000225106
+    },
+    "per_decision_ms": {
+      "mean": 132.00024862508144,
+      "p50": 124.26934349969088,
+      "p90": 126.56094599942662
+    },
+    "per_decision_by_k": {
+      "2": 124.35826689479175,
+      "3": 184.22359400119603,
+      "6": 370.1722089999748
+    }
+  },
+  "onnx_seq128": {
+    "path": "/workspace/tools/jevh_large/artifacts/jevh_large_ettin150m_seq128.onnx",
+    "sha256": "37f175952cd6e6d8b2ba28ac14afc500a96f56ed9f7c12e12e060cf1c7928de3",
+    "bytes": 598809851,
+    "ir_version": 8,
+    "opset": [
+      17
+    ],
+    "inputs": [
+      {
+        "name": "input_ids",
+        "shape": [
+          1,
+          128
+        ],
+        "elem_type": 7
+      },
+      {
+        "name": "attention_mask",
+        "shape": [
+          1,
+          128
+        ],
+        "elem_type": 7
+      }
+    ],
+    "outputs": [
+      {
+        "name": "logits",
+        "shape": [
+          1,
+          1
+        ],
+        "elem_type": 1
+      }
+    ],
+    "op_counts": {
+      "Add": 147,
+      "Cast": 1,
+      "Clip": 1,
+      "Concat": 44,
+      "Div": 24,
+      "Erf": 23,
+      "Gather": 67,
+      "Gemm": 1,
+      "LayerNormalization": 46,
+      "MatMul": 133,
+      "Mul": 180,
+      "Neg": 44,
+      "ReduceSum": 2,
+      "Reshape": 44,
+      "Slice": 132,
+      "Softmax": 22,
+      "Sub": 1,
+      "Transpose": 110,
+      "Unsqueeze": 2
+    },
+    "forbidden_ops_present": [],
+    "hard_forbidden_ops": [],
+    "dynamic_reshape": [],
+    "attention_mask_consumers": [
+      "Cast"
+    ],
+    "attention_mask_used": true,
+    "shape_inference": "ok",
+    "issues": [],
+    "ok": true,
+    "onnxsim": true
+  },
+  "onnx_seq256": {
+    "path": "/workspace/tools/jevh_large/artifacts/jevh_large_ettin150m_seq256.onnx",
+    "sha256": "d58365169d4a6ccf8b1cefa5b5cea4a604a9da578fb885d8b25fc3263b972ca7",
+    "bytes": 599071995,
+    "ir_version": 8,
+    "opset": [
+      17
+    ],
+    "inputs": [
+      {
+        "name": "input_ids",
+        "shape": [
+          1,
+          256
+        ],
+        "elem_type": 7
+      },
+      {
+        "name": "attention_mask",
+        "shape": [
+          1,
+          256
+        ],
+        "elem_type": 7
+      }
+    ],
+    "outputs": [
+      {
+        "name": "logits",
+        "shape": [
+          1,
+          1
+        ],
+        "elem_type": 1
+      }
+    ],
+    "op_counts": {
+      "Add": 147,
+      "Cast": 1,
+      "Clip": 1,
+      "Concat": 44,
+      "Div": 24,
+      "Erf": 23,
+      "Gather": 67,
+      "Gemm": 1,
+      "LayerNormalization": 46,
+      "MatMul": 133,
+      "Mul": 180,
+      "Neg": 44,
+      "ReduceSum": 2,
+      "Reshape": 44,
+      "Slice": 132,
+      "Softmax": 22,
+      "Sub": 1,
+      "Transpose": 110,
+      "Unsqueeze": 2
+    },
+    "forbidden_ops_present": [],
+    "hard_forbidden_ops": [],
+    "dynamic_reshape": [],
+    "attention_mask_consumers": [
+      "Cast"
+    ],
+    "attention_mask_used": true,
+    "shape_inference": "ok",
+    "issues": [],
+    "ok": true,
+    "onnxsim": true
+  },
+  "parity128": {
+    "n_pairs": 32,
+    "cosine": 0.9999999999995264,
+    "mae": 1.860782504081726e-06,
+    "max_abs": 3.814697265625e-06,
+    "ok": true
+  },
+  "parity256": {
+    "n_pairs": 64,
+    "cosine": 0.9999999999994492,
+    "mae": 1.9661965779960155e-06,
+    "max_abs": 6.4373016357421875e-06,
+    "ok": true
+  },
+  "mask_check": {
+    "delta": 0.6077604293823242,
+    "ok": true
+  },
+  "calib": {
+    "ids_path": "/workspace/tools/jevh_large/artifacts/calib_input_ids_seq128.npy",
+    "mask_path": "/workspace/tools/jevh_large/artifacts/calib_attention_mask_seq128.npy",
+    "shape": [
+      256,
+      128
+    ]
+  },
+  "soft_dump": {
+    "path": "/workspace/tools/jevh_large/artifacts/jevh_large_soft_on_decide_questions_dedup.jsonl.gz",
+    "n": 9402,
+    "sha256": "b415edca8f6b78116f252f3abc104eda801b698116bf2182859ec264bb664bb0",
+    "bytes": 1172413,
+    "uncompressed": "/workspace/tools/jevh_large/artifacts/jevh_large_soft_on_decide_questions_dedup.jsonl"
+  },
+  "gaps": [
+    "Gold labels are biased toward teacher-unsure / teacher-disagreement cases; they are not a uniform /decide sample.",
+    "Most 2-way items are long binary choices (not literal yes/no). Literal yes/no in labels is tiny.",
+    "Train seq_len=128; long 2-way options truncate (p90 pair is hundreds of characters).",
+    "Early encoder layers + embeddings frozen to fit CPU RAM/time; not a full 150M fine-tune.",
+    "No HEF compile (no DFC). No Pi deploy. Teacher soft labels are not gold.",
+    "PR #26 mining corpus was not mixed in.",
+    "ONNX is batch=1 static; multi-option decisions run one pair at a time for Hailo."
+  ],
+  "ckpt": "/workspace/tools/jevh_large/artifacts/jevh_large_ettin150m.pt"
+}
