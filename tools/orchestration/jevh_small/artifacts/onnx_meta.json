@@ -1,0 +1,60 @@
+{
+  "path": "/workspace/tools/orchestration/jevh_small/artifacts/jevh_small_ettin17m_seq128.onnx",
+  "sha256": "5bc20e976e2b4e16b607553c5d11cebe46712f2277f67d1e616d71ce482fce7b",
+  "ir_version": 8,
+  "opset": 17,
+  "ops": [
+    "Add",
+    "Cast",
+    "Concat",
+    "Constant",
+    "Div",
+    "Erf",
+    "Gather",
+    "Gemm",
+    "LayerNormalization",
+    "MatMul",
+    "Mul",
+    "Neg",
+    "Reshape",
+    "Slice",
+    "Softmax",
+    "Squeeze",
+    "Sub",
+    "Transpose",
+    "Unsqueeze"
+  ],
+  "forbidden_ops": [],
+  "shape_ops": 0,
+  "dynamic_reshape_nodes": [],
+  "inputs": [
+    {
+      "name": "input_ids",
+      "shape": [
+        1,
+        128
+      ],
+      "dtype": 7
+    },
+    {
+      "name": "attention_mask",
+      "shape": [
+        1,
+        128
+      ],
+      "dtype": 1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "logit",
+      "shape": [
+        1
+      ],
+      "dtype": 1
+    }
+  ],
+  "attention_mask_used": true,
+  "n_nodes": 610,
+  "bytes": 68934506
+}

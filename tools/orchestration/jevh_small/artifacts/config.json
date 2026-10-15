@@ -1,0 +1,21 @@
+{
+  "hidden_size": 256,
+  "intermediate_size": 384,
+  "num_attention_heads": 4,
+  "num_hidden_layers": 7,
+  "vocab_size": 50368,
+  "pad_token_id": 50283,
+  "norm_eps": 1e-05,
+  "norm_bias": false,
+  "mlp_bias": false,
+  "attention_bias": false,
+  "local_attention": 128,
+  "global_attn_every_n_layers": 3,
+  "rope_theta": 10000.0,
+  "hidden_activation": "gelu",
+  "seq_len": 128,
+  "backbone": "jhu-clsp/ettin-encoder-17m",
+  "pooling": "cls",
+  "head": "linear_gelu_ln_linear",
+  "n_params": 16864001
+}

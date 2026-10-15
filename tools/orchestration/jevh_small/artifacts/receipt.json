@@ -1,0 +1,242 @@
+{
+  "paths": {
+    "labels": "/home/ubuntu/.cursor/projects/workspace/uploads/labels_bc1e.jsonl",
+    "decide": "/home/ubuntu/.cursor/projects/workspace/uploads/decide_questions_dedup_c6f4.jsonl",
+    "lane": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_lane_bank_69ec.jsonl",
+    "tokenizer": "/home/ubuntu/.cursor/projects/workspace/uploads/jevh_student_tokenizer_f28e.json"
+  },
+  "counts": {
+    "label_rows": 4220,
+    "label_questions": 4108,
+    "decide_rows": 9402,
+    "decide_teacher": 6940,
+    "lane_rows": 197
+  },
+  "split": {
+    "n_unique_questions": 4108,
+    "n_eval_questions": 617,
+    "n_train_questions": 3491,
+    "eval_frac": 0.15019474196689386,
+    "n_train_rows": 3592,
+    "n_eval_rows": 628,
+    "by_option_count": {
+      "2": {
+        "n_questions": 1029,
+        "n_eval": 154,
+        "n_train": 875
+      },
+      "3": {
+        "n_questions": 5,
+        "n_eval": 1,
+        "n_train": 4
+      },
+      "4": {
+        "n_questions": 3073,
+        "n_eval": 461,
+        "n_train": 2612
+      },
+      "6plus": {
+        "n_questions": 1,
+        "n_eval": 1,
+        "n_train": 0
+      }
+    },
+    "seed": 42,
+    "eval_yesno_rows": 162,
+    "eval_multi_rows": 466,
+    "train_yesno_rows": 949,
+    "train_multi_rows": 2643,
+    "eval_strict_noul_rows": 3,
+    "train_strict_noul_rows": 13
+  },
+  "recipe": {
+    "epochs": 3,
+    "batch": 8,
+    "seed": 42,
+    "lr": 3e-05,
+    "head_lr": 0.001,
+    "soft_weight": 0.4,
+    "soft_extra_used": 1200,
+    "device": "cpu",
+    "threads": 4,
+    "scaled_down": false,
+    "scale_note": "full CPU recipe as above",
+    "freeze_embeddings": true,
+    "seq_len": 128,
+    "opset": 17,
+    "train_seconds": 379.5,
+    "train_log": [
+      {
+        "epoch": 1,
+        "mean_loss": 0.29667978956424734,
+        "steps": 599
+      },
+      {
+        "epoch": 2,
+        "mean_loss": 0.24026319478329067,
+        "steps": 599
+      },
+      {
+        "epoch": 3,
+        "mean_loss": 0.22758017504628195,
+        "steps": 599
+      }
+    ],
+    "ckpt": "/workspace/tools/orchestration/jevh_small/artifacts/jevh_small_ettin17m.pt"
+  },
+  "hf": {
+    "repo": "jhu-clsp/ettin-encoder-17m",
+    "revision": "987607455c61e7a5bbc85f7758e0512ea6d0ae4c",
+    "siblings": [
+      ".gitattributes",
+      "README.md",
+      "config.json",
+      "onnx/model.onnx",
+      "onnx/model_bnb4.onnx",
+      "onnx/model_fp16.onnx",
+      "onnx/model_int8.onnx",
+      "onnx/model_q4.onnx",
+      "onnx/model_q4f16.onnx",
+      "onnx/model_quantized.onnx",
+      "onnx/model_uint8.onnx",
+      "pytorch_model.bin",
+      "special_tokens_map.json",
+      "tokenizer.json",
+      "tokenizer_config.json"
+    ],
+    "config_path": "/workspace/tools/orchestration/jevh_small/artifacts/hf_cache/models--jhu-clsp--ettin-encoder-17m/snapshots/987607455c61e7a5bbc85f7758e0512ea6d0ae4c/config.json",
+    "weight_path": "/workspace/tools/orchestration/jevh_small/artifacts/hf_cache/models--jhu-clsp--ettin-encoder-17m/snapshots/987607455c61e7a5bbc85f7758e0512ea6d0ae4c/pytorch_model.bin",
+    "weight_name": "pytorch_model.bin"
+  },
+  "metrics": {
+    "n": 628,
+    "accuracy": 0.9554140127388535,
+    "teacher_accuracy": 0.46178343949044587,
+    "teacher_n": 628,
+    "confident_mistakes": 12,
+    "confident_mistake_rate": 0.01910828025477707,
+    "ece": 0.17853328522812215,
+    "mean_confidence": 0.7844876229521127,
+    "yesno": {
+      "n": 162,
+      "accuracy": 0.8641975308641975,
+      "teacher_accuracy": 0.9382716049382716,
+      "confident_mistakes": 10,
+      "ece": 0.04616007539600924
+    },
+    "multi": {
+      "n": 466,
+      "accuracy": 0.9871244635193133,
+      "teacher_accuracy": 0.296137339055794,
+      "confident_mistakes": 2,
+      "ece": 0.2493796787049382
+    },
+    "threshold": 0.65,
+    "latency_packed_options": {
+      "n": 64,
+      "mean_ms": 9.266370406230351,
+      "p50_ms": 8.200101999932485,
+      "p95_ms": 12.061668299975281,
+      "min_ms": 7.771069000000352,
+      "max_ms": 19.355742000016107
+    },
+    "latency_batch1_per_option": {
+      "n": 64,
+      "mean_ms": 13.71050626561754,
+      "p50_ms": 10.819616499929907,
+      "p95_ms": 22.103837599922823,
+      "min_ms": 9.995381999942765,
+      "max_ms": 32.34348800015141
+    },
+    "latency_note": "latency_batch1_per_option is Hailo-style: each option scored at batch=1, seq=128; one decision = all options sequential. packed_options forwards K options together on CPU."
+  },
+  "onnx": {
+    "path": "/workspace/tools/orchestration/jevh_small/artifacts/jevh_small_ettin17m_seq128.onnx",
+    "sha256": "5bc20e976e2b4e16b607553c5d11cebe46712f2277f67d1e616d71ce482fce7b",
+    "ir_version": 8,
+    "opset": 17,
+    "ops": [
+      "Add",
+      "Cast",
+      "Concat",
+      "Constant",
+      "Div",
+      "Erf",
+      "Gather",
+      "Gemm",
+      "LayerNormalization",
+      "MatMul",
+      "Mul",
+      "Neg",
+      "Reshape",
+      "Slice",
+      "Softmax",
+      "Squeeze",
+      "Sub",
+      "Transpose",
+      "Unsqueeze"
+    ],
+    "forbidden_ops": [],
+    "shape_ops": 0,
+    "dynamic_reshape_nodes": [],
+    "inputs": [
+      {
+        "name": "input_ids",
+        "shape": [
+          1,
+          128
+        ],
+        "dtype": 7
+      },
+      {
+        "name": "attention_mask",
+        "shape": [
+          1,
+          128
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "logit",
+        "shape": [
+          1
+        ],
+        "dtype": 1
+      }
+    ],
+    "attention_mask_used": true,
+    "n_nodes": 610,
+    "bytes": 68934506
+  },
+  "parity": {
+    "n": 389,
+    "cosine": 0.9999999999994112,
+    "max_abs": 1.4781951904296875e-05,
+    "mean_abs": 3.2701536744909605e-06,
+    "ok": true,
+    "min_cos": 0.999
+  },
+  "calib": {
+    "n": 256,
+    "seq_len": 128,
+    "input_ids": "/workspace/tools/orchestration/jevh_small/artifacts/calib/input_ids.npy",
+    "attention_mask": "/workspace/tools/orchestration/jevh_small/artifacts/calib/attention_mask.npy",
+    "input_ids_sha256": "90ad7477e4265cf05d1c9da1a1dd9f4ade9be75859a417cdf084060c5102cf15",
+    "attention_mask_sha256": "42a9ec9423a9005e0f6a817c559e69dbce02f5766d61e140a42428e0a392bc9b",
+    "drawn_from": "train labels + lane bank + extra teacher rows",
+    "excluded": "held-out eval questions"
+  },
+  "tradeoff": "Student has 16,864,001 parameters (encoder formula ~16,797,184 plus a small CLS head). Ettin-68m encoder formula ~68,144,128 params (~4.1\u00d7). Transformer-body FLOPs scale roughly (19/7)\u00d7(512/256)\u00d7(768/384) \u2248 11\u00d7 for FFN; the live 68m NPU decision was ~55 ms wall on Hailo-10H (reference service). This 17m CPU batch-1 decision is n=64 mean 13.7 ms (p50 10.8, p95 22.1, min 10.0, max 32.3) on 4 threads (not comparable to NPU, but the HEF should be much smaller/faster than 68m). 68m CPU accuracy was not re-measured (host_weights_v4_ettin68m.npz not attached).",
+  "gaps": [
+    "Labels are hard-case biased (written when the teacher was unsure or disagreed), so held-out accuracy is not in-the-wild decide accuracy.",
+    "Teacher (Qwen3-1.7B model_choice) is a baseline on the same rows, not gold.",
+    "No 68m student was re-run; size/latency comparison is from the Ettin card + the live :8771 reference (~55 ms NPU).",
+    "ONNX is batch=1 seq=128 per option; softmax over options stays on the host (variable 2\u20136 options).",
+    "No Hailo DFC compile, no HEF, no Pi flash.",
+    "Local attention window at seq=128 is \u00b164; global every 3rd layer. Mask is additive -1e4, not -inf.",
+    "PR #26 mining failures were not mixed into train (owned by the other agent)."
+  ],
+  "n_params": 16864001
+}

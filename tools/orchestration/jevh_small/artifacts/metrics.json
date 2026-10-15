@@ -1,0 +1,42 @@
+{
+  "n": 628,
+  "accuracy": 0.9554140127388535,
+  "teacher_accuracy": 0.46178343949044587,
+  "teacher_n": 628,
+  "confident_mistakes": 12,
+  "confident_mistake_rate": 0.01910828025477707,
+  "ece": 0.17853328522812215,
+  "mean_confidence": 0.7844876229521127,
+  "yesno": {
+    "n": 162,
+    "accuracy": 0.8641975308641975,
+    "teacher_accuracy": 0.9382716049382716,
+    "confident_mistakes": 10,
+    "ece": 0.04616007539600924
+  },
+  "multi": {
+    "n": 466,
+    "accuracy": 0.9871244635193133,
+    "teacher_accuracy": 0.296137339055794,
+    "confident_mistakes": 2,
+    "ece": 0.2493796787049382
+  },
+  "threshold": 0.65,
+  "latency_packed_options": {
+    "n": 64,
+    "mean_ms": 9.266370406230351,
+    "p50_ms": 8.200101999932485,
+    "p95_ms": 12.061668299975281,
+    "min_ms": 7.771069000000352,
+    "max_ms": 19.355742000016107
+  },
+  "latency_batch1_per_option": {
+    "n": 64,
+    "mean_ms": 13.71050626561754,
+    "p50_ms": 10.819616499929907,
+    "p95_ms": 22.103837599922823,
+    "min_ms": 9.995381999942765,
+    "max_ms": 32.34348800015141
+  },
+  "latency_note": "latency_batch1_per_option is Hailo-style: each option scored at batch=1, seq=128; one decision = all options sequential. packed_options forwards K options together on CPU."
+}
