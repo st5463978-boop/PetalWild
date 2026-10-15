@@ -1,0 +1,48 @@
+{
+  "ts": "2026-09-30T22:06:10Z",
+  "lane": "jevh-clean-core",
+  "training_eligible": false,
+  "decide_url_origin_hidden": true,
+  "cases": 71,
+  "counted_failures": 23,
+  "confident_correct": 1,
+  "jev_wrong": 48,
+  "production_escalated": 26,
+  "index_bugs": 0,
+  "no_forced_jev": 0,
+  "failures_by_kind": {
+    "source_stale": 10,
+    "human_approval": 1,
+    "canonical_contradicted": 12
+  },
+  "counted_ids": [
+    "src-ttl-under",
+    "apr-over-spend",
+    "can-cache-same-version",
+    "can-noncanonical-noise",
+    "src-ttl-under-mut-20-90",
+    "can-stale-client-mut-v8",
+    "can-stale-client-mut-optflip",
+    "can-noise-mut-optflip",
+    "src-ttl-under-mut-3-30",
+    "src-ttl-under-mut-5-45",
+    "src-ttl-under-mut-15-90",
+    "src-ttl-under-mut-40-60",
+    "src-ttl-under-mut-1h-8h",
+    "src-maxage-under-2-10",
+    "src-maxage-under-8-40",
+    "src-maxage-under-12-60",
+    "can-stale-client-mut-v4",
+    "can-stale-client-mut-v6",
+    "can-stale-client-mut-v9",
+    "can-noise-mut-qty-7",
+    "can-status-debug-banned",
+    "can-status-enabled-banned",
+    "can-hash-cache-xyz"
+  ],
+  "skips": {
+    "scored": 71
+  },
+  "error": null,
+  "note": "Diagnostic gold only. Do not train on this ledger. JEV is the chip forced answer."
+}
