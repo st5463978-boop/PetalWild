@@ -1,0 +1,30 @@
+{
+  "ts": "2026-10-01T01:55:51Z",
+  "lane": "jev-cursor-fresh",
+  "family": "source_freshness",
+  "teacher": "in_ttl_means_not_stale",
+  "training_eligible": false,
+  "decide_url_origin_hidden": true,
+  "agent": "jev-cursor-fresh",
+  "request_kind": "adversarial",
+  "asked": 0,
+  "bank": 40,
+  "counted_failures": 0,
+  "stop_at": 20,
+  "stopped_because": "chip_probe_http_500",
+  "confident_correct": 0,
+  "chip_wrong_any_confidence": 0,
+  "teacher_only": 0,
+  "counted_ids": [],
+  "error": "chip not ready: probe_failed:HTTP 500",
+  "observation": {
+    "from": "2026-09-30T23:29:01Z",
+    "until": "2026-10-01T01:55:48Z",
+    "chip_cond": "probe_failed:HTTP 500",
+    "n_chip_acquire_unchanged": 7,
+    "service_decisions_at_end": 3949,
+    "service_escalated_at_end": 3489,
+    "note": "Escalated count rose one-for-one with decisions. This lane did not POST while the chip probe was failing, so no CPU-teacher answer was scored."
+  },
+  "note": "Counted only when the chip is wrong and confidence >= 0.90. Do not train."
+}
