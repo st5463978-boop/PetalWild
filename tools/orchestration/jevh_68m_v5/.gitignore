@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+artifacts/*.pt
+artifacts/round1_metrics.json.bak
+artifacts/*.onnx
+artifacts/*.onnx.data
+artifacts/*.log
+artifacts/hf/
+artifacts/*.bin
+*.pyc
+.cache/
