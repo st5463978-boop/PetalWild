@@ -18,6 +18,8 @@ Probed on 2026-09-22 from this cloud VM:
 
 `python3 -m petal_dispatch.hailo_backend` from this directory probes `GET /health` and one `POST /decide` against the default tunnel. The benchmark does not rank local models.
 
+JEV-H-trading (offline paper-only student, no HEF / no Pi / no broker) lives in `jevh_trading/`.
+
 ## Run
 
 ```bash

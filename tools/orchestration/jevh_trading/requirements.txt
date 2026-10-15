@@ -1,0 +1,11 @@
+# Pinned CPU stack. Install with:
+#   pip install -r requirements.txt
+# torch CPU wheel index is in train.sh.
+
+numpy==2.2.4
+tokenizers==0.21.1
+torch==2.7.1
+onnx==1.17.0
+onnxruntime==1.22.0
+huggingface_hub==0.29.3
+safetensors

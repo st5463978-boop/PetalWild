@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+artifacts/student.pt
+artifacts/student_*.pt
+artifacts/examples_train_eval.jsonl
+artifacts/split.json
+artifacts/hf/
+artifacts/*ettin*.onnx
+artifacts/jevh_trading_ettin*.onnx
+artifacts/preds_*.jsonl.gz

@@ -1,0 +1,1967 @@
+{
+  "disclaimer": "Not financial advice. Offline research only. No live or paper order routing.",
+  "seed": 42,
+  "smoke": false,
+  "wall_s": 8912.4,
+  "ingest": {
+    "logs": [
+      "/home/ubuntu/.cursor/projects/workspace/uploads/trading_jev_calls_v2.jsonl_c24d.gz"
+    ],
+    "contexts": "/home/ubuntu/.cursor/projects/workspace/uploads/trading_jev_contexts_v2_8e10.jsonl",
+    "n_contexts": 7833,
+    "raw_rows": 106258,
+    "unique_state_menu": 105005,
+    "single_option": 2688,
+    "unusable_multi": 11,
+    "multi_option_trainish": 102306,
+    "varied_multi": 66980,
+    "collapsed_multi": 35326,
+    "non_hold_gold": 56131,
+    "gold_distribution": {
+      "HOLD_WINNER": 16706,
+      "HOLD": 15487,
+      "CUT_LOSS": 13639,
+      "RIDE": 10713,
+      "SHORT_BTC": 8352,
+      "SHORT_ETH": 6923,
+      "APE_TIA": 6272,
+      "APE_BTC": 3589,
+      "WAIT": 3269,
+      "LONG_BTC": 1793,
+      "APE_NEAR": 1742,
+      "APE_DOGE": 1704,
+      "APE_PUMP": 1531,
+      "APE_PEPE": 1320,
+      "APE_STRK": 1316,
+      "APE_ONDO": 1191,
+      "SWITCH_COIN": 1187,
+      "BAIL": 1108,
+      "BREAKOUT_BTC": 925,
+      "TRIM_HALF": 628,
+      "APE_SOL": 302,
+      "APE_HYPE": 300,
+      "APE_ZEC": 251,
+      "APE_RENDER": 195,
+      "APE_LIT": 148,
+      "APE_INJ": 146,
+      "APE_FET": 141,
+      "APE_XRP": 134,
+      "APE_JUP": 120,
+      "APE_AVAX": 109,
+      "DOUBLE_DOWN": 99,
+      "APE_PENGU": 98,
+      "APE_ADA": 88,
+      "APE_SUI": 83,
+      "APE_ENA": 82,
+      "APE_BNB": 81,
+      "APE_ETH": 72,
+      "APE_TAO": 68,
+      "APE_LINK": 57,
+      "APE_ARB": 47,
+      "APE_LTC": 46,
+      "APE_WLD": 43,
+      "APE_BCH": 33,
+      "APE_HBAR": 33,
+      "APE_VIRTUAL": 31,
+      "APE_XPL": 26,
+      "APE_GRAM": 25,
+      "APE_XLM": 23,
+      "APE_TRUMP": 16,
+      "SWITCH": 6,
+      "APE_VVV": 4,
+      "APE_PONS": 3,
+      "APE_UNI": 1
+    },
+    "menu_size": {
+      "2": 53609,
+      "5": 17249,
+      "4": 15737,
+      "3": 15711
+    },
+    "bee": {
+      "hs-boozy": 33331,
+      "hs-bizzy": 33320,
+      "hs-breezy": 33319,
+      "bee1": 1089,
+      "bee3": 1014,
+      "bee2": 233
+    },
+    "bee_style": {
+      "boozy": 34578,
+      "breezy": 34408,
+      "bizzy": 33320
+    },
+    "row_source": {
+      "hyperspeed": 99970,
+      "live_engine": 2336
+    },
+    "forced": 21055,
+    "vetoed": 21547,
+    "span_ms": 45811469,
+    "span_hours": 12.725,
+    "calendar_days": 2,
+    "train": 59160,
+    "dev": 8533,
+    "eval": 14938,
+    "eval_live": 2336,
+    "eval_rules": 14515,
+    "purge": 3278,
+    "purge_ms_used": 0,
+    "format_check": 2688,
+    "gold_is": "jev_choice",
+    "soft_targets": "probabilities (renormalized over menu); confidence kept as metadata",
+    "regime_note": "This does NOT meet the >=14 days / multiple-regimes bar. live_engine is ~13h of one paper session; hyperspeed is 30 minutes / 30 snapshots of one market regime. Scores mean: mimics Jev in this regime, not a stand-in.",
+    "held_rules": [
+      "breezy-cautious",
+      "boozy-diamond",
+      "bizzy-alts"
+    ],
+    "eval_snaps": [
+      "2026-10-09T12:04:29.935Z",
+      "2026-10-09T12:05:29.934Z",
+      "2026-10-09T12:06:29.935Z",
+      "2026-10-09T12:07:29.937Z",
+      "2026-10-09T12:08:29.959Z",
+      "2026-10-09T12:09:29.958Z"
+    ],
+    "purge_snaps": [
+      "2026-10-09T12:03:29.921Z"
+    ],
+    "dev_snaps": [
+      "2026-10-09T12:00:29.920Z",
+      "2026-10-09T12:01:29.921Z",
+      "2026-10-09T12:02:29.920Z"
+    ],
+    "train_snaps": [
+      "2026-10-09T11:39:37.854Z",
+      "2026-10-09T11:41:29.850Z",
+      "2026-10-09T11:42:29.855Z",
+      "2026-10-09T11:43:29.856Z",
+      "2026-10-09T11:44:29.857Z",
+      "2026-10-09T11:45:29.862Z",
+      "2026-10-09T11:46:29.862Z",
+      "2026-10-09T11:47:29.862Z",
+      "2026-10-09T11:48:29.861Z",
+      "2026-10-09T11:49:29.870Z",
+      "2026-10-09T11:50:29.871Z",
+      "2026-10-09T11:51:29.873Z",
+      "2026-10-09T11:52:29.873Z",
+      "2026-10-09T11:53:29.872Z",
+      "2026-10-09T11:54:29.873Z",
+      "2026-10-09T11:55:29.875Z",
+      "2026-10-09T11:56:29.902Z",
+      "2026-10-09T11:57:29.914Z",
+      "2026-10-09T11:58:29.914Z",
+      "2026-10-09T11:59:29.914Z"
+    ],
+    "n_snapshots": 30,
+    "protocol": "hyperspeed_market_ts+held_rules+live_holdout",
+    "enough_to_claim": false,
+    "needed": {
+      "multi_option_unique": 2000,
+      "non_hold_gold": 400,
+      "per_action_gold": 50,
+      "calendar_days": 14,
+      "note": "A 68m student can copy a collapsed HOLD_WINNER teacher from a few hundred near-duplicate ticks. Mimicking discretionary Jev (when to leave HOLD, which APE_*, when to SWITCH) wants thousands of *varied* multi-option rows, with each offered action as gold at least ~50 times, over more than one regime. A 13h window plus 30 minutes of one market regime is NOT that bar \u2014 scores mean 'mimics Jev in this regime', not a cost-free stand-in."
+    },
+    "shortfall": {
+      "varied_multi": 0,
+      "non_hold_gold": 0,
+      "days": 12,
+      "per_action_below_50": {
+        "APE_ARB": 3,
+        "APE_LTC": 4,
+        "APE_WLD": 7,
+        "APE_BCH": 17,
+        "APE_HBAR": 17,
+        "APE_VIRTUAL": 19,
+        "APE_XPL": 24,
+        "APE_GRAM": 25,
+        "APE_XLM": 27,
+        "APE_TRUMP": 34,
+        "SWITCH": 44,
+        "APE_VVV": 46,
+        "APE_PONS": 47,
+        "APE_UNI": 49
+      }
+    }
+  },
+  "recipe": {
+    "gold": "jev_choice",
+    "soft_targets": "probabilities (KL) + listwise CE + pairwise hinge",
+    "option_shuffle": true,
+    "size": "68m",
+    "hf_id": "jhu-clsp/ettin-encoder-68m",
+    "hidden": 512,
+    "n_layers": 19,
+    "n_heads": 8,
+    "seq_len": 128,
+    "unfreeze_last": 12,
+    "lr_encoder": 2e-05,
+    "lr_head": 8e-05,
+    "lr_embed": 5e-06,
+    "layer_decay": 0.9,
+    "pair_coef": 0.4,
+    "pair_margin": 0.5,
+    "soft_kl_coef": 0.5,
+    "kd_temp": 2.0,
+    "temperature_nll": 1.0,
+    "temperature_ece": 1.1,
+    "temperature_note": "Eval uses temperature_ece. Scalar T does not change argmax agreement. kd_temp softens teacher probs in the KL term.",
+    "layer_lrs": [
+      {
+        "layer": 7,
+        "lr": 6.28e-06
+      },
+      {
+        "layer": 8,
+        "lr": 6.97e-06
+      },
+      {
+        "layer": 9,
+        "lr": 7.75e-06
+      },
+      {
+        "layer": 10,
+        "lr": 8.61e-06
+      },
+      {
+        "layer": 11,
+        "lr": 9.57e-06
+      },
+      {
+        "layer": 12,
+        "lr": 1.063e-05
+      },
+      {
+        "layer": 13,
+        "lr": 1.181e-05
+      },
+      {
+        "layer": 14,
+        "lr": 1.312e-05
+      },
+      {
+        "layer": 15,
+        "lr": 1.458e-05
+      },
+      {
+        "layer": 16,
+        "lr": 1.62e-05
+      },
+      {
+        "layer": 17,
+        "lr": 1.8e-05
+      },
+      {
+        "layer": 18,
+        "lr": 2e-05
+      }
+    ],
+    "epochs_run": 3,
+    "epochs_requested": 4,
+    "microbatch": 4,
+    "temperature": 1.1,
+    "n_params": 68407809,
+    "n_trainable": 27014657,
+    "backbone_loaded": true,
+    "missing_keys": [],
+    "keep_option_rows": 14223,
+    "tokenizer": "/workspace/tools/orchestration/jevh_trading/assets/tokenizer.json",
+    "train_minutes": 121.26,
+    "source_recipe": "cursor/jevh-variant-68m-v5-f666 (read, not merged)",
+    "n_train_scored": 8000,
+    "n_train_pool": 59160,
+    "n_dev_scored": 2000,
+    "n_dev_pool": 8533,
+    "grad_ckpt": true,
+    "train_majority_by_style": {
+      "boozy": "RIDE",
+      "breezy": "HOLD_WINNER",
+      "bizzy": "HOLD"
+    },
+    "text_a": "[choice] {style_tag} {rules_id} + owner rules prefix (head+tail) + me + up to 4 menu/position coins",
+    "option_text": "label plus menu_detail kind/coin/side/desc when present"
+  },
+  "metrics": {
+    "eval": {
+      "n": 6000,
+      "accuracy": 0.7981666666666667,
+      "confident_mistakes": 636,
+      "confident_mistake_rate": 0.106,
+      "ece": 0.042066145806223226,
+      "mean_confidence": 0.8148707994778455,
+      "hold_ride_baseline_n": 2713,
+      "hold_ride_baseline_acc": 0.643199410246959,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.493,
+      "by_menu_size": {
+        "2": {
+          "n": 2327,
+          "accuracy": 0.8852599914052428
+        },
+        "3": {
+          "n": 1062,
+          "accuracy": 0.8305084745762712
+        },
+        "4": {
+          "n": 1061,
+          "accuracy": 0.7492931196983977
+        },
+        "5": {
+          "n": 1550,
+          "accuracy": 0.6787096774193548
+        }
+      },
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 793,
+          "accuracy": 0.9470365699873896
+        },
+        "SHORT_BTC": {
+          "n": 530,
+          "accuracy": 0.7811320754716982
+        },
+        "SHORT_ETH": {
+          "n": 530,
+          "accuracy": 0.8547169811320755
+        },
+        "RIDE": {
+          "n": 422,
+          "accuracy": 0.7298578199052133
+        },
+        "APE_NEAR": {
+          "n": 283,
+          "accuracy": 0.43462897526501765
+        },
+        "APE_BTC": {
+          "n": 281,
+          "accuracy": 0.7330960854092526
+        },
+        "APE_TIA": {
+          "n": 277,
+          "accuracy": 0.9530685920577617
+        },
+        "APE_ONDO": {
+          "n": 275,
+          "accuracy": 0.5745454545454546
+        },
+        "APE_DOGE": {
+          "n": 272,
+          "accuracy": 0.7794117647058824
+        },
+        "WAIT": {
+          "n": 265,
+          "accuracy": 0.9811320754716981
+        },
+        "BREAKOUT_BTC": {
+          "n": 265,
+          "accuracy": 1.0
+        },
+        "CUT_LOSS": {
+          "n": 265,
+          "accuracy": 0.9584905660377359
+        },
+        "HOLD": {
+          "n": 265,
+          "accuracy": 0.5320754716981132
+        },
+        "BAIL": {
+          "n": 201,
+          "accuracy": 0.945273631840796
+        },
+        "SWITCH_COIN": {
+          "n": 185,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 148,
+          "accuracy": 0.9391891891891891
+        },
+        "APE_PEPE": {
+          "n": 123,
+          "accuracy": 0.7886178861788617
+        },
+        "LONG_BTC": {
+          "n": 119,
+          "accuracy": 0.2605042016806723
+        },
+        "APE_HYPE": {
+          "n": 64,
+          "accuracy": 0.765625
+        },
+        "APE_ZEC": {
+          "n": 51,
+          "accuracy": 0.8627450980392157
+        },
+        "APE_LIT": {
+          "n": 42,
+          "accuracy": 0.47619047619047616
+        },
+        "APE_SOL": {
+          "n": 32,
+          "accuracy": 0.71875
+        },
+        "APE_XRP": {
+          "n": 32,
+          "accuracy": 0.34375
+        },
+        "TRIM_HALF": {
+          "n": 28,
+          "accuracy": 1.0
+        },
+        "APE_ENA": {
+          "n": 28,
+          "accuracy": 0.32142857142857145
+        },
+        "APE_INJ": {
+          "n": 23,
+          "accuracy": 0.7391304347826086
+        },
+        "APE_AVAX": {
+          "n": 21,
+          "accuracy": 0.8095238095238095
+        },
+        "APE_GRAM": {
+          "n": 19,
+          "accuracy": 0.7368421052631579
+        },
+        "APE_ADA": {
+          "n": 18,
+          "accuracy": 0.5555555555555556
+        },
+        "APE_LTC": {
+          "n": 15,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_RENDER": {
+          "n": 14,
+          "accuracy": 0.7857142857142857
+        },
+        "APE_FET": {
+          "n": 13,
+          "accuracy": 0.9230769230769231
+        },
+        "APE_ETH": {
+          "n": 12,
+          "accuracy": 0.5833333333333334
+        },
+        "APE_LINK": {
+          "n": 11,
+          "accuracy": 0.5454545454545454
+        },
+        "APE_VIRTUAL": {
+          "n": 10,
+          "accuracy": 0.6
+        },
+        "APE_HBAR": {
+          "n": 10,
+          "accuracy": 0.5
+        },
+        "APE_BNB": {
+          "n": 9,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_SUI": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_WLD": {
+          "n": 7,
+          "accuracy": 0.7142857142857143
+        },
+        "APE_TAO": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "DOUBLE_DOWN": {
+          "n": 6,
+          "accuracy": 0.3333333333333333
+        },
+        "APE_ARB": {
+          "n": 4,
+          "accuracy": 1.0
+        },
+        "APE_PENGU": {
+          "n": 4,
+          "accuracy": 0.5
+        },
+        "APE_BCH": {
+          "n": 4,
+          "accuracy": 0.25
+        },
+        "APE_XPL": {
+          "n": 4,
+          "accuracy": 0.75
+        },
+        "APE_TRUMP": {
+          "n": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "APE_VVV": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_gold_label": {
+        "HOLD_WINNER": {
+          "n": 793,
+          "accuracy": 0.9470365699873896
+        },
+        "SHORT_BTC": {
+          "n": 530,
+          "accuracy": 0.7811320754716982
+        },
+        "SHORT_ETH": {
+          "n": 530,
+          "accuracy": 0.8547169811320755
+        },
+        "RIDE": {
+          "n": 422,
+          "accuracy": 0.7298578199052133
+        },
+        "APE_NEAR": {
+          "n": 283,
+          "accuracy": 0.43462897526501765
+        },
+        "APE_BTC": {
+          "n": 281,
+          "accuracy": 0.7330960854092526
+        },
+        "APE_TIA": {
+          "n": 277,
+          "accuracy": 0.9530685920577617
+        },
+        "APE_ONDO": {
+          "n": 275,
+          "accuracy": 0.5745454545454546
+        },
+        "APE_DOGE": {
+          "n": 272,
+          "accuracy": 0.7794117647058824
+        },
+        "WAIT": {
+          "n": 265,
+          "accuracy": 0.9811320754716981
+        },
+        "BREAKOUT_BTC": {
+          "n": 265,
+          "accuracy": 1.0
+        },
+        "CUT_LOSS": {
+          "n": 265,
+          "accuracy": 0.9584905660377359
+        },
+        "HOLD": {
+          "n": 265,
+          "accuracy": 0.5320754716981132
+        },
+        "BAIL": {
+          "n": 201,
+          "accuracy": 0.945273631840796
+        },
+        "SWITCH_COIN": {
+          "n": 185,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 148,
+          "accuracy": 0.9391891891891891
+        },
+        "APE_PEPE": {
+          "n": 123,
+          "accuracy": 0.7886178861788617
+        },
+        "LONG_BTC": {
+          "n": 119,
+          "accuracy": 0.2605042016806723
+        },
+        "APE_HYPE": {
+          "n": 64,
+          "accuracy": 0.765625
+        },
+        "APE_ZEC": {
+          "n": 51,
+          "accuracy": 0.8627450980392157
+        },
+        "APE_LIT": {
+          "n": 42,
+          "accuracy": 0.47619047619047616
+        },
+        "APE_SOL": {
+          "n": 32,
+          "accuracy": 0.71875
+        },
+        "APE_XRP": {
+          "n": 32,
+          "accuracy": 0.34375
+        },
+        "TRIM_HALF": {
+          "n": 28,
+          "accuracy": 1.0
+        },
+        "APE_ENA": {
+          "n": 28,
+          "accuracy": 0.32142857142857145
+        },
+        "APE_INJ": {
+          "n": 23,
+          "accuracy": 0.7391304347826086
+        },
+        "APE_AVAX": {
+          "n": 21,
+          "accuracy": 0.8095238095238095
+        },
+        "APE_GRAM": {
+          "n": 19,
+          "accuracy": 0.7368421052631579
+        },
+        "APE_ADA": {
+          "n": 18,
+          "accuracy": 0.5555555555555556
+        },
+        "APE_LTC": {
+          "n": 15,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_RENDER": {
+          "n": 14,
+          "accuracy": 0.7857142857142857
+        },
+        "APE_FET": {
+          "n": 13,
+          "accuracy": 0.9230769230769231
+        },
+        "APE_ETH": {
+          "n": 12,
+          "accuracy": 0.5833333333333334
+        },
+        "APE_LINK": {
+          "n": 11,
+          "accuracy": 0.5454545454545454
+        },
+        "APE_VIRTUAL": {
+          "n": 10,
+          "accuracy": 0.6
+        },
+        "APE_HBAR": {
+          "n": 10,
+          "accuracy": 0.5
+        },
+        "APE_BNB": {
+          "n": 9,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_SUI": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_WLD": {
+          "n": 7,
+          "accuracy": 0.7142857142857143
+        },
+        "APE_TAO": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "DOUBLE_DOWN": {
+          "n": 6,
+          "accuracy": 0.3333333333333333
+        },
+        "APE_ARB": {
+          "n": 4,
+          "accuracy": 1.0
+        },
+        "APE_PENGU": {
+          "n": 4,
+          "accuracy": 0.5
+        },
+        "APE_BCH": {
+          "n": 4,
+          "accuracy": 0.25
+        },
+        "APE_XPL": {
+          "n": 4,
+          "accuracy": 0.75
+        },
+        "APE_TRUMP": {
+          "n": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "APE_VVV": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 4858,
+      "varied_accuracy": 0.7918896665294359,
+      "collapsed_n": 1142,
+      "collapsed_accuracy": 0.8248686514886164,
+      "by_style": {
+        "boozy": {
+          "n": 2940,
+          "accuracy": 0.745578231292517
+        },
+        "breezy": {
+          "n": 2000,
+          "accuracy": 0.8385
+        },
+        "bizzy": {
+          "n": 1060,
+          "accuracy": 0.8679245283018868
+        }
+      },
+      "by_source": {
+        "hyperspeed": {
+          "n": 6000,
+          "accuracy": 0.7981666666666667
+        }
+      },
+      "temperature": 1.1,
+      "split": "time-eval",
+      "scored_n": 6000,
+      "pool_n": 14938,
+      "always_hold_acc": 0.493,
+      "majority_per_style_acc": 0.493,
+      "beats_always_hold": true
+    },
+    "eval_rules": {
+      "n": 6000,
+      "accuracy": 0.6656666666666666,
+      "confident_mistakes": 1364,
+      "confident_mistake_rate": 0.22733333333333333,
+      "ece": 0.17531213502756263,
+      "mean_confidence": 0.7829950952770135,
+      "hold_ride_baseline_n": 3350,
+      "hold_ride_baseline_acc": 0.6256716417910447,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.6181666666666666,
+      "by_menu_size": {
+        "2": {
+          "n": 1823,
+          "accuracy": 0.6648381788261108
+        },
+        "3": {
+          "n": 829,
+          "accuracy": 0.9758745476477684
+        },
+        "4": {
+          "n": 2078,
+          "accuracy": 0.45620789220404234
+        },
+        "5": {
+          "n": 1270,
+          "accuracy": 0.8070866141732284
+        }
+      },
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 806,
+          "accuracy": 1.0
+        },
+        "RIDE": {
+          "n": 685,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 606,
+          "accuracy": 0.7541254125412541
+        },
+        "CUT_LOSS": {
+          "n": 606,
+          "accuracy": 1.0
+        },
+        "APE_TIA": {
+          "n": 605,
+          "accuracy": 1.0
+        },
+        "HOLD": {
+          "n": 605,
+          "accuracy": 0.0
+        },
+        "LONG_BTC": {
+          "n": 605,
+          "accuracy": 0.16033057851239668
+        },
+        "TRIM_HALF": {
+          "n": 473,
+          "accuracy": 0.0
+        },
+        "APE_STRK": {
+          "n": 241,
+          "accuracy": 1.0
+        },
+        "APE_NEAR": {
+          "n": 217,
+          "accuracy": 0.11059907834101383
+        },
+        "SHORT_BTC": {
+          "n": 169,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 154,
+          "accuracy": 0.8506493506493507
+        },
+        "SWITCH_COIN": {
+          "n": 149,
+          "accuracy": 1.0
+        },
+        "APE_ONDO": {
+          "n": 21,
+          "accuracy": 0.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 20,
+          "accuracy": 0.0
+        },
+        "APE_JUP": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "SWITCH": {
+          "n": 6,
+          "accuracy": 0.0
+        },
+        "APE_GRAM": {
+          "n": 6,
+          "accuracy": 1.0
+        },
+        "APE_LIT": {
+          "n": 5,
+          "accuracy": 0.0
+        },
+        "APE_BTC": {
+          "n": 3,
+          "accuracy": 0.0
+        }
+      },
+      "by_gold_label": {
+        "HOLD_WINNER": {
+          "n": 806,
+          "accuracy": 1.0
+        },
+        "RIDE": {
+          "n": 685,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 606,
+          "accuracy": 0.7541254125412541
+        },
+        "CUT_LOSS": {
+          "n": 606,
+          "accuracy": 1.0
+        },
+        "APE_TIA": {
+          "n": 605,
+          "accuracy": 1.0
+        },
+        "HOLD": {
+          "n": 605,
+          "accuracy": 0.0
+        },
+        "LONG_BTC": {
+          "n": 605,
+          "accuracy": 0.16033057851239668
+        },
+        "TRIM_HALF": {
+          "n": 473,
+          "accuracy": 0.0
+        },
+        "APE_STRK": {
+          "n": 241,
+          "accuracy": 1.0
+        },
+        "APE_NEAR": {
+          "n": 217,
+          "accuracy": 0.11059907834101383
+        },
+        "SHORT_BTC": {
+          "n": 169,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 154,
+          "accuracy": 0.8506493506493507
+        },
+        "SWITCH_COIN": {
+          "n": 149,
+          "accuracy": 1.0
+        },
+        "APE_ONDO": {
+          "n": 21,
+          "accuracy": 0.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 20,
+          "accuracy": 0.0
+        },
+        "APE_JUP": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "SWITCH": {
+          "n": 6,
+          "accuracy": 0.0
+        },
+        "APE_GRAM": {
+          "n": 6,
+          "accuracy": 1.0
+        },
+        "APE_LIT": {
+          "n": 5,
+          "accuracy": 0.0
+        },
+        "APE_BTC": {
+          "n": 3,
+          "accuracy": 0.0
+        }
+      },
+      "varied_n": 4585,
+      "varied_accuracy": 0.6944383860414395,
+      "collapsed_n": 1415,
+      "collapsed_accuracy": 0.5724381625441696,
+      "by_style": {
+        "breezy": {
+          "n": 2665,
+          "accuracy": 0.5737335834896811
+        },
+        "boozy": {
+          "n": 2124,
+          "accuracy": 0.8752354048964218
+        },
+        "bizzy": {
+          "n": 1211,
+          "accuracy": 0.500412881915772
+        }
+      },
+      "by_source": {
+        "hyperspeed": {
+          "n": 6000,
+          "accuracy": 0.6656666666666666
+        }
+      },
+      "temperature": 1.1,
+      "split": "eval_rules",
+      "scored_n": 6000,
+      "pool_n": 14515,
+      "always_hold_acc": 0.6181666666666666,
+      "majority_per_style_acc": 0.6181666666666666,
+      "beats_always_hold": true
+    },
+    "eval_live": {
+      "n": 2336,
+      "accuracy": 0.8253424657534246,
+      "confident_mistakes": 0,
+      "confident_mistake_rate": 0.0,
+      "ece": 0.22498145970734218,
+      "mean_confidence": 0.6003610060460824,
+      "hold_ride_baseline_n": 2331,
+      "hold_ride_baseline_acc": 0.9935649935649936,
+      "beats_hold_ride_baseline": false,
+      "note_majority_index_acc_unusable": 0.992722602739726,
+      "by_menu_size": {
+        "2": {
+          "n": 1244,
+          "accuracy": 0.6720257234726688
+        },
+        "3": {
+          "n": 401,
+          "accuracy": 1.0
+        },
+        "4": {
+          "n": 690,
+          "accuracy": 1.0
+        },
+        "5": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_action": {
+        "RIDE": {
+          "n": 1229,
+          "accuracy": 0.6769731489015459
+        },
+        "HOLD_WINNER": {
+          "n": 1087,
+          "accuracy": 1.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 15,
+          "accuracy": 0.26666666666666666
+        },
+        "APE_DOGE": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_STRK": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "SHORT_BTC": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_gold_label": {
+        "RIDE": {
+          "n": 1229,
+          "accuracy": 0.6769731489015459
+        },
+        "HOLD_WINNER": {
+          "n": 1087,
+          "accuracy": 1.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 15,
+          "accuracy": 0.26666666666666666
+        },
+        "APE_DOGE": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_STRK": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "SHORT_BTC": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 858,
+      "varied_accuracy": 0.9871794871794872,
+      "collapsed_n": 1478,
+      "collapsed_accuracy": 0.7313937753721245,
+      "by_style": {
+        "boozy": {
+          "n": 1247,
+          "accuracy": 0.6728147554129912
+        },
+        "breezy": {
+          "n": 1089,
+          "accuracy": 1.0
+        }
+      },
+      "by_source": {
+        "live_engine": {
+          "n": 2336,
+          "accuracy": 0.8253424657534246
+        }
+      },
+      "temperature": 1.1,
+      "split": "eval_live",
+      "scored_n": 2336,
+      "pool_n": 2336,
+      "always_hold_acc": 0.992722602739726,
+      "majority_per_style_acc": 0.992722602739726,
+      "beats_always_hold": false
+    },
+    "dev": {
+      "n": 2000,
+      "accuracy": 0.846,
+      "confident_mistakes": 195,
+      "confident_mistake_rate": 0.0975,
+      "ece": 0.033186359668042724,
+      "mean_confidence": 0.8315853322128929,
+      "hold_ride_baseline_n": 813,
+      "hold_ride_baseline_acc": 0.6027060270602707,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.4875,
+      "by_menu_size": {
+        "2": {
+          "n": 566,
+          "accuracy": 0.872791519434629
+        },
+        "3": {
+          "n": 477,
+          "accuracy": 0.8909853249475891
+        },
+        "4": {
+          "n": 303,
+          "accuracy": 0.8679867986798679
+        },
+        "5": {
+          "n": 654,
+          "accuracy": 0.7798165137614679
+        }
+      },
+      "by_action": {
+        "HOLD_WINNER": {
+          "n": 243,
+          "accuracy": 0.9753086419753086
+        },
+        "RIDE": {
+          "n": 165,
+          "accuracy": 0.7151515151515152
+        },
+        "SHORT_BTC": {
+          "n": 164,
+          "accuracy": 1.0
+        },
+        "BAIL": {
+          "n": 106,
+          "accuracy": 0.9716981132075472
+        },
+        "SWITCH_COIN": {
+          "n": 102,
+          "accuracy": 1.0
+        },
+        "APE_ONDO": {
+          "n": 102,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_NEAR": {
+          "n": 95,
+          "accuracy": 0.8736842105263158
+        },
+        "APE_BTC": {
+          "n": 93,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_PEPE": {
+          "n": 87,
+          "accuracy": 0.8850574712643678
+        },
+        "APE_TIA": {
+          "n": 87,
+          "accuracy": 0.8850574712643678
+        },
+        "APE_DOGE": {
+          "n": 85,
+          "accuracy": 0.9411764705882353
+        },
+        "HOLD": {
+          "n": 82,
+          "accuracy": 0.43902439024390244
+        },
+        "CUT_LOSS": {
+          "n": 81,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 81,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 69,
+          "accuracy": 0.8840579710144928
+        },
+        "APE_STRK": {
+          "n": 44,
+          "accuracy": 0.9318181818181818
+        },
+        "APE_HYPE": {
+          "n": 39,
+          "accuracy": 0.8717948717948718
+        },
+        "APE_LIT": {
+          "n": 30,
+          "accuracy": 0.7
+        },
+        "APE_SOL": {
+          "n": 29,
+          "accuracy": 0.5517241379310345
+        },
+        "APE_XRP": {
+          "n": 22,
+          "accuracy": 0.7272727272727273
+        },
+        "TRIM_HALF": {
+          "n": 21,
+          "accuracy": 1.0
+        },
+        "APE_ZEC": {
+          "n": 19,
+          "accuracy": 0.8421052631578947
+        },
+        "APE_LINK": {
+          "n": 14,
+          "accuracy": 0.42857142857142855
+        },
+        "APE_AVAX": {
+          "n": 12,
+          "accuracy": 0.75
+        },
+        "APE_RENDER": {
+          "n": 12,
+          "accuracy": 0.5833333333333334
+        },
+        "APE_ADA": {
+          "n": 12,
+          "accuracy": 0.5
+        },
+        "APE_ENA": {
+          "n": 10,
+          "accuracy": 0.5
+        },
+        "APE_INJ": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_BNB": {
+          "n": 8,
+          "accuracy": 0.75
+        },
+        "APE_JUP": {
+          "n": 7,
+          "accuracy": 1.0
+        },
+        "APE_SUI": {
+          "n": 7,
+          "accuracy": 0.8571428571428571
+        },
+        "APE_XPL": {
+          "n": 7,
+          "accuracy": 0.2857142857142857
+        },
+        "APE_ETH": {
+          "n": 7,
+          "accuracy": 0.42857142857142855
+        },
+        "APE_FET": {
+          "n": 7,
+          "accuracy": 0.8571428571428571
+        },
+        "APE_TAO": {
+          "n": 6,
+          "accuracy": 1.0
+        },
+        "LONG_BTC": {
+          "n": 6,
+          "accuracy": 0.0
+        },
+        "APE_HBAR": {
+          "n": 5,
+          "accuracy": 0.8
+        },
+        "APE_LTC": {
+          "n": 5,
+          "accuracy": 1.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 4,
+          "accuracy": 0.0
+        },
+        "APE_ARB": {
+          "n": 4,
+          "accuracy": 0.5
+        },
+        "APE_TRUMP": {
+          "n": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_VIRTUAL": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_BCH": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_WLD": {
+          "n": 2,
+          "accuracy": 0.0
+        },
+        "APE_PENGU": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_gold_label": {
+        "HOLD_WINNER": {
+          "n": 243,
+          "accuracy": 0.9753086419753086
+        },
+        "RIDE": {
+          "n": 165,
+          "accuracy": 0.7151515151515152
+        },
+        "SHORT_BTC": {
+          "n": 164,
+          "accuracy": 1.0
+        },
+        "BAIL": {
+          "n": 106,
+          "accuracy": 0.9716981132075472
+        },
+        "SWITCH_COIN": {
+          "n": 102,
+          "accuracy": 1.0
+        },
+        "APE_ONDO": {
+          "n": 102,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_NEAR": {
+          "n": 95,
+          "accuracy": 0.8736842105263158
+        },
+        "APE_BTC": {
+          "n": 93,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_PEPE": {
+          "n": 87,
+          "accuracy": 0.8850574712643678
+        },
+        "APE_TIA": {
+          "n": 87,
+          "accuracy": 0.8850574712643678
+        },
+        "APE_DOGE": {
+          "n": 85,
+          "accuracy": 0.9411764705882353
+        },
+        "HOLD": {
+          "n": 82,
+          "accuracy": 0.43902439024390244
+        },
+        "CUT_LOSS": {
+          "n": 81,
+          "accuracy": 1.0
+        },
+        "SHORT_ETH": {
+          "n": 81,
+          "accuracy": 1.0
+        },
+        "APE_PUMP": {
+          "n": 69,
+          "accuracy": 0.8840579710144928
+        },
+        "APE_STRK": {
+          "n": 44,
+          "accuracy": 0.9318181818181818
+        },
+        "APE_HYPE": {
+          "n": 39,
+          "accuracy": 0.8717948717948718
+        },
+        "APE_LIT": {
+          "n": 30,
+          "accuracy": 0.7
+        },
+        "APE_SOL": {
+          "n": 29,
+          "accuracy": 0.5517241379310345
+        },
+        "APE_XRP": {
+          "n": 22,
+          "accuracy": 0.7272727272727273
+        },
+        "TRIM_HALF": {
+          "n": 21,
+          "accuracy": 1.0
+        },
+        "APE_ZEC": {
+          "n": 19,
+          "accuracy": 0.8421052631578947
+        },
+        "APE_LINK": {
+          "n": 14,
+          "accuracy": 0.42857142857142855
+        },
+        "APE_AVAX": {
+          "n": 12,
+          "accuracy": 0.75
+        },
+        "APE_RENDER": {
+          "n": 12,
+          "accuracy": 0.5833333333333334
+        },
+        "APE_ADA": {
+          "n": 12,
+          "accuracy": 0.5
+        },
+        "APE_ENA": {
+          "n": 10,
+          "accuracy": 0.5
+        },
+        "APE_INJ": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_BNB": {
+          "n": 8,
+          "accuracy": 0.75
+        },
+        "APE_JUP": {
+          "n": 7,
+          "accuracy": 1.0
+        },
+        "APE_SUI": {
+          "n": 7,
+          "accuracy": 0.8571428571428571
+        },
+        "APE_XPL": {
+          "n": 7,
+          "accuracy": 0.2857142857142857
+        },
+        "APE_ETH": {
+          "n": 7,
+          "accuracy": 0.42857142857142855
+        },
+        "APE_FET": {
+          "n": 7,
+          "accuracy": 0.8571428571428571
+        },
+        "APE_TAO": {
+          "n": 6,
+          "accuracy": 1.0
+        },
+        "LONG_BTC": {
+          "n": 6,
+          "accuracy": 0.0
+        },
+        "APE_HBAR": {
+          "n": 5,
+          "accuracy": 0.8
+        },
+        "APE_LTC": {
+          "n": 5,
+          "accuracy": 1.0
+        },
+        "DOUBLE_DOWN": {
+          "n": 4,
+          "accuracy": 0.0
+        },
+        "APE_ARB": {
+          "n": 4,
+          "accuracy": 0.5
+        },
+        "APE_TRUMP": {
+          "n": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_VIRTUAL": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_BCH": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_WLD": {
+          "n": 2,
+          "accuracy": 0.0
+        },
+        "APE_PENGU": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 1732,
+      "varied_accuracy": 0.8602771362586605,
+      "collapsed_n": 268,
+      "collapsed_accuracy": 0.753731343283582,
+      "by_style": {
+        "boozy": {
+          "n": 1322,
+          "accuracy": 0.81089258698941
+        },
+        "breezy": {
+          "n": 515,
+          "accuracy": 0.9766990291262136
+        },
+        "bizzy": {
+          "n": 163,
+          "accuracy": 0.7177914110429447
+        }
+      },
+      "by_source": {
+        "hyperspeed": {
+          "n": 2000,
+          "accuracy": 0.846
+        }
+      },
+      "temperature": 1.1,
+      "split": "dev",
+      "scored_n": 2000,
+      "pool_n": 8533,
+      "always_hold_acc": 0.4875,
+      "majority_per_style_acc": 0.4875,
+      "beats_always_hold": true
+    },
+    "train": {
+      "n": 400,
+      "accuracy": 0.865,
+      "confident_mistakes": 24,
+      "confident_mistake_rate": 0.06,
+      "ece": 0.07740571542610536,
+      "mean_confidence": 0.8117616553835518,
+      "hold_ride_baseline_n": 151,
+      "hold_ride_baseline_acc": 0.45695364238410596,
+      "beats_hold_ride_baseline": true,
+      "note_majority_index_acc_unusable": 0.4575,
+      "by_menu_size": {
+        "2": {
+          "n": 94,
+          "accuracy": 0.925531914893617
+        },
+        "3": {
+          "n": 96,
+          "accuracy": 0.7708333333333334
+        },
+        "4": {
+          "n": 81,
+          "accuracy": 0.9506172839506173
+        },
+        "5": {
+          "n": 129,
+          "accuracy": 0.8372093023255814
+        }
+      },
+      "by_action": {
+        "SHORT_ETH": {
+          "n": 46,
+          "accuracy": 0.8043478260869565
+        },
+        "BAIL": {
+          "n": 38,
+          "accuracy": 1.0
+        },
+        "HOLD_WINNER": {
+          "n": 32,
+          "accuracy": 1.0
+        },
+        "APE_SOL": {
+          "n": 30,
+          "accuracy": 0.9
+        },
+        "RIDE": {
+          "n": 23,
+          "accuracy": 0.6086956521739131
+        },
+        "APE_ONDO": {
+          "n": 19,
+          "accuracy": 0.9473684210526315
+        },
+        "APE_PUMP": {
+          "n": 19,
+          "accuracy": 0.7894736842105263
+        },
+        "APE_DOGE": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "CUT_LOSS": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "APE_TIA": {
+          "n": 16,
+          "accuracy": 0.6875
+        },
+        "HOLD": {
+          "n": 14,
+          "accuracy": 0.6428571428571429
+        },
+        "APE_PEPE": {
+          "n": 14,
+          "accuracy": 0.9285714285714286
+        },
+        "SWITCH_COIN": {
+          "n": 13,
+          "accuracy": 1.0
+        },
+        "SHORT_BTC": {
+          "n": 11,
+          "accuracy": 1.0
+        },
+        "APE_RENDER": {
+          "n": 11,
+          "accuracy": 0.6363636363636364
+        },
+        "APE_BTC": {
+          "n": 10,
+          "accuracy": 0.9
+        },
+        "APE_NEAR": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_HYPE": {
+          "n": 7,
+          "accuracy": 1.0
+        },
+        "APE_FET": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "APE_PENGU": {
+          "n": 6,
+          "accuracy": 0.16666666666666666
+        },
+        "APE_ZEC": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "APE_BNB": {
+          "n": 5,
+          "accuracy": 0.8
+        },
+        "APE_AVAX": {
+          "n": 5,
+          "accuracy": 1.0
+        },
+        "APE_ADA": {
+          "n": 4,
+          "accuracy": 0.75
+        },
+        "APE_WLD": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_XRP": {
+          "n": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_TAO": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_INJ": {
+          "n": 2,
+          "accuracy": 0.5
+        },
+        "APE_LINK": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_ETH": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_BCH": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_VVV": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_LTC": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_SUI": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "by_gold_label": {
+        "SHORT_ETH": {
+          "n": 46,
+          "accuracy": 0.8043478260869565
+        },
+        "BAIL": {
+          "n": 38,
+          "accuracy": 1.0
+        },
+        "HOLD_WINNER": {
+          "n": 32,
+          "accuracy": 1.0
+        },
+        "APE_SOL": {
+          "n": 30,
+          "accuracy": 0.9
+        },
+        "RIDE": {
+          "n": 23,
+          "accuracy": 0.6086956521739131
+        },
+        "APE_ONDO": {
+          "n": 19,
+          "accuracy": 0.9473684210526315
+        },
+        "APE_PUMP": {
+          "n": 19,
+          "accuracy": 0.7894736842105263
+        },
+        "APE_DOGE": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "CUT_LOSS": {
+          "n": 18,
+          "accuracy": 1.0
+        },
+        "APE_TIA": {
+          "n": 16,
+          "accuracy": 0.6875
+        },
+        "HOLD": {
+          "n": 14,
+          "accuracy": 0.6428571428571429
+        },
+        "APE_PEPE": {
+          "n": 14,
+          "accuracy": 0.9285714285714286
+        },
+        "SWITCH_COIN": {
+          "n": 13,
+          "accuracy": 1.0
+        },
+        "SHORT_BTC": {
+          "n": 11,
+          "accuracy": 1.0
+        },
+        "APE_RENDER": {
+          "n": 11,
+          "accuracy": 0.6363636363636364
+        },
+        "APE_BTC": {
+          "n": 10,
+          "accuracy": 0.9
+        },
+        "APE_NEAR": {
+          "n": 9,
+          "accuracy": 0.8888888888888888
+        },
+        "APE_HYPE": {
+          "n": 7,
+          "accuracy": 1.0
+        },
+        "APE_FET": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "APE_PENGU": {
+          "n": 6,
+          "accuracy": 0.16666666666666666
+        },
+        "APE_ZEC": {
+          "n": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "APE_BNB": {
+          "n": 5,
+          "accuracy": 0.8
+        },
+        "APE_AVAX": {
+          "n": 5,
+          "accuracy": 1.0
+        },
+        "APE_ADA": {
+          "n": 4,
+          "accuracy": 0.75
+        },
+        "APE_WLD": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_XRP": {
+          "n": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "APE_TAO": {
+          "n": 3,
+          "accuracy": 1.0
+        },
+        "APE_INJ": {
+          "n": 2,
+          "accuracy": 0.5
+        },
+        "APE_LINK": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_ETH": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "APE_XLM": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_BCH": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_VVV": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_LTC": {
+          "n": 1,
+          "accuracy": 1.0
+        },
+        "APE_SUI": {
+          "n": 1,
+          "accuracy": 1.0
+        }
+      },
+      "varied_n": 360,
+      "varied_accuracy": 0.8694444444444445,
+      "collapsed_n": 40,
+      "collapsed_accuracy": 0.825,
+      "by_style": {
+        "boozy": {
+          "n": 279,
+          "accuracy": 0.8566308243727598
+        },
+        "breezy": {
+          "n": 89,
+          "accuracy": 0.898876404494382
+        },
+        "bizzy": {
+          "n": 32,
+          "accuracy": 0.84375
+        }
+      },
+      "by_source": {
+        "hyperspeed": {
+          "n": 400,
+          "accuracy": 0.865
+        }
+      },
+      "temperature": 1.1,
+      "split": "train",
+      "scored_n": 400,
+      "pool_n": 59160,
+      "always_hold_acc": 0.4575,
+      "majority_per_style_acc": 0.4575,
+      "beats_always_hold": true
+    },
+    "cpu_latency_batch1": {
+      "n": 64,
+      "mean_ms": 37.23737943755623,
+      "p50_ms": 36.87320350036316,
+      "p95_ms": 39.08317589939543,
+      "min_ms": 35.67344899784075,
+      "max_ms": 43.65568000139319
+    },
+    "confident_mistake_threshold": 0.65
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.7187120689935982,
+      "dev_agree_t1": 0.846
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5427665934562683,
+      "dev_agree_t1": 0.8335
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.4704354671165347,
+      "dev_agree_t1": 0.832
+    }
+  ],
+  "onnx": {
+    "path": "/workspace/tools/orchestration/jevh_trading/artifacts/jevh_trading_ettin68m_seq128.onnx",
+    "sha256": "fc126061dc8b1ab4c906339963eb14c9b04185d184be4e1b65a23286262f9a3a",
+    "opset": 17,
+    "ops": [
+      "Add",
+      "Cast",
+      "Concat",
+      "Constant",
+      "Div",
+      "Erf",
+      "Gather",
+      "Gemm",
+      "MatMul",
+      "Mul",
+      "Neg",
+      "Pow",
+      "ReduceMean",
+      "Reshape",
+      "Slice",
+      "Softmax",
+      "Sqrt",
+      "Sub",
+      "Transpose"
+    ],
+    "inputs": {
+      "input_ids": [
+        1,
+        128
+      ],
+      "attention_mask": [
+        1,
+        128
+      ]
+    },
+    "outputs": {
+      "logit": [
+        1,
+        1
+      ]
+    },
+    "seq_len": 128,
+    "batch": 1,
+    "attention_mask_used": true,
+    "input_ids_is_input": true,
+    "attention_mask_is_input": true,
+    "bytes": 277144911,
+    "parity": {
+      "cos": 0.9999999999991102,
+      "max_abs": 1.2874603271484375e-05,
+      "n": 32,
+      "output_name": "logit"
+    }
+  },
+  "calib": {
+    "n": 256,
+    "shape": [
+      256,
+      128
+    ],
+    "input_ids": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_input_ids.npy",
+    "attention_mask": "/workspace/tools/orchestration/jevh_trading/artifacts/calib/calib_attention_mask.npy",
+    "input_ids_sha256": "f98a386804cbcc26b786d8d08f3accd4d7b96e060f00844ade898122631328d3",
+    "attention_mask_sha256": "cc1549055ab3290c7d39d028b4cbee13bc56a19e708ff7b20cba5d6fc3820397"
+  },
+  "outcome_aux": {
+    "n_mapped": 0,
+    "paper_span_hours": 0.492,
+    "horizon_hours": 8,
+    "note": "Forward-outcome labels are an optional auxiliary/eval signal, not gold. This log spans ~0.5h of decisions; an 8h forward window is not available for almost every row. Do not treat outcome-argmax as a Jev stand-in."
+  },
+  "gaps": [
+    "Gold is Jev's logged choice + probabilities, never status/action. Not financial advice.",
+    "This does NOT meet the >=14 days / multiple-regimes bar. live_engine is ~13h of one paper session; hyperspeed is 30 minutes / 30 snapshots of one market regime. Scores mean: mimics Jev in this regime, not a stand-in.",
+    "Calendar days 2 (need 14); span 12.725 h.",
+    "Non-hold gold: 56131. Varied: 66980.",
+    "live_engine is held out of train when v2 hyperspeed is present.",
+    "Held-out rules_id: ['breezy-cautious', 'boozy-diamond', 'bizzy-alts']. Time-eval snapshots: ['2026-10-09T12:04:29.935Z', '2026-10-09T12:05:29.934Z', '2026-10-09T12:06:29.935Z', '2026-10-09T12:07:29.937Z', '2026-10-09T12:08:29.959Z', '2026-10-09T12:09:29.958Z'].",
+    "CPU 68m train cap: scored 8000 of pool 59160 (stratified).",
+    "Backbone 68m (jhu-clsp/ettin-encoder-68m); 68m-v5 recipe (not merged). last-N unfreeze=12.",
+    "No HEF compile, no Pi deploy, no exchange/broker/trading API calls, no paid APIs.",
+    "Beebots engine is not modified; see BEEBOTS_LOG_SPEC.md.",
+    "seq128 keep_option: 14223 encoded rows overflowed; option kept, state trimmed."
+  ]
+}
