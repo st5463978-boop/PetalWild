@@ -1,0 +1,221 @@
+{
+  "full_attention": {
+    "layer_index": 3,
+    "kind": "full_attention",
+    "parameters": 209723904,
+    "future_token_leak_max_abs": 0.0,
+    "onnx": "/workspace/artifacts/onnx/qwen35_full_attention_block.onnx",
+    "onnx_bytes": 839111803,
+    "operators": {
+      "Mul": 16,
+      "Add": 9,
+      "MatMul": 9,
+      "Reshape": 8,
+      "Slice": 8,
+      "Transpose": 5,
+      "Pow": 4,
+      "ReduceMean": 4,
+      "Sqrt": 4,
+      "Reciprocal": 4,
+      "Unsqueeze": 4,
+      "Concat": 4,
+      "Neg": 2,
+      "Expand": 2,
+      "Sigmoid": 2,
+      "Split": 1,
+      "Softmax": 1
+    },
+    "pytorch_vs_onnx": {
+      "cases": 12,
+      "cosine_min": 0.9999999999998963,
+      "mse_max": 3.3135775297751157e-13,
+      "max_abs_max": 1.9073486328125e-05
+    }
+  },
+  "linear_attention": {
+    "layer_index": 0,
+    "kind": "linear_attention_scatter_free",
+    "parameters": 218407104,
+    "pytorch_official_vs_rewrite": {
+      "cases": 12,
+      "cosine_min": 0.9999999999999929,
+      "mse_max": 1.938532938561155e-14,
+      "max_abs_max": 7.62939453125e-06
+    },
+    "onnx": "/workspace/artifacts/onnx/qwen35_linear_block_scatter_free.onnx",
+    "onnx_bytes": 873851681,
+    "operators": {
+      "Unsqueeze": 59,
+      "Mul": 56,
+      "Gather": 40,
+      "ReduceSum": 18,
+      "Add": 16,
+      "MatMul": 8,
+      "Transpose": 8,
+      "Reshape": 8,
+      "Exp": 8,
+      "Sub": 8,
+      "Sqrt": 5,
+      "Reciprocal": 5,
+      "Sigmoid": 4,
+      "Pow": 3,
+      "ReduceMean": 3,
+      "Expand": 2,
+      "Squeeze": 1,
+      "Conv": 1,
+      "Slice": 1,
+      "Split": 1,
+      "Softplus": 1,
+      "Greater": 1,
+      "Where": 1,
+      "Div": 1,
+      "ConstantOfShape": 1,
+      "Concat": 1
+    },
+    "pytorch_vs_onnx": {
+      "cases": 12,
+      "cosine_min": 0.999999999999958,
+      "mse_max": 1.2483360846086258e-13,
+      "max_abs_max": 3.0517578125e-05
+    }
+  },
+  "mlp": {
+    "kind": "swiglu_mlp",
+    "onnx": "/workspace/artifacts/onnx/qwen35_mlp.onnx",
+    "onnx_bytes": 603988914,
+    "operators": {
+      "MatMul": 3,
+      "Mul": 2,
+      "Sigmoid": 1
+    },
+    "pytorch_vs_onnx": {
+      "cases": 12,
+      "cosine_min": 0.999999999999679,
+      "mse_max": 1.0075788942571692e-13,
+      "max_abs_max": 2.1457672119140625e-06
+    }
+  },
+  "scaled": {
+    "2": {
+      "onnx": "/workspace/artifacts/onnx/qwen35_full_attention_x2.onnx",
+      "onnx_bytes": 839412445,
+      "operators": {
+        "Mul": 32,
+        "Add": 18,
+        "MatMul": 18,
+        "Transpose": 17,
+        "Reshape": 16,
+        "Slice": 16,
+        "Pow": 8,
+        "ReduceMean": 8,
+        "Sqrt": 8,
+        "Reciprocal": 8,
+        "Concat": 8,
+        "Unsqueeze": 6,
+        "Neg": 4,
+        "Expand": 4,
+        "Sigmoid": 4,
+        "Split": 2,
+        "Softmax": 2
+      },
+      "pytorch_vs_onnx": {
+        "cases": 1,
+        "cosine_min": 0.9999999999998678,
+        "mse_max": 7.101133257371052e-13,
+        "max_abs_max": 1.52587890625e-05
+      }
+    },
+    "4": {
+      "onnx": "/workspace/artifacts/onnx/qwen35_full_attention_x4.onnx",
+      "onnx_bytes": 839872208,
+      "operators": {
+        "Mul": 64,
+        "Add": 36,
+        "MatMul": 36,
+        "Reshape": 32,
+        "Slice": 32,
+        "Transpose": 27,
+        "Pow": 16,
+        "ReduceMean": 16,
+        "Sqrt": 16,
+        "Reciprocal": 16,
+        "Concat": 16,
+        "Unsqueeze": 10,
+        "Neg": 8,
+        "Expand": 8,
+        "Sigmoid": 8,
+        "Split": 4,
+        "Softmax": 4
+      },
+      "pytorch_vs_onnx": {
+        "cases": 1,
+        "cosine_min": 0.9999999999998289,
+        "mse_max": 2.4338436377857595e-12,
+        "max_abs_max": 2.288818359375e-05
+      }
+    }
+  },
+  "head": {
+    "parameters": 121762820,
+    "official_vs_static": {
+      "cases": 12,
+      "decision_agreement": 1.0,
+      "logit_cosine_min": 0.9999999999999998,
+      "logit_max_abs_max": 0.0
+    },
+    "onnx": "/workspace/artifacts/onnx/clef_decision_head.onnx",
+    "onnx_bytes": 487683868,
+    "operators": {
+      "Transpose": 96,
+      "Reshape": 88,
+      "Add": 67,
+      "MatMul": 57,
+      "Mul": 48,
+      "Gather": 31,
+      "Unsqueeze": 27,
+      "LayerNormalization": 23,
+      "Gemm": 20,
+      "Div": 18,
+      "Slice": 13,
+      "Split": 12,
+      "Softmax": 12,
+      "Squeeze": 10,
+      "Erf": 8,
+      "ReduceL2": 8,
+      "Clip": 8,
+      "ReduceMean": 7,
+      "Concat": 7,
+      "Expand": 6,
+      "ReduceSum": 4,
+      "Sub": 2,
+      "Abs": 2
+    },
+    "pytorch_vs_onnx": {
+      "cases": 12,
+      "cosine_min": 0.9999999999999489,
+      "mse_max": 4.753530902235071e-13,
+      "max_abs_max": 1.430511474609375e-06
+    },
+    "int8_per_channel_fake_quant": {
+      "decision_agreement": 1.0,
+      "high_confidence_disagreements": 0,
+      "note": "Host-side symmetric per-channel int8 rounding of the real head weights. This is not the Hailo quantizer."
+    },
+    "quantized_full_attention_hidden_into_fp32_head": {
+      "hidden_cosine_min": 0.9999498286471249,
+      "hidden_cosine_mean": 0.9999527315523942,
+      "decision_agreement": 1.0,
+      "note": "Layer 3 only, sequence 8, per-channel int8 weights. Not a full-backbone Hailo quantization."
+    }
+  },
+  "hailo": {
+    "imported": false,
+    "stage": "import",
+    "error": "ModuleNotFoundError: No module named 'hailo_sdk_client'"
+  },
+  "smoke_token_lengths": {
+    "count": 20,
+    "min": 234,
+    "max": 253
+  }
+}

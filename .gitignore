@@ -17,3 +17,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 android/
+
+# Clef-Flash Hailo experiment: weights, HARs, HEFs, and the DFC venv stay out of git
+/artifacts/
