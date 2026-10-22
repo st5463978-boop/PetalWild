@@ -49,8 +49,22 @@ func requirement_met(req: Dictionary, world: Dictionary) -> bool:
 			return int(structures.get(str(req.get("id", "")), 0)) >= int(req.get("min", 1))
 		"garden_quality":
 			return float(world.get("garden_quality", 0.0)) >= float(req.get("min", 1.0))
+		"service":
+			return _service_met(req, world)
 		_:
 			return false
+
+func _service_met(req: Dictionary, world: Dictionary) -> bool:
+	var field: Variant = world.get("service_field", null)
+	if not (field is ServiceField):
+		return false
+	var grid: ServiceField = field
+	var channel := str(req.get("channel", ""))
+	var minimum := float(req.get("min", 0.0))
+	if req.has("x") and req.has("z"):
+		return grid.sample(Vector2i(int(req.get("x", 0)), int(req.get("z", 0))), channel) >= minimum
+	return grid.channel_max(channel) >= minimum
+
 
 func all_met(species: Dictionary, world: Dictionary) -> bool:
 	for req in species.get("requirements", []):
