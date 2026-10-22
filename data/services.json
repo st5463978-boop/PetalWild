@@ -1,0 +1,42 @@
+{
+  "quality_weights": {
+    "moisture": 0.3,
+    "fertility": 0.25,
+    "pollination": 0.25,
+    "light": 0.2
+  },
+  "services": [
+    {
+      "id": "well",
+      "name": "Well",
+      "channel": "moisture",
+      "radius": 3,
+      "strength": 1.0,
+      "upkeep": 2
+    },
+    {
+      "id": "compost",
+      "name": "Compost",
+      "channel": "fertility",
+      "radius": 2,
+      "strength": 1.0,
+      "upkeep": 1
+    },
+    {
+      "id": "hive",
+      "name": "Hive",
+      "channel": "pollination",
+      "radius": 4,
+      "strength": 1.0,
+      "upkeep": 3
+    },
+    {
+      "id": "lantern",
+      "name": "Lantern",
+      "channel": "light",
+      "radius": 3,
+      "strength": 1.0,
+      "upkeep": 1
+    }
+  ]
+}

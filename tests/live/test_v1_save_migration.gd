@@ -63,7 +63,7 @@ func _already_v2(t: PetalAssert) -> void:
 
 
 func _newer_version(t: PetalAssert) -> void:
-	var payload := {"version": 3, "state": {"name": "From the future", "sim": {"schema": 99}}}
+	var payload := {"version": 4, "state": {"name": "From the future", "sim": {"schema": 99}}}
 	var state := _migrate_parsed(payload)
 	t.expect(state.is_empty(), "newer saves are refused")
 
@@ -113,7 +113,7 @@ func _write_roundtrip(t: PetalAssert) -> void:
 	var parsed: Variant = JSON.parse_string(raw)
 	t.expect(typeof(parsed) == TYPE_DICTIONARY, "slot json is a dict")
 	if typeof(parsed) == TYPE_DICTIONARY:
-		t.expect(int(parsed.get("version", 0)) == 2, "new writes are version 2")
+		t.expect(int(parsed.get("version", 0)) == 3, "new writes are version 3")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
 	var empty_slot := 92

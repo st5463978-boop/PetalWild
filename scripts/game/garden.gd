@@ -54,6 +54,8 @@ var bee_note_day := -1
 var bee_flower := Vector3.ZERO
 var sim := SimClock.new()
 var jev_core := JevGameCore.new()
+var services := ServiceField.new()
+var city := CityDemand.new()
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -88,6 +90,9 @@ func _build() -> void:
 	ecology.attractor_provider = Callable(self, "_attractor_for")
 	ecology.soil_effect_cb = Callable(self, "_apply_soil_effect")
 	ecology.event_happened.connect(_on_ecology)
+	services.setup(GardenLayout.BED_W, GardenLayout.BED_H)
+	city.setup(services, sim.log, soil, ecology)
+	city.reseed(sim.seed)
 
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
@@ -185,6 +190,8 @@ func _process(delta: float) -> void:
 		if gossip_timer <= 0.0:
 			gossip_done = true
 			_person("bram").say("The stall is loud. The beds were quieter.")
+	city.tick()
+	services.charge_daily(Clock.day)
 	SimLod.recount(ecology.actors)
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 
@@ -5787,6 +5794,7 @@ func world_snapshot() -> Dictionary:
 		"resident_count": ecology.resident_counts(),
 		"structures": structures.duplicate(),
 		"garden_quality": quality,
+		"service_field": services,
 	}
 
 func to_state() -> Dictionary:
@@ -5828,6 +5836,7 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
+		"city": services.to_state(),
 		"sim": {
 			"schema": 1,
 			"clock": sim.to_state(),
@@ -5898,6 +5907,9 @@ func apply_state(data: Dictionary) -> void:
 	_sync_plants()
 	_refresh_soil_colors()
 	_sync_road_stones()
+	services.apply_state(data.get("city", {}))
+	city.reseed(sim.seed)
+	city.resync()
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -14469,6 +14481,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance_met": false,
 			"residents": 0,
 		})
+	rows.append(city.journal_row())
 	return rows
 
 func _without_hidden_names(lines: PackedStringArray) -> PackedStringArray:

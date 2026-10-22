@@ -51,6 +51,15 @@ func spend(amount: int) -> bool:
 	changed.emit()
 	return true
 
+
+func deduct(amount: int) -> int:
+	var paid := mini(maxi(amount, 0), coins)
+	if paid <= 0:
+		return 0
+	coins -= paid
+	changed.emit()
+	return paid
+
 func earn(amount: int) -> void:
 	coins += amount
 	changed.emit()

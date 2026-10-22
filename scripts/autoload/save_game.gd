@@ -1,7 +1,7 @@
 extends Node
 
-const VERSION := 2
-const MIGRATIONS := {1: "_m1_to_2"}
+const VERSION := 3
+const MIGRATIONS := {1: "_m1_to_2", 2: "_m2_to_3"}
 
 var pending_state = null
 var garden_name := "Hedge Hollow"
@@ -87,11 +87,12 @@ func _finish(state: Dictionary) -> Dictionary:
 	var sim: Variant = state.get("sim", {})
 	if typeof(sim) != TYPE_DICTIONARY:
 		state["sim"] = {"schema": 1}
-		return state
-	var body: Dictionary = sim
-	if not body.has("schema"):
-		body["schema"] = 1
-	state["sim"] = body
+	else:
+		var body: Dictionary = sim
+		if not body.has("schema"):
+			body["schema"] = 1
+		state["sim"] = body
+	_ensure_city(state)
 	return state
 
 func _m1_to_2(s: Dictionary) -> Dictionary:
@@ -106,6 +107,25 @@ func _m1_to_2(s: Dictionary) -> Dictionary:
 		body["schema"] = 1
 	out["sim"] = body
 	return out
+
+
+func _m2_to_3(s: Dictionary) -> Dictionary:
+	## VC1 adds the city block. Older gardens start with no stamped services.
+	var out := s.duplicate(true)
+	_ensure_city(out)
+	return out
+
+
+func _ensure_city(state: Dictionary) -> void:
+	var city: Variant = state.get("city", null)
+	if typeof(city) != TYPE_DICTIONARY:
+		state["city"] = {"services": []}
+		return
+	var body: Dictionary = city
+	if typeof(body.get("services", null)) != TYPE_ARRAY:
+		body["services"] = []
+	state["city"] = body
+
 
 func meta(slot: int) -> Dictionary:
 	if not has_slot(slot):
