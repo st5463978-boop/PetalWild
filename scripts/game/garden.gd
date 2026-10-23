@@ -55,6 +55,7 @@ var bee_flower := Vector3.ZERO
 var sim := SimClock.new()
 var jev_core := JevGameCore.new()
 var services := ServiceField.new()
+var paths := PathGraph.new()
 var city := CityDemand.new()
 
 func _ready() -> void:
@@ -91,7 +92,9 @@ func _build() -> void:
 	ecology.soil_effect_cb = Callable(self, "_apply_soil_effect")
 	ecology.event_happened.connect(_on_ecology)
 	services.setup(GardenLayout.BED_W, GardenLayout.BED_H)
-	city.setup(services, sim.log, soil, ecology)
+	paths.setup(sim.log, ecology, soil)
+	paths.reseed(sim.seed)
+	city.setup(services, sim.log, soil, ecology, paths)
 	city.reseed(sim.seed)
 
 	atmosphere = Atmosphere.new()
@@ -102,6 +105,7 @@ func _build() -> void:
 	GardenDressing.new().build(self)
 	GardenProps.new().build(self)
 	_build_road_stones()
+	paths.ingest_scene(self)
 
 	scoop_root = Node3D.new()
 	scoop_root.name = "Scoops"
@@ -190,6 +194,8 @@ func _process(delta: float) -> void:
 		if gossip_timer <= 0.0:
 			gossip_done = true
 			_person("bram").say("The stall is loud. The beds were quieter.")
+	paths.tick()
+	paths.settle_stall()
 	city.tick()
 	services.charge_daily(Clock.day)
 	SimLod.recount(ecology.actors)
@@ -5797,6 +5803,11 @@ func world_snapshot() -> Dictionary:
 		"service_field": services,
 	}
 
+func _city_block() -> Dictionary:
+	var body := services.to_state()
+	body["paths"] = paths.to_state()
+	return body
+
 func to_state() -> Dictionary:
 	var cast: Array = []
 	for id in ContentDB.people_order:
@@ -5836,7 +5847,7 @@ func to_state() -> Dictionary:
 		"bee_note_day": bee_note_day,
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
-		"city": services.to_state(),
+		"city": _city_block(),
 		"sim": {
 			"schema": 1,
 			"clock": sim.to_state(),
@@ -5908,6 +5919,9 @@ func apply_state(data: Dictionary) -> void:
 	_refresh_soil_colors()
 	_sync_road_stones()
 	services.apply_state(data.get("city", {}))
+	paths.reseed(sim.seed)
+	paths.apply_state(data.get("city", {}))
+	paths.ingest_scene(self)
 	city.reseed(sim.seed)
 	city.resync()
 

@@ -13,6 +13,7 @@ var seed := 4242
 var signals_for: Callable = Callable()
 
 var services: ServiceField
+var paths: PathGraph
 var log: CausalLog
 var soil: RefCounted
 var ecology: Node
@@ -29,8 +30,9 @@ func _init() -> void:
 	_load()
 
 
-func setup(field: ServiceField, causal: CausalLog, beds: RefCounted, parish: Node) -> void:
+func setup(field: ServiceField, causal: CausalLog, beds: RefCounted, parish: Node, walk: PathGraph = null) -> void:
 	services = field
+	paths = walk
 	log = causal
 	soil = beds
 	ecology = parish
@@ -110,7 +112,7 @@ func _score(kind: String, signals: Dictionary) -> int:
 
 
 func _reason(kind: String, old_value: int, new_value: int, signals: Dictionary) -> String:
-	return "%s demand %+d because residents %d, free beds %d, quality %.2f, coins %d, stall stock %d" % [
+	return "%s demand %+d because residents %d, free beds %d, quality %.2f, coins %d, stall stock %d, footfall %d" % [
 		kind.capitalize(),
 		new_value - old_value,
 		int(signals.get("resident_total", 0)),
@@ -118,6 +120,7 @@ func _reason(kind: String, old_value: int, new_value: int, signals: Dictionary) 
 		float(signals.get("quality_mean", 0.0)),
 		int(round(float(signals.get("coins", 0.0)))),
 		int(signals.get("stall_stock", 0)),
+		int(round(float(signals.get("footfall", 0.0)))),
 	]
 
 
@@ -150,6 +153,7 @@ func _live_signals() -> Dictionary:
 		"quality_mean": services.quality_mean() if services != null else 0.0,
 		"coins": _coins(),
 		"stall_stock": _stall_stock(),
+		"footfall": paths.footfall_signal() if paths != null else 0.0,
 	}
 
 

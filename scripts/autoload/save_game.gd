@@ -111,6 +111,7 @@ func _m1_to_2(s: Dictionary) -> Dictionary:
 
 func _m2_to_3(s: Dictionary) -> Dictionary:
 	## VC1 adds the city block. Older gardens start with no stamped services.
+	## VC2 keeps that block at v3 and fills a missing paths list with [].
 	var out := s.duplicate(true)
 	_ensure_city(out)
 	return out
@@ -119,11 +120,13 @@ func _m2_to_3(s: Dictionary) -> Dictionary:
 func _ensure_city(state: Dictionary) -> void:
 	var city: Variant = state.get("city", null)
 	if typeof(city) != TYPE_DICTIONARY:
-		state["city"] = {"services": []}
+		state["city"] = {"services": [], "paths": []}
 		return
 	var body: Dictionary = city
 	if typeof(body.get("services", null)) != TYPE_ARRAY:
 		body["services"] = []
+	if typeof(body.get("paths", null)) != TYPE_ARRAY:
+		body["paths"] = []
 	state["city"] = body
 
 
