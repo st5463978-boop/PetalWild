@@ -1,0 +1,548 @@
+[
+  {
+    "name": "Jelly-Baby",
+    "url": "https://github.com/scottstts/Jelly-Baby",
+    "source_repository": "scottstts/Jelly-Baby",
+    "commit": "19fc6ea487262f7a32fa8935712624ae5249db68",
+    "purpose": "Tabletop soft creature: compliant multi-point grab, tet-cage deformation, inversion recovery, flick throw, face reaction.",
+    "language": "JavaScript",
+    "engine": "Three.js (browser)",
+    "last_activity": "2026-09-14T10:19:54Z",
+    "licence_spdx": "GPL-3.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "README states GPL-3.0-only. LICENSE is the GNU GPL v3 text. GitHub licence API returns spdx_id GPL-3.0, which does not encode the 'only' grant. Shallow-cloned and read at 19fc6ea.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "The feel spec for a held jelly: lagged force-limited grab, flick momentum, small bounce, internal settle, hold-timed face.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject the GPL-3.0-only Jelly-Baby soft-body as a source for its jelly feel?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own Jelly-Baby?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "src/physics/grab.ts",
+      "src/app/input.ts",
+      "src/physics/soft-body.js",
+      "src/physics/deform-surface.js",
+      "src/physics/orientation-safety.js",
+      "src/physics/constants.js",
+      "src/app/locomotion.ts",
+      "src/graphics/character/face-expression.ts"
+    ],
+    "risks": [
+      "GPL-3.0-only source, mesh, and cage must not enter the MIT tree.",
+      "About a thousand nodes and a huge render mesh is a one-hero cost, not a garden.",
+      "Copying the recovery thresholds or the grab servo would be a derivative, not a study."
+    ],
+    "recommended_action": "Reimplement the grab, flick, and settle ideas in jelly_actor.gd. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Copy or translate any Jelly-Baby source, shader, asset, kernel, or constant block.",
+      "Replace jelly_actor.gd with this solver.",
+      "Vendor the repository."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Godot SoftBody3D",
+    "url": "https://github.com/godotengine/godot",
+    "source_repository": "godotengine/godot",
+    "commit": "8898c2b3db32adf6f92c694ffb6dac19af672e5f",
+    "purpose": "In-engine deformable mesh: pinned vertices, per-point impulses, pressure and sleep on the Jolt backend.",
+    "language": "C++",
+    "engine": "Godot 4.8-dev6",
+    "last_activity": "2026-09-14T21:10:40Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. soft_body_3d.h at this commit carries the Godot MIT header. Backends: modules/godot_physics_3d/godot_soft_body_3d.cpp and modules/jolt_physics/objects/jolt_soft_body_3d.cpp. Official demo godotengine/godot-demo-projects 15d4fcd70a429dfd455d6fce9d0cd004abd07373 is also MIT.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "medium",
+    "expected_benefit": "A supported mesh deformer for one prop. Documents pins, impulses, and the Jolt pressure path already linked into this engine pin.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject Godot 4.8 SoftBody3D as the jelly creature deformer?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own Godot SoftBody3D?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "scene/3d/physics/soft_body_3d.h",
+      "modules/jolt_physics/objects/jolt_soft_body_3d.h",
+      "modules/godot_physics_3d/godot_soft_body_3d.h"
+    ],
+    "risks": [
+      "Soft bodies do not collide with other soft bodies (official demo README).",
+      "The same demo caps user-placed bodies for performance. A garden of jellies will not fit.",
+      "project.godot does not pin physics/3d/physics_engine, so GodotPhysics and Jolt solves can differ.",
+      "Surface-link soft body is not the tet grab model."
+    ],
+    "recommended_action": "Leave it available for a single prop test. Do not make it the creature body. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Replace jelly_actor.gd with SoftBody3D.",
+      "Simulate every garden jelly as a soft body."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "SpringBoneSimulator3D",
+    "url": "https://github.com/godotengine/godot",
+    "source_repository": "godotengine/godot",
+    "commit": "8898c2b3db32adf6f92c694ffb6dac19af672e5f",
+    "purpose": "Secondary motion on a Skeleton3D bone chain: Verlet tails, stiffness, drag, gravity, child collision shapes.",
+    "language": "C++",
+    "engine": "Godot 4.8-dev6",
+    "last_activity": "2026-09-14T21:10:40Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. scene/3d/spring_bone_simulator_3d.h at 8898c2b3d carries the Godot MIT header and a Verlet tail record. Present since 4.4 (PR 101409). Movement follows the MIT VRM spring-bone spec and is already compiled into this pin.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": true,
+    "portable": false,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "low",
+    "expected_benefit": "Crests, leaves, and lobes keep moving after the body stops, without a soft-body solve.",
+    "decision": "ADOPT",
+    "recommendation_decision": "ADOPT",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject Godot 4.8 SpringBoneSimulator3D for jelly appendage jiggle?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own SpringBoneSimulator3D?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "scene/3d/spring_bone_simulator_3d.h",
+      "scene/3d/spring_bone_simulator_3d.cpp",
+      "scene/3d/spring_bone_collision_3d.h"
+    ],
+    "risks": [
+      "Needs a real bone chain. The current jelly is stacked spheres with no skeleton, so appendages need a small rig first.",
+      "It does not grab, stretch, or throw the torso."
+    ],
+    "recommended_action": "Call the engine node for appendages from the jelly presentation. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Reimplement Verlet jiggle beside this node.",
+      "Import godot-vrm to get the same behaviour."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "godot-softbody2d",
+    "url": "https://github.com/appsinacup/godot-softbody2d",
+    "source_repository": "appsinacup/godot-softbody2d",
+    "commit": "7b4c80e36a25a66f3c2a76eec3bffcf4e58a5064",
+    "purpose": "2D plugin that fills a polygon with rigid bodies, joints, and a weighted skeleton so a texture squishes.",
+    "language": "GDScript",
+    "engine": "Godot 4",
+    "last_activity": "2026-08-15T15:16:22Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. LICENSE is the MIT licence, copyright Dragos Daian. Commit 7b4c80e on main.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A reminder that a skinned lattice can squash. The 3D creature should not pay one rigid body per region.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject the MIT godot-softbody2d plugin for its 3D jelly creatures?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own godot-softbody2d?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "addons/softbody2d/softbody2d.gd",
+      "addons/softbody2d/softbody2d_physics.gd",
+      "addons/softbody2d/softbody2d_lattice.gd"
+    ],
+    "risks": [
+      "2D only.",
+      "Many RigidBody nodes and joints per creature will not scale to a garden.",
+      "Breakable joints are a different fantasy from a jelly that always returns."
+    ],
+    "recommended_action": "Leave the plugin out. If a lattice is needed, write a few points in the actor, not a field of rigid bodies. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Vendor addons/softbody2d into Petalwild.",
+      "Rebuild the 3D jelly as jointed rigid bodies."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "PositionBasedDynamics",
+    "url": "https://github.com/InteractiveComputerGraphics/PositionBasedDynamics",
+    "source_repository": "InteractiveComputerGraphics/PositionBasedDynamics",
+    "commit": "10a70bc146a97873dc3c8fef372f5217e010542e",
+    "purpose": "MIT C++ library of PBD and XPBD constraints: distance, volume, FEM tets, and shape matching.",
+    "language": "C++",
+    "engine": "none (standalone library)",
+    "last_activity": "2026-09-01T06:08:48Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. LICENSE is the MIT licence, copyright PositionBasedDynamics contributors. ShapeMatchingConstraint, DistanceConstraint_XPBD, VolumeConstraint_XPBD, and XPBD_FEMTetConstraint are declared in Simulation/Constraints.h at 10a70bc.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "The cheap close-up stand-in for a tet solve: shape matching plus a volume constraint on a handful of points.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject the MIT PositionBasedDynamics library for jelly deformation?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own PositionBasedDynamics?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "Simulation/Constraints.h",
+      "Simulation/TimeStep.cpp",
+      "Simulation/SimulationModel.h"
+    ],
+    "risks": [
+      "Vendoring the library pulls a C++ build and an external collision stack into a GDScript game.",
+      "The FEM tet constraint is the same cost class as Jelly-Baby. Shape matching is the part that fits."
+    ],
+    "recommended_action": "Read the shape-matching and XPBD volume ideas, then write a tiny original cluster for the held fidelity only. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Vendor PositionBasedDynamics.",
+      "Translate Constraints.cpp into the Godot project.",
+      "Promote this to a PETAL-01 primitive unless a later lane decision says the jelly lane must call a shared solver."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Gloop",
+    "url": "https://github.com/idreesaziz/Gloop",
+    "source_repository": "idreesaziz/Gloop",
+    "commit": "aa53ebea464f42794bebae5972de012bcc559e51",
+    "purpose": "2D Godot blob: a ring of masses, neighbor and radial springs, pressure, iterative distance repair, spline mesh, eyes.",
+    "language": "GDScript",
+    "engine": "Godot 4.5",
+    "last_activity": "2026-01-12T13:46:01Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. LICENSE is the MIT licence, copyright 2026 Gloop Contributors. README describes the spring-mass ring. Commit aa53ebe on master.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "medium",
+    "expected_benefit": "Shows a readable soft creature at tens of points (the README allows 6 to 48), which is the budget for one held jelly.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject the MIT Gloop 2D spring-mass blob for its 3D jelly?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which build lane should own Gloop?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "scripts/soft_body_blob.gd",
+      "scripts/blob_player_controller.gd"
+    ],
+    "risks": [
+      "2D platformer controller mixed into the same project.",
+      "Zero community use. Treat the algorithm shape as the value, not the file.",
+      "No grab-and-throw model. Petalwild's flick still has to come from the Jelly-Baby study, rewritten."
+    ],
+    "recommended_action": "Use it as a scale check for a future 3D cluster. Keep the current actor for locomotion. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Copy soft_body_blob.gd into Petalwild.",
+      "Adopt the platformer controls or the generated eye textures."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "JoltPhysics",
+    "url": "https://github.com/jrouwe/JoltPhysics",
+    "source_repository": "jrouwe/JoltPhysics",
+    "commit": "9ef6ce6215453b5b85048200c8de27ed04f6b7ce",
+    "purpose": "MIT rigid-body library with its own soft-body type. Already compiled into Godot as modules/jolt_physics.",
+    "language": "C++",
+    "engine": "none (Godot vendors a module)",
+    "last_activity": "2026-09-27T10:08:18Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. LICENSE is the MIT licence, copyright 2021 Jorrit Rouwe. Godot pin 8898c2b3d already contains modules/jolt_physics/objects/jolt_soft_body_3d.cpp.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "None beyond what Godot's Jolt module already exposes through SoftBody3D.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Should Petalwild adopt, port, study, or reject the MIT JoltPhysics repository as an extra soft-body dependency?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Which build lane should own JoltPhysics?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "Jolt/Physics/SoftBody/SoftBodySharedSettings.h"
+    ],
+    "risks": [
+      "A second copy of Jolt will diverge from the engine module Petalwild already runs.",
+      "Soft-body features needed here are the Godot node properties (pressure, pins, damping), not the upstream repository."
+    ],
+    "recommended_action": "Do not add this repository. Use the engine module only if a single SoftBody3D prop is ever justified. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Vendor jrouwe/JoltPhysics.",
+      "Write a GDExtension against upstream Jolt for jelly."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "godot-vrm",
+    "url": "https://github.com/V-Sekai/godot-vrm",
+    "source_repository": "V-Sekai/godot-vrm",
+    "commit": "e15199f980064028bfa4fbee5e70dddb82dd55c3",
+    "purpose": "VRM avatar importer. Historical source of the spring-bone motion now implemented by SpringBoneSimulator3D.",
+    "language": "GDScript",
+    "engine": "Godot 4",
+    "last_activity": "2026-07-08T17:20:14Z",
+    "licence_spdx": "NOASSERTION",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id NOASSERTION. LICENSE opens by warning that .vrm sample models have their own terms (vrm_samples/LICENSE_SAMPLES.txt), then an MIT grant for the software. Ambiguous repo: code text is MIT, samples are carved out, SPDX is not MIT.",
+    "petalwild_target": "PETAL-03",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "None for jelly. The engine node replaced the spring-bone path this addon was ported from.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "technique": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Should Petalwild adopt, port, study, or reject V-Sekai godot-vrm for jelly secondary motion?",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Which build lane should own godot-vrm?",
+        "options": [
+          "PETAL-01",
+          "PETAL-03",
+          "PETAL-08"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "vrm_samples/LICENSE_SAMPLES.txt"
+    ],
+    "risks": [
+      "Sample avatars are not covered by the MIT software grant.",
+      "Importing the addon to obtain jiggle also imports an avatar pipeline Petalwild does not need.",
+      "NOASSERTION means a later pass can mis-read the repo as freely MIT."
+    ],
+    "recommended_action": "Reject the addon. Secondary motion goes through SpringBoneSimulator3D. Lane call escalated. Owner is PETAL-03.",
+    "do_not": [
+      "Vendor godot-vrm.",
+      "Copy VRM sample models or their spring parameters.",
+      "Treat NOASSERTION as permission."
+    ],
+    "research_doc": "docs/research/JELLY_BABY_PORT_ANALYSIS.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  }
+]

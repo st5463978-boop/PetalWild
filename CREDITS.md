@@ -6,6 +6,10 @@ Godot Engine 4.8-dev6, MIT, https://godotengine.org
 
 Kenney nature, foliage, mini-forest, and interface sounds, CC0, https://kenney.nl
 
+Kenney Starter Kit City Builder, MIT code and CC0 models, sprites, and sounds, https://github.com/KenneyNL/Starter-Kit-City-Builder
+
+Lilita One by Juan Montoreano, SIL Open Font License 1.1, reserved font name Lilita
+
 Poly Haven textures by Charlotte Baglioni, Dimitrios Savva, and Rob Tuytel, CC0, https://polyhaven.com
 
 Forest ambience by Slobad, CC0, https://opengameart.org/content/forest-ambience

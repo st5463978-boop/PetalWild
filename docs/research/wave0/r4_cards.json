@@ -1,0 +1,955 @@
+[
+  {
+    "name": "IsoCity",
+    "url": "https://github.com/amilich/isometric-city",
+    "source_repository": "amilich/isometric-city",
+    "commit": "f1bbce8a93fae61d2446d1ece50309f26531d987",
+    "purpose": "Isometric city and park sim: zoned growth, budgets, pedestrian crowds, and a save worker. Discovered from the bobeff index City-Building section.",
+    "language": "TypeScript",
+    "engine": "Custom (Next.js, HTML canvas)",
+    "last_activity": "2026-06-30",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. README says the project is distributed under the MIT License and points at LICENSE. simulation.ts has no Micropolis or GPL header.",
+    "petalwild_target": "PETAL-04",
+    "assigned_lane": "PETAL-04",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A readable pedestrian crowd and zone-demand loop for the lane beyond the hedge, written in one language, without a GPL city engine.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "IsoCity MIT for pedestrian crowd and zone demand",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for isocity?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "src/lib/simulation.ts",
+      "src/lib/saveWorker.ts",
+      "src/components/game/pedestrianSystem.ts",
+      "src/games/isocity/types/zones.ts"
+    ],
+    "risks": [
+      "simulation.ts is about 4300 lines and mixes terrain, bridges, budgets, and buildings. It is not a library.",
+      "The repo is a web city, not a Godot garden. Porting the file would drag in Next.js types.",
+      "GitHub repo size is very large. Do not clone it into the Petalwild tree."
+    ],
+    "recommended_action": "Study pedestrianSystem.ts and the zone types. Reimplement only a small demand counter for stall passers in original GDScript. Lane recommendation PETAL-04 because the bodies are people. Hailo did not choose.",
+    "do_not": [
+      "Do not copy simulation.ts into scripts/.",
+      "Do not treat the web renderer as a Godot scene."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Harvest Moon 2.0",
+    "url": "https://github.com/Kenny-Haworth/Harvest-Moon-2.0",
+    "source_repository": "Kenny-Haworth/Harvest-Moon-2.0",
+    "commit": "8d9ccc4e49ad86b22eb38a9e00ddfa60150cd00c",
+    "purpose": "Godot 3 farm loop: till, water, plant, harvest, seasons, inventory stacks, and a dictionary save. Found via the index's Trilarion list as the only GDScript farming sim.",
+    "language": "GDScript",
+    "engine": "Godot 3",
+    "last_activity": "2020-07-15",
+    "licence_spdx": "MIT",
+    "licence_class": "RED",
+    "licence_evidence": "GitHub licence API spdx_id MIT, and LICENSE is an MIT grant, copyright 2020 Kendall Haworth. That grant does not cover the art. The tree contains tilesets/Pokemon tiles.png (a 2240x2400 sheet of Pok\u00e9mon-style centers, gyms, and creature sprites) and tilesets/DungeonCrawl_ProjectUtumnoTileset.png with no separate asset licence.",
+    "petalwild_target": "PETAL-01",
+    "assigned_lane": "PETAL-01",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "low",
+    "integration_cost": "high",
+    "expected_benefit": "None. Petalwild already grows, waters, and saves crops. The repo's growth functions are a student tile loop beside ripped sheets.",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Harvest Moon 2.0 MIT-claimed Pokemon tiles for plant growth",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Lane for harvest-moon-2?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "Harvest Moon 2.0/areas/Farm.gd",
+      "Harvest Moon 2.0/ui/inventory/Inventory.gd",
+      "Harvest Moon 2.0/save_load/GameManager.gd",
+      "Harvest Moon 2.0/tilesets/Pokemon tiles.png",
+      "Harvest Moon 2.0/tilesets/DungeonCrawl_ProjectUtumnoTileset.png"
+    ],
+    "risks": [
+      "Pok\u00e9mon tiles are commercial character art. An MIT badge on the repo does not license them.",
+      "Project Utumno is a third-party tileset shipped with no licence file of its own.",
+      "Save files have no schema version. Inactive since 2020. Godot 3 onready syntax."
+    ],
+    "recommended_action": "Reject the repository. Do not study it as a growth reference. Lane it would have touched is PETAL-01. Hailo did not choose.",
+    "do_not": [
+      "Do not copy scripts, scenes, or tilesets.",
+      "Do not treat the MIT LICENSE as a grant on the PNG sheets."
+    ],
+    "decision": "REJECT",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "JSettlers",
+    "url": "https://github.com/jsettlers/settlers-remake",
+    "source_repository": "jsettlers/settlers-remake",
+    "commit": "456528bb304eb57d30d8e86b7a2227180b0dd7f0",
+    "purpose": "Carrier and flag logistics for a Settlers III remake: movables, a flags grid, and goods moving between buildings. Index Real-Time strategies lists Freeserf; this MIT remake is the permissive carrier model found from the linked Trilarion catalog.",
+    "language": "Java",
+    "engine": "Custom (Java2D / Android)",
+    "last_activity": "2022-10-01",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id MIT. LICENSE.txt is the MIT License, copyright 2015. README says play requires the original Settlers III GFX and SND folders, which are not in the repo. The repo is archived. Fork paulwedeck/settlers-remake is also MIT and also archived.",
+    "petalwild_target": "PETAL-08",
+    "assigned_lane": "PETAL-08",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A worked example of stocks, flags, and carriers so a later parish warehouse does not invent goods movement from scratch.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "settlers-remake MIT for carrier logistics",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for settlers-remake?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.txt",
+      "jsettlers.logic/src/main/java/jsettlers/logic/movable/Movable.java",
+      "jsettlers.logic/src/main/java/jsettlers/logic/movable/MovableStrategy.java",
+      "jsettlers.logic/src/main/java/jsettlers/logic/map/grid/flags/FlagsGrid.java",
+      "jsettlers.logic/src/main/java/jsettlers/logic/map/grid/movable/MovableGrid.java"
+    ],
+    "risks": [
+      "The rules are a commercial game's logistics. MIT covers this code, not Blue Byte's design as a drop-in.",
+      "Original GFX and SND must never be fetched into Petalwild.",
+      "Archived since 2022. Java, not GDScript."
+    ],
+    "recommended_action": "Study the flag grid and movable strategies as a textbook. If the stall later moves goods, write an original carrier in GDScript. Lane recommendation PETAL-08. Hailo did not choose.",
+    "do_not": [
+      "Do not copy Java sources into the game.",
+      "Do not download Settlers III GFX or SND.",
+      "Do not vendor the archived tree."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "CorsixTH",
+    "url": "https://github.com/CorsixTH/CorsixTH",
+    "source_repository": "CorsixTH/CorsixTH",
+    "commit": "171587f67e8a7a0188d2c606e93bb98fc3acae77",
+    "purpose": "Staff and patient queues for a Theme Hospital reimplementation. Needs, rooms, and walk-to-treatment are the service loop a parish resident already sketches. Index Business and Tycoon section.",
+    "language": "Lua, C++",
+    "engine": "Custom (SDL2, Lua)",
+    "last_activity": "2026-09-24",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API spdx_id NOASSERTION because LICENSE.txt bundles many third-party grants. The project grant itself, after the copyright list, is the MIT permission paragraph (copyright 2009-2026 the CorsixTH authors). Later sections of the same file are zlib, BSD, LGPL, and SIL OFL notices for vendored libraries.",
+    "petalwild_target": "PETAL-04",
+    "assigned_lane": "PETAL-04",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "A mature, permissive model of people who queue, walk to a room, and finish a service. Useful when residents stop being a single scripted round.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "CorsixTH MIT for staff needs queues",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Lane for corsixth?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.txt",
+      "CorsixTH/Lua/humanoid_action.lua",
+      "CorsixTH/Lua/humanoid_actions/",
+      "CorsixTH/Lua/hospital.lua",
+      "CorsixTH/Lua/entities/"
+    ],
+    "risks": [
+      "The game will not run without original Theme Hospital data, which is commercial and not in this repo.",
+      "LICENSE.txt's later LGPL and OFL texts are easy to miss if someone reads only the MIT paragraph and then copies a vendored library.",
+      "Hospital diseases and staff roles are the wrong content for the parish."
+    ],
+    "recommended_action": "Study the humanoid action queue only. Keep Petalwild needs in the existing utility scorer. Lane recommendation PETAL-04. Hailo did not choose.",
+    "do_not": [
+      "Do not copy Lua or C++ into scripts/.",
+      "Do not fetch Theme Hospital data.",
+      "Do not vendor the LGPL or OFL blobs that share LICENSE.txt."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "DwarfCorp",
+    "url": "https://github.com/Blecki/dwarfcorp",
+    "source_repository": "Blecki/dwarfcorp",
+    "commit": "45a1c39663fce226ea4b4b868f0a43a0570c877a",
+    "purpose": "Colony jobs: dwarves take work, path, and build. The closest permissive-ish job AI to a resident who waters and feeds beds. Found from the Trilarion list linked by the index.",
+    "language": "C#",
+    "engine": "MonoGame / XNA",
+    "last_activity": "2020-07-04",
+    "licence_spdx": "NOASSERTION",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id NOASSERTION. LICENSE.txt is titled Modified MIT License, copyright 2015 Completely Fair Games Ltd. The code grant reads as MIT, then it declares images, 3D models, sound, and music PROPRIETARY and forbids them in derivative works. The tree also contains SteamSDK and SteamWorks.",
+    "petalwild_target": "PETAL-04",
+    "assigned_lane": "PETAL-04",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A job-queue shape for Bram and Nessa: a dwarf picks a task, walks, and finishes. The art and the Steam SDK are not part of that lesson.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "DwarfCorp NOASSERTION modified-MIT for colony job AI",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for dwarfcorp?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.txt",
+      "DwarfCorp/Entities/Dwarves/Dwarf.cs",
+      "DwarfCorp/Entities/Dwarves/NonPlayerDwarf.cs",
+      "DwarfCorp/Entities/Plants/"
+    ],
+    "risks": [
+      "Modified MIT is a custom grant. GitHub correctly refuses an SPDX id.",
+      "Proprietary art is explicit. SteamSDK in the tree is not redistributable with Petalwild.",
+      "Master HEAD is 2020-07-04. Repo pushed_at 2024-01-24 did not move this commit. XNA-era C#."
+    ],
+    "recommended_action": "Study the non-player dwarf task pick as an idea. Do not port the classes. Lane recommendation PETAL-04. Hailo did not choose.",
+    "do_not": [
+      "Do not copy C# sources.",
+      "Do not copy images, models, audio, or anything under SteamSDK or SteamWorks.",
+      "Do not treat Modified MIT as SPDX MIT."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Space Station 14",
+    "url": "https://github.com/space-wizards/space-station-14",
+    "source_repository": "space-wizards/space-station-14",
+    "commit": "b924dedb4f5166b0a1c6411a7a6e529f3e31facc",
+    "purpose": "Inventory slots, nutrition, and HTN NPC pathing on the Robust engine. This is the living permissive-code reference for an inventory that is more than a count dictionary, and for a planner that is more than a score. Found from the Trilarion list linked by the index.",
+    "language": "C#",
+    "engine": "Robust Toolbox",
+    "last_activity": "2026-09-27",
+    "licence_spdx": "MIT",
+    "licence_class": "REVIEW",
+    "licence_evidence": "Content LICENSE.TXT is the MIT License, copyright 2017-2026 Space Wizards Federation. README says most assets are CC-BY-SA 3.0 unless a meta file says otherwise, and some assets are CC-BY-NC-SA 3.0. The RobustToolbox submodule is mixed: legal.md puts code from before 2019-03-13 on GPL-3.0 and later code on MIT, and images on CC-BY-SA 3.0. GitHub reports RobustToolbox as NOASSERTION.",
+    "petalwild_target": "PETAL-08",
+    "assigned_lane": "PETAL-08",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "Slot prototypes, item relays, and an entity serializer are the pattern if the stall outgrows a string-to-count map. HTN is the comparison point for the utility scorer, not a replacement.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Space Station 14 MIT code CC-BY-SA assets for inventory and HTN",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Lane for space-station-14?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.TXT",
+      "README.md",
+      "Content.Shared/Inventory/InventorySystem.cs",
+      "Content.Shared/Inventory/InventoryTemplatePrototype.cs",
+      "Content.Shared/NPC/RequestHTNMessage.cs",
+      "Content.Shared/Nutrition/",
+      "RobustToolbox/legal.md",
+      "RobustToolbox/Robust.Shared/EntitySerialization/EntitySerializer.cs"
+    ],
+    "risks": [
+      "Copying an asset, or a content file that embeds one, can pull CC-BY-SA or a non-commercial licence onto that work.",
+      "Robust files from before 13 March 2019 are GPL-3.0. A date audit is required before any engine file is even read as a port candidate.",
+      "R2 already recorded peter-kish/gloot as the MIT Godot inventory addon. This repo must not become a second inventory vendor.",
+      "The game is a multiplayer station sim. Its content is the wrong setting."
+    ],
+    "recommended_action": "Study the inventory prototype and the HTN request names only. Keep the petal dictionary until a shop needs slots, then write original GDScript or adopt Gloot. Lane recommendation PETAL-08. Hailo did not choose.",
+    "do_not": [
+      "Do not vendor Space Station 14 or RobustToolbox.",
+      "Do not copy CC-BY-SA or CC-BY-NC-SA assets.",
+      "Do not copy pre-2019 Robust sources.",
+      "Do not install this beside Gloot."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Egregoria",
+    "url": "https://github.com/Uriopass/Egregoria",
+    "source_repository": "Uriopass/Egregoria",
+    "commit": "ae65c857948a905120474cf93b96dd51cec6d5f6",
+    "purpose": "Agent city without a grid: desires (home, work, buy food), lane pathfinding, a market, and a simulation that does not store render meshes. Index City-Building section. Shallow-cloned under _research/egregoria for the architecture note only.",
+    "language": "Rust",
+    "engine": "Custom (wgpu)",
+    "last_activity": "2025-06-02",
+    "licence_spdx": "GPL-3.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id GPL-3.0. LICENSE in the shallow clone is the GNU General Public License version 3.",
+    "petalwild_target": "PETAL-04",
+    "assigned_lane": "PETAL-04",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "The split Petalwild already wants: souls decide, the map paths, the renderer only caches meshes. Desire modules are a check against the utility scorer, not a new brain to paste.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Egregoria GPL-3.0 for desire AI and pathfinding",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for egregoria?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "ARCHITECTURE.md",
+      "simulation/src/souls/desire/home.rs",
+      "simulation/src/souls/desire/work.rs",
+      "simulation/src/souls/desire/buyfood.rs",
+      "simulation/src/map/pathfinding.rs",
+      "simulation/src/economy/market.rs",
+      "headless/"
+    ],
+    "risks": [
+      "GPL-3.0 on any copied Rust would cover a combined Petalwild build.",
+      "The project is early. The architecture document says its crate map is already out of date.",
+      "Git LFS assets are not part of this reading and must not be pulled."
+    ],
+    "recommended_action": "Keep the architecture lesson: deterministic tick, desires as data, renderer cache on the side. Do not port Rust. Lane recommendation PETAL-04. Hailo did not choose.",
+    "do_not": [
+      "Do not copy Rust sources into the game tree.",
+      "Do not move the _research/egregoria clone into scripts, assets, or a vendor directory."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Citybound",
+    "url": "https://github.com/citybound/citybound",
+    "source_repository": "citybound/citybound",
+    "commit": "817de551d2bc96c90d0b7c74af4872454f42b44c",
+    "purpose": "Microscopic households: members take timed tasks and trips, and a vegetable farm publishes produce onto a market. This is the index city builder whose farm household is the plant-economy lesson. Shallow-cloned under _research/citybound.",
+    "language": "Rust",
+    "engine": "Custom (Rust, browser UI)",
+    "last_activity": "2023-01-07",
+    "licence_spdx": "AGPL-3.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id AGPL-3.0. LICENSE.txt is the GNU Affero General Public License version 3. README points at that file.",
+    "petalwild_target": "PETAL-01",
+    "assigned_lane": "PETAL-01",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A farm as a household that offers a crop on a time window, instead of another soil tick. Useful if parish plots ever sell into a market rather than a single stall tin.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Citybound AGPL-3.0 for household farm economy",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Lane for citybound?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.txt",
+      "cb_simulation/src/economy/households/tasks/mod.rs",
+      "cb_simulation/src/economy/households/household_kinds/vegetable_farm/mod.rs",
+      "cb_simulation/src/economy/market/mod.rs",
+      "cb_simulation/src/transport/pathfinding/mod.rs"
+    ],
+    "risks": [
+      "AGPL-3.0 is network copyleft. Copying the farm actor would put that licence on the combined work.",
+      "Last push is 2023-01-07. The simulation is a research snapshot, not a maintained library.",
+      "The Kay actor framework is part of the game, not a separable crate for Godot."
+    ],
+    "recommended_action": "Study the vegetable-farm household as the shape of a crop offer. Keep Petalwild growth in soil_field.gd. Lane recommendation PETAL-01. Hailo did not choose.",
+    "do_not": [
+      "Do not copy Rust sources.",
+      "Do not move the _research/citybound clone into the game tree."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Julius",
+    "url": "https://github.com/bvschaik/julius",
+    "source_repository": "bvschaik/julius",
+    "commit": "34d1ecd54befb845c0139b371fa8a0438210dac1",
+    "purpose": "Caesar III walker services: priests, engineers, markets, and cart pushers roam until they cover a building. Index City-Building section. This is the service-coverage walk, which is the crowd pattern a garden uses when not every visitor has a mind.",
+    "language": "C",
+    "engine": "Custom (SDL)",
+    "last_activity": "2026-09-12",
+    "licence_spdx": "AGPL-3.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id AGPL-3.0. Trilarion's entry, linked from the index's other-lists section, records the same AGPL-3.0 grant.",
+    "petalwild_target": "PETAL-04",
+    "assigned_lane": "PETAL-04",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "Service figures that wander a district and mark coverage, so off-screen passers can stay statistics until they enter the parish.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Julius AGPL-3.0 for walker service coverage",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Lane for julius?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "src/figuretype/service.c",
+      "src/figuretype/cartpusher.c",
+      "src/figuretype/market.c",
+      "src/figure/movement.c",
+      "src/figure/service.c"
+    ],
+    "risks": [
+      "AGPL-3.0. The walker implementation must not be translated into GDScript line for line.",
+      "The engine expects original Caesar III game data, which is commercial.",
+      "A full walker-per-service sim is the cost Petalwild's L2 cap is avoiding."
+    ],
+    "recommended_action": "Study service coverage as a radius and a count, not as a port of figuretype. Lane recommendation PETAL-04. Hailo did not choose.",
+    "do_not": [
+      "Do not copy C sources.",
+      "Do not fetch Caesar III data files."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "OpenTTD",
+    "url": "https://github.com/OpenTTD/OpenTTD",
+    "source_repository": "OpenTTD/OpenTTD",
+    "commit": "b9a4a1831451718f0650de59f1c52f4fe5cea73a",
+    "purpose": "Versioned save chunks and cargo packets. Petalwild's petal_save refuses any version other than 1. Index Business and Tycoon section. Recorded because the save schema is a hard system, not because the transport game should be ported.",
+    "language": "C++",
+    "engine": "Custom",
+    "last_activity": "2026-09-26",
+    "licence_spdx": "GPL-2.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id NOASSERTION. README section 3.0 says OpenTTD is licensed under the GNU General Public License version 2.0 and points at COPYING.md. Named third-party files (squirrel, md5, fmt, nlohmann json) use Zlib or MIT and do not relicense the game.",
+    "petalwild_target": "PETAL-08",
+    "assigned_lane": "PETAL-08",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "The pattern of a save version, per-chunk loaders, and an afterload pass. Cargo packets are the reference if the stall tin ever tracks lots instead of one coin counter.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "OpenTTD GPL-2.0 for save schema and cargo",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for openttd?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "COPYING.md",
+      "src/saveload/saveload.h",
+      "src/saveload/saveload.cpp",
+      "src/saveload/afterload.cpp",
+      "src/saveload/cargopacket_sl.cpp",
+      "src/saveload/economy_sl.cpp"
+    ],
+    "risks": [
+      "GPL-2.0 on copied save code would cover the combined game. The MIT third-party folders are not a back door.",
+      "The chunk format is tied to OpenTTD's types. It is a design lesson, not a file format to reuse.",
+      "NOASSERTION from the API is the filename COPYING.md, not an absence of a licence."
+    ],
+    "recommended_action": "Add original schema migrations in petal_save when a second version exists. Do not import the saveload tables. Lane recommendation PETAL-08 for cargo; the save file itself has no lane in 01-08. Hailo did not choose.",
+    "do_not": [
+      "Do not copy saveload sources.",
+      "Do not adopt OpenTTD's chunk format as the petal JSON schema."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "Unknown Horizons Godot port",
+    "url": "https://github.com/unknown-horizons/godot-port",
+    "source_repository": "unknown-horizons/godot-port",
+    "commit": "fa0d5146162ae2e0bc8966a0254c6a2c4585dc54",
+    "purpose": "Godot production lines, inventory slots, and a tile pathfinder for an economy city builder. Index City-Building section names this port beside the FIFE original. It is the Godot-shaped production graph.",
+    "language": "GDScript",
+    "engine": "Godot",
+    "last_activity": "2026-09-14",
+    "licence_spdx": "GPL-2.0",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id GPL-2.0. LICENSE.md is the GNU General Public License version 2. README says the project uses GPL version 2, and that art and audio have their own licences.",
+    "petalwild_target": "PETAL-08",
+    "assigned_lane": "PETAL-08",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A Godot component split: a production line, an inventory slot, and a pathfinding manager. The shape matches a stall that crafts from beds, without taking the GPL scripts.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "Unknown Horizons godot-port GPL-2.0 for Godot production and inventory",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for uh-godot?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.md",
+      "README.md",
+      "Assets/World/Components/ProductionLine/ProductionLineComponent.gd",
+      "Assets/UI/BasicControls/InventorySlot.gd",
+      "Assets/UI/TabWidgets/InventoryTab.gd",
+      "Assets/World/Tilemaps/PathfindingManager.gd",
+      "Assets/World/Tilemaps/Pathfinder.gd"
+    ],
+    "risks": [
+      "GPL-2.0 GDScript pasted into an MIT Godot project is still GPL-2.0.",
+      "Art, music, and sounds are separately licensed. The README warning is easy to skip.",
+      "The port is not the finished Python game. Quality of the economy is uneven."
+    ],
+    "recommended_action": "Study the component names. Keep Petalwild production as data in items.json and plants.json. Lane recommendation PETAL-08. Hailo did not choose.",
+    "do_not": [
+      "Do not copy GDScript, scenes, or assets from the port.",
+      "Do not prefer this over the MIT Gloot note in R2 for inventory UI."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  },
+  {
+    "name": "MicropolisCore",
+    "url": "https://github.com/SimHacker/MicropolisCore",
+    "source_repository": "SimHacker/MicropolisCore",
+    "commit": "2bfe12afc782a5e0f269a31b9bfb324c6d1e4fad",
+    "purpose": "The maintained SimCity cellular engine: zone demand, power, and map scan. The index points at micropolisJS; that port's original is this engine. Recorded for the L4 demand layer, not as a city to embed.",
+    "language": "C++, TypeScript",
+    "engine": "Custom (headless core, web UI)",
+    "last_activity": "2026-09-18",
+    "licence_spdx": "GPL-3.0-or-later",
+    "licence_class": "REVIEW",
+    "licence_evidence": "GitHub licence API spdx_id NOASSERTION. LICENSE and gpl-3.0.txt grant GPL-3.0-or-later, copyright 1989-2007 Electronic Arts, plus GPL section 7 terms: no SimCity trademark, mark modifications, and an indemnity if you add a warranty. MicropolisPublicNameLicense.md is a separate, revocable, non-commercial trademark licence for the name Micropolis. The older SimHacker/micropolis dump has no root licence file (API spdx NONE). graememcc/micropolisJS COPYING is the same GPL-3.0 plus the EA terms.",
+    "petalwild_target": "PETAL-08",
+    "assigned_lane": "PETAL-08",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "The canonical lesson that most of a city is a cellular demand scan, not an agent. That is the L4 passer count Petalwild already sketches, with a real model behind it.",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "MicropolisCore GPL-3.0-or-later for cellular zone growth",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Lane for micropolis?",
+        "options": [
+          "PETAL-01",
+          "PETAL-02",
+          "PETAL-03",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07",
+          "PETAL-08"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "gpl-3.0.txt",
+      "MicropolisGPLLicenseNotice.md",
+      "MicropolisPublicNameLicense.md",
+      "apps/micropolis/src/lib/MicropolisSimulator.ts"
+    ],
+    "risks": [
+      "GPL-3.0-or-later plus EA additional terms. The extra terms travel with any copy.",
+      "The Micropolis name is a trademark under a separate non-commercial name licence. Petalwild must not use it.",
+      "SimCity remains an EA trademark.",
+      "The historical micropolis repo looks unlicensed on GitHub. Do not use that dump because this core exists."
+    ],
+    "recommended_action": "Study the simulator as the reason L4 stays statistical. Do not import the scan. Lane recommendation PETAL-08. Hailo did not choose.",
+    "do_not": [
+      "Do not copy the C++ core or the TypeScript simulator.",
+      "Do not use the names SimCity or Micropolis in the game.",
+      "Do not clone SimHacker/micropolis as a substitute."
+    ],
+    "decision": "STUDY",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "research_doc": "docs/research/wave0/r4_review.md"
+  }
+]

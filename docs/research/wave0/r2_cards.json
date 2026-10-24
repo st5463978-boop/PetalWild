@@ -1,0 +1,725 @@
+[
+  {
+    "name": "openage",
+    "url": "https://github.com/SFTtech/openage",
+    "source_repository": "SFTtech/openage",
+    "commit": "b23f5df2017c76f79774f6baa92bd5621015c053",
+    "purpose": "Event-scheduled RTS simulation, data-driven entities, and sector flow-field pathfinding for large crowds.",
+    "language": "C++ and Python",
+    "engine": "Custom (not Godot)",
+    "last_activity": "2026-09-26",
+    "licence_spdx": "NOASSERTION",
+    "licence_class": "REVIEW",
+    "licence_evidence": "copying.md grants GPL-3.0-or-later for files that do not say otherwise. README says GNU GPLv3 or later. gh api license.spdx_id is NOASSERTION. Listed exceptions include 3-clause BSD and LGPL-2.0 for named third-party files. Separate repo SFTtech/nyan copying.md is LGPL-3.0-or-later, also SPDX NOASSERTION.",
+    "petalwild_target": "PETAL-07",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "A clock plus a future-event queue, optional presentation, and shared crowd fields for residents far from the camera.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "SFTtech/openage is GPL-3.0-or-later (GitHub SPDX NOASSERTION). Intended use: study its event clock, activities, and sector flow fields, and copy no source into Petalwild.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns openage?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "copying.md",
+      "doc/code/architecture.md",
+      "doc/code/event_system.md",
+      "doc/code/time.md",
+      "doc/code/curves.md",
+      "doc/code/game_simulation/README.md",
+      "doc/code/game_simulation/game_entity.md",
+      "doc/code/pathfinding/README.md",
+      "doc/code/optimization.md"
+    ],
+    "risks": [
+      "GPL-3.0-or-later on copied source would cover a combined Petalwild build.",
+      "nyan is a separate LGPL-3.0-or-later content language and is easy to vendor by accident.",
+      "Flow-field code is the part most tempting to port and the part that must stay a clean-room idea."
+    ],
+    "recommended_action": "Keep the 22 September architecture note. It still matches master. Reimplement the clock, the event queue, and shared fields in original GDScript. Cite Emerson for the algorithm.",
+    "do_not": "Do not clone the repo into the game tree, copy sources, headers, nyan schemas, or the asset converter.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "town",
+    "url": "https://github.com/RedPlanetHQ/town",
+    "source_repository": "RedPlanetHQ/town",
+    "commit": "02d705563951a4bb6a5750b2540d806222095d60",
+    "purpose": "Walkable pixel towns where buildings are experiences and residents occupy authored slots.",
+    "language": "TypeScript",
+    "engine": "Web (Next.js, Kaplay)",
+    "last_activity": "2026-07-27",
+    "licence_spdx": "NOASSERTION",
+    "licence_class": "REVIEW",
+    "licence_evidence": "LICENSE is titled Town License, copyright 2025 Poozle Inc. It grants AGPL-3.0-or-later, adds an AGPL section 7 extra permission, then adds Commons Clause v1.0 withholding the right to sell. gh api license.spdx_id is NOASSERTION. Same repo as redplanethq/town.",
+    "petalwild_target": "PETAL-06",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "Places as functions: seeded placement, paths between buildings, walkable interiors, and one resident per slot.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "RedPlanetHQ/town is AGPL-3.0-or-later plus a Commons Clause (SPDX NOASSERTION). Intended use: study seeded places, resident slots, and walkable interiors, and copy no source.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns town?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "AGENTS.md",
+      "packages/plot/README.md",
+      "packages/plot-gen/README.md",
+      "packages/types",
+      "packages/catalog"
+    ],
+    "risks": [
+      "AGPL is network copyleft.",
+      "Commons Clause is a commercial restriction on top of AGPL, not a path to MIT.",
+      "NPC prompts, sprites, and town content are not Petalwild material.",
+      "Scheduled events and the persistent passport are roadmap items, not shipped systems."
+    ],
+    "recommended_action": "Model a garden place as a named function with a stable seeded footprint, a path, a threshold, and resident slots. Author residents as data. Let the sim choose the cell.",
+    "do_not": "Do not copy source, prompts, art, or the layout generator. Do not treat the section 7 clause as permission to vendor the repo.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "VivaPinataPlus",
+    "url": "https://github.com/VivaPinataPlus/VivaPinataPlus",
+    "source_repository": "VivaPinataPlus/VivaPinataPlus",
+    "commit": "3098b705745d7ca5968f9e33e4c429583f61661a",
+    "purpose": "Windows launcher that patches the commercial Viva Pi\u00f1ata process for item budgets and windowed mode.",
+    "language": "C#",
+    "engine": "None (Win32 process patcher)",
+    "last_activity": "2024-08-18",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is the MIT License, copyright 2024 VivaPinataPlus. gh api license.spdx_id is MIT. The only public repo on the user account. The grant covers this launcher, not the commercial game.",
+    "petalwild_target": "PETAL-06",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "low",
+    "integration_cost": "high",
+    "expected_benefit": "One observed rule: a garden can cap how many objects of each type may be placed.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "VivaPinataPlus/VivaPinataPlus is MIT. Intended use: reject the Win32 launcher; keep only the observed idea of per-type garden object budgets, with no proprietary game files.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns VivaPinataPlus?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "Launcher/Program.cs",
+      "Launcher/Patches/NoPlacementLimits.cs",
+      "Launcher/Patches/WindowedModePatch.cs"
+    ],
+    "risks": [
+      "The tool exists to modify a proprietary game binary.",
+      "Using it would make Petalwild depend on commercial game files.",
+      "The repo has no species, ecology, or behaviour data. Stars and activity stopped in 2024.",
+      "MIT on the launcher is not a licence for Viva Pi\u00f1ata names, creatures, or assets."
+    ],
+    "recommended_action": "Reject the repository as a dependency. If object clutter matters, invent original per-type placement budgets in the town plot.",
+    "do_not": "Do not import the launcher, memory patches, species, names, or assets. Do not require the original game.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Skelerealms",
+    "url": "https://github.com/awest813/skelerealms",
+    "source_repository": "awest813/skelerealms",
+    "commit": "b3f2e7d854b70e764f936a7d31d76df9aab1c755",
+    "purpose": "Godot 4.4+ RPG framework with NPC schedules, GOAP, persistence, inventories, barter, and faction disposition.",
+    "language": "GDScript",
+    "engine": "Godot 4.4+",
+    "last_activity": "2026-05-15",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is an MIT grant, copyright 2024 Slashscreen. gh api license.spdx_id is MIT. Plugin version claimed as 1.0 in the README.",
+    "petalwild_target": "PETAL-04",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "low",
+    "integration_cost": "high",
+    "expected_benefit": "Time-window NPC routines, a versioned save schema, and a reminder that GOAP and a behaviour tree can split planning from execution.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "awest813/skelerealms is MIT. Intended use: study its NPC schedules, GOAP, and versioned saves, and do not adopt the FPS combat RPG framework.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns skelerealms?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "docs/user guide/schedules.md",
+      "docs/user guide/goap_actions.md",
+      "docs/user guide/npcs.md",
+      "docs/user guide/save_system.md",
+      "docs/user guide/navigation.md",
+      "docs/user guide/covens.md"
+    ],
+    "risks": [
+      "Zero stars and a single-author 1.0 stability claim.",
+      "The framework assumes first-person combat, crime, and a required folder layout.",
+      "Adopting it would drag quests, hitboxes, and UI shells into a garden sim.",
+      "Save-schema coupling would fight Petalwild's existing snapshot migrations."
+    ],
+    "recommended_action": "Read the schedule and save-schema docs only. Keep Petalwild schedules as data on the resident and the place. Do not enable the plugin.",
+    "do_not": "Do not vendor the framework, its combat modules, or its faction crime loop.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Gloot",
+    "url": "https://github.com/peter-kish/gloot",
+    "source_repository": "peter-kish/gloot",
+    "commit": "6b09b87ac07a8536779ef1ab0fafc7e99830f948",
+    "purpose": "Godot 4.4+ inventory addon: item prototypes plus grid, weight, and count constraints, with UI separated from storage.",
+    "language": "GDScript",
+    "engine": "Godot 4.4+",
+    "last_activity": "2026-07-14",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is the MIT License, copyright 2022 Peter Kish. gh api license.spdx_id is MIT. README states Godot 4.4 and newer.",
+    "petalwild_target": "PETAL-05",
+    "directly_reusable": true,
+    "portable": true,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "medium",
+    "expected_benefit": "A ready constraint model if a stall needs slots or weight. The current session dictionary does not need it yet.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "peter-kish/gloot is MIT, Godot 4.4+ GDScript inventory. Intended use: study grid, weight, and count constraints; do not replace Petalwild's session dictionary in this wave.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns gloot?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "addons/gloot",
+      "docs/grid_constraint.md",
+      "docs/weight_constraint.md",
+      "docs/prototree.md"
+    ],
+    "risks": [
+      "Replacing Session.inventory is a save migration, not a drop-in.",
+      "Grid UI is a larger interaction than a garden stall needs.",
+      "Expresso Inventory builds on this idea in C++ and should not be pulled in beside it."
+    ],
+    "recommended_action": "Leave the dictionary inventory. If a shop needs capacity, port the constraint idea (count and weight) in original code, or adopt this addon in a later economy pass.",
+    "do_not": "Do not replace the session inventory in this wave. Do not vendor Expresso Inventory.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "LimboAI",
+    "url": "https://github.com/limbonaut/limboai",
+    "source_repository": "limbonaut/limboai",
+    "commit": "3f14ea4c26911e8b8e30c6bcdb575fc589a59deb",
+    "purpose": "C++ behaviour trees and state machines for Godot 4, with an editor and a visual debugger.",
+    "language": "C++",
+    "engine": "Godot 4.6+ (GDExtension line 1.8)",
+    "last_activity": "2026-09-04",
+    "licence_spdx": "MIT",
+    "licence_class": "YELLOW",
+    "licence_evidence": "LICENSE.md is an MIT grant, copyright 2023-2025 Serhii Snitsaruk and contributors. gh api license.spdx_id is MIT. README says the logo and demo art are CC-BY-4.0. Card class is YELLOW because the same repo ships CC-BY-4.0 logo and demo art.",
+    "petalwild_target": "PETAL-04",
+    "directly_reusable": true,
+    "portable": true,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "A maintained tree-plus-state-machine editor if utility scoring later needs a scripted executor.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "limbonaut/limboai is MIT code (logo and demo art CC-BY-4.0). Intended use: study behaviour trees and state machines as an optional executor, not the resident brain.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns LimboAI?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.md",
+      "LOGO_LICENSE.md",
+      "README.md",
+      "bt",
+      "hsm"
+    ],
+    "risks": [
+      "Native GDExtension or an engine module is a build cost the GDScript project does not have today.",
+      "Logo and demo art are CC-BY-4.0, not MIT.",
+      "A second brain next to utility scoring will fork resident behaviour."
+    ],
+    "recommended_action": "Do not install. If a tree is required later, prefer Beehave unless the editor and state machines are worth a native plugin.",
+    "do_not": "Do not copy the logo or demo art. Do not replace utility scoring.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Beehave",
+    "url": "https://github.com/bitbrain/beehave",
+    "source_repository": "bitbrain/beehave",
+    "commit": "fe589153fa780a3f88989578ceb5f539afffb7c2",
+    "purpose": "GDScript behaviour-tree addon for Godot 4.",
+    "language": "GDScript",
+    "engine": "Godot 4.x",
+    "last_activity": "2026-09-20",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is the MIT License, copyright 2023 bitbrain. gh api license.spdx_id is MIT. Default branch is godot-4.x. plugin.cfg version 2.9.4-dev.",
+    "petalwild_target": "PETAL-04",
+    "directly_reusable": true,
+    "portable": true,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "low",
+    "expected_benefit": "The lowest-cost tree addon if one resident action needs an ordered script. Not needed while utility scoring commits to a single action.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "bitbrain/beehave is MIT GDScript behaviour trees for Godot 4. Intended use: study as the lighter tree addon if residents later need one, and do not install it now.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns Beehave?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "addons/beehave/plugin.cfg",
+      "addons/beehave"
+    ],
+    "risks": [
+      "Easy to adopt and then let trees replace the shared scorer species by species.",
+      "Two tree addons (this and LimboAI) would split resident tooling."
+    ],
+    "recommended_action": "Name this as the tree to add later, and do not add it now. Keep one shared utility scorer.",
+    "do_not": "Do not install the addon in this wave. Do not write per-species behaviour trees.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Dialogue Manager",
+    "url": "https://github.com/nathanhoad/godot_dialogue_manager",
+    "source_repository": "nathanhoad/godot_dialogue_manager",
+    "commit": "cb0e4c7f87d326bd2042b6c31737699030b87244",
+    "purpose": "Nonlinear dialogue addon for Godot 4.6+: a script-like editor and a stateless runtime.",
+    "language": "GDScript",
+    "engine": "Godot 4.6+",
+    "last_activity": "2026-09-27",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is the MIT License, copyright 2022-present Nathan Hoad and contributors. gh api license.spdx_id is MIT. README titles the current line Dialogue Manager 4 for Godot 4.6+.",
+    "petalwild_target": "PETAL-04",
+    "directly_reusable": true,
+    "portable": true,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "medium",
+    "expected_benefit": "A maintained way to author branching lines if residents later speak more than one proximity turn.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "nathanhoad/godot_dialogue_manager is MIT for Godot 4.6+. Intended use: study for short resident lines, and do not adopt a full branching dialogue runtime yet.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns Dialogue Manager?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "addons/dialogue_manager/plugin.cfg",
+      "addons/dialogue_manager"
+    ],
+    "risks": [
+      "A visual-novel runtime is heavier than place, role, tone, and a short turn.",
+      "Dialogic is the larger alternative and would duplicate this if both were added.",
+      "Example portrait projects on itch.io are not part of the MIT grant."
+    ],
+    "recommended_action": "Prefer this over Dialogic if scripted talk is added. Do not add it while conversations stay proximity data.",
+    "do_not": "Do not adopt Dialogic and Dialogue Manager together. Do not pull itch.io example art.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "goap-godot-4",
+    "url": "https://github.com/pixelrogueart/goap-godot-4",
+    "source_repository": "pixelrogueart/goap-godot-4",
+    "commit": "212224cb52285a9c35387b75af63552b6ce2aa51",
+    "purpose": "Small GDScript GOAP plugin: backward-chaining planner, priority goals, replan, editor debugger.",
+    "language": "GDScript",
+    "engine": "Godot 4",
+    "last_activity": "2026-08-06",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "LICENSE is the MIT License, copyright 2026 Pixelrogueart. gh api license.spdx_id is MIT. plugin.cfg version 1.1.4.",
+    "petalwild_target": "PETAL-04",
+    "directly_reusable": true,
+    "portable": true,
+    "reference_only": false,
+    "quality": "medium",
+    "integration_cost": "low",
+    "expected_benefit": "A concrete planner to read if a resident must chain find-then-use. Utility scoring already covers single actions.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.0,
+        "question": "pixelrogueart/goap-godot-4 is MIT GDScript. Intended use: study backward-chaining plans as a reference beside utility scoring, and do not install the planner now.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns goap-godot-4?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "addons/goap/plugin.cfg",
+      "addons/goap/goap_agent.gd",
+      "addons/goap/goap_action_planner.gd",
+      "addons/goap/goap_goal.gd",
+      "addons/goap/goap_world_state.gd"
+    ],
+    "risks": [
+      "Forty-one stars and a single maintainer. The planner is small enough to fork accidentally.",
+      "GOAP world-state keys will drift from the need numbers the scorer already uses.",
+      "Replanning every need change is wasted work for a garden of mostly statistical residents."
+    ],
+    "recommended_action": "Leave it as the GOAP reference. Stay with the product-of-considerations scorer for embodied residents.",
+    "do_not": "Do not install the plugin. Do not run GOAP for the statistical population.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  },
+  {
+    "name": "Dwellcraft",
+    "url": "https://github.com/Ryan-fm/Dwellcraft",
+    "source_repository": "Ryan-fm/Dwellcraft",
+    "commit": "5055fefac14f0fe7214c6cbb66853e62a2154a88",
+    "purpose": "Browser 3D home editor: pick a dwelling scale, place furniture, walk inside. Live at https://dwellcraft.vercel.app/.",
+    "language": "TypeScript",
+    "engine": "Web (React, Babylon.js)",
+    "last_activity": "2026-09-09",
+    "licence_spdx": "NONE",
+    "licence_class": "RED",
+    "licence_evidence": "gh api returned no licence object. The git tree has README.md and no LICENSE file. No SPDX grant was found.",
+    "petalwild_target": "PETAL-06",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "UX only: choose a scale, start empty or from a styled sample, snap and collide placements, then walk in at eye height.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "use": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Ryan-fm/Dwellcraft has no licence file. Intended use: reject the source; keep only observed home-scale placement and walk-in UX from the public site.",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ],
+        "exit_code": 2
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns Dwellcraft?",
+        "options": [
+          "PETAL-02",
+          "PETAL-04",
+          "PETAL-05",
+          "PETAL-06",
+          "PETAL-07"
+        ],
+        "exit_code": 2
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "lib/placement.ts",
+      "lib/navigation.ts",
+      "lib/world.ts",
+      "lib/storage.ts",
+      "lib/scene-design.json"
+    ],
+    "risks": [
+      "No licence means no reuse, even of small helpers.",
+      "Furniture models and concept renders are not Petalwild art.",
+      "Babylon placement code is the wrong engine and the wrong grant."
+    ],
+    "recommended_action": "Reject the repository. Keep the observed UX: a few dwelling scales, an empty start, snap, undo, and a walk-in camera.",
+    "do_not": "Do not copy code, models, screenshots, or scene JSON. Do not treat the public site as a source licence.",
+    "research_doc": "docs/research/wave0/r2_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used."
+  }
+]

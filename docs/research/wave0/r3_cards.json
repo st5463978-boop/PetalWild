@@ -1,0 +1,573 @@
+[
+  {
+    "name": "game-creator",
+    "url": "https://github.com/PlayableIntelligence/game-creator",
+    "source_repository": "https://github.com/PlayableIntelligence/game-creator",
+    "commit": "4e64b83b5fe400b34ad3a484d9b4a6090b26d512",
+    "purpose": "Claude/Cursor plugin that scaffolds Phaser or Three.js browser games and runs a QA subagent after each code step.",
+    "language": "JavaScript",
+    "engine": "Phaser 3 and Three.js",
+    "last_activity": "2026-05-25T18:02:30Z",
+    "licence_spdx": null,
+    "licence_class": "RED",
+    "licence_evidence": "GitHub licence API returned null. Shallow clone at this commit has no LICENSE file. README ends by claiming MIT and says @strudel/web is AGPL-3.0. package.json says ISC. skills/game-qa frontmatter says MIT. Those statements disagree, so the grant is ambiguous. R4 firewall: no LICENSE file. Conflicting README MIT, package.json ISC, and a named AGPL audio dependency are not a grant. Class RED. Decision REJECT.",
+    "petalwild_target": "tools/orchestration and the existing Godot smoke, as an original rewrite of the QA loop. Not the Godot tree.",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": false,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "A five-phase check (build, runtime, gameplay, architecture, visual) plus a text dump of game state an agent can read without pixels.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "PlayableIntelligence/game-creator, licence ambiguous (README says MIT, package.json ISC, no LICENSE file, GitHub licence null), use: study the QA phase loop only, do not copy source",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns game-creator?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "agents/game-qa-runner.md",
+      "skills/game-qa/SKILL.md",
+      "skills/make-game/SKILL.md",
+      "skills/make-game/templates/state.md",
+      "skills/make-game/sub-pipelines/state-machine.md"
+    ],
+    "risks": [
+      "No single licence file; ISC, MIT, and an AGPL audio dependency are all claimed.",
+      "Celebrity face sprites and a face-detection asset pipeline must not enter the garden.",
+      "Play.fun monetization and here.now deploy are unrelated to Petalwild."
+    ],
+    "recommended_action": "Reject the repository. Restate a QA loop in Petalwild's own notes. Do not read its skills as a source.",
+    "do_not": [
+      "Copy skills, agents, or templates from this repository.",
+      "Add the Strudel / AGPL audio dependency.",
+      "Treat a README licence claim without a LICENSE file as permission."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor, agreeing with PETAL-R4. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "Claude-Code-Game-Studios",
+    "url": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+    "source_repository": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+    "commit": "7ed2c3e9c46c880c9780fbce49266e7edfa15141",
+    "purpose": "Claude Code studio pack: many role agents, director review gates, hooks, and a run-and-observe capture procedure including Godot.",
+    "language": "Shell and Markdown",
+    "engine": "Multi-engine notes, including Godot 4",
+    "last_activity": "2026-09-24T02:40:26Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API reports MIT. LICENSE at this commit is the MIT licence, copyright 2026 Donchitos.",
+    "petalwild_target": "tools/orchestration Hailo foreman: gate names and a visual-observe rule. Not a second agent framework.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "Named director gates and a Godot frame-capture rule that matches events the foreman already accepts.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Donchitos/Claude-Code-Game-Studios, MIT, use: rewrite director-gate and run-observe ideas into the Hailo foreman, do not vendor the agent pack",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns Claude-Code-Game-Studios?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      ".claude/docs/director-gates.md",
+      ".claude/docs/coordination-rules.md",
+      ".claude/docs/automation-modes.md",
+      ".claude/docs/error-recovery-protocol.md",
+      ".claude/docs/run-and-observe.md",
+      ".claude/agents/qa-lead.md",
+      ".claude/agents/godot-specialist.md",
+      ".claude/hooks/validate-push.sh"
+    ],
+    "risks": [
+      "Vendoring the pack would replace lane contracts and the Hailo foreman with a Claude Code studio.",
+      "Godot capture in their notes wants a real window and a movie-frame sequence; this VM's headless smoke is not that picture.",
+      "Autonomous mode logs decisions the model made; Petalwild already escalates creative-direction changes."
+    ],
+    "recommended_action": "Keep their gate index as a checklist. Map test, build, and visual failures onto the foreman's existing events. Lane recommendation PETAL-08. Godot specialist notes can inform PETAL-03 scene work later, without copying the agent file.",
+    "do_not": [
+      "Do not install the .claude agent pack into the Petalwild repo.",
+      "Do not treat their Godot launch line as a replacement for tools/run.sh."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "claude-one-button-game-creation",
+    "url": "https://github.com/abagames/claude-one-button-game-creation",
+    "source_repository": "https://github.com/abagames/claude-one-button-game-creation",
+    "commit": "d81f02a0928b35d9c979e9918aa9dc3c2770821b",
+    "purpose": "Agent workflow that designs ten independent one-button browser games from random tags, then smoke-tests the batch in a real browser and stops.",
+    "language": "JavaScript",
+    "engine": "crisp-game-lib (browser)",
+    "last_activity": "2026-07-27T09:08:43Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API reports MIT. LICENSE.txt is the MIT licence, copyright 2026 ABA Games. The skill pack it installs, abagames/agentic-gamedev-skills, also reports MIT. crisp-game-lib reports MIT. Those grants do not cover dropping the workflow into Petalwild.",
+    "petalwild_target": "Campaign rule for parallel workers: one owned output, a count-and-smoke gate, human publish. tools/orchestration only.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "low",
+    "expected_benefit": "A hard batch contract: independent contexts, a smoke command that fails the batch, and no automatic ranking or publish.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "abagames/claude-one-button-game-creation, MIT, use: independent batch plus browser smoke gate for the campaign, do not generate mini-games into Petalwild",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns claude-one-button-game-creation?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "LICENSE.txt",
+      "README.md",
+      "AGENTS.md",
+      "workflows/game-generation.md",
+      "scripts/check_batch.js"
+    ],
+    "risks": [
+      "The product is a generator of new mini-games. Petalwild is one continuing garden.",
+      "The retired rank-and-polish loop is still in the archive and must not be revived as the campaign.",
+      "Playwright smoke here only proves a page loads, not that a Godot sim is right."
+    ],
+    "recommended_action": "Adopt the social rule, not the generator: parallel agents do not read each other's output, a smoke gate is mandatory, and only a human lands the result. Lane recommendation PETAL-08.",
+    "do_not": [
+      "Do not generate one-button games into scenes/ or scripts/.",
+      "Do not vendor crisp-game-lib or the agentic-gamedev-skills tree."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "Godot-MCP",
+    "url": "https://github.com/IvanMurzak/Godot-MCP",
+    "source_repository": "https://github.com/IvanMurzak/Godot-MCP",
+    "commit": "44ec55597dace964abb008b731b419474dc5b6fb",
+    "purpose": "C# Godot editor addon that exposes scene, script, and screenshot operations to MCP agents, by default through ai-game.dev.",
+    "language": "C#",
+    "engine": "Godot 4.3+ mono/.NET",
+    "last_activity": "2026-09-27T08:28:35Z",
+    "licence_spdx": "Apache-2.0",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API reports Apache-2.0. LICENSE at main is the Apache License 2.0. The README states the standard GDScript Godot build cannot host the addon.",
+    "petalwild_target": "Future original checks beside tools/run.sh. Not addons/ and not a cloud MCP.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "Named checks Petalwild lacks in-editor: GDScript validate, viewport capture, and an isolated-node picture for visual QA.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "IvanMurzak/Godot-MCP, Apache-2.0, use: screenshot and script-validate ideas for Godot QA, do not install the C# addon or the ai-game.dev cloud",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns Godot-MCP?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "docs/runtime-security.md"
+    ],
+    "risks": [
+      "Requires the mono editor. Petalwild is pinned to the standard Godot 4.8-dev6 binary.",
+      "Default path is a hosted ai-game.dev login. The sibling Unity-MCP stores a cloud credential on the machine.",
+      "Installing the addon vendors an agent framework into the Godot tree."
+    ],
+    "recommended_action": "Use the tool list as a wish list for our own smoke and shot modes. Lane recommendation PETAL-08. Isolated shots would later help PETAL-03 (Bellhelp) and PETAL-05 (hedge skyline) without this addon.",
+    "do_not": [
+      "Do not install the Godot-MCP addon or point agents at ai-game.dev.",
+      "Do not switch the project to a .NET Godot build to host it.",
+      "Do not adopt IvanMurzak/Unity-MCP; same cloud family, wrong engine. Followed at e4af84e5ea885a10186984a8beae05da33f92696, Apache-2.0."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "quasar-saz",
+    "url": "https://github.com/cleak/quasar-saz",
+    "source_repository": "https://github.com/cleak/quasar-saz",
+    "commit": "e56e93ea8c72cbe2ff9f1e754eb68f6829e6ae43",
+    "purpose": "Godot arcade game produced by Claude Code under a dog-typed brief, kept runnable by tests, linters, and an input-replay runtime.",
+    "language": "GDScript",
+    "engine": "Godot",
+    "last_activity": "2026-02-23T19:51:40Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API reports MIT for the repository. The vendored addons/gdUnit4/LICENSE is MIT, copyright 2023 Mike Schulze. That embedded copy is not an upstream pin.",
+    "petalwild_target": "QA gate shape for the campaign: tests must pass before a change is called done. tests/ stays owned by the test lane; the rule is PETAL-08.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "medium",
+    "expected_benefit": "Evidence that an unattended Godot loop can require a unit suite, scene linters, and scripted input before shipping a change.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "cleak/quasar-saz, MIT, use: must-pass tests and input replay as a gate pattern, do not import the game or its vendored gdUnit4",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns quasar-saz?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "LICENSE",
+      "addons/gdUnit4/LICENSE",
+      "CLAUDE.md"
+    ],
+    "risks": [
+      "The game, art, and audio are a different IP and a novelty prompt pipeline.",
+      "gdUnit4 is copied inside the game repo rather than referenced as a submodule.",
+      "Last commit is February 2026; the guardrail story is in the README, not a maintained studio tool."
+    ],
+    "recommended_action": "Keep the rule that a change is not done until the existing smoke passes, and consider scripted input only as a later original test. Lane recommendation PETAL-08. If a unit framework is wanted later, take gdUnit4 from Mike Schulze's upstream, not from this tree.",
+    "do_not": [
+      "Do not import the game, its scenes, or the vendored gdUnit4 addon.",
+      "Do not copy the dog-prompt interpreter into the campaign."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "pocket-salvage",
+    "url": "https://github.com/RaresKeY/pocket-salvage",
+    "source_repository": "https://github.com/RaresKeY/pocket-salvage",
+    "commit": "5909b839b0a7e3463ded69660e2f61f672e587c0",
+    "purpose": "Small Godot crane game from the AI-built-games index, with a large headless check suite and a note that headless pixels are not a GPU proof.",
+    "language": "GDScript",
+    "engine": "Godot",
+    "last_activity": "2026-09-26T23:56:50Z",
+    "licence_spdx": null,
+    "licence_class": "RED",
+    "licence_evidence": "GitHub licence API returned null. Repository root has no LICENSE file. THIRD_PARTY_NOTICES.md licenses only the Tiny5 font (SIL OFL 1.1) and says that font licence does not license the game source or other assets.",
+    "petalwild_target": "None. The headless-versus-display lesson can be restated in the campaign notes. No file from this repo.",
+    "directly_reusable": false,
+    "portable": false,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "A warning already true on this VM: a headless Godot check can pass while the pictured garden is still wrong.",
+    "decision": "REJECT",
+    "recommendation_decision": "REJECT",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "RaresKeY/pocket-salvage, no licence (GitHub null, no LICENSE file), use: headless checks are not GPU proof, do not copy any files",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns pocket-salvage?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
+      "tests/README.md",
+      "examples_agents/README.md",
+      "docs/collaboration.md"
+    ],
+    "risks": [
+      "No licence on the game. Copying tests, prompts, or scripts would be unlicensed.",
+      "Tiny5 is OFL and is not a path to the rest of the repo.",
+      "Their runner expects a private Podman Godot image this project does not have."
+    ],
+    "recommended_action": "Reject the repository. Lane recommendation if anyone restates the lesson: PETAL-08. Keep Petalwild shots on DISPLAY=:1 and do not call headless smoke a picture of the hedge. That same split helps PETAL-03 and PETAL-05 visual work.",
+    "do_not": [
+      "Do not copy tests, tools, prompts, shaders, or agent examples.",
+      "Do not treat OFL on the font as a licence for the game."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "world-of-claudecraft",
+    "url": "https://github.com/levy-street/world-of-claudecraft",
+    "source_repository": "https://github.com/levy-street/world-of-claudecraft",
+    "commit": "cecebab4da06287351b37e118c630c185717b81c",
+    "purpose": "Browser MMO whose deterministic sim also runs as a headless Gymnasium environment so an agent trains against the game itself.",
+    "language": "TypeScript",
+    "engine": "Three.js, with a Python Gymnasium binding",
+    "last_activity": "2026-09-27T04:15:13Z",
+    "licence_spdx": "MIT",
+    "licence_class": "GREEN",
+    "licence_evidence": "GitHub licence API reports MIT. README badge links LICENSE as MIT. The same README describes an optional Solana token and wallet linking.",
+    "petalwild_target": "A future headless driver outside the game that steps the existing sim. Not a gym dependency and not a token.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "medium",
+    "integration_cost": "high",
+    "expected_benefit": "Self-play shape: one sim, a reset/step loop, observations derived from live content rather than a second simplified model.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "levy-street/world-of-claudecraft, MIT, use: headless gym over the real sim as a pattern, do not import the MMO, token, or gym code",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns world-of-claudecraft?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "README.md",
+      "headless/CLAUDE.md",
+      "python/CLAUDE.md"
+    ],
+    "risks": [
+      "Web3 token, wallet linking, and a marketplace. None of that belongs in Petalwild.",
+      "The observation space is an MMO combat kit, not a garden.",
+      "Training code would be a new dependency stack (Python gym) beside a GDScript sim."
+    ],
+    "recommended_action": "Study only the split between the played sim and a headless step API. Lane recommendation PETAL-08 for the harness. A creature policy, if ever built, is PETAL-01 data driven by that harness, written here, not imported.",
+    "do_not": [
+      "Do not import the MMO, the headless server, the Python bindings, or any token or wallet code.",
+      "Do not add Gymnasium as a Petalwild dependency in this wave."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-08"
+  },
+  {
+    "name": "the-free-game",
+    "url": "https://github.com/LucasMarquesShiva/the-free-game",
+    "source_repository": "https://github.com/LucasMarquesShiva/the-free-game",
+    "commit": "7798cd9771f99d5c99422789a9b94a69df6c3e3e",
+    "purpose": "Godot village builder: autonomous workers, production chains, a fixed sim clock, and a Python dev command for doctor, test, and web export.",
+    "language": "GDScript",
+    "engine": "Godot 4.7.2 standard",
+    "last_activity": "2026-09-19T16:33:49Z",
+    "licence_spdx": "MIT",
+    "licence_class": "YELLOW",
+    "licence_evidence": "GitHub licence API reports MIT for the repository. README says code, tools, and docs are MIT, and original artwork is CC BY 4.0, credited to Lucas Marques, from Shiva, with LICENSE-ASSETS.md. CC-BY art is the constraint on the asset half.",
+    "petalwild_target": "Simulation notes for a later village layer: jobs come from places, the view only reads state. tools/run.sh already covers the dev-command idea.",
+    "directly_reusable": false,
+    "portable": true,
+    "reference_only": true,
+    "quality": "high",
+    "integration_cost": "high",
+    "expected_benefit": "A worked split between a fixed-step village sim and a 3D view, close to Petalwild's embodied-versus-aggregate plan.",
+    "decision": "STUDY",
+    "recommendation_decision": "STUDY",
+    "decision_layer": {
+      "reuse": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "LucasMarquesShiva/the-free-game, MIT code and CC-BY-4.0 art, use: sim versus view split and a dev test command as reference, do not copy art or the Godot 4.7 project",
+        "options": [
+          "ADOPT",
+          "PORT",
+          "STUDY",
+          "REJECT"
+        ]
+      },
+      "lane": {
+        "status": "escalate",
+        "reason": "backend_unavailable",
+        "error": "cached: HTTPError: HTTP Error 502: Bad Gateway",
+        "choice": null,
+        "client_ms": 0.1,
+        "question": "Which lane owns the-free-game?",
+        "options": [
+          "PETAL-08",
+          "PETAL-01",
+          "PETAL-03"
+        ]
+      }
+    },
+    "files_of_interest": [
+      "LICENSE",
+      "LICENSE-ASSETS.md",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "tools/dev.py"
+    ],
+    "risks": [
+      "CC-BY artwork and concept sheets. Importing them requires attribution and is out of scope.",
+      "Godot 4.7.2, not the pinned 4.8-dev6 binary.",
+      "A full village economy would skip the garden-scale campaign if copied in."
+    ],
+    "recommended_action": "Study the sim-versus-view split and the rule that placing a place creates a job. Lane recommendation PETAL-01. The single dev command is a PETAL-08 echo of tools/run.sh, not a second runner to vendor.",
+    "do_not": [
+      "Do not copy scenes, scripts, art, or the 4.7.2 project into Petalwild.",
+      "Do not treat the MIT code grant as a grant on the CC-BY art."
+    ],
+    "research_doc": "docs/research/wave0/r3_notes.md",
+    "decision_authority": "Grok/Cursor. Hailo POST /decide returned HTTP 502. options[0] was not used.",
+    "assigned_lane": "PETAL-01"
+  }
+]
