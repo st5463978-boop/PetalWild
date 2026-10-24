@@ -14,6 +14,13 @@ const RANKS := {
 	"breeding": 9,
 }
 
+const TIER_RANK := {
+	"closed": 0,
+	"visit": 1,
+	"resident": 2,
+	"romance": 3,
+}
+
 func rank_of(state: String) -> int:
 	return int(RANKS.get(state, 0))
 
@@ -97,3 +104,82 @@ func romance_label(species: Dictionary) -> String:
 	if romance.is_empty():
 		return ""
 	return str(romance.get("label", "Romance"))
+
+
+func tier_rank(tier: String) -> int:
+	return int(TIER_RANK.get(tier, 0))
+
+
+func gate_defined(species: Dictionary, tier: String) -> bool:
+	var key := "%s_req" % tier
+	if species.has(key):
+		return _gate_list(species[key]).size() > 0
+	if tier == "visit":
+		return _gate_list(species.get("requirements", [])).size() > 0
+	if tier == "romance":
+		return _gate_list(species.get("romance", {})).size() > 0
+	return false
+
+
+func gate_reqs(species: Dictionary, tier: String) -> Array:
+	var key := "%s_req" % tier
+	if species.has(key):
+		return _gate_list(species[key])
+	if tier == "visit":
+		return _gate_list(species.get("requirements", []))
+	if tier == "romance":
+		return _gate_list(species.get("romance", {}))
+	return []
+
+
+func gate_met(species: Dictionary, world: Dictionary, tier: String) -> bool:
+	if not gate_defined(species, tier):
+		return false
+	for req_v in gate_reqs(species, tier):
+		if typeof(req_v) != TYPE_DICTIONARY:
+			return false
+		var req: Dictionary = req_v
+		if not requirement_met(req, world):
+			return false
+	return true
+
+
+func highest_tier(species: Dictionary, world: Dictionary) -> String:
+	if not gate_met(species, world, "visit"):
+		return "closed"
+	if gate_defined(species, "resident"):
+		if not gate_met(species, world, "resident"):
+			return "visit"
+		if gate_defined(species, "romance") and gate_met(species, world, "romance"):
+			return "romance"
+		return "resident"
+	if gate_defined(species, "romance") and gate_met(species, world, "romance"):
+		return "romance"
+	return "visit"
+
+
+func gate_summary(species: Dictionary, world: Dictionary, tier: String) -> String:
+	var focus := tier
+	if focus == "closed" or not gate_defined(species, focus):
+		focus = "visit"
+	var bits := PackedStringArray()
+	for req_v in gate_reqs(species, focus):
+		if typeof(req_v) != TYPE_DICTIONARY:
+			continue
+		var req: Dictionary = req_v
+		var label := str(req.get("label", "Condition"))
+		if requirement_met(req, world):
+			bits.append("met " + label)
+		else:
+			bits.append("unmet " + label)
+	if bits.is_empty():
+		return "no requirements are set"
+	return ", ".join(bits)
+
+
+func _gate_list(body: Variant) -> Array:
+	if typeof(body) == TYPE_ARRAY:
+		return body
+	if typeof(body) == TYPE_DICTIONARY and not (body as Dictionary).is_empty():
+		return [body]
+	return []

@@ -12,9 +12,49 @@
     "wobble": 0.7,
     "blurb": "A bell-bodied pollinator. It rings, very quietly, when the meadow is sweet, and that ring sets one seed in the next bed. In the rain the bees are down and the bell waits. When it rings, the bees come to that bed. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
     "requirements": [
-      {"type": "mature_plant", "plant": "meadowbell", "min": 3, "label": "3 mature Meadowbells"}
+      {
+        "type": "mature_plant",
+        "plant": "meadowbell",
+        "min": 3,
+        "label": "3 mature Meadowbells"
+      }
     ],
-    "romance": {"type": "resident_count", "species": "bellhelp", "min": 2, "label": "A second Bellhelp resident"}
+    "romance": {
+      "type": "resident_count",
+      "species": "bellhelp",
+      "min": 2,
+      "label": "A second Bellhelp resident"
+    },
+    "visit_req": [
+      {
+        "type": "mature_plant",
+        "plant": "meadowbell",
+        "min": 3,
+        "label": "3 mature Meadowbells"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "mature_plant",
+        "plant": "meadowbell",
+        "min": 3,
+        "label": "3 mature Meadowbells"
+      },
+      {
+        "type": "service",
+        "channel": "pollination",
+        "min": 0.35,
+        "label": "Pollination across the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "bellhelp",
+        "min": 2,
+        "label": "A second Bellhelp resident"
+      }
+    ]
   },
   {
     "id": "berrypatch",
@@ -29,7 +69,41 @@
     "wobble": 0.55,
     "blurb": "A cluster of berry lobes that settles where the canes fruit.",
     "requirements": [
-      {"type": "mature_plant", "plant": "bramble", "min": 2, "label": "2 mature Brambles"}
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 2,
+        "label": "2 mature Brambles"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 2,
+        "label": "2 mature Brambles"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 2,
+        "label": "2 mature Brambles"
+      },
+      {
+        "type": "fertility",
+        "min": 0.5,
+        "label": "Richer soil across the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "berrypatch",
+        "min": 2,
+        "label": "A second Berrypatch resident"
+      }
     ]
   },
   {
@@ -45,10 +119,63 @@
     "wobble": 0.85,
     "blurb": "A tall reed jelly. It wants a real pond and a stand of reeds before it will wade in. In the pond it sits in the water. On the lawn, and under a home kit, it stands on the ground. A breeding pair leaves one young beside them, and the young stays while that pair remains.",
     "requirements": [
-      {"type": "pond_cells", "min": 26, "label": "A widened pond (scoop the bank)"},
-      {"type": "mature_plant", "plant": "reed", "min": 3, "label": "3 mature Reeds"}
+      {
+        "type": "pond_cells",
+        "min": 26,
+        "label": "A widened pond (scoop the bank)"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "reed",
+        "min": 3,
+        "label": "3 mature Reeds"
+      }
     ],
-    "romance": {"type": "resident_count", "species": "bulrush", "min": 2, "label": "A second Bulrush resident"}
+    "romance": {
+      "type": "resident_count",
+      "species": "bulrush",
+      "min": 2,
+      "label": "A second Bulrush resident"
+    },
+    "visit_req": [
+      {
+        "type": "pond_cells",
+        "min": 26,
+        "label": "A widened pond (scoop the bank)"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "reed",
+        "min": 3,
+        "label": "3 mature Reeds"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "pond_cells",
+        "min": 26,
+        "label": "A widened pond (scoop the bank)"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "reed",
+        "min": 3,
+        "label": "3 mature Reeds"
+      },
+      {
+        "type": "moisture",
+        "min": 0.62,
+        "label": "The pond beds stay wet"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "bulrush",
+        "min": 2,
+        "label": "A second Bulrush resident"
+      }
+    ]
   },
   {
     "id": "reedic",
@@ -63,8 +190,57 @@
     "wobble": 0.4,
     "blurb": "A low water-disc that follows Bulrush into wet ground. In the pond it sits on the water.",
     "requirements": [
-      {"type": "species_state", "species": "bulrush", "state": "visitor", "label": "Bulrush has visited"},
-      {"type": "moisture", "min": 0.5, "label": "The beds are properly wet"}
+      {
+        "type": "species_state",
+        "species": "bulrush",
+        "state": "visitor",
+        "label": "Bulrush has visited"
+      },
+      {
+        "type": "moisture",
+        "min": 0.5,
+        "label": "The beds are properly wet"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "species_state",
+        "species": "bulrush",
+        "state": "visitor",
+        "label": "Bulrush has visited"
+      },
+      {
+        "type": "moisture",
+        "min": 0.5,
+        "label": "The beds are properly wet"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "species_state",
+        "species": "bulrush",
+        "state": "visitor",
+        "label": "Bulrush has visited"
+      },
+      {
+        "type": "moisture",
+        "min": 0.5,
+        "label": "The beds are properly wet"
+      },
+      {
+        "type": "service",
+        "channel": "moisture",
+        "min": 0.3,
+        "label": "A well keeps the beds wet"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "reedic",
+        "min": 2,
+        "label": "A second Reedic resident"
+      }
     ]
   },
   {
@@ -80,8 +256,57 @@
     "wobble": 0.65,
     "blurb": "A stacked bright jelly drawn to a cared-for garden and a resident Bellhelp.",
     "requirements": [
-      {"type": "species_state", "species": "bellhelp", "state": "resident", "label": "A resident Bellhelp"},
-      {"type": "garden_quality", "min": 0.42, "label": "The garden is looked after"}
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "resident",
+        "label": "A resident Bellhelp"
+      },
+      {
+        "type": "garden_quality",
+        "min": 0.42,
+        "label": "The garden is looked after"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "resident",
+        "label": "A resident Bellhelp"
+      },
+      {
+        "type": "garden_quality",
+        "min": 0.42,
+        "label": "The garden is looked after"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "resident",
+        "label": "A resident Bellhelp"
+      },
+      {
+        "type": "garden_quality",
+        "min": 0.42,
+        "label": "The garden is looked after"
+      },
+      {
+        "type": "service",
+        "channel": "pollination",
+        "min": 0.4,
+        "label": "Pollination across the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "cirlark",
+        "min": 2,
+        "label": "A second Cirlark resident"
+      }
     ]
   },
   {
@@ -97,9 +322,58 @@
     "wobble": 0.9,
     "blurb": "Long and vine-slow. It wants fertile soil and a thick bramble.",
     "requirements": [
-      {"type": "mature_plant", "plant": "bramble", "min": 3, "label": "3 mature Brambles"},
-      {"type": "fertility", "min": 0.55, "label": "Rich soil across the beds"}
-    ]
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 3,
+        "label": "3 mature Brambles"
+      },
+      {
+        "type": "fertility",
+        "min": 0.55,
+        "label": "Rich soil across the beds"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 3,
+        "label": "3 mature Brambles"
+      },
+      {
+        "type": "fertility",
+        "min": 0.55,
+        "label": "Rich soil across the beds"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "mature_plant",
+        "plant": "bramble",
+        "min": 3,
+        "label": "3 mature Brambles"
+      },
+      {
+        "type": "fertility",
+        "min": 0.55,
+        "label": "Rich soil across the beds"
+      },
+      {
+        "type": "fertility",
+        "min": 0.7,
+        "label": "Deeper feed in the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "grapling",
+        "min": 2,
+        "label": "A second Grapling resident"
+      }
+    ],
+    "web_cap": 12
   },
   {
     "id": "dusknip",
@@ -114,9 +388,47 @@
     "wobble": 0.5,
     "blurb": "A small crown that follows pollinators and leaves night-loam in the beds. A resident walks to the bed while the bees work it.",
     "requirements": [
-      {"type": "species_state", "species": "bellhelp", "state": "visitor", "label": "Bellhelp has visited"}
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "visitor",
+        "label": "Bellhelp has visited"
+      }
     ],
-    "soil_effect": {"chem": "nightloam", "count": 5}
+    "soil_effect": {
+      "chem": "nightloam",
+      "count": 5
+    },
+    "visit_req": [
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "visitor",
+        "label": "Bellhelp has visited"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "species_state",
+        "species": "bellhelp",
+        "state": "visitor",
+        "label": "Bellhelp has visited"
+      },
+      {
+        "type": "service",
+        "channel": "light",
+        "min": 0.25,
+        "label": "Lantern light across the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "dusknip",
+        "min": 2,
+        "label": "A second Dusknip resident"
+      }
+    ]
   },
   {
     "id": "pegapear",
@@ -131,10 +443,102 @@
     "wobble": 0.6,
     "blurb": "Rare. It comes for a ripe peach, a nightlantern, and wet dusk. At dusk it bites the lantern. In the morning it bites the peach. A bitten lantern grows back on night-loam. The bed says so.",
     "requirements": [
-      {"type": "mature_plant", "plant": "peach", "min": 1, "label": "A ripe Peach"},
-      {"type": "mature_plant", "plant": "nightlantern", "min": 1, "label": "A mature Nightlantern"},
-      {"type": "weather_in", "weather": ["mist", "rain"], "label": "Mist or rain"},
-      {"type": "hour_between", "from": 16.0, "to": 22.0, "label": "Dusk or evening"}
+      {
+        "type": "mature_plant",
+        "plant": "peach",
+        "min": 1,
+        "label": "A ripe Peach"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "nightlantern",
+        "min": 1,
+        "label": "A mature Nightlantern"
+      },
+      {
+        "type": "weather_in",
+        "weather": [
+          "mist",
+          "rain"
+        ],
+        "label": "Mist or rain"
+      },
+      {
+        "type": "hour_between",
+        "from": 16.0,
+        "to": 22.0,
+        "label": "Dusk or evening"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "mature_plant",
+        "plant": "peach",
+        "min": 1,
+        "label": "A ripe Peach"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "nightlantern",
+        "min": 1,
+        "label": "A mature Nightlantern"
+      },
+      {
+        "type": "weather_in",
+        "weather": [
+          "mist",
+          "rain"
+        ],
+        "label": "Mist or rain"
+      },
+      {
+        "type": "hour_between",
+        "from": 16.0,
+        "to": 22.0,
+        "label": "Dusk or evening"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "mature_plant",
+        "plant": "peach",
+        "min": 1,
+        "label": "A ripe Peach"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "nightlantern",
+        "min": 1,
+        "label": "A mature Nightlantern"
+      },
+      {
+        "type": "weather_in",
+        "weather": [
+          "mist",
+          "rain"
+        ],
+        "label": "Mist or rain"
+      },
+      {
+        "type": "hour_between",
+        "from": 16.0,
+        "to": 22.0,
+        "label": "Dusk or evening"
+      },
+      {
+        "type": "service",
+        "channel": "light",
+        "min": 0.2,
+        "label": "Lantern light across the beds"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "pegapear",
+        "min": 2,
+        "label": "A second Pegapear resident"
+      }
     ]
   },
   {
@@ -150,9 +554,81 @@
     "wobble": 0.45,
     "blurb": "A heavy crown. It wants night-loam, mosspears, and soil that has been fed.",
     "requirements": [
-      {"type": "chem_cells", "chem": "nightloam", "min": 4, "label": "Night-loam in the beds"},
-      {"type": "mature_plant", "plant": "mosspear", "min": 2, "label": "2 mature Mosspears"},
-      {"type": "fertility", "min": 0.6, "label": "Well-fed soil"}
+      {
+        "type": "chem_cells",
+        "chem": "nightloam",
+        "min": 4,
+        "label": "Night-loam in the beds"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "mosspear",
+        "min": 2,
+        "label": "2 mature Mosspears"
+      },
+      {
+        "type": "fertility",
+        "min": 0.6,
+        "label": "Well-fed soil"
+      }
+    ],
+    "visit_req": [
+      {
+        "type": "chem_cells",
+        "chem": "nightloam",
+        "min": 4,
+        "label": "Night-loam in the beds"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "mosspear",
+        "min": 2,
+        "label": "2 mature Mosspears"
+      },
+      {
+        "type": "fertility",
+        "min": 0.6,
+        "label": "Well-fed soil"
+      }
+    ],
+    "resident_req": [
+      {
+        "type": "chem_cells",
+        "chem": "nightloam",
+        "min": 4,
+        "label": "Night-loam in the beds"
+      },
+      {
+        "type": "mature_plant",
+        "plant": "mosspear",
+        "min": 2,
+        "label": "2 mature Mosspears"
+      },
+      {
+        "type": "fertility",
+        "min": 0.6,
+        "label": "Well-fed soil"
+      },
+      {
+        "type": "fertility",
+        "min": 0.75,
+        "label": "The beds are heavily fed"
+      }
+    ],
+    "romance_req": [
+      {
+        "type": "resident_count",
+        "species": "gushorn",
+        "min": 2,
+        "label": "A second Gushorn resident"
+      }
+    ],
+    "web_cap": 8,
+    "diet": [
+      {
+        "species": "grapling",
+        "rate": 1
+      }
     ]
   }
 ]

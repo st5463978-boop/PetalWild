@@ -1,0 +1,39 @@
+{
+  "tiers": ["visit", "resident", "romance"],
+  "food_web": {
+    "floor": 1,
+    "surplus_min": 2,
+    "grow_every": 4,
+    "starve_every": 6,
+    "seed_span": 5,
+    "default_cap": 8,
+    "grow_from_zero": false
+  },
+  "blight": {
+    "id": "blight_moth",
+    "name": "Blight-moth",
+    "quality_max": 0.34,
+    "neglected_min": 2,
+    "neglected_moisture": 0.18,
+    "neglected_wilt": 1.0,
+    "spawn_every": 4,
+    "damage_growth": 0.08,
+    "damage_wilt": 0.35,
+    "cap": 4,
+    "suppress_at": 1.0,
+    "service_weight": 1.0,
+    "helper_weight": 1.0,
+    "plant_weight": 1.0,
+    "guardian_weight": 1.0,
+    "structure_weight": 1.0,
+    "counter_services": ["lantern"],
+    "counter_channel": "light",
+    "counter_channel_min": 0.25,
+    "counter_plants": ["nightlantern"],
+    "counter_plant_min": 1,
+    "counter_helpers": ["bram"],
+    "counter_guardians": ["cirlark"],
+    "guardian_state": "resident",
+    "counter_structures": ["fence"]
+  }
+}

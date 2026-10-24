@@ -4,6 +4,9 @@ extends Node
 signal event_happened(text: String)
 
 var rules := EcologyRules.new()
+var gates := SpeciesGates.new()
+var food := FoodWeb.new()
+var blight := Blight.new()
 var states := {}
 var actors: Array = []
 var folder: Node3D
@@ -13,11 +16,38 @@ var young_spawned := {}
 var effect_done := {}
 var attractor_provider: Callable
 var soil_effect_cb: Callable
+var log: CausalLog
+var services: ServiceField
+var soil: SoilField
+var parish_people: Dictionary = {}
+var notes: Array[String] = []
+var hour_bank := 0.0
 
 func boot(creature_folder: Node3D) -> void:
 	folder = creature_folder
 	for id in ContentDB.species_order:
 		states[id] = "rumoured"
+	gates.boot(ContentDB.species_order)
+	blight.rules = rules
+
+
+func bind_parish(causal: CausalLog, field: ServiceField, beds: SoilField, folk: Dictionary) -> void:
+	log = causal
+	services = field
+	soil = beds
+	parish_people = folk
+	gates.log = causal
+	gates.note_cb = Callable(self, "_remember")
+	food.log = causal
+	blight.log = causal
+	blight.services = field
+	blight.soil = beds
+	blight.rules = rules
+	blight.note_cb = Callable(self, "_remember")
+
+
+func reseed(next_seed: int) -> void:
+	food.reseed(next_seed)
 
 func tick(delta: float, world: Dictionary) -> void:
 	_prune()
@@ -234,6 +264,104 @@ func _romance(world: Dictionary) -> void:
 			_raise(id, "breeding")
 			event_happened.emit("%s has a partner in the parish." % definition.get("name", id))
 		_young(id, definition)
+	_refresh_gates(world)
+	var span := float(world.get("sim_hours", 0.0))
+	if span > 0.0:
+		_advance_hours(span, world)
+
+func _refresh_gates(world: Dictionary) -> void:
+	gates.refresh(ContentDB.species_order, ContentDB.species, world)
+
+
+func _advance_hours(span: float, world: Dictionary) -> void:
+	hour_bank += span
+	var guard := 0
+	while hour_bank >= 1.0 and guard < 48:
+		hour_bank -= 1.0
+		guard += 1
+		food.sync_minimums(_actor_counts())
+		var losses: Dictionary = food.hour(ContentDB.species)
+		_apply_losses(losses)
+		blight.hour(world, _present_helpers())
+
+
+func _actor_counts() -> Dictionary:
+	var counts := {}
+	for id in ContentDB.species_order:
+		var have := _count(id)
+		if have > 0:
+			counts[id] = have
+	return counts
+
+
+func _present_helpers() -> PackedStringArray:
+	var ids := PackedStringArray()
+	for item_v in blight.helper_catalog():
+		var id := str(item_v)
+		var person: Variant = parish_people.get(id, null)
+		if typeof(person) != TYPE_OBJECT or person == null:
+			continue
+		var body: Object = person
+		if bool(body.get("present")):
+			ids.append(id)
+	return ids
+
+
+func _apply_losses(losses: Dictionary) -> void:
+	for key_v in losses.keys():
+		var id := str(key_v)
+		if int(losses.get(id, 0)) <= 0:
+			continue
+		var drop := _count(id) - int(food.counts.get(id, 0))
+		if drop > 0:
+			_send_toward_hedge(id, drop)
+
+
+func _send_toward_hedge(id: String, count: int) -> void:
+	# Residents and young stay. The surplus floor already keeps the count from hitting zero.
+	var left := count
+	for actor in actors:
+		if left <= 0:
+			return
+		if not is_instance_valid(actor):
+			continue
+		var jelly: Jelly = actor
+		if jelly.species_id != id or jelly.leaving or jelly.young:
+			continue
+		if rules.rank_of(jelly.life) >= rules.rank_of("resident"):
+			continue
+		jelly.leaving = true
+		jelly.goal = GardenLayout.GATE
+		jelly.attract = GardenLayout.GATE
+		left -= 1
+
+
+func _remember(line: String) -> void:
+	if line == "":
+		return
+	notes.append(line)
+	if notes.size() > 24:
+		notes.remove_at(0)
+
+
+func gate_journal_row() -> Dictionary:
+	var lines := PackedStringArray()
+	var start := maxi(notes.size() - 4, 0)
+	for i in range(start, notes.size()):
+		lines.append(notes[i])
+	var blurb := "No tier changes yet."
+	if not lines.is_empty():
+		blurb = "Visit, resident, and romance, and the moths that follow a neglected bed."
+	return {
+		"name": "Species gates",
+		"status": "",
+		"met": lines,
+		"unmet": PackedStringArray(),
+		"blurb": blurb,
+		"romance": "",
+		"romance_met": false,
+		"residents": 0,
+	}
 
 func _soil_effect(definition: Dictionary) -> void:
 	var id := str(definition.get("id", ""))
@@ -299,6 +427,11 @@ func to_state() -> Dictionary:
 		"extra_spawned": extra_spawned.duplicate(),
 		"effect_done": effect_done.duplicate(),
 		"young_spawned": young_spawned.duplicate(),
+		"gates": gates.to_state(),
+		"gate_notes": _string_array(notes),
+		"food_web": food.to_state(),
+		"blight": blight.to_state(),
+		"hour_bank": hour_bank,
 	}
 
 func apply_state(data: Dictionary) -> void:
@@ -310,6 +443,15 @@ func apply_state(data: Dictionary) -> void:
 	extra_spawned = data.get("extra_spawned", {}).duplicate() if typeof(data.get("extra_spawned")) == TYPE_DICTIONARY else {}
 	young_spawned = data.get("young_spawned", {}).duplicate() if typeof(data.get("young_spawned")) == TYPE_DICTIONARY else {}
 	effect_done = data.get("effect_done", {}).duplicate() if typeof(data.get("effect_done")) == TYPE_DICTIONARY else {}
+	gates.apply_state(data.get("gates", {}))
+	notes.clear()
+	var saved_notes: Variant = data.get("gate_notes", [])
+	if typeof(saved_notes) == TYPE_ARRAY:
+		for line_v in saved_notes:
+			notes.append(str(line_v))
+	food.apply_state(data.get("food_web", {}))
+	blight.apply_state(data.get("blight", {}))
+	hour_bank = float(data.get("hour_bank", 0.0))
 	for entry in data.get("actors", []):
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
@@ -333,3 +475,10 @@ func apply_state(data: Dictionary) -> void:
 			jelly.goal = GardenLayout.GATE
 			jelly.attract = GardenLayout.GATE
 		actors.append(jelly)
+
+
+func _string_array(lines: Array[String]) -> Array:
+	var saved: Array = []
+	for line in lines:
+		saved.append(line)
+	return saved

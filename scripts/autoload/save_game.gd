@@ -93,6 +93,7 @@ func _finish(state: Dictionary) -> Dictionary:
 			body["schema"] = 1
 		state["sim"] = body
 	_ensure_city(state)
+	_ensure_ecology(state)
 	return state
 
 func _m1_to_2(s: Dictionary) -> Dictionary:
@@ -112,9 +113,56 @@ func _m1_to_2(s: Dictionary) -> Dictionary:
 func _m2_to_3(s: Dictionary) -> Dictionary:
 	## VC1 adds the city block. Older gardens start with no stamped services.
 	## VC2 keeps that block at v3 and fills a missing paths list with [].
+	## VC3 stays on v3. Gate, food-web, and blight defaults are filled in _finish.
 	var out := s.duplicate(true)
 	_ensure_city(out)
 	return out
+
+
+func _ensure_ecology(state: Dictionary) -> void:
+	var eco: Variant = state.get("ecology", null)
+	if typeof(eco) != TYPE_DICTIONARY:
+		state["ecology"] = _blank_parish()
+		return
+	var body: Dictionary = eco
+	if typeof(body.get("gates", null)) != TYPE_DICTIONARY:
+		body["gates"] = {}
+	if typeof(body.get("gate_notes", null)) != TYPE_ARRAY:
+		body["gate_notes"] = []
+	body["food_web"] = _food_defaults(body.get("food_web", null))
+	body["blight"] = _blight_defaults(body.get("blight", null))
+	state["ecology"] = body
+
+
+func _blank_parish() -> Dictionary:
+	return {
+		"gates": {},
+		"gate_notes": [],
+		"food_web": {"counts": {}, "banks": {}, "eaten": {}},
+		"blight": {"moths": [], "spawn_bank": 0},
+	}
+
+
+func _food_defaults(food: Variant) -> Dictionary:
+	var body: Dictionary = {}
+	if typeof(food) == TYPE_DICTIONARY:
+		body = food
+	if typeof(body.get("counts", null)) != TYPE_DICTIONARY:
+		body["counts"] = {}
+	if typeof(body.get("banks", null)) != TYPE_DICTIONARY:
+		body["banks"] = {}
+	if typeof(body.get("eaten", null)) != TYPE_DICTIONARY:
+		body["eaten"] = {}
+	return body
+
+
+func _blight_defaults(pests: Variant) -> Dictionary:
+	var body: Dictionary = {}
+	if typeof(pests) == TYPE_DICTIONARY:
+		body = pests
+	if typeof(body.get("moths", null)) != TYPE_ARRAY:
+		body["moths"] = []
+	return body
 
 
 func _ensure_city(state: Dictionary) -> void:
