@@ -14,6 +14,7 @@ var signals_for: Callable = Callable()
 
 var services: ServiceField
 var paths: PathGraph
+var districts: GardenDistricts
 var log: CausalLog
 var soil: RefCounted
 var ecology: Node
@@ -108,11 +109,18 @@ func _score(kind: String, signals: Dictionary) -> int:
 	var mix := float(spec.get("seed_mix", 0.0))
 	if mix != 0.0:
 		raw += mix * float(rng.randi() % 5)
+	raw += _policy_offset(kind)
 	return clampi(int(round(raw)), _lo, _hi)
 
 
+func _policy_offset(kind: String) -> float:
+	if districts == null:
+		return 0.0
+	return districts.demand_offset(kind)
+
+
 func _reason(kind: String, old_value: int, new_value: int, signals: Dictionary) -> String:
-	return "%s demand %+d because residents %d, free beds %d, quality %.2f, coins %d, stall stock %d, footfall %d" % [
+	var why := "%s demand %+d because residents %d, free beds %d, quality %.2f, coins %d, stall stock %d, footfall %d" % [
 		kind.capitalize(),
 		new_value - old_value,
 		int(signals.get("resident_total", 0)),
@@ -122,6 +130,12 @@ func _reason(kind: String, old_value: int, new_value: int, signals: Dictionary) 
 		int(signals.get("stall_stock", 0)),
 		int(round(float(signals.get("footfall", 0.0)))),
 	]
+	if districts == null:
+		return why
+	var extra := districts.demand_reason(kind)
+	if extra == "":
+		return why
+	return "%s %s" % [why, extra]
 
 
 func _write_log(kind: String, why: String) -> void:

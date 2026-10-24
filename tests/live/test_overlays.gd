@@ -29,7 +29,7 @@ func _catalog(t: PetalAssert) -> void:
 	for item in root.get("channels", []):
 		if typeof(item) == TYPE_DICTIONARY:
 			by_id[str(item.get("id", ""))] = item
-	for id in ["moisture", "fertility", "pollination", "light", "quality", "footfall", "blight"]:
+	for id in ["moisture", "fertility", "pollination", "light", "quality", "footfall", "blight", "districts"]:
 		t.expect(by_id.has(id), "overlays.json includes %s" % id)
 		if not by_id.has(id):
 			continue
@@ -41,6 +41,8 @@ func _catalog(t: PetalAssert) -> void:
 		t.expect(str(by_id["footfall"].get("source", "")) == "path", "footfall reads the path graph")
 	if by_id.has("blight"):
 		t.expect(str(by_id["blight"].get("source", "")) == "blight", "blight reads moth pressure")
+	if by_id.has("districts"):
+		t.expect(str(by_id["districts"].get("source", "")) == "district", "districts reads painted bed groups")
 	var bars := {}
 	for item in root.get("bars", []):
 		if typeof(item) == TYPE_DICTIONARY:
@@ -63,7 +65,7 @@ func _service_samples(t: PetalAssert) -> void:
 	field.stamp("lantern", origin, 3.0, 1.0)
 	var view := _view(field, PathGraph.new(), CityDemand.new(), CausalLog.new())
 	var listed: Array = view.call("channels")
-	t.expect(listed.size() == 7, "seven map channels are toggleable")
+	t.expect(listed.size() == 8, "eight map channels are toggleable")
 	t.expect(field.sample(origin, "moisture") > 0.9, "the fixture paints moisture")
 	for id in ["moisture", "fertility", "pollination", "light", "quality"]:
 		view.call("set_channel", id)
@@ -93,10 +95,17 @@ func _toggle(t: PetalAssert) -> void:
 	t.expect(str(view.call("channel_id")) == "moisture", "the first cycle shows moisture")
 	t.expect(bool(view.call("maps_visible")), "the moisture map is shown")
 	var ids: Array = view.call("channels")
+	var saw_blight := false
 	for _i in ids.size() - 1:
 		view.call("cycle")
-	t.expect(str(view.call("channel_id")) == "blight", "cycling reaches blight-moth pressure")
+		if str(view.call("channel_id")) == "blight":
+			saw_blight = true
+	t.expect(saw_blight, "cycling reaches blight-moth pressure")
+	t.expect(str(view.call("channel_id")) == "districts", "cycling ends on the district map")
+	t.expect(str(view.call("source_of", "districts")) == "district", "the district map reads painted groups")
+	view.call("set_channel", "blight")
 	t.expect(str(view.call("source_of", view.call("channel_id"))) == "blight", "the blight map uses blight pressure")
+	view.call("set_channel", "districts")
 	view.call("cycle")
 	t.expect(str(view.call("channel_id")) == "", "the cycle returns to off")
 	t.expect(not bool(view.call("maps_visible")), "off hides the heat map")

@@ -11,6 +11,7 @@ var seed := 4242
 var hour_index := 0
 var tuning: Dictionary = {}
 var log: CausalLog
+var food_scale: Callable = Callable()
 
 
 func _init() -> void:
@@ -113,6 +114,9 @@ func _predate(predator: String, definition: Dictionary, diet: Array, catalog: Di
 			eat += 1
 		if eat <= 0:
 			continue
+		eat = clampi(eat + _nudge_bank(key, _scale("predation")), 0, spare)
+		if eat <= 0:
+			continue
 		counts[prey] = have - eat
 		ate += eat
 		losses[prey] = int(losses.get(prey, 0)) + eat
@@ -131,6 +135,9 @@ func _grow(id: String, cap: int, step: int) -> void:
 	var bank := int(banks.get(key, 0)) + 1
 	if _phase(id, "grow", step) == 1:
 		bank += 1
+	bank += _nudge_bank(key, _scale("grow"))
+	if bank < 0:
+		bank = 0
 	while bank >= every and int(counts.get(id, 0)) < cap:
 		bank -= every
 		counts[id] = int(counts.get(id, 0)) + 1
@@ -151,6 +158,29 @@ func _starve(id: String, definition: Dictionary, step: int) -> void:
 		var display := str(definition.get("name", id))
 		_write_log(id, "%s thinned to %d because prey stayed at the surplus floor." % [display, int(counts.get(id, 0))])
 	banks[key] = bank
+
+
+func _scale(kind: String) -> float:
+	if not food_scale.is_valid():
+		return 1.0
+	return maxf(float(food_scale.call(kind)), 0.0)
+
+
+func _nudge_bank(key: String, scale: float) -> int:
+	if is_equal_approx(scale, 1.0):
+		return 0
+	var frac_key := "scale:" + key
+	var frac := int(banks.get(frac_key, 0))
+	frac += int(round((scale - 1.0) * 100.0))
+	var steps := 0
+	while frac >= 100:
+		frac -= 100
+		steps += 1
+	while frac <= -100:
+		frac += 100
+		steps -= 1
+	banks[frac_key] = frac
+	return steps
 
 
 func _phase(species_id: String, kind: String, step: int) -> int:

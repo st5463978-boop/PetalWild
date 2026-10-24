@@ -42,6 +42,6 @@
     "open_until": 19.5,
     "footfall_per_sale": 3,
     "max_sales": 2,
-    "price_bonus": 1
+    "price_bonus": 0
   }
 }

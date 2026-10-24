@@ -10,6 +10,7 @@ var charged_day := 0
 var weights: Dictionary = {}
 var catalog: Dictionary = {}
 var stamps: Dictionary = {}
+var bias_for: Callable = Callable()
 
 var _cells: Dictionary = {}
 
@@ -53,10 +54,7 @@ func sample(cell: Vector2i, channel: String) -> float:
 		return quality_at(cell)
 	if not _inside(cell):
 		return 0.0
-	var row: Variant = _cells.get(_key(cell), {})
-	if typeof(row) != TYPE_DICTIONARY:
-		return 0.0
-	return float((row as Dictionary).get(channel, 0.0))
+	return clampf(_channel_at(cell, channel) + _bias(cell, channel), 0.0, 1.0)
 
 
 func quality_at(cell: Vector2i) -> float:
@@ -67,8 +65,14 @@ func quality_at(cell: Vector2i) -> float:
 		var channel := str(key_v)
 		if channel == "quality":
 			continue
-		total += float(weights[channel]) * _channel_at(cell, channel)
+		total += float(weights[channel]) * sample(cell, channel)
 	return total
+
+
+func _bias(cell: Vector2i, channel: String) -> float:
+	if not bias_for.is_valid():
+		return 0.0
+	return float(bias_for.call(cell, channel))
 
 
 func quality_mean() -> float:

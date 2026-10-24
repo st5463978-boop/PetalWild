@@ -15,6 +15,8 @@ var services: ServiceField
 var soil: SoilField
 var rules: EcologyRules
 var note_cb: Callable = Callable()
+var pest_scale: Callable = Callable()
+var _pest_frac := 0
 
 
 func _init() -> void:
@@ -51,7 +53,9 @@ func hour(world: Dictionary, helpers: PackedStringArray) -> String:
 	var quality := float(world.get("garden_quality", 1.0))
 	if quality >= float(tuning.get("quality_max", 0.34)) or beds.size() < int(tuning.get("neglected_min", 2)):
 		return ""
-	spawn_bank += 1
+	spawn_bank += 1 + _pest_adjust()
+	if spawn_bank < 0:
+		spawn_bank = 0
 	var every := maxi(int(tuning.get("spawn_every", 4)), 1)
 	if spawn_bank < every:
 		return ""
@@ -120,6 +124,23 @@ func apply_state(data: Variant) -> void:
 			"ix": int(item.get("ix", 0)),
 			"iz": int(item.get("iz", 0)),
 		})
+
+
+func _pest_adjust() -> int:
+	if not pest_scale.is_valid():
+		return 0
+	var scale := float(pest_scale.call())
+	if is_equal_approx(scale, 1.0):
+		return 0
+	_pest_frac += int(round((scale - 1.0) * 100.0))
+	var steps := 0
+	while _pest_frac >= 100:
+		_pest_frac -= 100
+		steps += 1
+	while _pest_frac <= -100:
+		_pest_frac += 100
+		steps -= 1
+	return steps
 
 
 func _damage(plot: SoilCell) -> void:
