@@ -11,5 +11,10 @@
     "nightlantern_seed",
     "fertilizer",
     "home_kit"
-  ]
+  ],
+  "spare": {
+    "item": "meadowbell_seed",
+    "count": 2,
+    "line": "Here. Two spare meadowbell seeds from the bottom of the tray. Pay me back in blooms."
+  }
 }

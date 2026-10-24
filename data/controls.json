@@ -1,0 +1,70 @@
+{
+  "speeds": [
+    {"scale": 6.0, "label": "1×"},
+    {"scale": 12.0, "label": "2×"},
+    {"scale": 24.0, "label": "4×"}
+  ],
+  "autosave_seconds": 150,
+  "groups": [
+    {
+      "name": "Tools",
+      "keys": [
+        ["1", "Tiller: turn soil, or uproot a plant"],
+        ["2", "Seed: plant the chosen seed in tilled soil"],
+        ["[  ]", "Choose the previous or next seed"],
+        ["3", "Raincan: water a bed"],
+        ["4", "Fertilise: feed a bed (uses fertiliser)"],
+        ["5", "Tend: harvest a ripe plant"],
+        ["6", "Scoop: widen the pond bank"],
+        ["7", "Home: place a home kit"],
+        ["8", "District: paint beds into a bed group"],
+        ["H  0", "Hands: pick a creature up"]
+      ]
+    },
+    {
+      "name": "Garden",
+      "keys": [
+        ["J", "Journal: garden, people, trust, parish"],
+        ["B", "Petal Stall: buy seeds, sell produce (5:00 to 19:30)"],
+        ["O", "Cycle the map overlays"],
+        ["N", "Open the next bed group"],
+        ["Y", "Toggle the next policy on the active bed group"],
+        ["T", "Time speed: 1×, 2×, 4×"],
+        ["F", "Follow the next creature"],
+        ["P", "Photo mode"]
+      ]
+    },
+    {
+      "name": "Camera",
+      "keys": [
+        ["WASD", "Pan"],
+        ["Q  E", "Turn"],
+        ["Right-drag", "Orbit"],
+        ["Middle-drag", "Pan"],
+        ["Wheel", "Zoom"]
+      ]
+    },
+    {
+      "name": "Game",
+      "keys": [
+        ["Esc", "Close the open panel, or pause"],
+        ["F1  ?", "This controls card"],
+        ["F5", "Save to the current slot"],
+        ["F9", "Load the current slot"]
+      ]
+    }
+  ],
+  "tooltips": {
+    "till": "1 · Turn soil. On a plant it uproots it.",
+    "seed": "2 · Plant the chosen seed in tilled soil. [ and ] change seed.",
+    "water": "3 · Water a bed.",
+    "feed": "4 · Feed a bed. Uses one fertiliser.",
+    "tend": "5 · Harvest a ripe plant. It regrows.",
+    "scoop": "6 · Widen the pond bank beside the willow.",
+    "home": "7 · Place a home kit for residents.",
+    "district": "8 · Paint beds into a bed group. N opens a group, Y toggles a policy.",
+    "hands": "H · Pick a creature up.",
+    "journal": "J · Garden, people, trust and parish pages.",
+    "stall": "B · Buy seeds and sell produce while the stall is open."
+  }
+}

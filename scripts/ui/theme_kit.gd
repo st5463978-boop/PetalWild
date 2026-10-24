@@ -53,6 +53,16 @@ static func button_box(filled: bool) -> StyleBoxFlat:
 	box.content_margin_bottom = 8
 	return box
 
+## Keyboard focus draws a moss outline over the normal box, so the label stays readable.
+static func focus_ring() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.draw_center = false
+	box.border_color = MOSS
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(12)
+	box.set_expand_margin_all(2)
+	return box
+
 static func make_theme() -> Theme:
 	boot()
 	var theme := Theme.new()
@@ -66,7 +76,9 @@ static func make_theme() -> Theme:
 	theme.set_stylebox("normal", "Button", button_box(false))
 	theme.set_stylebox("hover", "Button", button_box(true))
 	theme.set_stylebox("pressed", "Button", button_box(true))
-	theme.set_stylebox("focus", "Button", button_box(false))
+	theme.set_color("font_focus_color", "Button", INK)
+	theme.set_color("font_hover_pressed_color", "Button", CREAM)
+	theme.set_stylebox("focus", "Button", focus_ring())
 	theme.set_stylebox("panel", "Panel", panel())
 	theme.set_color("font_color", "Label", INK)
 	theme.set_font("font", "Label", font_regular)
