@@ -32,6 +32,7 @@ var eye_r: Node3D
 var mouth: Node3D
 var face_z := 0.0
 var eye_scale := 1.0
+var deform := JellyDeform.new()
 
 func setup(definition: Dictionary) -> void:
 	species_id = str(definition.get("id", ""))
@@ -300,6 +301,7 @@ func grab(point: Vector3) -> void:
 	tier = 0
 
 func release() -> void:
+	vel += deform.release_flick(hold_target - global_position)
 	held = false
 	var speed := vel.length()
 	var kind := "pet"
@@ -340,6 +342,7 @@ func _full(delta: float) -> void:
 		ripple = 0.0
 		squash = 1.0
 		scale = Vector3.ONE
+		_rest_deform()
 		if mat:
 			mat.set_shader_parameter("ripple", 0.0)
 			mat.set_shader_parameter("wobble", 0.0)
@@ -348,10 +351,10 @@ func _full(delta: float) -> void:
 	ripple = move_toward(ripple, 0.0, delta * 1.8)
 	squash = move_toward(squash, 1.0, delta * 3.2)
 	if held:
-		var pull := hold_target - global_position
-		vel += pull * delta * 26.0
+		var grip := hold_target - global_position
+		vel += grip * delta * 26.0
 		vel *= 0.84
-		if pull.length() > 2.5:
+		if grip.length() > 2.5:
 			mood = "annoyed"
 			bond = maxf(0.0, bond - delta * 0.04)
 	else:
@@ -387,32 +390,58 @@ func _full(delta: float) -> void:
 			_pick_goal()
 	global_position += vel * delta
 	var floor_y := _stand_y()
+	var landed := false
 	if global_position.y < floor_y:
 		if absf(vel.y) > 1.15:
 			squash = 0.7
 			ripple = 1.0
+			landed = true
 			reacted.emit("land", self)
 		global_position.y = floor_y
 		vel.y = absf(vel.y) * 0.25
 		vel.x *= 0.82
 		vel.z *= 0.82
 	_clamp_inside()
-	var stretch := clampf(Vector2(vel.x, vel.z).length() * 0.08, 0.0, 0.32)
+	var pull := vel
 	if held:
-		stretch = clampf(global_position.distance_to(hold_target) * 0.45, 0.0, 0.62)
-	var sy := squash * (1.0 - stretch * 0.65)
+		pull = hold_target - global_position
+	deform.advance(delta, held, pull, landed, true)
+	var sy := squash
 	var sx := 1.0 + (1.0 - sy) * 0.5
 	scale = Vector3(sx, sy, sx)
 	rotation.z = sin(Time.get_ticks_msec() * 0.004) * (0.02 if reduce_motion else 0.07)
+	_apply_deform_visual()
 	if mat:
-		mat.set_shader_parameter("ripple", 0.0 if reduce_motion else ripple)
-		if reduce_motion:
-			mat.set_shader_parameter("wobble", 0.0)
+		mat.set_shader_parameter("ripple", ripple)
 	_update_face()
 	if not held and not leaving:
 		site_time += delta
 
+func _apply_deform_visual() -> void:
+	var body := get_node_or_null("Body") as Node3D
+	if body != null:
+		body.position = deform.lag
+		body.basis = deform.basis_for(deform.axis, deform.stretch)
+	if mat == null:
+		return
+	mat.set_shader_parameter("stretch", deform.stretch)
+	mat.set_shader_parameter("stretch_dir", deform.axis)
+
+
+func _rest_deform() -> void:
+	deform.reset()
+	var body := get_node_or_null("Body") as Node3D
+	if body != null:
+		body.position = Vector3.ZERO
+		body.basis = Basis.IDENTITY
+	if mat == null:
+		return
+	mat.set_shader_parameter("stretch", 0.0)
+	mat.set_shader_parameter("stretch_dir", Vector3.UP)
+
+
 func _coast(delta: float) -> void:
+	_rest_deform()
 	# ponytail: one home point; a room schedule if the district grows past the kit.
 	var target := berth if use_berth else goal
 	var flat := target - global_position
