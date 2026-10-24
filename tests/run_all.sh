@@ -33,6 +33,7 @@ run_script "res://tests/live/test_districts.gd"
 run_script "res://tests/live/test_balance_soak.gd"
 run_script "res://tests/live/test_art_manifest.gd"
 run_script "res://tests/live/test_garden_scene.gd"
+run_script "res://tests/live/test_vc11_menus.gd"
 run_script "res://tools/smoke.gd"
 run_script "res://tests/smoke.gd"
 

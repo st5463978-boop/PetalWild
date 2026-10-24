@@ -1,4 +1,8 @@
 {
+  "rules": {
+    "max_groups": 6,
+    "income_min_cells": 3
+  },
   "lod": {
     "stride_2": 2,
     "stride_3": 4,

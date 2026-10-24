@@ -29,7 +29,9 @@ func run(host: Node) -> Dictionary:
 		var cell: Vector2i = cell_v
 		_plant(soil, cell, true)
 		districts.paint_cell("north_beds", cell, "North Beds")
-	districts.paint_cell("lane_edge", Vector2i(6, 6), "Lane Edge")
+	# Market day only pays on groups of income_min_cells beds (VC11), so the lane group has three.
+	for cell_v in [Vector2i(6, 6), Vector2i(7, 6), Vector2i(6, 7)]:
+		districts.paint_cell("lane_edge", cell_v, "Lane Edge")
 	districts.set_policy("north_beds", "organic_only", true)
 	districts.set_policy("north_beds", "pollinator_haven", true)
 	districts.set_policy("north_beds", "night_lanterns", true)

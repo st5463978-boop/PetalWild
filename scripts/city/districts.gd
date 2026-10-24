@@ -19,6 +19,8 @@ var _catalog: Dictionary = {}
 var _policy_order: PackedStringArray = PackedStringArray()
 var _names: PackedStringArray = PackedStringArray()
 var _lod: Dictionary = {}
+## "rules" in data/policies.json: max_groups caps N, income_min_cells gates policy income.
+var _rules: Dictionary = {}
 var _tiers: Dictionary = {}
 var _cached_quality: Dictionary = {}
 var _sampled: Dictionary = {}
@@ -32,6 +34,13 @@ func setup(field: ServiceField, causal: CausalLog) -> void:
 
 
 func begin_next() -> String:
+	if active_id != "" and _rows.has(active_id) and _cell_count(active_id) <= 0:
+		return "%s has no beds yet. Paint beds into it with the District tool (8) first." % _name(active_id)
+	var cap := max_groups()
+	if cap > 0 and _order.size() >= cap:
+		var at := maxi(_order.find(active_id), -1)
+		active_id = _order[(at + 1) % _order.size()]
+		return "All %d bed groups are open. N steps to %s." % [cap, _name(active_id)]
 	var label := _fresh_name()
 	var id := _unique_id(_slug(label))
 	_add_row(id, label)
@@ -39,6 +48,14 @@ func begin_next() -> String:
 	var why := "Started %s because the player opened a new bed group." % label
 	_log("district_opened", id, why)
 	return why
+
+
+func max_groups() -> int:
+	return maxi(int(_rules.get("max_groups", 0)), 0)
+
+
+func income_min_cells() -> int:
+	return maxi(int(_rules.get("income_min_cells", 1)), 1)
 
 
 func toggle_paint(cell: Vector2i) -> String:
@@ -92,7 +109,10 @@ func cycle_policy() -> String:
 	var policy_id := _policy_order[_policy_cursor % _policy_order.size()]
 	_policy_cursor += 1
 	var turning_on := not _policy_map(active_id).has(policy_id)
-	return set_policy(active_id, policy_id, turning_on)
+	var why := set_policy(active_id, policy_id, turning_on)
+	if turning_on and int(_spec(policy_id).get("income", 0)) > 0 and _cell_count(active_id) < income_min_cells():
+		why += " It pays once the group has %d beds." % income_min_cells()
+	return why
 
 
 ## Read-only views for the art layer (DistrictBadges).
@@ -402,8 +422,15 @@ func _release(district_id: String, cell: Vector2i) -> String:
 func _pay_income(economy: Node) -> void:
 	if not economy.has_method("earn"):
 		return
+	var need := income_min_cells()
 	for district_id in _order:
 		if _cell_count(district_id) <= 0:
+			continue
+		if _cell_count(district_id) < need:
+			for policy_id in _policy_ids(district_id):
+				if int(_spec(policy_id).get("income", 0)) > 0:
+					_log("district_income", district_id, "%s earned nothing because %s needs %d beds in the group." % [_name(district_id), _policy_name(policy_id), need])
+					break
 			continue
 		var bonus := 0
 		var names := PackedStringArray()
@@ -763,6 +790,7 @@ func _load() -> void:
 	_policy_order = PackedStringArray()
 	_names = PackedStringArray()
 	_lod = {}
+	_rules = {}
 	var text := FileAccess.get_file_as_string("res://data/policies.json")
 	if text == "":
 		push_error("Missing data file res://data/policies.json")
@@ -772,6 +800,9 @@ func _load() -> void:
 		push_error("Expected object in res://data/policies.json")
 		return
 	var root: Dictionary = parsed
+	var rules_body: Variant = root.get("rules", {})
+	if typeof(rules_body) == TYPE_DICTIONARY:
+		_rules = rules_body
 	var lod_body: Variant = root.get("lod", {})
 	if typeof(lod_body) == TYPE_DICTIONARY:
 		_lod = lod_body

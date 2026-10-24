@@ -22,7 +22,15 @@ var trust_box: VBoxContainer
 var place_box: VBoxContainer
 var pages := {}
 var seed_button: Button
+var help_panel: Panel
+var help_button: Button
+var pause_resume: Button
+var journal_scroll: ScrollContainer
 var _toast_time := 0.0
+## The bottom hint comes back after each toast until the player has opened the controls card once.
+var _help_seen := false
+const JOURNAL_TOP := 360.0
+const JOURNAL_MIN_HEIGHT := 220.0
 
 func build(owner: Node) -> void:
 	host = owner
@@ -35,6 +43,7 @@ func build(owner: Node) -> void:
 	_shop(theme)
 	_pause(theme)
 	_proposal(theme)
+	_help(theme)
 	toast_label = ThemeKit.label("", ThemeKit.size(16), ThemeKit.CREAM)
 	toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	toast_label.offset_top = 86
@@ -43,7 +52,7 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   J journal   B stall   O maps", 14, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1-8 tools   [ ] seed   H hands   J journal   B stall   O maps   T speed   F1 all controls   Esc menu", 14, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
 	hint_label.offset_left = -480
@@ -62,6 +71,66 @@ func _process(delta: float) -> void:
 		_toast_time -= delta
 		if _toast_time <= 0.0:
 			toast_label.text = ""
+			if not _help_seen and not photo_label.visible:
+				hint_label.visible = true
+	if journal != null and journal.visible:
+		_fit_journal()
+
+
+## Keep the journal below the map legend and the policy strip on the left.
+func _fit_journal() -> void:
+	var top := JOURNAL_TOP
+	if host != null and host.has_method("left_stack_bottom"):
+		top = maxf(top, float(host.call("left_stack_bottom")) + 8.0)
+	var height := get_viewport().get_visible_rect().size.y
+	top = minf(top, height - 120.0 - JOURNAL_MIN_HEIGHT)
+	journal.offset_top = maxf(top, 90.0)
+
+
+## Esc order: controls card, proposal, stall, journal. True when something closed.
+func close_top() -> bool:
+	if help_panel != null and help_panel.visible:
+		help_panel.visible = false
+		return true
+	if proposal != null and proposal.visible:
+		proposal.visible = false
+		return true
+	if shop != null and shop.visible:
+		shop.visible = false
+		return true
+	if journal != null and journal.visible:
+		journal.visible = false
+		return true
+	return false
+
+
+func any_panel_open() -> bool:
+	return help_panel.visible or proposal.visible or shop.visible or journal.visible
+
+
+## The garden is paused with the tree, so the HUD (process ALWAYS) owns keys while paused.
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	if not get_tree().paused or not pause_panel.visible:
+		return
+	var key := event as InputEventKey
+	if key.keycode == KEY_ESCAPE:
+		if help_panel.visible:
+			help_panel.visible = false
+		else:
+			host.resume()
+		get_viewport().set_input_as_handled()
+	elif key.keycode == KEY_F1 or key.unicode == 63:
+		toggle_help()
+		get_viewport().set_input_as_handled()
+
+
+func toggle_help() -> void:
+	help_panel.visible = not help_panel.visible
+	if help_panel.visible:
+		_help_seen = true
+		hint_label.visible = false
 
 func apply_text_scale() -> void:
 	ThemeKit.restyle(self)
@@ -77,7 +146,7 @@ func set_status(clock_text: String, weather: String, coins: int, hover: String, 
 
 func toast(text: String) -> void:
 	toast_label.text = text
-	_toast_time = 3.4
+	_toast_time = 3.4 if text != "" else 0.0
 	hint_label.visible = false
 
 func set_tool(tool_name: String) -> void:
@@ -383,9 +452,15 @@ func set_photo(on: bool) -> void:
 		shop.visible = false
 		pause_panel.visible = false
 		proposal.visible = false
+		help_panel.visible = false
+		hint_label.visible = false
 
 func show_pause(on: bool) -> void:
 	pause_panel.visible = on
+	if on and pause_resume != null and pause_resume.is_inside_tree():
+		pause_resume.grab_focus()
+	if not on and help_panel != null:
+		help_panel.visible = false
 
 func _top(theme: Theme) -> void:
 	var bar := Panel.new()
@@ -411,6 +486,13 @@ func _top(theme: Theme) -> void:
 	row.add_child(weather_label)
 	row.add_child(coin_label)
 	row.add_child(hover_label)
+	help_button = Button.new()
+	help_button.name = "HelpButton"
+	help_button.text = "F1  Controls"
+	help_button.focus_mode = Control.FOCUS_NONE
+	help_button.tooltip_text = "All keys and mouse controls"
+	help_button.pressed.connect(toggle_help)
+	row.add_child(help_button)
 
 func _tools(theme: Theme) -> void:
 	var bar := Panel.new()
@@ -445,6 +527,8 @@ func _tools(theme: Theme) -> void:
 		button.custom_minimum_size = Vector2(112, 72)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var id := str(spec[0])
+		button.tooltip_text = ControlsHelp.tooltip(id)
+		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(func(): host.set_tool(id))
 		var badge := ArtKit.icon("tools", id)
 		if badge != null:
@@ -460,11 +544,15 @@ func _tools(theme: Theme) -> void:
 	var journal_button := Button.new()
 	journal_button.text = "J  Journal"
 	journal_button.custom_minimum_size = Vector2(112, 72)
+	journal_button.tooltip_text = ControlsHelp.tooltip("journal")
+	journal_button.focus_mode = Control.FOCUS_NONE
 	journal_button.pressed.connect(toggle_journal)
 	row.add_child(journal_button)
 	var stall_button := Button.new()
 	stall_button.text = "B  Stall"
 	stall_button.custom_minimum_size = Vector2(100, 72)
+	stall_button.tooltip_text = ControlsHelp.tooltip("stall")
+	stall_button.focus_mode = Control.FOCUS_NONE
 	stall_button.pressed.connect(toggle_shop)
 	row.add_child(stall_button)
 
@@ -490,10 +578,13 @@ func _journal(theme: Theme) -> void:
 	scroll.offset_top = 52
 	scroll.offset_right = -8
 	scroll.offset_bottom = -8
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	journal.add_child(scroll)
+	journal_scroll = scroll
 	journal_box = VBoxContainer.new()
 	journal_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	journal_box.custom_minimum_size = Vector2(400, 0)
+	journal_box.child_entered_tree.connect(_wrap_labels)
 	scroll.add_child(journal_box)
 	people_box = VBoxContainer.new()
 	trust_box = VBoxContainer.new()
@@ -529,6 +620,9 @@ func _shop(theme: Theme) -> void:
 	shop.add_child(scroll)
 	shop_box = VBoxContainer.new()
 	shop_box.custom_minimum_size = Vector2(360, 0)
+	shop_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shop_box.child_entered_tree.connect(_wrap_labels)
 	scroll.add_child(shop_box)
 
 func _pause(theme: Theme) -> void:
@@ -538,8 +632,8 @@ func _pause(theme: Theme) -> void:
 	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
 	pause_panel.offset_left = -220
 	pause_panel.offset_right = 220
-	pause_panel.offset_top = -230
-	pause_panel.offset_bottom = 230
+	pause_panel.offset_top = -258
+	pause_panel.offset_bottom = 258
 	add_child(pause_panel)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -553,6 +647,7 @@ func _pause(theme: Theme) -> void:
 	resume.text = "Resume"
 	resume.pressed.connect(func(): host.resume())
 	box.add_child(resume)
+	pause_resume = resume
 	var save := Button.new()
 	save.text = "Save garden"
 	save.pressed.connect(func(): host.quick_save())
@@ -584,8 +679,12 @@ func _pause(theme: Theme) -> void:
 	flash.button_pressed = Settings.photosensitivity
 	flash.toggled.connect(func(on): host.set_calm(on))
 	box.add_child(flash)
+	var controls := Button.new()
+	controls.text = "Controls"
+	controls.pressed.connect(toggle_help)
+	box.add_child(controls)
 	var quit := Button.new()
-	quit.text = "Leave to title"
+	quit.text = "Save and leave to title"
 	quit.pressed.connect(func(): host.quit_to_title())
 	box.add_child(quit)
 
@@ -599,6 +698,62 @@ func _proposal(theme: Theme) -> void:
 	proposal.offset_top = -180
 	proposal.offset_bottom = 180
 	add_child(proposal)
+
+func _help(theme: Theme) -> void:
+	help_panel = Panel.new()
+	help_panel.name = "HelpPanel"
+	help_panel.theme = theme
+	help_panel.visible = false
+	help_panel.set_anchors_preset(Control.PRESET_CENTER)
+	help_panel.offset_left = -380
+	help_panel.offset_right = 380
+	help_panel.offset_top = -330
+	help_panel.offset_bottom = 330
+	# Own layer above the demand overlay panel (layer 11) so the card is never covered.
+	var help_layer := CanvasLayer.new()
+	help_layer.name = "HelpLayer"
+	help_layer.layer = 12
+	add_child(help_layer)
+	help_layer.add_child(help_panel)
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scroll.offset_left = 18
+	scroll.offset_top = 14
+	scroll.offset_right = -18
+	scroll.offset_bottom = -54
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	help_panel.add_child(scroll)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
+	box.add_child(ThemeKit.title("Controls", 26))
+	var card := ControlsHelp.build_card(14)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(card)
+	var close := Button.new()
+	close.text = "Close  ·  Esc"
+	close.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	close.offset_left = -90
+	close.offset_right = 90
+	close.offset_top = -46
+	close.offset_bottom = -10
+	close.pressed.connect(func(): help_panel.visible = false)
+	help_panel.add_child(close)
+
+
+## Journal and stall rows are long sentences; wrap them instead of scrolling sideways.
+func _wrap_labels(node: Node) -> void:
+	if node is Label:
+		var label := node as Label
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if label.size_flags_horizontal == Control.SIZE_FILL or label.size_flags_horizontal == Control.SIZE_SHRINK_BEGIN:
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.custom_minimum_size.x = maxf(label.custom_minimum_size.x, 1.0)
+	elif node is Button:
+		(node as Button).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	for child in node.get_children():
+		_wrap_labels(child)
+
 
 func _show_lumen() -> void:
 	_fill_proposal(

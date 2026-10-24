@@ -145,7 +145,7 @@ func _build() -> void:
 	garden_art = GardenArt.new()
 	add_child(garden_art)
 	garden_art.bind(services, ecology.blight)
-	var badges := DistrictBadges.new()
+	badges = DistrictBadges.new()
 	add_child(badges)
 	badges.bind(districts, func() -> bool: return tool == "district" or overlays.channel_id() == "districts")
 
@@ -158,6 +158,7 @@ func _build() -> void:
 	debug_overlay.build(self)
 
 func _process(delta: float) -> void:
+	_autosave_tick()
 	if photo:
 		atmosphere.apply(Clock.hour(), Clock.weather, camera)
 		return
@@ -263,6 +264,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_toggle_photo()
 			KEY_ESCAPE:
 				_esc()
+			KEY_T:
+				cycle_speed()
+			KEY_F1:
+				hud.toggle_help()
 			KEY_F3:
 				debug_overlay.toggle()
 			KEY_F5:
@@ -273,6 +278,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_cycle_seed(-1)
 			KEY_BRACKETRIGHT:
 				_cycle_seed(1)
+			_:
+				if event.unicode == 63:
+					hud.toggle_help()
 		return
 	if photo:
 		return
@@ -307,6 +315,7 @@ func refresh_panels() -> void:
 	else:
 		hud.show_journal(_journal_rows(world), events, ecology.resident_total(), _bite_lines())
 	if hud.shop.visible:
+		_lumen_spare()
 		hud.show_shop(_stock(world), _produce(), Trust.lumen_proposal_day != Clock.day, _stall_open())
 
 func _stall_open() -> bool:
@@ -5649,6 +5658,7 @@ func resume() -> void:
 		Clock.running = true
 
 func quit_to_title() -> void:
+	autosave("leave")
 	get_tree().paused = false
 	Clock.running = false
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
@@ -12907,7 +12917,11 @@ func _update_status() -> void:
 	var item := ContentDB.item(Economy.selected_seed)
 	if not item.is_empty():
 		seed_name = str(item.get("name", "Seed")).replace(" seed", "")
-	hud.set_status(Clock.clock_label(), Clock.weather, Economy.coins, _hover_text(), seed_name)
+		seed_name += "  ×%d" % Economy.count(Economy.selected_seed)
+	var clock_text := Clock.clock_label()
+	if not is_equal_approx(Clock.scale, float(ControlsHelp.speeds()[0].get("scale", 6.0))):
+		clock_text += "  ·  %s" % ControlsHelp.speed_label(Clock.scale)
+	hud.set_status(clock_text, Clock.weather, Economy.coins, _hover_text(), seed_name)
 
 func _hover_text() -> String:
 	var hit = _ground_hit()
@@ -14797,6 +14811,8 @@ func _esc() -> void:
 	if photo:
 		_toggle_photo()
 		return
+	if not get_tree().paused and hud.close_top():
+		return
 	if get_tree().paused:
 		resume()
 	else:
@@ -14822,3 +14838,106 @@ func _debug_text() -> String:
 		Clock.weather,
 		tool,
 	]
+
+
+# VC11 menus and mechanics pass ------------------------------------------------
+
+var badges: DistrictBadges
+var _autosave_at_msec := 0
+var _spare_day := -1
+
+
+## Lowest screen y used by the map legend panel and the policy strip on the left.
+func left_stack_bottom() -> float:
+	var bottom := 0.0
+	if overlays != null and overlays.has_method("panel_rect"):
+		var rect: Rect2 = overlays.panel_rect()
+		if rect.size.y > 0.0:
+			bottom = maxf(bottom, rect.end.y)
+	if badges != null and badges.strip != null and badges.strip.visible:
+		bottom = maxf(bottom, badges.strip.get_global_rect().end.y)
+	return bottom
+
+
+## T steps the clock through the speeds in data/controls.json.
+func cycle_speed() -> void:
+	Clock.scale = ControlsHelp.next_speed(Clock.scale)
+	toast("Time runs at %s." % ControlsHelp.speed_label(Clock.scale))
+	_update_status()
+
+
+## Save quietly to the active slot. Used on leave, window close and the timer.
+func autosave(reason: String) -> bool:
+	if photo or SaveGame.active_slot <= 0 or not autosave_allowed():
+		return false
+	var ok := SaveGame.write_slot(SaveGame.active_slot, to_state())
+	if ok and reason == "timer":
+		toast("Autosaved slot %d." % SaveGame.active_slot)
+	return ok
+
+
+## Headless runs, smoke runs and screenshot tools never write the player's slots.
+func autosave_allowed() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	for key in ["PETAL_SMOKE", "PETAL_CAPTURE", "PETAL_ART_SHOTS", "PETAL_MENU_SHOTS", "PETALWILD_SHOT"]:
+		if OS.get_environment(key) != "":
+			return false
+	return true
+
+
+## Real-time autosave (not game delta, so headless tests that step _process never write).
+func _autosave_tick() -> void:
+	var every: float = ControlsHelp.autosave_seconds()
+	if every <= 0.0 or not Clock.running or not autosave_allowed():
+		return
+	var now := Time.get_ticks_msec()
+	if _autosave_at_msec == 0:
+		_autosave_at_msec = now + int(every * 1000.0)
+		return
+	if now >= _autosave_at_msec:
+		_autosave_at_msec = now + int(every * 1000.0)
+		autosave("timer")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_inside_tree():
+		autosave("close")
+
+
+## True when the player cannot grow or earn their way out: no coins for the cheapest seed,
+## no seeds, nothing to sell, no plants in the beds.
+func is_stuck() -> bool:
+	var cheapest := 1 << 30
+	for item_id in ContentDB.shop.get("buy", []):
+		var item := ContentDB.item(str(item_id))
+		if str(item.get("kind", "")) == "seed" and not item.has("lock"):
+			cheapest = mini(cheapest, int(item.get("price", 0)))
+	if Economy.coins >= cheapest:
+		return false
+	for seed_id in Economy.seed_ids():
+		if Economy.count(seed_id) > 0:
+			return false
+	if not _produce().is_empty():
+		return false
+	for cell in soil.all():
+		if (cell as SoilCell).plant_id != "":
+			return false
+	return true
+
+
+## Lumen hands over spare seed once a day when the garden is stuck (data/shop.json "spare").
+func _lumen_spare() -> bool:
+	var spare: Dictionary = ContentDB.shop.get("spare", {})
+	if spare.is_empty() or not _stall_open() or _spare_day == Clock.day or not is_stuck():
+		return false
+	var item_id := str(spare.get("item", "meadowbell_seed"))
+	Economy.add(item_id, int(spare.get("count", 2)))
+	Economy.selected_seed = item_id
+	_spare_day = Clock.day
+	var line := str(spare.get("line", "Here. Spare seed from the bottom of the tray."))
+	toast(line)
+	var lumen := _person("lumen")
+	if lumen != null:
+		lumen.say(line)
+	return true
