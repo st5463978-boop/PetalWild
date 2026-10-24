@@ -133,6 +133,26 @@ func edge_digest() -> String:
 	return "|".join(parts)
 
 
+func edge_records() -> Array:
+	var rows: Array = []
+	var keys: Array = _edge_footfall.keys()
+	keys.sort()
+	for key_v in keys:
+		var key := str(key_v)
+		var count := int(_edge_footfall.get(key, 0))
+		if count <= 0:
+			continue
+		var parts: PackedStringArray = key.split("|")
+		if parts.size() != 2:
+			continue
+		rows.append({
+			"from": _unfmt(parts[0]),
+			"to": _unfmt(parts[1]),
+			"count": count,
+		})
+	return rows
+
+
 func add_stones(points: Array) -> void:
 	for item in points:
 		if item is Vector3:
@@ -617,6 +637,13 @@ func _edge_key(a: Vector3, b: Vector3) -> String:
 
 func _fmt(at: Vector3) -> String:
 	return "%.2f,%.2f,%.2f" % [snappedf(at.x, 0.01), snappedf(at.y, 0.01), snappedf(at.z, 0.01)]
+
+
+func _unfmt(text: String) -> Vector3:
+	var bits: PackedStringArray = text.split(",")
+	if bits.size() != 3:
+		return Vector3.ZERO
+	return Vector3(float(bits[0]), float(bits[1]), float(bits[2]))
 
 
 func _before(a: Vector3, b: Vector3) -> bool:

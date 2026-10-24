@@ -1,0 +1,81 @@
+{
+  "lift": 0.36,
+  "cell_scale": 0.94,
+  "path_width": 0.38,
+  "path_lift": 0.28,
+  "footfall_peak": 8,
+  "bar_width": 268,
+  "empty_reason": "No demand change has been recorded.",
+  "blight_occupied": 1.0,
+  "blight_neglected": 0.4,
+  "channels": [
+    {
+      "id": "moisture",
+      "label": "Moisture",
+      "source": "service",
+      "low": "#1a3344",
+      "high": "#2f9ec4",
+      "low_alpha": 0.42,
+      "high_alpha": 0.9
+    },
+    {
+      "id": "fertility",
+      "label": "Fertility",
+      "source": "service",
+      "low": "#3a2a16",
+      "high": "#c47a2c",
+      "low_alpha": 0.42,
+      "high_alpha": 0.9
+    },
+    {
+      "id": "pollination",
+      "label": "Pollination",
+      "source": "service",
+      "low": "#3a3218",
+      "high": "#e2b15a",
+      "low_alpha": 0.42,
+      "high_alpha": 0.9
+    },
+    {
+      "id": "light",
+      "label": "Light",
+      "source": "service",
+      "low": "#2a2a22",
+      "high": "#f3e6a4",
+      "low_alpha": 0.38,
+      "high_alpha": 0.9
+    },
+    {
+      "id": "quality",
+      "label": "Quality",
+      "source": "service",
+      "low": "#2a241c",
+      "high": "#1f8a45",
+      "low_alpha": 0.4,
+      "high_alpha": 0.9
+    },
+    {
+      "id": "footfall",
+      "label": "Footfall",
+      "source": "path",
+      "low": "#2c241c",
+      "high": "#d4653a",
+      "low_alpha": 0.35,
+      "high_alpha": 0.92
+    },
+    {
+      "id": "blight",
+      "label": "Blight",
+      "source": "blight",
+      "low": "#241820",
+      "high": "#8a3d78",
+      "low_alpha": 0.4,
+      "high_alpha": 0.92
+    }
+  ],
+  "bars": [
+    {"id": "bloom", "label": "Bloom", "color": "#1f8a45"},
+    {"id": "hive", "label": "Hive", "color": "#c9852a"},
+    {"id": "market", "label": "Market", "color": "#d4653a"}
+  ]
+}
