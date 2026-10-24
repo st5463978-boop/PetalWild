@@ -92,7 +92,7 @@ func _build() -> void:
 	ecology.soil_effect_cb = Callable(self, "_apply_soil_effect")
 	ecology.event_happened.connect(_on_ecology)
 	services.setup(GardenLayout.BED_W, GardenLayout.BED_H)
-	paths.setup(sim.log, ecology, soil)
+	paths.setup(sim.log, soil, ecology)
 	paths.reseed(sim.seed)
 	city.setup(services, sim.log, soil, ecology, paths)
 	city.reseed(sim.seed)
@@ -139,6 +139,8 @@ func _process(delta: float) -> void:
 	if photo:
 		atmosphere.apply(Clock.hour(), Clock.weather, camera)
 		return
+	# Drop freed creatures before the typed actor loops. Those loops run ahead of ecology.tick.
+	ecology.drop_freed()
 	var minutes := delta * Clock.scale if Clock.running else 0.0
 	if minutes > 0.0:
 		_dew(minutes / 60.0)

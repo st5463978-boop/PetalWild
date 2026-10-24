@@ -27,6 +27,7 @@ run_script "res://tests/live/test_jev_game_core.gd"
 run_script "res://tests/live/test_service_field.gd"
 run_script "res://tests/live/test_city_demand.gd"
 run_script "res://tests/live/test_path_graph.gd"
+run_script "res://tests/live/test_garden_scene.gd"
 run_script "res://tools/smoke.gd"
 run_script "res://tests/smoke.gd"
 
