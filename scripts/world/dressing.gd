@@ -54,6 +54,7 @@ func _terrain(parent: Node3D) -> void:
 	node.mesh = mesh
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/terrain.gdshader")
+	ArtKit.dress_terrain(material)
 	node.material_override = material
 	node.name = "Terrain"
 	parent.add_child(node)

@@ -657,7 +657,22 @@ func _species_card(row: Dictionary) -> PanelContainer:
 	card.add_theme_stylebox_override("panel", ThemeKit.panel(0.72))
 	var box := VBoxContainer.new()
 	card.add_child(box)
-	box.add_child(ThemeKit.title("%s  ·  %s" % [row.get("name", ""), row.get("status", "")], 16))
+	var heading := ThemeKit.title("%s  ·  %s" % [row.get("name", ""), row.get("status", "")], 16)
+	var portrait := ArtKit.sprite("species", str(row.get("art", "")))
+	if portrait != null:
+		var line_box := HBoxContainer.new()
+		var art := TextureRect.new()
+		art.name = "Portrait"
+		art.texture = portrait
+		art.custom_minimum_size = Vector2(56, 56)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		line_box.add_child(art)
+		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line_box.add_child(heading)
+		box.add_child(line_box)
+	else:
+		box.add_child(heading)
 	box.add_child(ThemeKit.label(str(row.get("blurb", "")), 13))
 	for line in row.get("met", []):
 		box.add_child(ThemeKit.label("✓  " + str(line), 13, ThemeKit.MOSS))
