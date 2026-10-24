@@ -320,6 +320,16 @@ func _demand_column(kind: String) -> Control:
 	readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	readout.custom_minimum_size = Vector2(36, 0)
 	readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var badge := ArtKit.icon("bars", kind)
+	if badge != null:
+		var art := TextureRect.new()
+		art.name = "Icon"
+		art.texture = badge
+		art.custom_minimum_size = Vector2(20, 20)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(art)
 	row.add_child(title)
 	row.add_child(readout)
 	column.add_child(row)
@@ -350,6 +360,11 @@ func _add_channel_button(parent: Node, id: String, label: String) -> void:
 	button.text = label
 	button.custom_minimum_size = Vector2(120, 30)
 	button.focus_mode = Control.FOCUS_NONE
+	var badge := ArtKit.icon("channels", id)
+	if badge != null:
+		button.icon = badge
+		button.expand_icon = false
+		button.add_theme_constant_override("icon_max_width", 20)
 	button.pressed.connect(_on_channel_pressed.bind(id))
 	parent.add_child(button)
 	_buttons[id] = button

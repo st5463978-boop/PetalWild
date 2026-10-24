@@ -1,0 +1,283 @@
+{
+  "_note": "VC9 art manifest. Every path is optional: a missing or unloadable asset falls back to the procedural placeholder. Art is original generated work (VC5-VC7).",
+  "version": 1,
+  "enabled": true,
+  "species": {
+    "bellhelp": {
+      "mesh": "res://assets/art/vc_garden/meshes/bellhelp.glb",
+      "height": 0.62,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/bellhelp_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/bellhelp_side.png"
+    },
+    "berrypatch": {
+      "mesh": "res://assets/art/vc_garden/meshes/berrypatch.glb",
+      "height": 0.56,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/berrypatch_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/berrypatch_side.png"
+    },
+    "bulrush": {
+      "mesh": "res://assets/art/vc_garden/meshes/bulrush.glb",
+      "height": 0.82,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/bulrush_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/bulrush_side.png"
+    },
+    "reedic": {
+      "mesh": "res://assets/art/vc_garden/meshes/reedic.glb",
+      "height": 0.42,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/reedic_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/reedic_side.png"
+    },
+    "cirlark": {
+      "mesh": "res://assets/art/vc_garden/meshes/cirlark.glb",
+      "height": 0.55,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/cirlark_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/cirlark_side.png"
+    },
+    "grapling": {
+      "mesh": "res://assets/art/vc_garden/meshes/grapling.glb",
+      "height": 0.62,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/grapling_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/grapling_side.png"
+    },
+    "dusknip": {
+      "mesh": "res://assets/art/vc_garden/meshes/dusknip.glb",
+      "height": 0.6,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/dusknip_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/dusknip_side.png"
+    },
+    "pegapear": {
+      "mesh": "res://assets/art/vc_garden/meshes/pegapear.glb",
+      "height": 0.7,
+      "yaw_deg": 180.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/pegapear_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/pegapear_side.png"
+    },
+    "gushorn": {
+      "mesh": "res://assets/art/vc_garden/meshes/gushorn.glb",
+      "height": 0.8,
+      "yaw_deg": -90.0,
+      "sprite": "res://assets/art/vc_garden/sprites/species/gushorn_idle.png",
+      "sprite_side": "res://assets/art/vc_garden/sprites/species/gushorn_side.png"
+    }
+  },
+  "services": {
+    "well": {
+      "mesh": "res://assets/art/vc_garden/meshes/well.glb",
+      "height": 1.05,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/well.png"
+    },
+    "compost": {
+      "mesh": "res://assets/art/vc_garden/meshes/compost.glb",
+      "height": 0.6,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/compost.png"
+    },
+    "hive": {
+      "mesh": "res://assets/art/vc_garden/meshes/hive.glb",
+      "height": 0.85,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/hive.png"
+    },
+    "lantern": {
+      "mesh": "res://assets/art/vc_garden/meshes/lantern.glb",
+      "height": 1.35,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/lantern.png"
+    },
+    "stall": {
+      "mesh": "res://assets/art/vc_garden/meshes/stall.glb",
+      "height": 1.6,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/stall.png"
+    },
+    "pond": {
+      "mesh": "res://assets/art/vc_garden/meshes/pond.glb",
+      "height": 0.5,
+      "yaw_deg": 0.0,
+      "sprite": "res://assets/art/vc_garden/sprites/services/pond.png"
+    }
+  },
+  "service_dressing": [
+    {
+      "service": "well",
+      "at": [
+        -1.2,
+        0.0,
+        4.6
+      ],
+      "yaw_deg": 20.0
+    },
+    {
+      "service": "compost",
+      "at": [
+        -9.6,
+        0.0,
+        2.2
+      ],
+      "yaw_deg": -30.0
+    },
+    {
+      "service": "hive",
+      "at": [
+        5.2,
+        0.0,
+        1.9
+      ],
+      "yaw_deg": 200.0
+    },
+    {
+      "service": "lantern",
+      "at": [
+        4.4,
+        0.0,
+        -4.6
+      ],
+      "yaw_deg": 0.0
+    }
+  ],
+  "stamped_services": {
+    "lift": 0.0,
+    "scale": 0.8
+  },
+  "pests": {
+    "blightmoth": {
+      "idle": "res://assets/art/vc_garden/sprites/pests/blightmoth_idle.png",
+      "fly": "res://assets/art/vc_garden/sprites/pests/blightmoth_fly.png",
+      "swarm": "res://assets/art/vc_garden/sprites/pests/blightmoth_swarm.png",
+      "topdown": "res://assets/art/vc_garden/sprites/pests/blightmoth_topdown.png",
+      "cleared": "res://assets/art/vc_garden/sprites/pests/blightmoth_cleared.png",
+      "size": 0.42,
+      "hover": 0.55
+    }
+  },
+  "hud": {
+    "bloom": "res://assets/art/vc_garden/icons/hud/bloom.png",
+    "clock": "res://assets/art/vc_garden/icons/hud/clock.png",
+    "coin": "res://assets/art/vc_garden/icons/hud/coin.png",
+    "fertility": "res://assets/art/vc_garden/icons/hud/fertility.png",
+    "footfall": "res://assets/art/vc_garden/icons/hud/footfall.png",
+    "hive_demand": "res://assets/art/vc_garden/icons/hud/hive_demand.png",
+    "light": "res://assets/art/vc_garden/icons/hud/light.png",
+    "market": "res://assets/art/vc_garden/icons/hud/market.png",
+    "moisture": "res://assets/art/vc_garden/icons/hud/moisture.png",
+    "moth_pressure": "res://assets/art/vc_garden/icons/hud/moth_pressure.png",
+    "pollination": "res://assets/art/vc_garden/icons/hud/pollination.png",
+    "quality": "res://assets/art/vc_garden/icons/hud/quality.png",
+    "resident": "res://assets/art/vc_garden/icons/hud/resident.png",
+    "romance": "res://assets/art/vc_garden/icons/hud/romance.png",
+    "visitor": "res://assets/art/vc_garden/icons/hud/visitor.png"
+  },
+  "bars": {
+    "bloom": "bloom",
+    "hive": "hive_demand",
+    "market": "market"
+  },
+  "channels": {
+    "moisture": "moisture",
+    "fertility": "fertility",
+    "pollination": "pollination",
+    "light": "light",
+    "quality": "quality",
+    "footfall": "footfall",
+    "blight": "moth_pressure",
+    "districts": "district_flag"
+  },
+  "districts": {
+    "district_brush": "res://assets/art/vc_garden/icons/districts/district_brush.png",
+    "district_flag": "res://assets/art/vc_garden/icons/districts/district_flag.png",
+    "market_day": "res://assets/art/vc_garden/icons/districts/market_day.png",
+    "night_lanterns": "res://assets/art/vc_garden/icons/districts/night_lanterns.png",
+    "organic_only": "res://assets/art/vc_garden/icons/districts/organic_only.png",
+    "pollinator_haven": "res://assets/art/vc_garden/icons/districts/pollinator_haven.png"
+  },
+  "policies": {
+    "organic_only": "organic_only",
+    "night_lanterns": "night_lanterns",
+    "pollinator_haven": "pollinator_haven",
+    "market_day": "market_day"
+  },
+  "overlays": {
+    "fertility": {
+      "low": "res://assets/art/vc_garden/overlays/fertility_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/fertility_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/fertility_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/fertility_legend_strip.png"
+    },
+    "footfall": {
+      "low": "res://assets/art/vc_garden/overlays/footfall_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/footfall_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/footfall_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/footfall_legend_strip.png"
+    },
+    "light": {
+      "low": "res://assets/art/vc_garden/overlays/light_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/light_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/light_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/light_legend_strip.png"
+    },
+    "moisture": {
+      "low": "res://assets/art/vc_garden/overlays/moisture_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/moisture_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/moisture_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/moisture_legend_strip.png"
+    },
+    "moth": {
+      "low": "res://assets/art/vc_garden/overlays/moth_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/moth_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/moth_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/moth_legend_strip.png"
+    },
+    "pollination": {
+      "low": "res://assets/art/vc_garden/overlays/pollination_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/pollination_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/pollination_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/pollination_legend_strip.png"
+    },
+    "quality": {
+      "low": "res://assets/art/vc_garden/overlays/quality_low.png",
+      "mid": "res://assets/art/vc_garden/overlays/quality_mid.png",
+      "high": "res://assets/art/vc_garden/overlays/quality_high.png",
+      "legend": "res://assets/art/vc_garden/overlays/quality_legend_strip.png"
+    }
+  },
+  "ground": {
+    "grass": "res://assets/art/vc_garden/textures/ground/grass.jpg",
+    "grass_flowers": "res://assets/art/vc_garden/textures/ground/grass_flowers.jpg",
+    "gravel": "res://assets/art/vc_garden/textures/ground/gravel.jpg",
+    "moss": "res://assets/art/vc_garden/textures/ground/moss.jpg",
+    "mulch": "res://assets/art/vc_garden/textures/ground/mulch.jpg",
+    "path_stone": "res://assets/art/vc_garden/textures/ground/path_stone.jpg",
+    "pond_water": "res://assets/art/vc_garden/textures/ground/pond_water.jpg",
+    "soil_dry": "res://assets/art/vc_garden/textures/ground/soil_dry.jpg",
+    "soil_wet": "res://assets/art/vc_garden/textures/ground/soil_wet.jpg"
+  },
+  "beds": {
+    "bloom": "res://assets/art/vc_garden/textures/beds/bed_bloom.jpg",
+    "mulched": "res://assets/art/vc_garden/textures/beds/bed_mulched.jpg",
+    "neglected": "res://assets/art/vc_garden/textures/beds/bed_neglected.jpg",
+    "seedling": "res://assets/art/vc_garden/textures/beds/bed_seedling.jpg",
+    "tilled": "res://assets/art/vc_garden/textures/beds/bed_tilled.jpg"
+  },
+  "terrain": {
+    "grass": "grass",
+    "soil": "soil_dry",
+    "scale": 0.28,
+    "mix": 0.45
+  },
+  "soil_patches": {
+    "grass": "grass",
+    "tilled": "tilled",
+    "wet": "soil_wet",
+    "nightloam": "soil_dry",
+    "joined": "moss",
+    "wet_above": 0.62
+  }
+}

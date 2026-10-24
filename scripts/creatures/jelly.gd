@@ -60,6 +60,20 @@ func _build(definition: Dictionary) -> void:
 		organ_y = radius * 0.95
 	_organ(root, definition, organ_y)
 	_face(root, definition, eye_y)
+	_dress_art(root)
+
+## Swaps in the VC art mesh when the manifest has one. The procedural parts stay in the
+## tree (hidden) so eye, mouth and material references keep working.
+func _dress_art(root: Node3D) -> void:
+	var art := ArtKit.mesh_node("species", species_id)
+	if art == null:
+		return
+	for child in root.get_children():
+		var part := child as Node3D
+		if part != null:
+			part.visible = false
+	art.name = "Art"
+	root.add_child(art)
 
 func _shape(root: Node3D, shape: String) -> float:
 	match shape:

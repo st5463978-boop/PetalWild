@@ -59,6 +59,7 @@ var paths := PathGraph.new()
 var city := CityDemand.new()
 var districts := GardenDistricts.new()
 var overlays: MapOverlays
+var garden_art: GardenArt
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -141,6 +142,9 @@ func _build() -> void:
 	add_child(overlays)
 	overlays.bind(services, paths, city, sim.log, ecology)
 	overlays.districts = districts
+	garden_art = GardenArt.new()
+	add_child(garden_art)
+	garden_art.bind(services, ecology.blight)
 
 	hud = Hud.new()
 	add_child(hud)
@@ -13099,10 +13103,10 @@ func _refresh_soil_colors() -> void:
 		var material := patch.material_override as StandardMaterial3D
 		if _joined_bed(plot):
 			patch.mesh = bed_lid
-			material.albedo_color = Color("#1c3420")
+			ArtKit.dress_material(material, ArtKit.texture("ground", str(ArtKit.section("soil_patches").get("joined", ""))), Color("#1c3420"))
 		else:
 			patch.mesh = soil_lid
-			material.albedo_color = _soil_color(plot)
+			ArtKit.dress_material(material, ArtKit.soil_texture(plot.tilled, plot.moisture, plot.chem), _soil_color(plot))
 	_fill_bed_meadow()
 
 func _meadow_cell(plot: SoilCell) -> bool:
@@ -14259,6 +14263,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance": romance,
 			"romance_met": ecology.rules.romance_met(definition, world),
 			"residents": int(ecology.resident_counts().get(id, 0)),
+			"art": id if known else "",
 		})
 	if _far_bell_line() != "":
 		rows.append({
