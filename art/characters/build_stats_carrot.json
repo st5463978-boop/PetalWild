@@ -1,0 +1,29 @@
+{
+  "species": "carrot",
+  "cast": "veggie folk",
+  "tris": {
+    "CarrotBody": 1448,
+    "CarrotLeaf": 392,
+    "CarrotFace": 812,
+    "CarrotCan": 172,
+    "total": 2824
+  },
+  "height_m": 0.45,
+  "prop": "can",
+  "scale": "1 blender unit = 1 metre",
+  "armature": [
+    "Root",
+    "Body",
+    "Head",
+    "Arm_L",
+    "Arm_R",
+    "Leg_L",
+    "Leg_R",
+    "LeafTop"
+  ],
+  "actions": [
+    "idle",
+    "walk"
+  ],
+  "glb": "assets/characters/carrot.glb"
+}
