@@ -77,6 +77,7 @@ func run(host: Node) -> Dictionary:
 	var pests := {"min": 99, "max": 0, "sum": 0.0, "n": 0}
 	var residents := [100, 0]
 	var web := [100, 0]
+	var arrivals: Array = []
 	var focus := districts.centroid("north_beds")
 	for step in 30 * 24:
 		clock.call("set_from_absolute", float(step) * 60.0)
@@ -93,7 +94,10 @@ func run(host: Node) -> Dictionary:
 		blight.hour(_world(soil, field, clock), PackedStringArray())
 		demand.tick()
 		if int(floor(float(clock.call("hour")))) == 6:
-			_settle_people(box, demand.hive)
+			var before := int(box["residents"])
+			box["residents"] = demand.settle(before)
+			if int(box["residents"]) != before:
+				arrivals.append("d%d:%d" % [int(clock.get("day")), int(box["residents"])])
 		_note(bloom, demand.bloom)
 		_note(hive, demand.hive)
 		_note(market, demand.market)
@@ -118,7 +122,7 @@ func run(host: Node) -> Dictionary:
 		"market": [int(market[0]), int(market[1])],
 		"coins": coins,
 		"pests": {"min": int(pests["min"]), "max": int(pests["max"]), "mean": float(pests["sum"]) / float(samples)},
-		"population": {"residents": [int(residents[0]), int(residents[1])], "web": [int(web[0]), int(web[1])]},
+		"population": {"residents": [int(residents[0]), int(residents[1])], "residents_end": int(box["residents"]), "settled": arrivals, "web": [int(web[0]), int(web[1])]},
 	}
 
 
@@ -155,14 +159,6 @@ func _tend(host: Node, soil: SoilField, economy: Node, kept: Array, neglected: A
 		var plot := soil.get_cell(cell.x, cell.y)
 		if plot.plant_id == "":
 			_plant(soil, cell, true)
-
-
-func _settle_people(box: Dictionary, hive: int) -> void:
-	var have := int(box["residents"])
-	if hive >= 62 and have < 8:
-		box["residents"] = have + 1
-	elif hive <= 30 and have > 1:
-		box["residents"] = have - 1
 
 
 func _world(soil: SoilField, field: ServiceField, clock: Node) -> Dictionary:

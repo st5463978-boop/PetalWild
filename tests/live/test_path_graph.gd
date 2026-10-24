@@ -215,11 +215,11 @@ func _market(t: PetalAssert) -> void:
 		"footfall": 0,
 	}
 	quiet.recompute(base)
-	t.expect(quiet.bloom == 34 and quiet.hive == 41 and quiet.market == 26, "zero footfall keeps the market formula")
+	t.expect(quiet.bloom == 38 and quiet.hive == 41 and quiet.market == 26, "zero footfall keeps the market formula")
 	var with_feet := base.duplicate()
 	with_feet["footfall"] = 10
 	quiet.recompute(with_feet)
-	t.expect(quiet.bloom == 34 and quiet.hive == 41, "footfall leaves bloom and hive alone")
+	t.expect(quiet.bloom == 38 and quiet.hive == 41, "footfall leaves bloom and hive alone")
 	t.expect(quiet.market == 35, "ten footfall steps add the footfall weight")
 
 	var reasons: Array = []

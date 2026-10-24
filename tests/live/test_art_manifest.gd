@@ -97,7 +97,84 @@ func _boot() -> void:
 	t.expect(dressing.service_count() == 1 and dressing.moth_count() == 0, "cleared services and moths drop their art")
 	dressing.queue_free()
 	await process_frame
+	await _vc10_wiring(t)
 	t.done()
+
+
+func _vc10_wiring(t: PetalAssert) -> void:
+	# overlay legends: swatches + strip from the manifest, colour ramp when art is off
+	var field := ServiceField.new()
+	field.setup(GardenLayout.BED_W, GardenLayout.BED_H)
+	var script: Script = load("res://scripts/ui/overlays.gd")
+	var view: Object = script.new()
+	view.call("bind", field, PathGraph.new(), CityDemand.new(), CausalLog.new(), null)
+	for id in ["moisture", "fertility", "pollination", "light", "quality", "footfall", "blight"]:
+		t.expect(ArtKit.overlay(id, "legend") != null, "channel %s has a legend strip" % id)
+		view.call("set_channel", id)
+		var state: Dictionary = view.call("legend_state")
+		t.expect(bool(state.get("visible", false)) and bool(state.get("art", false)), "%s legend shows manifest art" % id)
+		t.expect(state.get("legend") is AtlasTexture, "%s legend strip is cropped to its band" % id)
+		t.expect(state.get("high") == ArtKit.overlay(id, "high"), "%s high swatch is the manifest swatch" % id)
+	view.call("set_channel", "districts")
+	var plain_state: Dictionary = view.call("legend_state")
+	t.expect(bool(plain_state.get("visible", false)) and not bool(plain_state.get("art", true)), "districts legend falls back to the colour ramp")
+	t.expect(plain_state.get("legend") is GradientTexture2D, "fallback legend is a gradient")
+	view.call("set_channel", "")
+	t.expect(not bool((view.call("legend_state") as Dictionary).get("visible", true)), "legend hides with the overlay off")
+	OS.set_environment("PETAL_PLACEHOLDER_ART", "1")
+	view.call("set_channel", "moisture")
+	var off_state: Dictionary = view.call("legend_state")
+	t.expect(not bool(off_state.get("art", true)) and off_state.get("legend") is GradientTexture2D, "placeholder mode keeps a colour legend")
+	t.expect(off_state.get("low") != null, "placeholder mode keeps colour swatches")
+	OS.set_environment("PETAL_PLACEHOLDER_ART", "0")
+	(view as Node).free()
+
+	# policy + district icons (loaded at run time: ThemeKit needs the Settings autoload)
+	var badge_script: Script = load("res://scripts/art/district_badges.gd")
+	var policies: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/policies.json"))
+	for row_v in policies.get("policies", []):
+		var policy_id := str((row_v as Dictionary).get("id", ""))
+		t.expect(badge_script.call("policy_icon", policy_id) != null, "policy %s has an icon" % policy_id)
+	t.expect(badge_script.call("flag_icon") != null, "district groups have a flag icon")
+	t.expect(ArtKit.icon("tools", "district") != null, "district tool has a brush icon")
+	t.expect(ArtKit.icon("tools", "till") == null, "tools without art keep text buttons")
+
+	var bed_field := ServiceField.new()
+	bed_field.setup(GardenLayout.BED_W, GardenLayout.BED_H)
+	var groups := GardenDistricts.new()
+	groups.setup(bed_field, null)
+	var shown := [false]
+	var badges: Node = badge_script.new()
+	root.add_child(badges)
+	badges.call("bind", groups, func() -> bool: return shown[0])
+	t.expect((badges.call("strip_items") as Dictionary).size() == groups.policy_order().size(), "policy strip lists every policy")
+	groups.paint_cell("north_beds", Vector2i(2, 2), "North Beds")
+	groups.paint_cell("north_beds", Vector2i(3, 2), "North Beds")
+	badges.call("sync")
+	var flag: Node3D = badges.call("flag_for", "north_beds")
+	t.expect(flag != null and flag.get_node_or_null("Flag") is Sprite3D, "a painted group gets a flag billboard")
+	t.expect(not (badges.get("strip") as Control).visible, "policy strip waits for the district tool")
+	shown[0] = true
+	var first := groups.next_policy()
+	groups.cycle_policy()
+	badges.call("sync")
+	t.expect((badges.get("strip") as Control).visible, "policy strip shows with the district tool")
+	var items: Dictionary = badges.call("strip_items")
+	var lit: Control = items.get(first) as Control
+	t.expect(lit is TextureRect and bool(lit.get_meta("on", false)), "Y lights the adopted policy icon")
+	var dim_ok := true
+	for key in items.keys():
+		if key != first and bool((items[key] as Control).get_meta("on", false)):
+			dim_ok = false
+	t.expect(dim_ok, "other policy icons stay dim")
+	flag = badges.call("flag_for", "north_beds")
+	t.expect(flag != null and flag.get_node_or_null("Policy_" + first) is Sprite3D, "the group flag carries its policy icon")
+	groups.toggle_paint(Vector2i(2, 2))
+	groups.toggle_paint(Vector2i(3, 2))
+	badges.call("sync")
+	t.expect((badges.call("flag_for", "north_beds") as Node3D) == null, "an empty group drops its flag")
+	badges.queue_free()
+	await process_frame
 
 
 func _walk(value: Variant, out: Array[String]) -> void:

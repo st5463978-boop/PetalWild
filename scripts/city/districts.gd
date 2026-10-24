@@ -95,6 +95,33 @@ func cycle_policy() -> String:
 	return set_policy(active_id, policy_id, turning_on)
 
 
+## Read-only views for the art layer (DistrictBadges).
+func policy_order() -> PackedStringArray:
+	return _policy_order.duplicate()
+
+
+func next_policy() -> String:
+	if _policy_order.is_empty():
+		return ""
+	return _policy_order[_policy_cursor % _policy_order.size()]
+
+
+func policies_of(district_id: String) -> PackedStringArray:
+	return _policy_ids(district_id)
+
+
+func name_of(district_id: String) -> String:
+	return _name(district_id)
+
+
+func policy_name(policy_id: String) -> String:
+	return _policy_name(policy_id)
+
+
+func cell_count(district_id: String) -> int:
+	return _cell_count(district_id)
+
+
 func owner_of(cell: Vector2i) -> String:
 	return str(_owners.get(_key(cell), ""))
 

@@ -8,6 +8,7 @@ func _initialize() -> void:
 	_formula(t)
 	_hour_tick(t)
 	_forty_eight_hours(t)
+	_settle(t)
 	t.done()
 
 
@@ -44,17 +45,17 @@ func _formula(t: PetalAssert) -> void:
 		"stall_stock": 2,
 	}
 	demand.recompute(signals)
-	t.expect(demand.bloom == 34, "bloom matches the demand.json weights")
+	t.expect(demand.bloom == 38, "bloom matches the demand.json weights")
 	t.expect(demand.hive == 41, "hive matches the demand.json weights")
 	t.expect(demand.market == 26, "market matches the demand.json weights")
-	t.expect(demand.journal_line() == "Bloom 34 · Hive 41 · Market 26", "journal line is Bloom, Hive, Market")
+	t.expect(demand.journal_line() == "Bloom 38 · Hive 41 · Market 26", "journal line is Bloom, Hive, Market")
 	t.expect(reasons.size() == 3, "a change emits bloom, hive, and market")
-	t.expect(str(reasons[0]).begins_with("bloom:0:34:"), "bloom reports the old and new values")
+	t.expect(str(reasons[0]).begins_with("bloom:0:38:"), "bloom reports the old and new values")
 	t.expect(str(reasons[2]).find("Market demand +26 because residents 4, free beds 20, quality 0.50, coins 40, stall stock 2") != -1, "the reason names the signals")
 	t.expect(causal.all_entries().size() == 3, "the causal log records each demand change")
 	var entry: Dictionary = causal.all_entries()[0]
 	t.expect(str(entry.get("kind", "")) == "demand_changed", "the log kind is demand_changed")
-	t.expect(str(entry.get("cause", "")) == str(reasons[0]).split(":")[-1] or str(entry.get("cause", "")).find("Bloom demand +34") != -1, "the log stores the bloom reason")
+	t.expect(str(entry.get("cause", "")) == str(reasons[0]).split(":")[-1] or str(entry.get("cause", "")).find("Bloom demand +38") != -1, "the log stores the bloom reason")
 	var before := reasons.size()
 	demand.recompute(signals)
 	t.expect(reasons.size() == before, "identical signals do not emit again")
@@ -116,7 +117,7 @@ func _hour_tick(t: PetalAssert) -> void:
 			"stall_stock": 2,
 		}
 	demand.tick()
-	t.expect(demand.bloom == 34 and demand.hive == 41 and demand.market == 26, "the hour tick applies the formula")
+	t.expect(demand.bloom == 38 and demand.hive == 41 and demand.market == 26, "the hour tick applies the formula")
 	t.expect(hits[0] == 3, "the first hour emits three changes")
 	demand.tick()
 	t.expect(hits[0] == 3, "the same hour does not recompute")
@@ -188,3 +189,22 @@ func _series(seed_value: int) -> Array:
 		series.append("%d,%d,%d" % [demand.bloom, demand.hive, demand.market])
 	series.append(causal.digest())
 	return series
+
+
+func _settle(t: PetalAssert) -> void:
+	var demand := CityDemand.new()
+	var rules := demand.settle_rules()
+	t.expect(not rules.is_empty(), "demand.json carries settle rules")
+	var base := int(rules.get("grow_base", 0))
+	var step := int(rules.get("grow_per_resident", 0))
+	var top := int(rules.get("max", 8))
+	t.expect(step > 4, "settle step outruns the hive resident weight so growth self-limits")
+	demand.hive = base + step * 2
+	t.expect(demand.settle(2) == 3, "a newcomer settles when hive clears the bar")
+	demand.hive = base + step * 2 - 1
+	t.expect(demand.settle(2) == 2, "residents hold just under the bar")
+	demand.hive = 0
+	t.expect(demand.settle(2) == 1, "one leaves when hive collapses")
+	t.expect(demand.settle(1) == int(rules.get("min", 1)), "never below the floor")
+	demand.hive = 100
+	t.expect(demand.settle(top) == top, "never above the cap")

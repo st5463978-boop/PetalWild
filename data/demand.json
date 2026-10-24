@@ -5,7 +5,7 @@
     "bloom": {
       "bias": 22,
       "weights": {
-        "resident_total": -1.5,
+        "resident_total": -0.5,
         "free_beds": 0.35,
         "quality_mean": 18,
         "coins": 0.05,
@@ -33,5 +33,13 @@
         "footfall": 0.85
       }
     }
+  },
+  "settle": {
+    "_note": "Resident settling from hive demand. A newcomer settles at dawn when hive >= grow_base + grow_per_resident * residents; one leaves when hive <= grow_base + grow_per_resident * (residents - 1) - shrink_margin. grow_per_resident above the hive resident_total weight keeps growth self-limiting.",
+    "min": 1,
+    "max": 8,
+    "grow_base": 22,
+    "grow_per_resident": 8,
+    "shrink_margin": 10
   }
 }

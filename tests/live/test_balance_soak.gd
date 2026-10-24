@@ -34,6 +34,8 @@ func _boot() -> void:
 	var residents: Array = people.get("residents", [0, 0])
 	var web: Array = people.get("web", [0, 0])
 	t.expect(int(residents[0]) >= 1 and int(residents[1]) <= 8, "residents stay in the parish band")
+	t.expect(int(residents[1]) > 2, "residents can grow past the starting pair")
+	t.expect(int(people.get("residents_end", 0)) > 2, "newcomers stay to the end of the month")
 	t.expect(int(web[0]) >= 2 and int(web[1]) <= 16, "the food web stays off zero and under the caps")
 	t.expect(int(web[1]) > int(web[0]) or int(residents[1]) > int(residents[0]), "population moves")
 	t.done()

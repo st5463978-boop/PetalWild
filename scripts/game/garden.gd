@@ -145,6 +145,9 @@ func _build() -> void:
 	garden_art = GardenArt.new()
 	add_child(garden_art)
 	garden_art.bind(services, ecology.blight)
+	var badges := DistrictBadges.new()
+	add_child(badges)
+	badges.bind(districts, func() -> bool: return tool == "district" or overlays.channel_id() == "districts")
 
 	hud = Hud.new()
 	add_child(hud)

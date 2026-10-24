@@ -204,6 +204,10 @@
     "pollinator_haven": "pollinator_haven",
     "market_day": "market_day"
   },
+  "tools": {
+    "_note": "Toolbar button id -> districts/hud icon key. Missing keys keep the text-only button.",
+    "district": "district_brush"
+  },
   "overlays": {
     "fertility": {
       "low": "res://assets/art/vc_garden/overlays/fertility_low.png",
@@ -248,6 +252,10 @@
       "legend": "res://assets/art/vc_garden/overlays/quality_legend_strip.png"
     }
   },
+  "overlay_channels": {
+    "_note": "Overlay channel id -> overlays entry when the names differ. Channels without art fall back to the data/overlays.json colours.",
+    "blight": "moth"
+  },
   "ground": {
     "grass": "res://assets/art/vc_garden/textures/ground/grass.jpg",
     "grass_flowers": "res://assets/art/vc_garden/textures/ground/grass_flowers.jpg",
@@ -270,7 +278,7 @@
     "grass": "grass",
     "soil": "soil_dry",
     "scale": 0.28,
-    "mix": 0.45
+    "mix": 0.3
   },
   "soil_patches": {
     "grass": "grass",
