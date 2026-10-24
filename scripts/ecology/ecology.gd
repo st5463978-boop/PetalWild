@@ -277,6 +277,10 @@ func _count(id: String) -> int:
 func _resident_count(id: String) -> int:
 	return int(resident_counts().get(id, 0))
 
+func drop_freed() -> void:
+	_prune()
+
+
 func _prune() -> void:
 	var keep: Array = []
 	for actor in actors:

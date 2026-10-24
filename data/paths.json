@@ -1,0 +1,47 @@
+{
+  "step": 1.5,
+  "connect_radius": 2.4,
+  "anchors": [
+    {"id": "stall", "at": [-4.55, 0.0, 5.15]},
+    {"id": "shed", "at": [-11.15, 0.0, 3.55]},
+    {"id": "lane", "at": [-2.35, 0.0, 3.5]},
+    {"id": "beds", "at": [-2.35, 0.0, -1.4]},
+    {"id": "hive", "at": [-2.35, 0.0, -6.35]},
+    {"id": "pond", "at": [5.2, 0.0, -2.5]},
+    {"id": "gate", "at": [0.0, 0.0, -11.2]}
+  ],
+  "runs": [
+    {"id": "keeper", "from": "shed", "to": "stall"},
+    {"id": "stall_lane", "from": "stall", "to": "lane"},
+    {"id": "bed_lane", "from": "lane", "to": "beds"},
+    {"id": "hive_lane", "from": "beds", "to": "hive"},
+    {"id": "pond_spur", "from": "beds", "to": "pond"},
+    {"id": "gate_lane", "from": "hive", "to": "gate"}
+  ],
+  "trips": [
+    {"id": "bram_stall", "from": "shed", "to": "stall", "kind": "keeper"},
+    {"id": "resident_beds", "from": "lane", "to": "beds", "kind": "resident"},
+    {"id": "resident_stall", "from": "beds", "to": "stall", "kind": "resident"},
+    {"id": "creature_pond", "from": "beds", "to": "pond", "kind": "creature"},
+    {"id": "creature_hive", "from": "pond", "to": "hive", "kind": "creature"},
+    {"id": "visitor_stall", "from": "gate", "to": "stall", "kind": "visitor"},
+    {"id": "visitor_pond", "from": "gate", "to": "pond", "kind": "visitor"}
+  ],
+  "walk": {
+    "keeper": 1,
+    "resident_each": 1,
+    "creature_each": 1,
+    "ripe_each": 1,
+    "cap": 8,
+    "jitter": 2
+  },
+  "walk_weather": ["clear", "golden", "mist"],
+  "stall": {
+    "keeper": "bram",
+    "open_from": 5.0,
+    "open_until": 19.5,
+    "footfall_per_sale": 3,
+    "max_sales": 2,
+    "price_bonus": 1
+  }
+}

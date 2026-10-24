@@ -29,7 +29,8 @@
         "free_beds": -0.5,
         "quality_mean": 0,
         "coins": 0.25,
-        "stall_stock": 6
+        "stall_stock": 6,
+        "footfall": 1
       }
     }
   }
