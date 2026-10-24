@@ -57,6 +57,7 @@ var jev_core := JevGameCore.new()
 var services := ServiceField.new()
 var paths := PathGraph.new()
 var city := CityDemand.new()
+var overlays: MapOverlays
 
 func _ready() -> void:
 	ThemeKit.boot()
@@ -128,6 +129,11 @@ func _build() -> void:
 	_spawn_people()
 	ecology.bind_parish(sim.log, services, soil, people)
 	ecology.reseed(sim.seed)
+
+	overlays = MapOverlays.new()
+	overlays.name = "MapOverlays"
+	add_child(overlays)
+	overlays.bind(services, paths, city, sim.log, ecology)
 
 	hud = Hud.new()
 	add_child(hud)

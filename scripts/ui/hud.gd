@@ -43,11 +43,11 @@ func build(owner: Node) -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", ThemeKit.INK)
 	add_child(toast_label)
-	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   J journal   B stall", 14, ThemeKit.CREAM)
+	hint_label = ThemeKit.label("1 till   2 seed   3 water   4 feed   5 tend   H hands   J journal   B stall   O maps", 14, ThemeKit.CREAM)
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_bottom = -100
-	hint_label.offset_left = -420
-	hint_label.offset_right = 420
+	hint_label.offset_left = -480
+	hint_label.offset_right = 480
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint_label)
 	photo_label = ThemeKit.title("Photo  ·  Esc", 18)
@@ -466,7 +466,7 @@ func _journal(theme: Theme) -> void:
 	journal.visible = false
 	journal.set_anchors_preset(Control.PRESET_LEFT_WIDE)
 	journal.offset_left = 16
-	journal.offset_top = 90
+	journal.offset_top = 320
 	journal.offset_bottom = -120
 	journal.offset_right = 460
 	add_child(journal)
