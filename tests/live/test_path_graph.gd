@@ -46,7 +46,7 @@ func _catalog(t: PetalAssert) -> void:
 	if typeof(demand) == TYPE_DICTIONARY:
 		var market: Dictionary = (demand as Dictionary).get("kinds", {}).get("market", {})
 		var weights: Dictionary = market.get("weights", {})
-		t.expect(float(weights.get("footfall", 0)) == 1.0, "market demand weights footfall at 1")
+		t.expect(is_equal_approx(float(weights.get("footfall", 0)), 0.85), "market demand weights footfall at 0.85")
 
 
 func _graph(t: PetalAssert) -> void:
@@ -215,12 +215,12 @@ func _market(t: PetalAssert) -> void:
 		"footfall": 0,
 	}
 	quiet.recompute(base)
-	t.expect(quiet.bloom == 64 and quiet.hive == 40 and quiet.market == 18, "zero footfall keeps the market formula")
+	t.expect(quiet.bloom == 34 and quiet.hive == 41 and quiet.market == 26, "zero footfall keeps the market formula")
 	var with_feet := base.duplicate()
 	with_feet["footfall"] = 10
 	quiet.recompute(with_feet)
-	t.expect(quiet.bloom == 64 and quiet.hive == 40, "footfall leaves bloom and hive alone")
-	t.expect(quiet.market == 28, "ten footfall steps add ten market demand")
+	t.expect(quiet.bloom == 34 and quiet.hive == 41, "footfall leaves bloom and hive alone")
+	t.expect(quiet.market == 35, "ten footfall steps add the footfall weight")
 
 	var reasons: Array = []
 	var demand := CityDemand.new()
@@ -234,9 +234,9 @@ func _market(t: PetalAssert) -> void:
 		signals["footfall"] = graph.footfall_signal()
 		return signals
 	demand.tick()
-	var expected := clampi(18 + steps, 0, 100)
+	var expected := clampi(26 + int(round(float(steps) * 0.85)), 0, 100)
 	t.expect(demand.market == expected, "the hour tick links path footfall to market")
-	t.expect(demand.market > 18, "walked paths raise market above the empty hour")
+	t.expect(demand.market > 26, "walked paths raise market above the empty hour")
 	var saw_reason := false
 	for line in reasons:
 		if str(line).find("footfall %d" % steps) != -1:

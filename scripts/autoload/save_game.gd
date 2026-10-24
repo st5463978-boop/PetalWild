@@ -114,6 +114,7 @@ func _m2_to_3(s: Dictionary) -> Dictionary:
 	## VC1 adds the city block. Older gardens start with no stamped services.
 	## VC2 keeps that block at v3 and fills a missing paths list with [].
 	## VC3 stays on v3. Gate, food-web, and blight defaults are filled in _finish.
+	## VC8 finalizes v3: districts and their policies default to empty.
 	var out := s.duplicate(true)
 	_ensure_city(out)
 	return out
@@ -168,14 +169,79 @@ func _blight_defaults(pests: Variant) -> Dictionary:
 func _ensure_city(state: Dictionary) -> void:
 	var city: Variant = state.get("city", null)
 	if typeof(city) != TYPE_DICTIONARY:
-		state["city"] = {"services": [], "paths": []}
+		state["city"] = {"services": [], "paths": [], "districts": _blank_districts()}
 		return
 	var body: Dictionary = city
 	if typeof(body.get("services", null)) != TYPE_ARRAY:
 		body["services"] = []
 	if typeof(body.get("paths", null)) != TYPE_ARRAY:
 		body["paths"] = []
+	body["districts"] = _district_pack(body.get("districts", null))
 	state["city"] = body
+
+
+func _blank_districts() -> Dictionary:
+	return {
+		"rows": [],
+		"charged_day": 0,
+		"active": "",
+		"next_index": 1,
+		"policy_cursor": 0,
+	}
+
+
+func _district_pack(value: Variant) -> Dictionary:
+	if typeof(value) == TYPE_ARRAY:
+		var wrapped := _blank_districts()
+		wrapped["rows"] = _clean_district_rows(value)
+		return wrapped
+	if typeof(value) != TYPE_DICTIONARY:
+		return _blank_districts()
+	var body: Dictionary = value.duplicate(true)
+	var rows: Variant = body.get("rows", [])
+	if typeof(rows) != TYPE_ARRAY:
+		rows = []
+	body["rows"] = _clean_district_rows(rows)
+	body["charged_day"] = int(body.get("charged_day", 0))
+	body["active"] = str(body.get("active", ""))
+	body["next_index"] = maxi(int(body.get("next_index", 1)), 1)
+	body["policy_cursor"] = maxi(int(body.get("policy_cursor", 0)), 0)
+	return body
+
+
+func _clean_district_rows(rows: Variant) -> Array:
+	var clean: Array = []
+	if typeof(rows) != TYPE_ARRAY:
+		return clean
+	for item in rows:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = item
+		var district_id := str(row.get("id", ""))
+		if district_id == "":
+			continue
+		var cells: Array = []
+		var cell_rows: Variant = row.get("cells", [])
+		if typeof(cell_rows) == TYPE_ARRAY:
+			for cell_v in cell_rows:
+				if typeof(cell_v) != TYPE_DICTIONARY:
+					continue
+				var cell_body: Dictionary = cell_v
+				cells.append({"x": int(cell_body.get("x", 0)), "z": int(cell_body.get("z", 0))})
+		var policies: Array = []
+		var policy_rows: Variant = row.get("policies", [])
+		if typeof(policy_rows) == TYPE_ARRAY:
+			for policy_v in policy_rows:
+				var policy_id := str(policy_v)
+				if policy_id != "":
+					policies.append(policy_id)
+		clean.append({
+			"id": district_id,
+			"name": str(row.get("name", district_id)),
+			"cells": cells,
+			"policies": policies,
+		})
+	return clean
 
 
 func meta(slot: int) -> Dictionary:

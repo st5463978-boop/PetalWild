@@ -3,34 +3,34 @@
   "max": 100,
   "kinds": {
     "bloom": {
-      "bias": 10,
+      "bias": 22,
       "weights": {
-        "resident_total": -1,
-        "free_beds": 2,
-        "quality_mean": 16,
-        "coins": 0.25,
+        "resident_total": -1.5,
+        "free_beds": 0.35,
+        "quality_mean": 18,
+        "coins": 0.05,
         "stall_stock": 0
       }
     },
     "hive": {
-      "bias": 6,
+      "bias": 16,
       "weights": {
-        "resident_total": 5,
-        "free_beds": 0.5,
-        "quality_mean": 8,
-        "coins": 0,
+        "resident_total": 4,
+        "free_beds": 0.05,
+        "quality_mean": 12,
+        "coins": 0.05,
         "stall_stock": 0
       }
     },
     "market": {
-      "bias": 2,
+      "bias": 15,
       "weights": {
-        "resident_total": 1,
-        "free_beds": -0.5,
-        "quality_mean": 0,
-        "coins": 0.25,
-        "stall_stock": 6,
-        "footfall": 1
+        "resident_total": 1.25,
+        "free_beds": -0.15,
+        "quality_mean": 6,
+        "coins": 0.04,
+        "stall_stock": 2.2,
+        "footfall": 0.85
       }
     }
   }

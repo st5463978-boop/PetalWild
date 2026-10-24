@@ -44,28 +44,45 @@ func _formula(t: PetalAssert) -> void:
 		"stall_stock": 2,
 	}
 	demand.recompute(signals)
-	t.expect(demand.bloom == 64, "bloom matches the demand.json weights")
-	t.expect(demand.hive == 40, "hive matches the demand.json weights")
-	t.expect(demand.market == 18, "market matches the demand.json weights")
-	t.expect(demand.journal_line() == "Bloom 64 · Hive 40 · Market 18", "journal line is Bloom, Hive, Market")
+	t.expect(demand.bloom == 34, "bloom matches the demand.json weights")
+	t.expect(demand.hive == 41, "hive matches the demand.json weights")
+	t.expect(demand.market == 26, "market matches the demand.json weights")
+	t.expect(demand.journal_line() == "Bloom 34 · Hive 41 · Market 26", "journal line is Bloom, Hive, Market")
 	t.expect(reasons.size() == 3, "a change emits bloom, hive, and market")
-	t.expect(str(reasons[0]).begins_with("bloom:0:64:"), "bloom reports the old and new values")
-	t.expect(str(reasons[2]).find("Market demand +18 because residents 4, free beds 20, quality 0.50, coins 40, stall stock 2") != -1, "the reason names the signals")
+	t.expect(str(reasons[0]).begins_with("bloom:0:34:"), "bloom reports the old and new values")
+	t.expect(str(reasons[2]).find("Market demand +26 because residents 4, free beds 20, quality 0.50, coins 40, stall stock 2") != -1, "the reason names the signals")
 	t.expect(causal.all_entries().size() == 3, "the causal log records each demand change")
 	var entry: Dictionary = causal.all_entries()[0]
 	t.expect(str(entry.get("kind", "")) == "demand_changed", "the log kind is demand_changed")
-	t.expect(str(entry.get("cause", "")) == str(reasons[0]).split(":")[-1] or str(entry.get("cause", "")).find("Bloom demand +64") != -1, "the log stores the bloom reason")
+	t.expect(str(entry.get("cause", "")) == str(reasons[0]).split(":")[-1] or str(entry.get("cause", "")).find("Bloom demand +34") != -1, "the log stores the bloom reason")
 	var before := reasons.size()
 	demand.recompute(signals)
 	t.expect(reasons.size() == before, "identical signals do not emit again")
 	demand.recompute({
-		"resident_total": 100,
+		"resident_total": 0,
 		"free_beds": 100,
 		"quality_mean": 1.0,
-		"coins": 100,
-		"stall_stock": 100,
+		"coins": 500,
+		"stall_stock": 0,
 	})
-	t.expect(demand.bloom == 100 and demand.hive == 100 and demand.market == 100, "demand clamps at 100")
+	t.expect(demand.bloom == 100, "bloom clamps at 100")
+	demand.recompute({
+		"resident_total": 20,
+		"free_beds": 40,
+		"quality_mean": 1.0,
+		"coins": 200,
+		"stall_stock": 0,
+	})
+	t.expect(demand.hive == 100, "hive clamps at 100")
+	demand.recompute({
+		"resident_total": 10,
+		"free_beds": 0,
+		"quality_mean": 1.0,
+		"coins": 100,
+		"stall_stock": 10,
+		"footfall": 80,
+	})
+	t.expect(demand.market == 100, "market clamps at 100")
 	demand.recompute({
 		"resident_total": 0,
 		"free_beds": 100,
@@ -99,7 +116,7 @@ func _hour_tick(t: PetalAssert) -> void:
 			"stall_stock": 2,
 		}
 	demand.tick()
-	t.expect(demand.bloom == 64 and demand.hive == 40 and demand.market == 18, "the hour tick applies the formula")
+	t.expect(demand.bloom == 34 and demand.hive == 41 and demand.market == 26, "the hour tick applies the formula")
 	t.expect(hits[0] == 3, "the first hour emits three changes")
 	demand.tick()
 	t.expect(hits[0] == 3, "the same hour does not recompute")
@@ -110,7 +127,7 @@ func _hour_tick(t: PetalAssert) -> void:
 	clock.call("set_from_absolute", 240.0)
 	demand.tick()
 	t.expect(hits[0] == 6, "the next hour recomputes from the new signals")
-	t.expect(demand.bloom == 68 and demand.hive == 20 and demand.market == 14, "the next hour uses the new resident total")
+	t.expect(demand.bloom == 40 and demand.hive == 25 and demand.market == 21, "the next hour uses the new resident total")
 
 
 func _forty_eight_hours(t: PetalAssert) -> void:

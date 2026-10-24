@@ -1,0 +1,62 @@
+{
+  "lod": {
+    "stride_2": 2,
+    "stride_3": 4,
+    "statistical_every": 6,
+    "stride_demand": 0.85,
+    "statistical_demand": 0.5,
+    "stride_food": 0.75
+  },
+  "names": ["North Beds", "Willow Corner", "Lane Edge", "Pond Bank", "Far Hedge", "Market Row"],
+  "policies": [
+    {
+      "id": "organic_only",
+      "name": "Organic only",
+      "blurb": "No sprayed beds. Pollinators stay and the harvest gives a little less.",
+      "service": {"pollination": 0.16, "fertility": -0.08},
+      "demand": {"bloom": 5, "market": -3},
+      "food": {"grow": 1.15, "predation": 0.8},
+      "upkeep": 0,
+      "income": 0,
+      "land": 0.05,
+      "pest": 0.85
+    },
+    {
+      "id": "night_lanterns",
+      "name": "Night lanterns",
+      "blurb": "Lamps along the beds after dusk. The night costs a little upkeep.",
+      "service": {"light": 0.32},
+      "hours": {"from": 19, "to": 5},
+      "demand": {"hive": 4, "bloom": 2},
+      "food": {"grow": 1.0, "predation": 0.92},
+      "upkeep": 2,
+      "income": 0,
+      "land": 0.04,
+      "pest": 0.9
+    },
+    {
+      "id": "pollinator_haven",
+      "name": "Pollinator haven",
+      "blurb": "Beds kept for pollen. Bloom demand rises and the web grows a little faster.",
+      "service": {"pollination": 0.24},
+      "demand": {"bloom": 7},
+      "food": {"grow": 1.22, "predation": 0.9},
+      "upkeep": 1,
+      "income": 0,
+      "land": 0.06,
+      "pest": 0.96
+    },
+    {
+      "id": "market_day",
+      "name": "Market day",
+      "blurb": "The stall draws the lane. Market demand rises, with a small coin bonus and upkeep.",
+      "service": {},
+      "demand": {"market": 9, "hive": 2},
+      "food": {"grow": 1.0, "predation": 1.0},
+      "upkeep": 1,
+      "income": 4,
+      "land": 0.03,
+      "pest": 1.0
+    }
+  ]
+}

@@ -57,6 +57,7 @@ var jev_core := JevGameCore.new()
 var services := ServiceField.new()
 var paths := PathGraph.new()
 var city := CityDemand.new()
+var districts := GardenDistricts.new()
 var overlays: MapOverlays
 
 func _ready() -> void:
@@ -97,6 +98,9 @@ func _build() -> void:
 	paths.reseed(sim.seed)
 	city.setup(services, sim.log, soil, ecology, paths)
 	city.reseed(sim.seed)
+	districts.setup(services, sim.log)
+	services.bias_for = Callable(districts, "service_bias")
+	city.districts = districts
 
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
@@ -129,11 +133,14 @@ func _build() -> void:
 	_spawn_people()
 	ecology.bind_parish(sim.log, services, soil, people)
 	ecology.reseed(sim.seed)
+	ecology.food.food_scale = Callable(districts, "food_scale")
+	ecology.blight.pest_scale = Callable(districts, "pest_scale")
 
 	overlays = MapOverlays.new()
 	overlays.name = "MapOverlays"
 	add_child(overlays)
 	overlays.bind(services, paths, city, sim.log, ecology)
+	overlays.districts = districts
 
 	hud = Hud.new()
 	add_child(hud)
@@ -207,8 +214,10 @@ func _process(delta: float) -> void:
 			_person("bram").say("The stall is loud. The beds were quieter.")
 	paths.tick()
 	paths.settle_stall()
+	districts.refresh(_district_focus(), _district_hour())
 	city.tick()
 	services.charge_daily(Clock.day)
+	districts.charge_daily(Clock.day)
 	SimLod.recount(ecology.actors)
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
 
@@ -229,6 +238,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_tool("scoop")
 			KEY_7:
 				set_tool("home")
+			KEY_8:
+				set_tool("district")
+			KEY_N:
+				toast(districts.begin_next())
+			KEY_Y:
+				toast(districts.cycle_policy())
 			KEY_H, KEY_0:
 				set_tool("hands")
 			KEY_J:
@@ -5817,7 +5832,16 @@ func world_snapshot() -> Dictionary:
 func _city_block() -> Dictionary:
 	var body := services.to_state()
 	body["paths"] = paths.to_state()
+	body["districts"] = districts.to_state()
 	return body
+
+func _district_focus() -> Vector3:
+	if camera == null:
+		return Vector3.ZERO
+	return camera.target
+
+func _district_hour() -> int:
+	return Clock.day * 24 + int(floor(Clock.hour()))
 
 func to_state() -> Dictionary:
 	var cast: Array = []
@@ -5930,6 +5954,8 @@ func apply_state(data: Dictionary) -> void:
 	_refresh_soil_colors()
 	_sync_road_stones()
 	services.apply_state(data.get("city", {}))
+	districts.apply_state(data.get("city", {}))
+	districts.refresh(_district_focus(), _district_hour())
 	paths.reseed(sim.seed)
 	paths.apply_state(data.get("city", {}))
 	paths.ingest_scene(self)
@@ -12664,6 +12690,8 @@ func _use_on_cell(plot: SoilCell) -> void:
 			_person("bram").purpose = minf(1.0, _person("bram").purpose + 0.04)
 		"tend":
 			_tend(plot)
+		"district":
+			toast(districts.toggle_paint(Vector2i(plot.ix, plot.iz)))
 	_sync_plants()
 	_refresh_soil_colors()
 
@@ -12883,7 +12911,7 @@ func _hover_text() -> String:
 		if GardenLayout.pond_distance(hit.x, hit.z) < GardenLayout.POND_RADIUS + 1.2:
 			return "Pond  ·  %d reaches" % (GardenLayout.BASE_POND_CELLS + scooped.size())
 		return SaveGame.garden_name
-	return _plot_line(soil.get_cell(cell_id.x, cell_id.y))
+	return _plot_line(soil.get_cell(cell_id.x, cell_id.y)) + districts.hover_suffix(cell_id)
 
 func _plot_line(plot: SoilCell) -> String:
 	var soil_name := "Night-loam" if plot.chem == "nightloam" else ("Tilled" if plot.tilled else "Grass")
@@ -14509,6 +14537,7 @@ func _journal_rows(world: Dictionary) -> Array:
 		})
 	rows.append(ecology.gate_journal_row())
 	rows.append(city.journal_row())
+	rows.append(districts.journal_row())
 	return rows
 
 func _without_hidden_names(lines: PackedStringArray) -> PackedStringArray:

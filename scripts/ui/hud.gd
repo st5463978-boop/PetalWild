@@ -436,6 +436,7 @@ func _tools(theme: Theme) -> void:
 		["tend", "5  Tend"],
 		["scoop", "6  Scoop"],
 		["home", "7  Home"],
+		["district", "8  District"],
 		["hands", "H  Hands"],
 	]
 	for spec in specs:
@@ -466,7 +467,7 @@ func _journal(theme: Theme) -> void:
 	journal.visible = false
 	journal.set_anchors_preset(Control.PRESET_LEFT_WIDE)
 	journal.offset_left = 16
-	journal.offset_top = 320
+	journal.offset_top = 360
 	journal.offset_bottom = -120
 	journal.offset_right = 460
 	add_child(journal)

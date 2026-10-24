@@ -12,6 +12,7 @@ var blight: Blight
 var services: ServiceField
 var paths: PathGraph
 var city: CityDemand
+var districts: GardenDistricts
 var log: CausalLog
 
 var lift := 0.36
@@ -115,6 +116,10 @@ func sample(cell: Vector2i) -> float:
 		return services.sample(cell, channel)
 	if source == "blight":
 		return blight_pressure(cell)
+	if source == "district":
+		if districts == null:
+			return 0.0
+		return districts.paint_amount(cell)
 	return 0.0
 
 
@@ -276,7 +281,7 @@ func _build_hud() -> void:
 	_panel.offset_left = 16
 	_panel.offset_top = 86
 	_panel.offset_right = 540
-	_panel.offset_bottom = 312
+	_panel.offset_bottom = 348
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	layer.add_child(_panel)
 	var box := VBoxContainer.new()
@@ -458,7 +463,7 @@ func _paint_bars() -> void:
 func _show_layers() -> void:
 	var source := _source()
 	if _cells != null:
-		_cells.visible = source == "service" or source == "blight"
+		_cells.visible = source == "service" or source == "blight" or source == "district"
 	if _edges != null:
 		_edges.visible = source == "path"
 

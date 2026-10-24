@@ -71,6 +71,15 @@
       "high": "#8a3d78",
       "low_alpha": 0.4,
       "high_alpha": 0.92
+    },
+    {
+      "id": "districts",
+      "label": "Districts",
+      "source": "district",
+      "low": "#243044",
+      "high": "#6ea8a0",
+      "low_alpha": 0.45,
+      "high_alpha": 0.92
     }
   ],
   "bars": [

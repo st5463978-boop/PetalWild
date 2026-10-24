@@ -12,9 +12,9 @@
   "blight": {
     "id": "blight_moth",
     "name": "Blight-moth",
-    "quality_max": 0.34,
+    "quality_max": 0.55,
     "neglected_min": 2,
-    "neglected_moisture": 0.18,
+    "neglected_moisture": 0.55,
     "neglected_wilt": 1.0,
     "spawn_every": 4,
     "damage_growth": 0.08,
