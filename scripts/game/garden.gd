@@ -126,6 +126,8 @@ func _build() -> void:
 	add_child(birds)
 	birds.build()
 	_spawn_people()
+	ecology.bind_parish(sim.log, services, soil, people)
+	ecology.reseed(sim.seed)
 
 	hud = Hud.new()
 	add_child(hud)
@@ -158,6 +160,7 @@ func _process(delta: float) -> void:
 		_bee_growth(minutes / 60.0)
 		sim.advance(minutes)
 	var world := world_snapshot()
+	world["sim_hours"] = minutes / 60.0
 	if minutes > 0.0:
 		_ring_bells(world)
 		_note_bees()
@@ -5926,6 +5929,7 @@ func apply_state(data: Dictionary) -> void:
 	paths.ingest_scene(self)
 	city.reseed(sim.seed)
 	city.resync()
+	ecology.reseed(sim.seed)
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -14497,6 +14501,7 @@ func _journal_rows(world: Dictionary) -> Array:
 			"romance_met": false,
 			"residents": 0,
 		})
+	rows.append(ecology.gate_journal_row())
 	rows.append(city.journal_row())
 	return rows
 
