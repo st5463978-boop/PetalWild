@@ -24,6 +24,7 @@ var _seen_hour := -1
 var _lo := 0
 var _hi := 100
 var _kinds: Dictionary = {}
+var _settle: Dictionary = {}
 
 
 func _init() -> void:
@@ -51,6 +52,27 @@ func tick() -> void:
 		return
 	_seen_hour = key
 	_apply_scores(_signals(), false)
+
+
+## Next resident count from the current hive demand, using demand.json "settle".
+## Without a settle block the count holds.
+func settle(have: int) -> int:
+	if _settle.is_empty():
+		return have
+	var low := int(_settle.get("min", 1))
+	var high := int(_settle.get("max", 8))
+	var base := float(_settle.get("grow_base", 100.0))
+	var step := float(_settle.get("grow_per_resident", 0.0))
+	var margin := float(_settle.get("shrink_margin", 0.0))
+	if have < high and float(hive) >= base + step * float(have):
+		return have + 1
+	if have > low and float(hive) <= base + step * float(have - 1) - margin:
+		return have - 1
+	return clampi(have, mini(low, have), maxi(high, have))
+
+
+func settle_rules() -> Dictionary:
+	return _settle.duplicate()
 
 
 func resync() -> void:
@@ -224,6 +246,7 @@ func _now_min() -> float:
 
 func _load() -> void:
 	_kinds = {}
+	_settle = {}
 	_lo = 0
 	_hi = 100
 	var text := FileAccess.get_file_as_string("res://data/demand.json")
@@ -240,3 +263,6 @@ func _load() -> void:
 	var kinds: Variant = root.get("kinds", {})
 	if typeof(kinds) == TYPE_DICTIONARY:
 		_kinds = kinds
+	var settle: Variant = root.get("settle", {})
+	if typeof(settle) == TYPE_DICTIONARY:
+		_settle = settle

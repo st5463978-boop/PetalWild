@@ -2,8 +2,10 @@ extends SceneTree
 ## Renders the VC art in the live garden. Needs a display (xvfb-run) and opengl3:
 ##   xvfb-run -a -s "-screen 0 1440x900x24" godot --path . --rendering-driver opengl3 --script res://tools/art_capture.gd
 ## PETAL_ART_SHOTS sets the output folder (default user://art_shots).
+## PETAL_ART_PREFIX sets the file prefix (default "art_"; VC10 uses "vc10_").
 
 var out_dir := ""
+var prefix := "art_"
 
 
 func _initialize() -> void:
@@ -11,6 +13,8 @@ func _initialize() -> void:
 	if out_dir == "":
 		out_dir = "user://art_shots"
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	if OS.get_environment("PETAL_ART_PREFIX") != "":
+		prefix = OS.get_environment("PETAL_ART_PREFIX")
 	call_deferred("_run")
 
 
@@ -48,7 +52,7 @@ func _run() -> void:
 	garden.camera.snap_home()
 	if OS.get_environment("PETAL_ART_ONLY") != "species":
 		await _hold(jellies, lineup, 1.0)
-		await _shot("art_overview.png")
+		await _shot(prefix + "overview.png")
 	# lineup shot: the meadow is tall, so everything but the creatures, terrain and lights is hidden for this frame
 	var hidden: Array[Node3D] = []
 	for child in garden.get_children():
@@ -66,7 +70,15 @@ func _run() -> void:
 	stand.look_at(lineup + Vector3(0.0, 0.3, 0.0))
 	stand.make_current()
 	await _hold(jellies, lineup, 0.8)
-	await _shot("art_species.png")
+	await _shot(prefix + "species.png")
+	# head-on check for the quadruped (manifest yaw_deg): camera straight down its -z facing
+	var bull := ids.find("gushorn")
+	if bull >= 0 and bull < jellies.size():
+		var at := jellies[bull].global_position
+		stand.global_position = at + Vector3(0.0, 0.75, -1.9)
+		stand.look_at(at + Vector3(0.0, 0.4, 0.0))
+		await _hold(jellies, lineup, 0.4)
+		await _shot(prefix + "gushorn_front.png")
 	garden.camera.make_current()
 	stand.queue_free()
 	for spatial in hidden:
@@ -76,13 +88,29 @@ func _run() -> void:
 		return
 	garden.camera.focus_on(Vector3(5.2, 0.2, 1.9), 5.5)
 	await _hold(jellies, lineup, 0.8)
-	await _shot("art_props.png")
+	await _shot(prefix + "props.png")
 	garden.overlays.set_channel("blight")
 	garden.hud.toggle_journal()
 	garden.refresh_panels()
 	garden.camera.snap_home()
 	await _hold(jellies, lineup, 0.8)
-	await _shot("art_hud.png")
+	await _shot(prefix + "hud.png")
+	# district groups: flags with policy icons, the Y policy strip and the moisture legend
+	garden.hud.toggle_journal()
+	garden.districts.paint_cell("north_beds", Vector2i(1, 1), "North Beds")
+	garden.districts.paint_cell("north_beds", Vector2i(2, 1), "North Beds")
+	garden.districts.paint_cell("north_beds", Vector2i(1, 2), "North Beds")
+	garden.districts.set_policy("north_beds", "pollinator_haven", true)
+	garden.districts.set_policy("north_beds", "night_lanterns", true)
+	garden.districts.paint_cell("lane_edge", Vector2i(6, 4), "Lane Edge")
+	garden.districts.paint_cell("lane_edge", Vector2i(7, 4), "Lane Edge")
+	garden.districts.set_policy("lane_edge", "market_day", true)
+	garden.districts.active_id = "north_beds"
+	garden.set_tool("district")
+	garden.overlays.set_channel("moisture")
+	garden.camera.snap_home()
+	await _hold(jellies, lineup, 0.8)
+	await _shot(prefix + "districts.png")
 	print("ART_CAPTURE_OK")
 	quit(0)
 

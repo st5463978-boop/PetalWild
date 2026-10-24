@@ -446,6 +446,13 @@ func _tools(theme: Theme) -> void:
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var id := str(spec[0])
 		button.pressed.connect(func(): host.set_tool(id))
+		var badge := ArtKit.icon("tools", id)
+		if badge != null:
+			button.icon = badge
+			button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			button.expand_icon = false
+			button.add_theme_constant_override("icon_max_width", 28)
 		row.add_child(button)
 		tool_buttons[id] = button
 		if id == "seed":

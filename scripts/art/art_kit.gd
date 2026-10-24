@@ -77,6 +77,27 @@ static func icon(alias_section: String, id: String) -> Texture2D:
 	return tex
 
 
+## Overlay legend art for a channel: tier is "low", "mid", "high" or "legend".
+## Channel ids map through "overlay_channels" when the names differ (blight -> moth).
+static func overlay(channel_id: String, tier: String) -> Texture2D:
+	if channel_id == "":
+		return null
+	var key := str(section("overlay_channels").get(channel_id, channel_id))
+	return texture_at(str(entry("overlays", key).get(tier, "")))
+
+
+## Legend strip cropped to its painted band (rows 23-41 of the 64 px source).
+static func legend_strip(channel_id: String) -> Texture2D:
+	var tex := overlay(channel_id, "legend")
+	if tex == null:
+		return null
+	var size := tex.get_size()
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = Rect2(0.0, size.y * 0.36, size.x, size.y * 0.3)
+	return atlas
+
+
 static func sprite(section_name: String, id: String, key: String = "sprite") -> Texture2D:
 	return texture_at(str(entry(section_name, id).get(key, "")))
 

@@ -42,6 +42,14 @@ var _columns: Dictionary = {}
 var _cells: Node3D
 var _edges: Node3D
 var _panel: Panel
+var _legend_row: HBoxContainer
+var _legend_name: Label
+var _legend_strip: TextureRect
+var _legend_swatches: Dictionary = {}
+var _legend_art := false
+
+const PANEL_BOTTOM := 348
+const LEGEND_HEIGHT := 36
 
 
 func _init() -> void:
@@ -84,6 +92,21 @@ func set_channel(next: String) -> void:
 	_edge_digest = ""
 	refresh()
 	_style_buttons()
+	_paint_legend()
+
+
+## Legend textures for the active channel: low / mid / high swatches and the strip.
+## "art" is true when the manifest art loaded; false means the colour fallback.
+func legend_state() -> Dictionary:
+	var out := {"channel": channel, "art": _legend_art, "visible": false}
+	if _legend_row == null:
+		return out
+	out["visible"] = _legend_row.visible
+	out["legend"] = _legend_strip.texture
+	for tier in ["low", "mid", "high"]:
+		var rect: TextureRect = _legend_swatches.get(tier) as TextureRect
+		out[tier] = rect.texture if rect != null else null
+	return out
 
 
 func cycle() -> void:
@@ -281,7 +304,7 @@ func _build_hud() -> void:
 	_panel.offset_left = 16
 	_panel.offset_top = 86
 	_panel.offset_right = 540
-	_panel.offset_bottom = 348
+	_panel.offset_bottom = PANEL_BOTTOM
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	layer.add_child(_panel)
 	var box := VBoxContainer.new()
@@ -302,7 +325,82 @@ func _build_hud() -> void:
 	_add_channel_button(grid, "", "Off")
 	for id in _order:
 		_add_channel_button(grid, id, str(_channel_row(id).get("label", id)))
+	box.add_child(_build_legend())
 	_style_buttons()
+
+
+func _build_legend() -> Control:
+	_legend_row = HBoxContainer.new()
+	_legend_row.name = "Legend"
+	_legend_row.add_theme_constant_override("separation", 6)
+	_legend_row.custom_minimum_size = Vector2(0, 26)
+	_legend_name = Label.new()
+	_legend_name.custom_minimum_size = Vector2(96, 0)
+	_legend_name.add_theme_color_override("font_color", ThemeKit.INK)
+	_legend_row.add_child(_legend_name)
+	_legend_row.add_child(_swatch("low"))
+	_legend_strip = TextureRect.new()
+	_legend_strip.name = "Strip"
+	_legend_strip.custom_minimum_size = Vector2(220, 18)
+	_legend_strip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_legend_strip.stretch_mode = TextureRect.STRETCH_SCALE
+	_legend_strip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_legend_row.add_child(_legend_strip)
+	_legend_row.add_child(_swatch("mid"))
+	_legend_row.add_child(_swatch("high"))
+	_paint_legend()
+	return _legend_row
+
+
+func _swatch(tier: String) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.name = "Swatch_" + tier
+	rect.custom_minimum_size = Vector2(24, 24)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.tooltip_text = tier.capitalize()
+	_legend_swatches[tier] = rect
+	return rect
+
+
+func _paint_legend() -> void:
+	if _legend_row == null:
+		return
+	_legend_row.visible = channel != ""
+	if _panel != null:
+		_panel.offset_bottom = PANEL_BOTTOM + (LEGEND_HEIGHT if _legend_row.visible else 0)
+	if channel == "":
+		return
+	var row := _channel_row(channel)
+	_legend_name.text = "%s  low→high" % str(row.get("label", channel))
+	var low := _rgba(row, "low", "low_alpha", 0.4)
+	var high := _rgba(row, "high", "high_alpha", 0.9)
+	low.a = 1.0
+	high.a = 1.0
+	var strip := ArtKit.legend_strip(channel)
+	_legend_art = strip != null
+	_legend_strip.texture = strip if strip != null else _ramp(low, high, 64, 8)
+	var tones := {"low": low, "mid": low.lerp(high, 0.5), "high": high}
+	for tier in ["low", "mid", "high"]:
+		var rect: TextureRect = _legend_swatches[tier] as TextureRect
+		var art := ArtKit.overlay(channel, tier)
+		if art == null:
+			_legend_art = false
+			var tone: Color = tones[tier]
+			rect.texture = _ramp(tone, tone, 8, 8)
+		else:
+			rect.texture = art
+
+
+func _ramp(from: Color, to: Color, width: int, height: int) -> Texture2D:
+	var gradient := Gradient.new()
+	gradient.set_color(0, from)
+	gradient.set_color(1, to)
+	var tex := GradientTexture2D.new()
+	tex.gradient = gradient
+	tex.width = width
+	tex.height = height
+	return tex
 
 
 func _demand_column(kind: String) -> Control:
