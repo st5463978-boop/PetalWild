@@ -31,7 +31,8 @@
         ["Y", "Toggle the next policy on the active bed group"],
         ["T", "Time speed: 1×, 2×, 4×"],
         ["F", "Follow the next creature"],
-        ["P", "Photo mode"]
+        ["P", "Photo mode"],
+        ["C", "Grok Town: visit the square beyond the hedge"]
       ]
     },
     {
@@ -65,6 +66,7 @@
     "district": "8 · Paint beds into a bed group. N opens a group, Y toggles a policy.",
     "hands": "H · Pick a creature up.",
     "journal": "J · Garden, people, trust and parish pages.",
-    "stall": "B · Buy seeds and sell produce while the stall is open."
+    "stall": "B · Buy seeds and sell produce while the stall is open.",
+    "town": "C · Visit Grok Town, the square beyond the hedge. C again returns."
   }
 }

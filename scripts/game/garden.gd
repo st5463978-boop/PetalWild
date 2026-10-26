@@ -153,6 +153,7 @@ func _build() -> void:
 	add_child(hud)
 	hud.build(self)
 	hud.set_tool(tool)
+	_mount_town()
 	debug_overlay = DebugOverlay.new()
 	add_child(debug_overlay)
 	debug_overlay.build(self)
@@ -228,6 +229,7 @@ func _process(delta: float) -> void:
 	districts.charge_daily(Clock.day)
 	SimLod.recount(ecology.actors)
 	SimLod.note_population(_present_people(), ecology.resident_total(), float(world.get("garden_quality", 0.0)), Economy.coins)
+	_track_town()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -266,6 +268,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_esc()
 			KEY_T:
 				cycle_speed()
+			KEY_C:
+				toggle_town()
 			KEY_F1:
 				hud.toggle_help()
 			KEY_F3:
@@ -5901,6 +5905,7 @@ func to_state() -> Dictionary:
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 		"city": _city_block(),
 		"overlay": "" if overlays == null else overlays.channel_id(),
+		"town_seen": town_seen,
 		"sim": {
 			"schema": 1,
 			"clock": sim.to_state(),
@@ -5981,6 +5986,7 @@ func apply_state(data: Dictionary) -> void:
 	city.resync()
 	ecology.reseed(sim.seed)
 	_restore_overlay(data.get("overlay", ""))
+	town_seen = bool(data.get("town_seen", false))
 
 func _restore_overlay(saved: Variant) -> void:
 	if overlays == null:
@@ -14724,6 +14730,7 @@ func _place_stats(world: Dictionary) -> Dictionary:
 		var built := "open" if bool(venue.get("active", false)) or str(id) == "tea_house" or str(id) == "research_hut" or str(id) == "media_foundry" or str(id) == "town_hall" else "not built"
 		venue_lines.append("%s · %s" % [str(venue.get("name", id)), built])
 	venue_lines.append("Potting Shed · open")
+	venue_lines.append("Grok Town · open")
 	stats["venues"] = venue_lines
 	return stats
 
@@ -14855,8 +14862,45 @@ func _debug_text() -> String:
 # VC11 menus and mechanics pass ------------------------------------------------
 
 var badges: DistrictBadges
+var town: GrokTown
+var town_open := false
+var town_seen := false
 var _autosave_at_msec := 0
 var _spare_day := -1
+
+
+func _mount_town() -> void:
+	town = GrokTown.new()
+	town.name = "GrokTown"
+	add_child(town)
+	town.setup()
+	hud.attach_town(town)
+
+
+func toggle_town() -> void:
+	if town == null:
+		return
+	town_open = not town_open
+	if town_open:
+		town_seen = true
+		camera.focus_on(town.focus_point(), 18.0)
+		hud.show_town_card(town.card_lines(), true)
+		return
+	close_town_view()
+
+
+func close_town_view() -> void:
+	town_open = false
+	if camera != null:
+		camera.snap_home()
+	if hud != null:
+		hud.show_town_card(PackedStringArray(), false)
+
+
+func _track_town() -> void:
+	if town == null or hud == null or hud.town_map == null or camera == null:
+		return
+	hud.town_map.set_marker(town.marker_uv(camera.target))
 
 
 ## Lowest screen y used by the map legend panel and the policy strip on the left.

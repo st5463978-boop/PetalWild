@@ -29,7 +29,7 @@ Modes: `overview`, `golden`, `creature`, `person`, `shop`, `night`, `rain`.
 
 ## Play
 
-1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C town, P photo, Space pauses time, F5 saves, F9 loads, F3 debug.
+1 till, 2 seed, 3 water, 4 fertilise, 5 tend, 6 pond, 7 home kit. R cycles the seed or the home prop. Right-drag orbits. Scroll zooms. WASD pans. Click a jelly and drag to pet or throw. E opens the stall. J journal, M map, C visits Grok Town beyond the hedge, P photo, Space pauses time, F5 saves, F9 loads, F3 debug. A map in the top-right follows the camera.
 
 The scenic pond west of the hedge is not a gameplay pond. Ribbon wants pond plots you scoop yourself.
 
