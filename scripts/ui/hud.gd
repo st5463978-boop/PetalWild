@@ -26,6 +26,9 @@ var help_panel: Panel
 var help_button: Button
 var pause_resume: Button
 var journal_scroll: ScrollContainer
+var town_map: TownMap
+var town_card: Panel
+var town_card_box: VBoxContainer
 var _toast_time := 0.0
 ## The bottom hint comes back after each toast until the player has opened the controls card once.
 var _help_seen := false
@@ -98,6 +101,12 @@ func close_top() -> bool:
 	if shop != null and shop.visible:
 		shop.visible = false
 		return true
+	if town_card != null and town_card.visible:
+		if host != null and host.has_method("close_town_view"):
+			host.close_town_view()
+		else:
+			town_card.visible = false
+		return true
 	if journal != null and journal.visible:
 		journal.visible = false
 		return true
@@ -135,14 +144,37 @@ func toggle_help() -> void:
 func apply_text_scale() -> void:
 	ThemeKit.restyle(self)
 
-func set_status(clock_text: String, weather: String, coins: int, hover: String, seed_name: String) -> void:
+func set_status(clock_text: String, weather: String, coins: int, hover: String, seed_name: String, seed_count: int = 0) -> void:
 	if clock_label:
 		clock_label.text = clock_text
 		weather_label.text = weather.capitalize()
 		coin_label.text = "%d petal" % coins
 		hover_label.text = hover
 	if seed_button:
-		seed_button.text = "2  Seed\n%s" % seed_name
+		if seed_name == "" or seed_name == "Empty":
+			seed_button.text = "2  Seed\nEmpty"
+			seed_button.tooltip_text = ControlsHelp.tooltip("seed")
+		else:
+			seed_button.text = "2  ×%d\n%s" % [seed_count, seed_name]
+			seed_button.tooltip_text = "%s ×%d" % [seed_name, seed_count]
+		_fit_seed_button()
+
+func _fit_seed_button() -> void:
+	if seed_button == null:
+		return
+	var font := seed_button.get_theme_font("font")
+	if font == null:
+		return
+	var font_size := seed_button.get_theme_font_size("font_size")
+	var widest := 0.0
+	for line in seed_button.text.split("\n"):
+		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	var pad := 28.0
+	var style := seed_button.get_theme_stylebox("normal")
+	if style != null:
+		pad = style.content_margin_left + style.content_margin_right + 6.0
+	seed_button.custom_minimum_size.x = maxf(112.0, ceil(widest + pad))
+
 
 func toast(text: String) -> void:
 	toast_label.text = text
@@ -437,6 +469,48 @@ func toggle_shop() -> void:
 		journal.visible = false
 		host.refresh_panels()
 
+func attach_town(town: GrokTown) -> void:
+	town_map = TownMap.new()
+	town_map.name = "TownMap"
+	town_map.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	town_map.offset_left = -196.0
+	town_map.offset_top = 90.0
+	town_map.offset_right = -16.0
+	town_map.offset_bottom = 270.0
+	town_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	town_map.load_town(town)
+	add_child(town_map)
+	town_card = Panel.new()
+	town_card.name = "TownCard"
+	town_card.theme = ThemeKit.make_theme()
+	town_card.visible = false
+	town_card.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	town_card.offset_left = 16.0
+	town_card.offset_top = 368.0
+	town_card.offset_right = 390.0
+	town_card.offset_bottom = 700.0
+	add_child(town_card)
+	town_card_box = VBoxContainer.new()
+	town_card_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	town_card_box.offset_left = 14.0
+	town_card_box.offset_top = 12.0
+	town_card_box.offset_right = -14.0
+	town_card_box.offset_bottom = -12.0
+	town_card.add_child(town_card_box)
+
+func show_town_card(lines: PackedStringArray, on: bool) -> void:
+	if town_card == null:
+		return
+	town_card.visible = on
+	if not on or town_card_box == null:
+		return
+	_clear(town_card_box)
+	town_card_box.add_child(ThemeKit.title("Grok Town", 22))
+	for line in lines:
+		var label := ThemeKit.label(line, 15)
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		town_card_box.add_child(label)
+
 func show_page(page: String) -> void:
 	for key in pages.keys():
 		pages[key].visible = key == page
@@ -454,6 +528,8 @@ func set_photo(on: bool) -> void:
 		proposal.visible = false
 		help_panel.visible = false
 		hint_label.visible = false
+		if town_card != null:
+			town_card.visible = false
 
 func show_pause(on: bool) -> void:
 	pause_panel.visible = on
@@ -541,6 +617,7 @@ func _tools(theme: Theme) -> void:
 		tool_buttons[id] = button
 		if id == "seed":
 			seed_button = button
+			seed_button.clip_text = false
 	var journal_button := Button.new()
 	journal_button.text = "J  Journal"
 	journal_button.custom_minimum_size = Vector2(112, 72)

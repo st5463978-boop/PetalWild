@@ -1,0 +1,76 @@
+{
+  "name": "Grok Town",
+  "blurb": "The square beyond the hedge. Grove Park is still not broken ground.",
+  "origin": [0, 0, -34],
+  "square": [0, 0, 0],
+  "step_fit": {
+    "side_margin": 0.12,
+    "max_extra": 0.35,
+    "rise": 0.14,
+    "tread": 0.72
+  },
+  "gate": {
+    "id": "parish_gate",
+    "name": "Parish Gate",
+    "at": [0, 0, 9],
+    "yaw_deg": 0,
+    "faces": "parish"
+  },
+  "hall": {
+    "id": "town_hall",
+    "name": "Town Hall",
+    "at": [0, 0, 1],
+    "body": [4.2, 2.35, 3.2],
+    "door": {"w": 1.25, "h": 2.05, "color": "#5c4034"},
+    "planters": 2,
+    "gable": "-x"
+  },
+  "stalls": {
+    "id": "market_row",
+    "name": "Market Row",
+    "count": 3,
+    "depth": 1.25,
+    "width": 1.35,
+    "against": "town_hall",
+    "gable": "-x"
+  },
+  "civic": [
+    {
+      "id": "reading_room",
+      "name": "Reading Room",
+      "at": [-6.6, 0, -3.2],
+      "body": [3.2, 2.2, 2.6],
+      "door": {"w": 1.05, "h": 2.05, "color": "#6a4a32"},
+      "old_step_w": 2.8
+    },
+    {
+      "id": "tea_porch",
+      "name": "Tea Porch",
+      "at": [6.6, 0, -3.2],
+      "body": [3.2, 2.2, 2.6],
+      "door": {"w": 1.05, "h": 2.05, "color": "#6a4a32"},
+      "old_step_w": 2.6
+    },
+    {
+      "id": "draft_loft",
+      "name": "Draft Loft",
+      "at": [-6.6, 0, -8.1],
+      "body": [3.0, 2.25, 2.5],
+      "door": {"w": 1.0, "h": 2.0, "color": "#5a4638"},
+      "old_step_w": 0
+    },
+    {
+      "id": "lane_post",
+      "name": "Lane Post",
+      "at": [6.6, 0, -8.1],
+      "body": [2.8, 2.15, 2.4],
+      "door": {"w": 0.95, "h": 2.05, "color": "#8c2f2a"},
+      "old_step_w": 0
+    }
+  ],
+  "court": {
+    "paths": {"count": 36, "cols": 6, "origin": [-1.75, 0.03, 3.7], "step": [0.7, 0, 0.58], "size": [0.6, 0.04, 0.48], "color": "#6a5e4c"},
+    "beds": {"count": 12, "cols": 2, "origin": [-4.15, 0.1, 3.7], "step": [8.3, 0, 0.62], "size": [1.05, 0.16, 0.5], "color": "#5a4634"},
+    "flowers": {"count": 46, "cols": 2, "origin": [-5.15, 0.22, 3.55], "step": [10.3, 0, 0.16], "size": [0.2, 0.26, 0.2], "color": "#d45d7a", "alt": "#f2d36b"}
+  }
+}
