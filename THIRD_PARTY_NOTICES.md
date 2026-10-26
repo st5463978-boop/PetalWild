@@ -12,4 +12,6 @@ The following assets are CC0 1.0 and are not covered by that MIT grant:
 
 Godot Engine is MIT, copyright its contributors, and is not bundled in this repository. This project pins the 4.8-dev6 official binary `8898c2b3d`.
 
+Garden species, service, and HUD art in `assets/art/vc_garden/` is original PetalWild work from the VC5–VC7 pass. It is not a third-party pack.
+
 No GPL, AGPL, or CC-BY work is included in the program or the asset tree.

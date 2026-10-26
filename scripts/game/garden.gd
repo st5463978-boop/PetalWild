@@ -5900,6 +5900,7 @@ func to_state() -> Dictionary:
 		"lane_afternoon_days": lane_afternoon_days.duplicate(),
 		"bee_flower": [bee_flower.x, bee_flower.y, bee_flower.z],
 		"city": _city_block(),
+		"overlay": "" if overlays == null else overlays.channel_id(),
 		"sim": {
 			"schema": 1,
 			"clock": sim.to_state(),
@@ -5979,6 +5980,16 @@ func apply_state(data: Dictionary) -> void:
 	city.reseed(sim.seed)
 	city.resync()
 	ecology.reseed(sim.seed)
+	_restore_overlay(data.get("overlay", ""))
+
+func _restore_overlay(saved: Variant) -> void:
+	if overlays == null:
+		return
+	var channel := str(saved)
+	if channel != "" and not overlays.channels().has(channel):
+		channel = ""
+	overlays.set_channel(channel)
+
 
 func _watch_record() -> Dictionary:
 	# ponytail: one arrival, one farewell, one hut, one foundry; a queue if Nessa keeps more than one errand.
@@ -12914,14 +12925,15 @@ func _update_highlight() -> void:
 
 func _update_status() -> void:
 	var seed_name := "Empty"
+	var seed_count := 0
 	var item := ContentDB.item(Economy.selected_seed)
 	if not item.is_empty():
 		seed_name = str(item.get("name", "Seed")).replace(" seed", "")
-		seed_name += "  ×%d" % Economy.count(Economy.selected_seed)
+		seed_count = Economy.count(Economy.selected_seed)
 	var clock_text := Clock.clock_label()
 	if not is_equal_approx(Clock.scale, float(ControlsHelp.speeds()[0].get("scale", 6.0))):
 		clock_text += "  ·  %s" % ControlsHelp.speed_label(Clock.scale)
-	hud.set_status(clock_text, Clock.weather, Economy.coins, _hover_text(), seed_name)
+	hud.set_status(clock_text, Clock.weather, Economy.coins, _hover_text(), seed_name, seed_count)
 
 func _hover_text() -> String:
 	var hit = _ground_hit()

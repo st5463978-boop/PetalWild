@@ -135,14 +135,37 @@ func toggle_help() -> void:
 func apply_text_scale() -> void:
 	ThemeKit.restyle(self)
 
-func set_status(clock_text: String, weather: String, coins: int, hover: String, seed_name: String) -> void:
+func set_status(clock_text: String, weather: String, coins: int, hover: String, seed_name: String, seed_count: int = 0) -> void:
 	if clock_label:
 		clock_label.text = clock_text
 		weather_label.text = weather.capitalize()
 		coin_label.text = "%d petal" % coins
 		hover_label.text = hover
 	if seed_button:
-		seed_button.text = "2  Seed\n%s" % seed_name
+		if seed_name == "" or seed_name == "Empty":
+			seed_button.text = "2  Seed\nEmpty"
+			seed_button.tooltip_text = ControlsHelp.tooltip("seed")
+		else:
+			seed_button.text = "2  ×%d\n%s" % [seed_count, seed_name]
+			seed_button.tooltip_text = "%s ×%d" % [seed_name, seed_count]
+		_fit_seed_button()
+
+func _fit_seed_button() -> void:
+	if seed_button == null:
+		return
+	var font := seed_button.get_theme_font("font")
+	if font == null:
+		return
+	var font_size := seed_button.get_theme_font_size("font_size")
+	var widest := 0.0
+	for line in seed_button.text.split("\n"):
+		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	var pad := 28.0
+	var style := seed_button.get_theme_stylebox("normal")
+	if style != null:
+		pad = style.content_margin_left + style.content_margin_right + 6.0
+	seed_button.custom_minimum_size.x = maxf(112.0, ceil(widest + pad))
+
 
 func toast(text: String) -> void:
 	toast_label.text = text
@@ -541,6 +564,7 @@ func _tools(theme: Theme) -> void:
 		tool_buttons[id] = button
 		if id == "seed":
 			seed_button = button
+			seed_button.clip_text = false
 	var journal_button := Button.new()
 	journal_button.text = "J  Journal"
 	journal_button.custom_minimum_size = Vector2(112, 72)

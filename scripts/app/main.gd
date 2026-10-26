@@ -298,7 +298,7 @@ func _continue_slot(slot: int) -> void:
 	get_tree().change_scene_to_file("res://scenes/garden.tscn")
 
 func _licence_text() -> String:
-	var path := "res://docs/THIRD_PARTY_NOTICES.md"
+	var path := "res://THIRD_PARTY_NOTICES.md"
 	if FileAccess.file_exists(path):
 		return FileAccess.get_file_as_string(path)
 	return "PetalWild original work. Godot engine is MIT. Inter is SIL OFL. Jelly Baby GPL source is not included."
