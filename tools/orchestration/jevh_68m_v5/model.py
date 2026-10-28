@@ -12,7 +12,6 @@ from pathlib import Path
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 SEQ_LEN = 128
 HIDDEN = 512
@@ -29,10 +28,24 @@ ROPE_THETA = 160000.0
 ATTN_BIAS = -10000.0
 
 
+def gelu_erf(x: torch.Tensor) -> torch.Tensor:
+    """GELU (erf) as Mul/Add/Erf. A Gelu ONNX node is not a Hailo DFC activation."""
+    return 0.5 * x * (1.0 + torch.erf(x * (1.0 / math.sqrt(2.0))))
+
+
 def rotate_half(x: torch.Tensor) -> torch.Tensor:
-    x1 = x[..., : HEAD_DIM // 2]
-    x2 = x[..., HEAD_DIM // 2 :]
-    return torch.cat((-x2, x1), dim=-1)
+    """cat(-x2, x1), written as a swap plus a constant sign.
+
+    DFC 5.4.0's ONNX fuser crashes on Neg fed into Concat
+    (`_handle_neg_feature_shuffle`, `group_sizes is None`). The Clef-Flash
+    port measured that a swap followed by a constant sign multiply parses;
+    the multiply becomes a normalization and the fuser does not match it.
+    Values match cat(-x2, x1).
+    """
+    half = x.shape[-1] // 2
+    swapped = torch.cat((x[..., half:], x[..., :half]), dim=-1)
+    sign = x.new_tensor([-1.0] * half + [1.0] * half)
+    return swapped * sign
 
 
 class BiaslessLN(nn.Module):
@@ -79,7 +92,7 @@ class EncoderLayer(nn.Module):
         fused = self.Wi(m)
         inp = fused[..., :INTERMEDIATE]
         gate = fused[..., INTERMEDIATE:]
-        x = x + self.Wo_mlp(F.gelu(inp) * gate)
+        x = x + self.Wo_mlp(gelu_erf(inp) * gate)
         return x
 
 
@@ -134,7 +147,7 @@ class Ettin68mScorer(nn.Module):
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         hidden = self.encode(input_ids, attention_mask)
         cls = hidden[:, 0, :]
-        h = self.head_norm(F.gelu(self.head_dense(cls)))
+        h = self.head_norm(gelu_erf(self.head_dense(cls)))
         return self.head_out(h)
 
     def freeze_for_cpu(self, unfreeze_last: int = 6) -> None:
