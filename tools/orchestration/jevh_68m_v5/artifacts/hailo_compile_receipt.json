@@ -1,0 +1,107 @@
+{
+  "calib": {
+    "cls_id": 50281,
+    "ids_sha256": "07e6b1369445c06f59381661b0a70caab30d01ef5b140305b0eda6b403793ba1",
+    "mask_mean": 0.382415771484375,
+    "mask_sha256": "d1a43bf3cf345edd33faf05dbeccaa8e37d61ad354e155a13dcd69c12cc5b9cb",
+    "pad_id": 50283,
+    "pad_rate": 0.617584228515625,
+    "required_rows": 256,
+    "rows": 256,
+    "seq": 128,
+    "source": "committed tokenized pairs, not random noise",
+    "unique_rows": 256
+  },
+  "checkpoints_present": [],
+  "device": {
+    "device": false,
+    "device_nodes": [],
+    "hailo_platform": "",
+    "import_error": "ModuleNotFoundError: No module named 'hailo_platform'"
+  },
+  "dfc": {
+    "error": "ModuleNotFoundError: No module named 'hailo_sdk_client'",
+    "installed": false
+  },
+  "error": "ONNX not found at /workspace/tools/orchestration/jevh_68m_v5/artifacts/jevh_68m_v5_seq128.onnx. The round-2 receipt names jevh_68m_v5_seq128.onnx sha256 7f78a56e9a692c6c83baf064b86219919a2d7f8870c9813a4ffae50d4a89e292 size 277144914, and .gitignore excludes artifacts/*.onnx. The PyTorch source of that export is cat(-x2, x1), which lowers to Neg-into-Concat and crashes DFC 5.4.0 in _handle_neg_feature_shuffle. model.py now uses a sign-swap RoPE and gelu_erf, so the next export is the one to compile. Re-export from a round-2 checkpoint (jevh_68m_v5_r2.pt, jevh_68m_v5.pt); found on disk: none. Refusing to synthesize a graph or a calibration set.",
+  "expected_onnx_sha256": "7f78a56e9a692c6c83baf064b86219919a2d7f8870c9813a4ffae50d4a89e292",
+  "hardware_tested": false,
+  "hef_sha256": null,
+  "net_name": "jevh_68m_v5_seq128",
+  "stage": "onnx_missing",
+  "status": "blocked",
+  "structure_probe": {
+    "attention_mask_is_input": true,
+    "attention_mask_shape": [
+      1,
+      128
+    ],
+    "attention_mask_used": true,
+    "contract_ok": true,
+    "error": "",
+    "forbidden": [],
+    "input_ids_shape": [
+      1,
+      128
+    ],
+    "inputs": [
+      {
+        "elem": 7,
+        "name": "input_ids",
+        "shape": [
+          1,
+          128
+        ]
+      },
+      {
+        "elem": 7,
+        "name": "attention_mask",
+        "shape": [
+          1,
+          128
+        ]
+      }
+    ],
+    "neg_into_concat": [],
+    "note": "Deleted after inspection. This sha is not the round-2 student.",
+    "ops": [
+      "Add",
+      "Cast",
+      "Concat",
+      "Constant",
+      "Div",
+      "Erf",
+      "Gather",
+      "Gemm",
+      "Identity",
+      "MatMul",
+      "Mul",
+      "Pow",
+      "ReduceMean",
+      "Reshape",
+      "Slice",
+      "Softmax",
+      "Sqrt",
+      "Sub",
+      "Transpose"
+    ],
+    "opset": [
+      17
+    ],
+    "outputs": [
+      {
+        "elem": 1,
+        "name": "logits",
+        "shape": [
+          1,
+          1
+        ]
+      }
+    ],
+    "ran": true,
+    "random_onnx_bytes": 277081047,
+    "random_onnx_sha256": "489dfd99199c313c7fc42efeabd76d371d84bfddcd5b9bb106857ed36806aff5",
+    "weights": "random Ettin68mScorer init, not a checkpoint"
+  },
+  "target": "hailo10h"
+}

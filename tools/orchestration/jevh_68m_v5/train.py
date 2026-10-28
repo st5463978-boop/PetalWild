@@ -61,7 +61,8 @@ PATIENCE = 2
 CLIP = 1.0
 CONF_THR = 0.65
 OPSET = 17
-FORBIDDEN_OPS = {"Loop", "If", "NonZero", "Optional", "SequenceAt", "NonMaxSuppression"}
+# Gelu is a single ONNX node Hailo DFC does not lower. gelu_erf emits Erf.
+FORBIDDEN_OPS = {"Loop", "If", "NonZero", "Optional", "SequenceAt", "NonMaxSuppression", "Gelu"}
 ROUND1 = {
     "accuracy": 0.7640625,
     "yesno_accuracy": 0.8628571428571429,

@@ -7,8 +7,10 @@ the current JEV review labels. Same input format as `:8771`:
 - each option as `text_b` (yes/no noul strings when the two options normalise to yes/no)
 - one logit per option, softmax over the option set
 
-This is **not** the teacher-swarm mining work (PR #26). It does not compile a
-HEF, does not flash the Pi, and does not call paid APIs.
+This is **not** the teacher-swarm mining work (PR #26). Training does not
+compile a HEF, does not flash the Pi, and does not call paid APIs. Compilation
+is a separate step: `./compile_hef.sh`. It refuses random calibration data and
+does not bind the live decide port.
 
 Round 2 trains the **full encoder** (layer-wise LR), distills JEV-H-large +
 Qwen3 soft labels, and reports a **template-grouped** eval so near-duplicate
@@ -50,6 +52,19 @@ PYTHONPATH=. .venv/bin/python -m unittest test_jevh_68m_v5.py -v
 
 See `RECEIPT.md` for metrics / sha256.
 
+## Compile (no deploy)
+
+```bash
+./tools/orchestration/jevh_68m_v5/compile_hef.sh
+```
+
+Reads the committed calibration pair and `artifacts/jevh_68m_v5_seq128.onnx`
+(sha256 `7f78a56e9a692c6c83baf064b86219919a2d7f8870c9813a4ffae50d4a89e292`,
+not in git). Writes `artifacts/hailo_compile_receipt.json`. Exit 0 only after
+a HEF file is written. That is not a hardware pass: `hardware_tested` stays
+false until a Hailo-10H run is measured. See `hailo/README.md`.
+
 ## Hard rules
 
-No HEF compile, no device deploy, no trades, no paid OpenRouter, no secrets.
+No Pi deploy from this tree, no trades, no paid OpenRouter, no secrets, no
+proprietary Hailo compiler binaries in git.

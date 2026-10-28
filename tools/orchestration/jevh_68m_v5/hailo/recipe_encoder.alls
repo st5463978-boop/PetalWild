@@ -1,0 +1,13 @@
+# Base model script for the 68M v5 encoder student.
+# compile_hef.py appends quantization_param lines for matmul, conv, ew_add,
+# and softmax using the names the DFC actually parsed. It does not use a
+# private zp_comp_block command: that name lives in the inaccessible jev-h
+# notes, not in a script this repository can execute.
+#
+# Calibration rows are the integer token ids and the 0/1 attention mask,
+# cast to float32 only because ClientRunner.optimize consumes floats. The
+# values are not resampled.
+
+model_optimization_config(calibration, batch_size=8, calibset_size=256)
+pre_quantization_optimization(equalization, policy=enabled)
+pre_quantization_optimization(bias_correction, policy=enabled)
